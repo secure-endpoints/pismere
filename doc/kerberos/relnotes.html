@@ -1,62 +1,683 @@
 <html>
 <head>
 <title>
-Release Notes for Kerberos for Windows 2.1.1
+Release Notes for Kerberos for Windows 2.1.2
 </title>
 </head>
 
 <body>
 
 <center>
-<h1>Kerberos for Windows 2.1.1</h1>
+<h1>Kerberos for Windows 2.1.2</h1>
 <p>
 <h2>Release Notes</h2>
 <p>
-<h3>October 9, 2001</h3>
+<h3>February 6, 2002</h3>
 
 </center>
 
 <h3>Table of Contents</h3>
 
 <ul type=disc>
-<li><a href="#intro">Introduction</a>
-<li><a href="http://web.mit.edu/kerberos/www/">What is Kerberos?</a>
+<li><a href="#intro">Overview</a>
 <li><a href="#whatsnew">What's New</a>
-<li><a href="#issues">Known Issues</a>
-<li><a href="#build">Building</a>
+<li><a href="#requirements">System Requirements</a>
 <li><a href="#config">Installation and Configuration</a>
-<li><a href="#command_line">Command Line Options to Leash32, kinit, klist, and kdestroy</a>
+<ul>
+<li><a href="#config_bin">Binaries</a>
+<li><a href="#config_locate">Locating Kerberos Configuration Files</a>
+<ul>
+<li><a href="#config_locate_krb5">Kerberos 5</a>
+<li><a href="#config_locate_krb4">Kerberos 4</a>
+</ul>
+<li><a href="#config_modify">Modifying Kerberos Configuration Files</a>
+<ul>
+<li><a href="#config_modify_krb5">Kerberos 5</a>
+<li><a href="#config_modify_krb4">Kerberos 4</a>
+</ul>
+<li><a href="#config_dns">Using DNS Lookups for Kerberos Configuration</a>
+<li><a href="#config_services">Services File</a>
+<li><a href="#config_cache">Ticket Cache</a>
+<li><a href="#config_time">Date and Time Issues</a>
+</ul>
+<li><a href="#command_line">Command Line Options</a>
+<li><a href="#build">Building from Sources</a>
+<li><a href="#issues">Known Issues</a>
+<li><a href="#history">Release History</a>
 <li><a href="#todo">To Do</a>
 <li><a href="#devnotes">Developer Notes</a>
+<ul>
+<li><a href="#devnotes_kclient">KClient</a>
+<li><a href="#devnotes_registry">Registry and Environment Settings</a>
+<li><a href="#devnotes_old">Some older notes from prior releases...</a>
+</ul>
+<!--
+<li><a href="#feedback">Feedback</a>
+-->
 </ul>
 
 <!-- ---------------------------------------------------------------------- -->
-<hr>
+<p><hr>
 <a name="intro"></a>
-<h2>Introduction</h2>
+<h2>Overview</h2>
 
-<p><em>Kerberos for Windows</em> (or <em>KfW</em> for short) is the
-integrated release of Kerberos version 4 and Kerberos version 5 (or
-Kerberos 4 and Kerberos 5 for short -- also Kerberos v4 and Kerberos
-v5).
+<p>MIT Kerberos for Windows (<em>KfW</em>) is an integrated <a
+href="http://web.mit.edu/kerberos/">Kerberos</a> release
+for Microsoft Windows operating systems.  It includes the Kerberos v4
+library, Kerberos v5 library, Kerberos v5 GSS API library, KClient
+library, Leash32 GUI credentials manager, kinit/klist/kdestroy
+command-line credentials managers, and an in-memory credentials cache.
+
+<h3>Terminology</h3>
+
+<p>Kerberos v4 (also Kerberos 4 or Kerberos version 4)
+and Kerberos v5 (also Kerberos 5 or Kerberos version 5) refer to
+versions 4 and 5 of the Kerberos protocol.  A protocol is a
+specification for how data is transmitted on a network.
+
+<p>Kerberos <em>credentials</em> and Kerberos <em>tickets</em> are the
+same thing.
 
 <!-- http://www.geek.com/glossary/glossary_search.cgi?protocol -->
 <!-- http://www.m-w.com/cgi-bin/dictionary?protocol -->
 <!-- http://www.whatis.com/WhatIs_Definition_Page/0,4152,212839,00.html -->
 
-<p>Kerberos 4 and Kerberos 5 refers to the versions 4 and 5 of the
-Kerberos protocol.  (A protocol refers to how data is transmitted on a
-network.)  KfW includes both of these.  KfW 2.1.1, in particular,
-includes the <a href="http://web.mit.edu/kerberos/www/">MIT Kerberos
-v5 Release 1.2.2</a> and KfW's own release of Kerberos v4.
-
-<p>
-
 <!-- ---------------------------------------------------------------------- -->
-<hr>
+<p><hr>
 <a name="whatsnew"></a>
 <h2>What's New</h2>
 
+
+<ul>
+
+<p>
+<li>
+Kerberos v5 support is from MIT Kerberos v5 Release 1.2.3.
+This release of Kerberos v5 includes the ms2mit program to transfer a
+user's Microsoft Windows domain Kerberos credentials into the MIT
+Kerberos 5 credentials cache.
+
+<p>
+<li>ms2mit was removed from the Extra Binaries package since it is now
+part of the included MIT Kerberos v5 component.
+
+<p>
+<li>The Microsoft Redistributable Components package no longer
+includes the Winsock 2 Update for Windows 95.  A pointer to download
+it from Microsoft is now included.
+
+<p>
+<li>The release notes have been significantly revamped.
+
+</ul>
+
+
+<!-- ---------------------------------------------------------------------- -->
+<p><hr>
+<a name="requirements"></a>
+<h2>System Requirements</h2>
+
+<h3>Operating System</h3>
+
+<p>KfW requires Windows 95, 98, Me, NT 4.0, 2000, XP or higher.
+
+<h3>Winsock 2</h3>
+
+<p>KfW requires Winsock 2.  All version of Windows newer than Windows
+95 have Winsock 2 built-in.  A system running Windows 95 may or may
+not have Winsock 2 already installed.  If not, it will need the
+Winsock 2 Update for Windows 95.  For more information about Winsock 2
+on Windows 95, see these Microsoft Knowledge Base articles:
+
+<ul>
+
+<li><a href="http://support.microsoft.com/support/kb/articles/Q177/7/19.ASP">How to Identify Winsock 2.0 Run-Time Components for Windows 95</a>
+
+<li><a href="http://support.microsoft.com/support/kb/articles/Q182/1/08.ASP">Availability of Windows Sockets 2.0 for Windows 95</a>
+
+<li><a href="http://support.microsoft.com/support/kb/articles/Q184/2/42.ASP">WinSock 2.0 Installer for Windows 95 (Ws2setup.exe) Update</a>
+
+</ul>
+
+<p>To actually download the Winsock 2 Update for Windows 95, go to the
+<a
+href="http://www.microsoft.com/windows95/downloads/contents/wuadmintools/s_wunetworkingtools/w95sockets2/default.asp">Windows
+Socket 2 Update for Windows 95 page</a>.
+
+<h3>Microsoft Redistributable DLLs</h3>
+
+<p>The following versions or newer of several freely redistributable
+Microsoft DLLs are also needed:
+
+<p>
+<table border="0" width="100%">
+<tr valign="top"><td>&nbsp;<td><b>Filename</b><td>&nbsp;&nbsp;&nbsp;&nbsp;<td><b>Version</b><td>&nbsp;&nbsp;&nbsp;&nbsp;<td><b>Description</b>
+<tr valign="top"><td><td>mfc42.dll<td><td>6.0.8665.0<td><td>MFCDLL Shared Library - Retail Version
+<tr valign="top"><td><td>msvcrt.dll<td><td>6.0.8168.0<td><td>Microsoft (R) C Runtime Library
+<tr valign="top"><td><td>msvcp60.dll<td><td>6.0.8168.0<td><td>Microsoft (R) C++ Runtime Library
+<tr valign="top"><td><td>psapi.dll<td><td>4.0.1198.1<td><td>Process Status Helper [not used in Windows 9x/Me]
+</table>
+
+<!--
+mfc42 - Me, 2000, XP
+msvcrt - 98SE and higher
+msvcp60 - 98SE and higher
+psapi - NT 4, 2000, XP (not needed on 9x/Me)
+-->
+
+<p>To see what Microsoft products ship with what version of these
+DLLs, you can use the <a
+href="http://support.microsoft.com/servicedesks/fileversion/dllinfo.asp">DLL
+Help Database</a>.
+
+<p>The <em>KfW Installer</em> will install any of these DLLs that are
+missing.
+
+<p>If you are not using the installer and you are missing some of
+these DLLs, you can download the <em>Microsoft Redistributable
+Components</em> component from the <a
+href="http://web.mit.edu/network/kerberos-form.html">MIT Kerberos
+download site</a> and manually install each missing DLL.
+
+<p>Note: <code>psapi.dll</code> is also available by itself from the
+<a
+href="http://www.microsoft.com/downloads/release.asp?ReleaseID=30337">Microsoft
+Download Center</a>.  The other DLLs can also be retrieved from the <a
+href="http://msdn.microsoft.com/vstudio/sp/vs6sp5/mmoverview.asp">Visual
+Studio Service Pack 5 Merge Modules</a>, though that is kind of
+difficult to do.
+
+<!-- ---------------------------------------------------------------------- -->
+<p><hr>
+<a name="config"></a>
+<h2>Installation and Configuration</h2>
+
+<!-- ---------------------------------------------------------------------- -->
+<a name="config_bin"></a>
+<h3>Binaries</h3>
+
+<h4>Core Binaries</h4>
+
+<p>
+<table border="0" width="100%">
+<tr valign="top"><td>&nbsp;<td><b>Filename</b><td>&nbsp;&nbsp;&nbsp;&nbsp;<td><b>Description</b>
+<tr valign="top"><td><td>krbv4w32.dll<td><td>Kerberos 4 library
+<tr valign="top"><td><td>krbcc32.dll<td><td>Kerberos credentials cache library -- required by Kerberos 4, used by Kerberos 5 as well
+<tr valign="top"><td><td>krbcc32s.exe<td><td>Kerberos credentials cache -- required by krbcc32.dll
+<tr valign="top"><td><td>kclnt32.dll<td><td>KClient library -- required by some Kerberos 4 applications (such as Eudora)
+<tr valign="top"><td><td>krb5_32.dll<td><td>Kerberos 5 library
+<tr valign="top"><td><td>leash32.exe<td><td>Leash32 GUI Kerberos credentials manager
+<tr valign="top"><td><td>leashw32.dll<td><td>used by Leash32
+<tr valign="top"><td><td>xpprof32.dll<td><td>used by Leash32
+<tr valign="top"><td><td>comerr32.dll<td><td>used by Leash32 and Kerberos 5
+<tr valign="top"><td><td>gssapi32.dll<td><td>GSS API for Kerberos 5
+<tr valign="top"><td><td>wshelp32.dll<td><td>winsock helper used by various things
+<tr valign="top"><td><td>kinit.exe<td><td>command-line app to get Kerberos credentials
+<tr valign="top"><td><td>klist.exe<td><td>command-line app to list Kerberos credentials
+<tr valign="top"><td><td>kdestroy.exe<td><td>command-line app to destroy Kerberos credentials
+<tr valign="top"><td><td>ms2mit.exe<td><td>command-line app to get Microsoft Kerberos v5 domain credentials transferred into the MIT Kerberos v5 credentials cache.
+</table>
+
+<h4>Extra Binaries</h4>
+
+<p>
+These binaries are built from sources that are not included in the
+source distribution.  They include SASL libraries for Kerberos v4
+support and the k524init program.  These binaries are unsupported.
+
+<p>
+<table border="0" width="100%">
+<tr valign="top"><td>&nbsp;<td><b>Filename</b><td>&nbsp;&nbsp;&nbsp;&nbsp;<td><b>Description</b>
+<tr valign="top"><td><td>k524init.exe<td><td>Client that requests Kerberos 4 tickets using Kerberos 5 credentials instead of a password
+<tr valign="top"><td><td>libsasl.dll<td><td>SASL library
+<tr valign="top"><td><td>saslKERBEROSV4.dll<td><td>Kerberos v4 SASL support
+</table>
+
+<p>
+It is recommended that all core and extra binaries be put into a
+single directory in the user's PATH.  Make sure that you do not have
+other Kerberos binaries in your PATH.
+
+<!-- ---------------------------------------------------------------------- -->
+<a name="config_locate"></a>
+<h3>Locating Kerberos Configuration Files</h3>
+
+<p>
+The simplest configuration is to put the <code>krb5.ini</code>,
+<code>krb.con</code>, and <code>krbrealm.con</code> configuration
+files in the same directory as the Kerberos DLLs or in the Windows
+directory.
+
+<!-- ---------------------------------------------------------------------- -->
+<a name="config_locate_krb5"></a>
+<h4>Kerberos 5</h4>
+
+<p>
+Kerberos 5 needs a single configuration file: <code>krb5.ini</code>.
+You can put it in the same directory as the DLL and everything will
+work fine.  You can also put it in the Windows directory.  You can
+even point to an arbitrary file by setting the
+<code>KRB5_CONFIG</code> environment variable.
+
+<!-- ---------------------------------------------------------------------- -->
+<a name="config_locate_krb4"></a>
+<h4>Kerberos 4</h4>
+
+<p>
+Kerberos 4 needs two configuration files, typically called
+<code>krb.con</code> and <code>krbrealm.con</code>.  You can put these
+files in the same directory as the DLL and everything should work.
+You can also set KRB4_KRB.REALMS or KRB4_KRB.CONF to override each
+file.  Or you can set KRB4_CONFIG to force Kerberos 4 to look for both
+files in a particular directory.  If you do none of these, this is
+where Kerberos 4 will search:
+
+<ol>
+<li>%NDIR%\kerb\
+<li>The current directory
+<li>The Windows directory
+<li>The Windows system directory
+<li>The directory containing the executable file for the current task
+<li>The directories in the path (<a href="#c1"><b>*</b></a>)
+<li>The list of directories mapped in a network
+<li>%NDIR%\
+<li>%ETC%\
+</ol>
+
+<p>
+(<a name="c1"><b>*</b></a>) Note: If you put the files in the DLL's
+directory, this part of the search is what will take you there.  If
+you have another config file earlier in the search, that will take
+precedence, so be careful.
+
+<!-- ---------------------------------------------------------------------- -->
+<a name="config_modify"></a>
+<h3>Modifying Kerberos Configuration Files</h3>
+
+<p><b>IMPORTANT</b>: Leash32 can edit the Kerberos 5 and Kerberos 4
+configuration files.  However, it could potentially screw up the files
+because it tries to mirror the configuration files.  To avoid this
+issue, modify the files in a text editor.
+
+<!-- ---------------------------------------------------------------------- -->
+<a name="config_modify_krb5"></a>
+<h4>Kerberos 5</h4>
+
+<p>
+See the <a
+href="../../athena/auth/krb5/doc/admin.html#SEC17">krb5.conf</a>
+section in the <a
+href="../../athena/auth/krb5/doc/admin_toc.html">Kerberos v5 System
+Administrator's Guide</a>.  (Note: Unfortunately, these links work
+only if you are browsing from the source archive.)
+
+<!-- ---------------------------------------------------------------------- -->
+<a name="config_modify_krb4"></a>
+<h4>Kerberos 4</h4>
+
+<p>
+It is anticipated that most sites using Kerberos version 4 on Windows
+also will have an existing UNIX Kerberos infrastructure.  For that
+reason, the format of the <code>krb.con</code> is identical to the
+UNIX <code>krb.conf</code> and the format of <code>krbrealm.con</code>
+identical to the UNIX <code>krb.realms</code>.  For many users, the
+easiest way to configure these files for use at their local sites will
+be to ftp the corresponding files from a local UNIX machine that is
+already properly configured.
+
+<p>
+The <code>krb.con</code> file contains configuration information
+describing the Kerberos realm and the Kerberos key distribution center
+(KDC) servers for known realms.
+
+<p>
+<code>krb.con</code> contains the name of the local realm in the first
+line, followed by lines indicating realm/host entries. The first token
+is a realm name, and the second is a hostname of a host running a KDC
+for that realm. The words "admin server" following the hostname
+indicate that the host also provides an administrative database server
+which is contacted when changing a user's password. For example:
+
+<pre>
+ATHENA.MIT.EDU
+ATHENA.MIT.EDU kerberos.mit.edu admin server
+ATHENA.MIT.EDU kerberos-1.mit.edu
+ATHENA.MIT.EDU kerberos-2.mit.edu
+LCS.MIT.EDU kerberos.lcs.mit.edu admin server
+</pre>
+
+<p>
+If this were your <code>krb.con</code> file and you wanted to change
+the default local realm to <code>CIT.CORNELL.EDU</code> you would edit
+it to look like:
+
+<pre>
+CIT.CORNELL.EDU
+CIT.CORNELL.EDU kerberos.cit.cornell.edu admin server
+ATHENA.MIT.EDU kerberos.mit.edu admin server
+ATHENA.MIT.EDU kerberos-1.mit.edu
+ATHENA.MIT.EDU kerberos-2.mit.edu
+LCS.MIT.EDU kerberos.lcs.mit.edu admin server
+</pre>
+
+<p>
+The <code>krbrealm.con</code> file is the host-to-Kerberos realm
+translation file. This provides a translation from a local hostname to
+the Kerberos realm name for the services provided by that host.
+
+<p>
+Each line of the translation file is in one the following forms
+(domain_name should be of the form <code>.XXX.YYY</code>, e.g.,
+<code>.LCS.MIT.EDU</code>):
+
+<pre>
+	host_name kerberos_realm
+	domain_name kerberos_realm
+</pre>
+
+<p>
+If a hostname exactly matches the host_name field in a line of the
+first form, the corresponding realm is the realm of the host. If a
+hostname does not match any host_name in the file, but its domain
+exactly matches the domain_name field in a line of the second form,
+the corresponding realm is the realm of the host.
+
+<p>
+If no translation entry applies, the host's realm is considered to be
+the hostname's domain portion converted to uppercase.
+
+<!-- ---------------------------------------------------------------------- -->
+<a name="config_dns">
+<h3>Using DNS Lookups for Kerberos Configuration</h3>
+</a>
+
+<h4>What is it?</h4>
+
+<p>DNS lookups provide Kerberos the ability to determine the Kerberos
+Realm that a host belongs to and to find the servers associated with a
+given Realm by using the Domain Name Service instead of or in addition
+to local configuration files.
+
+<h4>When are DNS Lookups used?</h4>
+
+<p>
+DNS lookups are used in either of these two circumstances:
+
+<ul>
+
+<li>No <code>krb.con</code> file is found for Kerberos 4 or no
+<code>krb5.ini</code> file is found for Kerberos 5.
+
+<li>The <code>krb.con</code> file or <code>krb5.ini</code> file
+contains a command to activate DNS Lookups and the lookup cannot be
+answered by data found in the appropriate configuration file.
+
+</ul>
+
+<p>To activate DNS lookups for Kerberos 4 when the
+<code>krb.con</code> file is present, add the following line to the
+file as a realm-to-host entry (usually to the end):
+
+<blockquote>
+<pre>
+.KERBEROS.OPTION. dns
+</pre>
+</blockquote>
+
+<p>
+When DNS lookups are used, the first line in the <code>krb.con</code>
+file (which would contain the default realm) may be left blank to
+indicate that the default realm should be determined by a DNS lookup.
+
+<p>
+To activate DNS lookups for Kerberos 5 when the <code>krb5.ini</code>
+file is present, place:
+
+<blockquote>
+<pre>
+dns_fallback = true
+</pre>
+</blockquote>
+
+<p>into the <code>[libdefaults]</code> section.  If a "default_realm"
+entry is not provided, a DNS lookup will be performed to determine the
+default realm.
+
+
+<h4>What entries go into the DNS?</h4>
+
+<p>Host to realm lookups are performed using DNS TXT records.  Example
+records are:
+
+<blockquote>
+<pre>
+_kerberos.yclept.kermit.columbia.edu.  IN TXT "KRB5.COLUMBIA.EDU"
+_kerberos.columbia.edu.                IN TXT "CC.COLUMBIA.EDU"
+</pre>
+</blockquote>
+
+<p>Realm to server lookups are performed using DNS SRV records.
+Example records are:
+
+<blockquote>
+<pre>
+_kerberos._udp.KRB5.COLUMBIA.EDU.    IN SRV 0 0 750     yclept.kermit.columbia.edu
+_kerberos-adm._tcp.KRB5.COLUMBIA.EDU IN SRV 0 0 749     yclept.kermit.columbia.edu
+_kpasswd._udp.KRB5.COLUMBIA.EDU      IN SRV 0 0 464     yclept.kermit.columbia.edu
+</pre>
+</blockquote>
+
+
+<!-- ---------------------------------------------------------------------- -->
+<a name="config_services"></a>
+<h3>Services File</h3>
+
+<p>
+The Kerberos DLLs need to know what port to use to talk to the
+Kerberos server.  Kerberos 4 now defaults to ports 750 (kerberos
+750/udp kdc) and 751 (kerberos-master 751/tcp) if there are no
+kerberos or kerberos-master entries in the services file.  Kerberos 5
+also has proper defaults (port 88 with a fallback to 750) in case the
+services file is missing the entries for kerberos and kerberos-sec.
+
+<p>
+If your site uses non-standard ports, you will still need a services
+file appropriate for your site.
+
+<!-- ---------------------------------------------------------------------- -->
+<a name="config_cache"></a>
+<h3>Ticket Cache</h3>
+
+<p>
+The new default for Kerberos 4 and 5 is to store their tickets in
+memory.
+
+<p>
+You can specify the name of the ticket file and the directory in which
+it is stored via the environment variables <code>KRBTKFILE</code>
+(krb4) and <code>KRB5CCNAME</code> (krb5).  The krb4 credentials
+always go into memory.  The ticket string you see always has an
+&quot;API:&quot; in front of it.
+
+<p>
+There are also registry settings for these locations.  Playing with
+Leash32 will reveal where they are (look in
+HKCU\Software\MIT\Kerberos4 and Kerberos5).  You can set machine-wide
+values by playing with these settings in HKLM.
+
+<p>
+Kerberos 5 does support using file-based tickets, but their use is not
+recommend, as they are potentially less secure.
+
+<!-- ---------------------------------------------------------------------- -->
+<a name="config_time"></a>
+<h3>Date and Time Issues</h3>
+
+<p>
+Kerberos authentication uses time stamps as part of its
+protocol. When the clocks of the Kerberos server and your computer are
+too far out of synchronization, you cannot authenticate properly. Both
+the Kerberos server and the Kerberos client depend on having clocks
+that are synchronized within a certain margin. This margin is normally
+5 minutes.
+
+<p>
+The date and time on the machine running Kerberos must be
+&quot;accurately&quot; set.  If the date or time is off &quot;too
+far&quot;, Kerberos authentication will not work.
+
+<p>
+You can synchronize your clock using Leash32.  It allows you to set
+the name of the host to which you will synchronize.  It saves this
+information in the registry (under HKCU\Software\MIT\Leash32 -- you
+can set machine-wide defaults in HKLM).
+
+<p>
+By default, the server that the libraries contact when synchronizing
+the time is <code>time</code>. The domain name has been left off on
+purpose.  If local system administrators create a machine with a CNAME
+of time within the local domain the clients will contact this machine
+by default.
+
+<p>
+If local system administrators are opposed to doing this for some
+reason, you can edit the resource <code>LSH_TIME_HOST</code> in the
+<code>leashw32.dll</code> to the name appropriate for your local site.
+You can also edit the header files from the source distribution and
+recompile for your local site.  However, this is not recommended.  You
+can also tweak the registry setting Leash32 uses.
+
+<p>
+You can also avoid this problem by running a local, properly
+configured, NTP program on your machine.
+
+
+<!-- ---------------------------------------------------------------------- -->
+<p><hr>
+<a name="command_line"></a>
+<h2>Command Line Options</h2>
+
+<h3>leash32</h3>
+
+<p>
+The command line options for <b>leash32</b> are:
+<pre>
+	-kinit, -i	only perform a kinit and then exit Leash
+</pre>
+
+<h3>kinit, klist, kdestroy</h3>
+
+<p>
+The options for kinit, klist, and kdestroy can be viewed by typing the
+name of the utility followed by <code>-?</code> (e.g., <code>kinit
+-?</code>).
+
+<!---------------------------------------------------------------------------->
+<p><hr>
+<a name="build">
+<h2>Building from Sources</h2>
+</a>
+
+<p>Building KfW is supported on Windows NT 4.0, Windows 2000, and
+Windows XP.  While building on Windows 9x/Me might work, it is not
+supported.
+
+<p>First, make sure that you have Microsoft Visual C++ 6.0, a recent
+release of the <a
+href="http://msdn.microsoft.com/downloads/sdks/platform/default.asp">Microsoft
+Platform SDK</a> (July 2000 or higher is known to work), <a
+href="http://www.activestate.com/">ActiveState Perl</a> (build 517 or
+higher), sed, gawk, cat, and rm in your PATH.  You can get sed, gawk,
+cat, and rm from the <a
+href="http://sourceware.cygnus.com/cygwin/">Cygwin distribution</a>.
+Also make sure that your INCLUDE path includes the Microsoft Platform
+SDK before the Microsoft Visual C++ include files and that perl has
+been installed so that .pl files are automatically executed with perl.
+You will probably also need to be using the default system shell (cmd
+or command, depending on whether you're running NT/2000 or 9x/Me) so
+that the Makefiles work properly.
+
+<p>
+Then, go into the <code>athena</code> directory and type
+
+<blockquote><code>..\scripts\build.pl --softdirs</code></blockquote>
+
+to build everything with debug information.  For a release build, run
+
+<blockquote><code>..\scripts\build.pl --softdirs NODEBUG=1</code></blockquote>
+
+For help, do
+
+<blockquote><code>..\scripts\build.pl -?</code></blockquote>
+
+and
+
+<blockquote><code>..\scripts\build.pl --docs</code><br><em>[NOTE: does not work in 9x/Me]</em></blockquote>
+
+If you are running 9x/Me, you will need to invoke the build.pl script
+using perl.  For example:
+
+<blockquote><code>perl ..\scripts\build.pl [args]</code></blockquote>
+
+If krb5 does not build properly, it is probably because sed/gawk were
+not in your path.  To fix this, delete
+<code>athena/auth/krb5/src/Makefile</code>, fix your
+<code>PATH</code>, and try again.
+
+<p>
+To make your life easier, you might try putting the
+<code>scripts</code> directory in your path.  (Under 9x/Me, that will
+not help you since you always need to invoke the script through perl.)
+
+<p>
+If you use the <code>build.pl</code> script, the targets should
+get copied into the <code>target</code> directory at the same level as
+the <code>athena</code> directory.  You can go into
+<code>target\bin\i386\dbg</code> (replacing <code>i386</code> with the
+right CPU and <code>dbg</code> with <code>rel</code> if building
+release targets), and run the binaries.  The debug symbols for the
+debug build also get placed there in case you need to debug.
+
+<!-- ---------------------------------------------------------------------- -->
+<p><hr>
+<a name="issues"></a>
+<h2>Known Issues</h2>
+
+<ul>
+
+<p>
+<li>The Kerberos Credentials Cache implementation does not support
+locking across calls.  Each call is atomic, however.
+
+<p>
+<li>If the krbcc32s LRPC server process is ever terminated while
+another process is supposed to have a valid handle to it, the other
+process will need to grab new handles.  The moral of the story is:
+do not kill krbcc32s if you have any such processes around (e.g., if
+Leash is running).  In fact, you generally should never have to kill
+krbcc32s.
+
+<p>
+<li>If writing a server that uses Kerberos and might use the Kerberos
+Credentials Cache as opposed to the Kerberos v5 file credentials cache
+(<code>FILE:</code>), please read the <a
+href="../../athena/auth/krbcc/doc/architecture.txt">krbcc32
+Architecture</a> documentation.  (krbcc32 Architecture link works only
+if this is the source package.)
+
+</ul>
+
+<!-- -->
+
+<!-- ---------------------------------------------------------------------- -->
+<p><hr>
+<a name="history"></a>
+<h2>Release History</h2>
+
+<p>
+In general, the latest release of KfW is recommended.  However, it may
+be useful (and entertaining) to understand the history of KfW by
+looking at its release history.
 
 <h3>KfW 2.1.1</h3>
 
@@ -121,386 +742,31 @@ href="../../athena/auth/krbcc/doc/implementation.txt">krbcc32
 Implementation</a> documentation at
 <code>athena/auth/krbcc/doc/architecture.txt</code> and
 <code>athena/auth/krbcc/doc/implementation.txt</code>.
+(krbcc32 documentation links work only if this is the source package.)
 </ul>
 
-<!-- ---------------------------------------------------------------------- -->
-<hr>
-<a name="issues"></a>
-<h2>Known Issues</h2>
-
-<ul>
+<h3>Pre-KfW Era</h3>
 
 <p>
-<li>The Kerberos Credentials Cache implementation does not support
-locking across calls.  Each call is atomic, however.
+Before there was KfW, MIT had other Kerberos releases for Windows and
+even for DOS (gasp!).  Read on if you dare...
+
+<h4>Kerberos for Microsoft Operating Systems Release 2.0</h4>
 
 <p>
-<li>If the krbcc32s LRPC server process is ever terminated while
-another process is supposed to have a valid handle to it, the other
-process will need to grab new handles.  The moral of the story is:
-do not kill krbcc32s if you have any such processes around (e.g., if
-Leash is running).  In fact, you generally should never have to kill
-krbcc32s.
+This was a version of KfW before it was called KfW.  It had an
+in-memory credentials cache (called fleavius) that had many problems,
+including large memory footprint, a single per-machine shared cache
+(even on NT).
 
-<p>
-<li>If writing a server that uses Kerberos and might use the Kerberos
-Credentials Cache as opposed to the Kerberos v5 file credentials cache
-(<code>FILE:</code>), please read the <a
-href="../../athena/auth/krbcc/doc/architecture.txt">krbcc32
-Architecture</a> documentation.
+<h4>A Long, Long Time Ago...</h4>
 
-</ul>
-
-<!---------------------------------------------------------------------------->
-<hr>
-<a name="build">
-<h2>Building the Sources</h2>
-</a>
-
-<p>Building KfW is supported on Windows NT 4.0, Windows 2000, and
-Windows XP.  While buildin on Windows 9x/Me might work, it is not
-supported.
-
-<p>First, make sure that you have Microsoft Visual C++ 6.0, a recent
-release of the <a
-href="http://msdn.microsoft.com/downloads/sdks/platform/default.asp">Microsoft
-Platform SDK</a> (July 2000 or higher is known to work), <a
-href="http://www.activestate.com/">ActiveState Perl</a> (build 517 or
-higher), sed, gawk, cat, and rm in your PATH.  You can get sed, gawk,
-cat, and rm from the <a
-href="http://sourceware.cygnus.com/cygwin/">Cygwin distribution</a>.
-Also make sure that your INCLUDE path includes the Microsoft Platform
-SDK before the Microsoft Visual C++ include files and that perl has
-been installed so that .pl files are automatically executed with perl.
-You will probably also need to be using the default system shell (cmd
-or command, depending on whether you're running NT/2000 or 9x/Me) so
-that the Makefiles work properly.
-
-<p>
-Then, go into the <code>athena</code> directory and type
-
-<blockquote><code>..\scripts\build.pl --softdirs</code></blockquote>
-
-to build everything with debug information.  For a release build, run
-
-<blockquote><code>..\scripts\build.pl --softdirs NODEBUG=1</code></blockquote>
-
-For help, do
-
-<blockquote><code>..\scripts\build.pl -?</code></blockquote>
-
-and
-
-<blockquote><code>..\scripts\build.pl --docs</code><br><em>[NOTE: does not work in 9x/Me]</em></blockquote>
-
-If you are running 9x/Me, you will need to invoke the build.pl script
-using perl.  For example:
-
-<blockquote><code>perl ..\scripts\build.pl [args]</code></blockquote>
-
-If krb5 does not build properly, it is probably because sed/gawk were
-not in your path.  To fix this, delete
-<code>athena/auth/krb5/src/Makefile</code>, fix your
-<code>PATH</code>, and try again.
-
-<p>
-To make your life easier, you might try putting the
-<code>scripts</code> directory in your path.  (Under 9x/Me, that will
-not help you since you always need to invoke the script through perl.)
-
-<p>
-If you use the <code>build.pl</code> script, the targets should
-get copied into the <code>target</code> directory at the same level as
-the <code>athena</code> directory.  You can go into
-<code>target\bin\i386\dbg</code> (replacing <code>i386</code> with the
-right CPU and <code>dbg</code> with <code>rel</code> if building
-release targets), and run the binaries.  The debug symbols for the
-debug build also get placed there in case you need to debug.
+Once upon a time, 16-bit Windows was supported.  There was even DOS
+support at one point.  As far as MIT Kerberos is concerned, those days
+are best forgotten.
 
 <!-- ---------------------------------------------------------------------- -->
-<hr>
-<a name="config"></a>
-<h2>Installation/Configuration</h2>
-
-<h4>Table of Contents</h4>
-
-<ul>
-<li><a href="#config_bin">Binaries</a>
-<li><a href="#config_files">Kerberos Configuration Files</a>
-<li><a href="#config_krb4">Modifying Kerberos 4 Configuration Files</a>
-<li><a href="#config_krb5">Modifying Kerberos 5 Configuration File</a>
-<li><a href="#config_services">Services File</a>
-<li><a href="#config_cache">Ticket Cache</a>
-<li><a href="#config_time">Date and Time Issues</a>
-</ul>
-
-<P>
-
-<!-- ---------------------------------------------------------------------- -->
-<hr>
-<a name="config_bin"></a>
-<h3>Binaries</h3>
-
-<ul>
-<li>krbv4w32.dll - Kerberos 4
-<li>krbcc32.dll  - required by Kerberos 4, used by Kerberos 5 as well
-<li>krbcc32s.exe - required by krbcc32.dll
-<li>kclnt32.dll  - required by some Kerberos 4 applications
-<li>krb5_32.dll  - Kerberos 5
-<li>leash32.exe  - Leash32 Integrated Kerberos ticket manager
-<li>leashw32.dll - used by Leash32
-<li>xpprof32.dll - used by Leash32
-<li>comerr32.dll - used by Leash32 and Kerberos 5
-<li>gssapi32.dll - GSS API for Kerberos 5
-<li>wshelp32.dll - winsock helper used by various things
-<li>kinit.exe    - command-line app to get Kerberos tickets
-<li>klist.exe    - command-line app to list Kerberos tickets
-<li>kdestroy.exe - command-line app to destroy Kerberos tickets
-</ul>
-
-<p>
-We recommend to developers that the binaries have a single Kerberos
-directory that is in the PATH.
-
-<!-- ---------------------------------------------------------------------- -->
-<hr>
-<a name="config_files"></a>
-<h3>Kerberos Configuration Files</h3>
-
-<p>
-Kerberos 5 needs a single configuration file: <code>krb5.ini</code>.
-You can put it in the same directory as the DLL and everything will
-work fine.  You can also put it in the Windows directory.  You can
-even point to an arbitrary file by setting the
-<code>KRB5_CONFIG</code> environment variable.
-
-<p>
-Kerberos 4 needs two configuration files, typically called
-<code>krb.con</code> and <code>krbrealm.con</code>.  You can put these
-files in the same directory as the DLL and everything should work.
-You can also set KRB4_KRB.REALMS or KRB4_KRB.CONF to override each
-file.  Or you can set KRB4_CONFIG to force Kerberos 4 to look for both
-files in a particular directory.  If you do none of these, this is
-where Kerberos 4 will search:
-
-<ol>
-<li>%NDIR%\kerb\
-<li>The current directory
-<li>The Windows directory
-<li>The Windows system directory
-<li>The directory containing the executable file for the current task
-<li>The directories in the path (<a href="#c1"><b>*</b></a>)
-<li>The list of directories mapped in a network
-<li>%NDIR%\
-<li>%ETC%\
-</ol>
-
-<p>
-(<a name="c1"><b>*</b></a>) Note: If you put the files in the DLL's
-directory, this part of the search is what will take you there.  If
-you have another config file earlier in the search, that will take
-precedence, so be careful.
-
-<!-- ---------------------------------------------------------------------- -->
-<hr>
-<a name="config_krb4"></a>
-<h3>Modifying Kerberos 4 Configuration Files</h3>
-
-<p>
-Note: You can use Leash32 to edit the Kerberos 4 configuration files.
-
-<p>
-It is anticipated that most sites using Kerberos version 4 on Windows
-also will have an existing UNIX Kerberos infrastructure.  For that
-reason, we kept the format of the <code>krb.con</code> identical to
-the UNIX <code>krb.conf</code> and the format of
-<code>krbrealm.con</code> identical to the UNIX
-<code>krb.realms</code>.  For many users, the easiest way to configure
-these files for use at their local sites will be to ftp the
-corresponding files from a local UNIX machine that is already properly
-configured.
-
-<p>
-The <code>krb.con</code> file contains configuration information
-describing the Kerberos realm and the Kerberos key distribution center
-(KDC) servers for known realms.
-
-<p>
-<code>krb.con</code> contains the name of the local realm in the first
-line, followed by lines indicating realm/host entries. The first token
-is a realm name, and the second is a hostname of a host running a KDC
-for that realm. The words "admin server" following the hostname
-indicate that the host also provides an administrative database server
-which is contacted when changing a user's password. For example:
-
-<pre>
-ATHENA.MIT.EDU
-ATHENA.MIT.EDU kerberos.mit.edu admin server
-ATHENA.MIT.EDU kerberos-1.mit.edu
-ATHENA.MIT.EDU kerberos-2.mit.edu
-LCS.MIT.EDU kerberos.lcs.mit.edu admin server
-</pre>
-
-<p>
-If this were your <code>krb.con</code> file and you wanted to change
-the default local realm to <code>CIT.CORNELL.EDU</code> you would edit
-it to look like:
-
-<pre>
-CIT.CORNELL.EDU
-CIT.CORNELL.EDU kerberos.cit.cornell.edu admin server
-ATHENA.MIT.EDU kerberos.mit.edu admin server
-ATHENA.MIT.EDU kerberos-1.mit.edu
-ATHENA.MIT.EDU kerberos-2.mit.edu
-LCS.MIT.EDU kerberos.lcs.mit.edu admin server
-</pre>
-
-<p>
-The <code>krbrealm.con</code> file is the host-to-Kerberos realm
-translation file. This provides a translation from a local hostname to
-the Kerberos realm name for the services provided by that host.
-
-<p>
-Each line of the translation file is in one the following forms
-(domain_name should be of the form <code>.XXX.YYY</code>, e.g.,
-<code>.LCS.MIT.EDU</code>):
-
-<pre>
-	host_name kerberos_realm
-	domain_name kerberos_realm
-</pre>
-
-<p>
-If a hostname exactly matches the host_name field in a line of the
-first form, the corresponding realm is the realm of the host. If a
-hostname does not match any host_name in the file, but its domain
-exactly matches the domain_name field in a line of the second form,
-the corresponding realm is the realm of the host.
-
-<p>
-If no translation entry applies, the host's realm is considered to be
-the hostname's domain portion converted to uppercase.
-
-<!-- ---------------------------------------------------------------------- -->
-<hr>
-<a name="config_krb5"></a>
-<h3>Modifying Kerberos 5 Configuration File</h3>
-
-<p>
-Note: Leash32 can be used to edit the Kerberos 5 configuration file.
-
-<p>
-See the Kerberos 5 documentation in athena/auth/krb5/doc for further
-documentation on Kerberos 5.
-
-<!-- ---------------------------------------------------------------------- -->
-<hr>
-<a name="config_services"></a>
-<h3>Services File</h3>
-
-<p>
-The Kerberos DLLs need to know what port to use to talk to the
-Kerberos server.  Kerberos 4 now defaults to ports 750 (kerberos
-750/udp kdc) and 751 (kerberos-master 751/tcp) if there are no
-kerberos or kerberos-master entries in the services file.  Kerberos 5
-also has proper defaults (port 88 with a fallback to 750) in case the
-services file is missing the entries for kerberos and kerberos-sec.
-
-<p>
-If your site uses non-standard ports, you will still need a services
-file appropriate for your site.
-
-<!-- ---------------------------------------------------------------------- -->
-<hr>
-<a name="config_cache"></a>
-<h3>Ticket Cache</h3>
-
-<p>
-The new default for Kerberos 4 and 5 is to store their tickets in
-memory.
-
-<p>
-You can specify the name of the ticket file and the directory in which
-it is stored via the environment variables <code>KRBTKFILE</code>
-(krb4) and <code>KRB5CCNAME</code> (krb5).  The krb4 credentials
-always go into memory.  The ticket string you see always has an
-&quot;API:&quot; in front of it.
-
-<p>
-There are also registry settings for these locations.  Playing with
-Leash32 will reveal where they are (look in
-HKCU\Software\MIT\Kerberos4 and Kerberos5).  You can set machine-wide
-values by playing with these settings in HKLM.
-
-<p>
-Kerberos 5 does support using file-based tickets, but we do not
-recommend this, as it is less secure.
-
-<!-- ---------------------------------------------------------------------- -->
-<hr>
-<a name="config_time"></a>
-<h3>Date and Time issues</h3>
-
-<P>
-<i>Why Kerberos cares what time it is...</i>
-
-<p>
-Kerberos authentication uses time stamps as part of its
-protocol. When the clocks of the Kerberos server and your computer are
-too far out of synchronization, you cannot authenticate properly. Both
-the Kerberos server and the Kerberos client depend on having clocks
-that are synchronized within a certain margin. This margin is normally
-5 minutes.
-
-<p>
-The date and time on the machine running Kerberos must be
-&quot;accurately&quot; set.  If the date or time is off &quot;too
-far&quot;, Kerberos authentication will not work.
-
-<p>
-You can synchronize your clock using Leash32.  It allows you to set
-the name of the host to which you will synchronize.  It saves this
-information in the registry (under HKCU\Software\MIT\Leash32 -- you
-can set machine-wide defaults in HKLM).
-
-<p>
-By default, the server that the libraries contact when synchronizing
-the time is <code>time</code>. The domain name has been left off on
-purpose.  If local system administrators create a machine with a CNAME
-of time within the local domain the clients will contact this machine
-by default.
-
-<p>
-If local system administrators are opposed to doing this for some
-reason, you can edit the resource <code>LSH_TIME_HOST</code> in the
-<code>leashw32.dll</code> to the name appropriate for your local site.
-You can also edit the header files from the source distribution and
-recompile for your local site.  However, this is not recommended.  You
-can also tweak the registry setting Leash32 uses.
-
-<p>
-You can also avoid this problem by running a local, properly
-configured, NTP program on your machine.
-
-
-<!-- ---------------------------------------------------------------------- -->
-<hr>
-<a name="command_line"></a>
-<h2>Command Line Options to Leash32, kinit, klist, and kdestroy</h2>
-
-<p>
-The command line options for <b>Leash32</b> are:
-<pre>
-	-kinit, -i	only perform a kinit and then exit Leash
-</pre>
-
-<p>
-The options for kinit, klist, and kdestroy can be viewed by typing the
-name of the utility followed by <code>-?</code> (e.g., <code>kinit
--?</code>).
-
-<!-- ---------------------------------------------------------------------- -->
-<hr>
+<p><hr>
 <a name="todo"></a>
 <h2>To Do</h2>
 
@@ -508,9 +774,13 @@ name of the utility followed by <code>-?</code> (e.g., <code>kinit
 
 <p>
 <li>
-The tf_close() in tf_save_cred() still puzzles the developer.  We
-should figure out what the spec is supposed to be there (if there is
-supposed to be one at all) and document the heck out of it. :)
+Improve the documentation.
+
+<p>
+<li>
+The tf_close() in tf_save_cred() is puzzling.  Figure out what the
+spec is supposed to be there (if there is supposed to be one at all)
+and document the heck out of it. :)
 
 <p>
 <li>
@@ -518,8 +788,8 @@ Make Kerberos 4 and 5 thread-safe.
 
 <p>
 <li>
-Use krb5's com_err instead of the krb4 mess we now have.  Make sure
-all logging is funneled through one place and provide a way to control
+Use krb5's com_err instead of the current krb4 mess.  Make sure all
+logging is funneled through one place and provide a way to control
 where that goes.
 
 <p>
@@ -528,34 +798,33 @@ A clean Leash API.
 
 </ul>
 
-
 <!-- ---------------------------------------------------------------------- -->
-<hr>
+<p><hr>
 <a name="devnotes"></a>
 <h2>Developer Notes</h2>
 
 
-<a name="devnotes_kclient">
-<h3>kclient</h3>
-</a>
+<a name="devnotes_kclient"></a>
+<h3>KClient</h3>
 
 <ul>
 
-<li>kclient will now try to get tickets for foreign principals if you
+<li>KClient will now try to get tickets for foreign principals if you
 pass in a service with a non-local realm.  It will use the service's
 realm instead of the default local realm.
 
-<li>kclient now looks in the ticket file for the realm info before looking
+<li>KClient now looks in the ticket file for the realm info before looking
 for the local default realm.
 
 </ul>
 
-<p>Below is Jeffrey Altmans's explanation of the problem.  We put in a
-patch he submitted for the first 2 items in his 3-item solution below.
+<p>Below is Jeffrey Altmans's explanation of the problem.  The patch
+he submitted for the first 2 items in his 3-item solution below has
+been put in.
 
 <blockquote>
 <p>
-The design of the Kclient interface is so simplified that applications
+The design of the KClient interface is so simplified that applications
 cannot easily get access to necessary information.  This has resulted
 in the need for the Kerberos configuration page in Eudora which
 includes fields for:
@@ -659,7 +928,7 @@ principal and realm to the values needed to authenticate against
 the POP server.
 </blockquote>
 
-
+<a name="devnotes_registry"></a>
 <h3>Registry and Environment Settings</h3>
 
 <pre>
@@ -685,8 +954,8 @@ A. location of krbrealm &amp; krbconf:
       c. HKLM\Software\MIT\Kerberos4,krb.realms for realms full pathname .
       c. HKLM\Software\MIT\Kerberos4,krb.conf for config full pathname.
       d. HKLM\Software\MIT\Kerberos4,configdir as dir for both files.
-   3. If any of the above are set, we use it even if the files are not there.
-      If none of them are set, we use the old krb4 search.
+   3. If any of the above are set, use it even if the files are not there.
+      If none of them are set, use the old krb4 search.
 
 B. ticket file
    1. %KRBTKFILE% if defined
@@ -696,7 +965,7 @@ B. ticket file
       (HKLM\MIT\Kerberos4,ticketfile)
    4. Otherwise, &quot;API:krb4cc&quot;.
   (
-   If we ever support a file-based cache, we should use this:
+   If a file-based cache is ever supported for Kerberos 4, code should do this:
    4. %TEMP%\ticket.krb, if var defined and dir exists
    5. %TMP%\ticket.krb, if var defined and dir exists
    6. c:\temp\ticket.krb if c:\temp exists
@@ -730,87 +999,9 @@ B. credentials cache
          it's either that or c:\krb5cc!
 </pre>
 
-<a name="dns">
-<h3>Using DNS Lookups for Kerberos Configuration</h3>
-</a>
+<p><hr>
 
-<h4>What is it?</h4>
-
-<p>DNS Lookups provide Kerberos the ability to determine the Kerberos
-Realm that a host belongs to and to find the servers associated with a
-given Realm by using the Domain Name Service instead of or in addition
-to local configuration files.
-
-
-<h4>When are DNS Lookups used?</h4>
-
-<p>
-DNS Lookups are used under two circumstances:
-
-<ol>
-
-<li>No <code>krb.con</code> file is found for Kerberos 4 or no
-<code>krb5.ini</code> file is found for Kerberos 5.
-
-<li>The <code>krb.con</code> file or <code>krb5.ini</code> file
-contains a command to activate DNS Lookups and the lookup cannot be
-answered by data found in the appropriate configuration file.
-
-</ol>
-
-<p>To activate DNS lookups in a <code>krb.con</code> file place a line
-that reads:
-
-<blockquote>
-<pre>
-.KERBEROS.OPTION. dns
-</pre>
-</blockquote>
-
-<p>
-as one of the Realm to Host entries.  When DNS Lookups are used the
-first line may be left blank to indicate that the default realm should
-be determined by a DNS Lookup.
-
-<p>
-To activate DNS lookups in a <code>krb5.ini</code> file place: 
-
-<blockquote>
-<pre>
-dns_fallback = true
-</pre>
-</blockquote>
-
-<p>into the <code>[libdefaults]</code> section.  If a "default_realm"
-entry is not provided, a DNS lookup will be performed to determine the
-default realm.
-
-
-<h4>What entries go into the DNS?</h4>
-
-<p>Host to realm lookups are performed using DNS TXT records.  Example
-records are:
-
-<blockquote>
-<pre>
-_kerberos.yclept.kermit.columbia.edu.  IN TXT "KRB5.COLUMBIA.EDU"
-_kerberos.columbia.edu.                IN TXT "CC.COLUMBIA.EDU"
-</pre>
-</blockquote>
-
-<p>Realm to server lookups are performed using DNS SRV records.
-Example records are:
-
-<blockquote>
-<pre>
-_kerberos._udp.KRB5.COLUMBIA.EDU.    IN SRV 0 0 750     yclept.kermit.columbia.edu
-_kerberos-adm._tcp.KRB5.COLUMBIA.EDU IN SRV 0 0 749     yclept.kermit.columbia.edu
-_kpasswd._udp.KRB5.COLUMBIA.EDU      IN SRV 0 0 464     yclept.kermit.columbia.edu
-</pre>
-</blockquote>
-
-<hr>
-
+<a name="devnotes_old"></a>
 <h3>Some older notes from prior releases...</h3>
 
 <ol>
@@ -848,7 +1039,7 @@ machine.
 <P>
 Instead we borrowed an idea from Kerberos version 5 and decided to
 store the local IP address, unencrypted, in the credential which is
-cached in the local cache. Within the Kclient function IsCredExpired()
+cached in the local cache. Within the KClient function IsCredExpired()
 or the krbv4wXX.dll function kchktkt we verify that the ticket has not
 expired and that the local IP address matches the IP address stored in
 the ticket.
@@ -863,12 +1054,12 @@ may also be affected. E.g. some software from FTP, Inc.
 
 <p>
 <li>
-Add a new function to the Kclient DLL. This function is
+Add a new function to the KClient DLL. This function is
 SendTicketsForService(). It is basically a send_auth() type
 function. Before everyone complains please read the following
 explanation.
 <P>
-Qualcomm has been working with Platinum on a 32-bit Kclient which
+Qualcomm has been working with Platinum on a 32-bit KClient which
 would supports both Kerberos v4 and v5. From what I have heard this is
 a commercial implementation. It ignores GSS or other abstraction
 layers above the Kerberos layer that application developers should
@@ -876,7 +1067,7 @@ write to. It keeps its ticket cache in the DLL, as such it will not
 share the ticket cache with other Kerberos implementations that may
 reside on the user's system.
 <P>
-Platinum and Qualcomm decide to add a new API call to the Kclient
+Platinum and Qualcomm decide to add a new API call to the KClient
 interface. Eudora uses this new function if it finds a KCLNT32.DLL. In
 this case it does not use the thunking application KERB16.
 <P>
@@ -917,6 +1108,21 @@ detects when an invalid socket descriptor has been passed. (Special
 thanks to Eudora 3.0 for providing a test case.)
 
 </ol>
+
+<!-- ---------------------------------------------------------------------- -->
+<!--
+<p><hr>
+<a name="feedback"></a>
+<h2>Feedback</h2>
+
+<p>You can send feedback to the MIT Kerberos for Windows developers to <a
+href="mailto:krbdev@mit.edu">krbdev@mit.edu</a>.
+
+<p>For suppport, you should contact whoever you got this software
+from.  For general Kerberos support, send mail to <a
+href="mailto:kerberos@mit.edu">kerberos@mit.edu</a>.
+
+-->
 
 </body>
 </html>
