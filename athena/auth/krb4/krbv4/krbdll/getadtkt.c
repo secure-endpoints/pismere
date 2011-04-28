@@ -261,8 +261,8 @@ int     lifetime;
                                            code */
     }
     
-    if (kerror = save_credentials(s_name,s_instance,rlm,ses,lifetime,
-                                  kvno,tkt,tt_local.tv_sec))
+    if (kerror = krb_save_credentials(s_name,s_instance,rlm,ses,lifetime,
+                                      kvno,tkt,tt_local.tv_sec))
         return(kerror);
     
     return(AD_OK);

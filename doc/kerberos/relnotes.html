@@ -1,18 +1,18 @@
 <html>
 <head>
 <title>
-Release Notes for Kerberos for Windows 2.1
+Release Notes for Kerberos for Windows 2.1.1
 </title>
 </head>
 
 <body>
 
 <center>
-<h1>Kerberos for Windows 2.1</h1>
+<h1>Kerberos for Windows 2.1.1</h1>
 <p>
 <h2>Release Notes</h2>
 <p>
-<h3>December 4, 2000</h3>
+<h3>October 9, 2001</h3>
 
 </center>
 
@@ -42,14 +42,13 @@ v5).
 
 <!-- http://www.geek.com/glossary/glossary_search.cgi?protocol -->
 <!-- http://www.m-w.com/cgi-bin/dictionary?protocol -->
+<!-- http://www.whatis.com/WhatIs_Definition_Page/0,4152,212839,00.html -->
 
 <p>Kerberos 4 and Kerberos 5 refers to the versions 4 and 5 of the
-Kerberos protocol.  (A <a
-href="http://www.whatis.com/WhatIs_Definition_Page/0,4152,212839,00.html">protocol</a>
-refers to how data is transmitted on a network.)  KfW includes both of
-these.  KfW 2.1, in particular, includes the <a
-href="http://web.mit.edu/kerberos/www/">MIT Kerberos v5 Release
-1.2.1</a> and KfW's own release of Kerberos v4.
+Kerberos protocol.  (A protocol refers to how data is transmitted on a
+network.)  KfW includes both of these.  KfW 2.1.1, in particular,
+includes the <a href="http://web.mit.edu/kerberos/www/">MIT Kerberos
+v5 Release 1.2.2</a> and KfW's own release of Kerberos v4.
 
 <p>
 
@@ -58,6 +57,23 @@ href="http://web.mit.edu/kerberos/www/">MIT Kerberos v5 Release
 <a name="whatsnew"></a>
 <h2>What's New</h2>
 
+
+<h3>KfW 2.1.1</h3>
+
+<ul>
+
+<p>
+<li>
+Kerberos v5 support is from MIT Kerberos v5 Release 1.2.2.
+
+<p>
+<li>
+KfW now works on Windows XP.  (The RPC endpoint names used by the
+credentials cache had to be shortened for XP.)
+
+</ul>
+
+<h3>KfW 2.1</h3>
 
 <ul>
 
@@ -140,6 +156,10 @@ Architecture</a> documentation.
 <a name="build">
 <h2>Building the Sources</h2>
 </a>
+
+<p>Building KfW is supported on Windows NT 4.0, Windows 2000, and
+Windows XP.  While buildin on Windows 9x/Me might work, it is not
+supported.
 
 <p>First, make sure that you have Microsoft Visual C++ 6.0, a recent
 release of the <a
@@ -240,7 +260,7 @@ debug build also get placed there in case you need to debug.
 
 <p>
 We recommend to developers that the binaries have a single Kerberos
-directory that is on the user's path.
+directory that is in the PATH.
 
 <!-- ---------------------------------------------------------------------- -->
 <hr>
@@ -494,8 +514,7 @@ supposed to be one at all) and document the heck out of it. :)
 
 <p>
 <li>
-Make Kerberos 4 thread-safe and investigate whether Kerberos 5 is
-thread-safe.
+Make Kerberos 4 and 5 thread-safe.
 
 <p>
 <li>

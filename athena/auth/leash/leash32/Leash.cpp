@@ -28,6 +28,10 @@
 #include "lglobals.h"
 #include <com_err.h>
 
+#ifndef NO_AFS
+#include "afscompat.h"
+#endif
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -367,7 +371,11 @@ BOOL CLeashApp::InitDLLs()
     m_hKrb4DLL = AfxLoadLibrary(KERB4DLL); 
     m_hKrb5DLL = AfxLoadLibrary(KERB5DLL); 
     m_hKrb5ProfileDLL = AfxLoadLibrary(KERB5_PPROFILE_DLL);
-    m_hAfsDLL = AfxLoadLibrary(ASFDLL);
+
+#ifndef NO_AFS
+    afscompat_init();
+    m_hAfsDLL = AfxLoadLibrary(AFSAuthentDLL());
+#endif
 
 #define PSAPIDLL "psapi.dll"
 #define TOOLHELPDLL "kernel32.dll"

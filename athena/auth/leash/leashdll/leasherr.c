@@ -13,15 +13,10 @@
 extern void (__cdecl *pinitialize_krb_error_func)();
 extern void (__cdecl *pinitialize_kadm_error_table)();
 
-#ifndef WINDOWS
-#define FAR
-#include <stdlib.h>
-#else
 #include <stdlib.h>
 #include <windows.h>
-#endif
-#define LPSTR char FAR *
-static const char FAR * const text[] = {
+
+static const char* const text[] = {
 	"Only one instance of Leash can be run at a time.",
 	"Principal invalid.",
 	"Realm failed.",
@@ -47,13 +42,13 @@ static const char FAR * const text[] = {
 
 typedef LPSTR (*err_func)(int, long);
 struct error_table {
-    char const FAR * const FAR * msgs;
+    char const * const * msgs;
     err_func func;
-	long base;
-	int n_msgs;
+    long base;
+    int n_msgs;
 };
 struct et_list {
-#ifdef WINDOWS        
+#ifdef WINDOWS
 	HANDLE next;
 #else
 	struct et_list *next;

@@ -34,7 +34,10 @@ typedef struct
 #include <loadfuncs-com_err.h>
 #include <loadfuncs-krb5.h>
 #include <loadfuncs-krb.h>
-#include <loadfuncs-afs.h>
+
+#ifndef NO_AFS
+#include "afscompat.h"
+#endif
 
 // service definitions
 typedef SC_HANDLE (WINAPI *FP_OpenSCManagerA)(char *, char *, DWORD);
@@ -105,14 +108,6 @@ extern DECL_FUNC_PTR(krb5_free_unparsed_name);
 // ComErr functions
 extern DECL_FUNC_PTR(com_err);
 extern DECL_FUNC_PTR(error_message);
-
-// AFS functions
-extern DECL_FUNC_PTR(ktc_ListTokens);
-extern DECL_FUNC_PTR(ktc_GetToken);
-extern DECL_FUNC_PTR(ktc_SetToken);
-extern DECL_FUNC_PTR(ktc_ForgetAllTokens);
-extern DECL_FUNC_PTR(cm_GetRootCellName);
-extern DECL_FUNC_PTR(cm_SearchCellFile);
 
 // Service functions
 

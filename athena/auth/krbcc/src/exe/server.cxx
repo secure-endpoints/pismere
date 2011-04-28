@@ -471,7 +471,7 @@ void _CRTAPI1 main(int argc, char * argv[])
     DEBUG_PRINT(("%s Shutdown Parameters\n", bAdjustedShutdown ? "Adjusted" :
                  "Did not adjust"));
 
-    status = Init::Attach();
+    status = Init::Initialize();
     CLEANUP_ON_STATUS(status);
 
     if (opts.bShutdown) {
@@ -483,7 +483,7 @@ void _CRTAPI1 main(int argc, char * argv[])
     }
 
  cleanup:
-    Init::Detach();
+    Init::Cleanup();
     if (status) {
         fprintf(stderr, "An error occured while %s the server (%u)\n", 
                 opts.bShutdown ? "shutting down" : "starting/running",

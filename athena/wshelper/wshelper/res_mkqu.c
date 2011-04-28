@@ -54,7 +54,6 @@ static char sccsid[] = "@(#)res_mkquery.c	6.16 (Berkeley) 3/6/91";
 #include <stdio.h>
 #include <string.h>
 
-#include <decldll.h>
 
 #include "u-compat.h"
 
@@ -71,7 +70,7 @@ char debstr[80];
 
 /*
  *
- *  @func EXPORT32 int EXPORT WINAPI | res_mkquery | Form all types of queries.
+ *  @func int WINAPI | res_mkquery | Form all types of queries.
 
     @parm         int | op      | opcode of query 
     @parm const char* | dname   | domain name 
@@ -87,7 +86,7 @@ char debstr[80];
  *  @rdesc Returns the size of the result or -1.
  */
 #ifdef _WINDLL
-EXPORT32 int EXPORT WINAPI
+int WINAPI
 #endif
 res_mkquery(int op,			/* opcode of query */
             const char *dname,		/* domain name */

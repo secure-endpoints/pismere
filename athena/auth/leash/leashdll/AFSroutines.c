@@ -11,13 +11,8 @@
 #include "leashdll.h"
 
 #ifndef NO_AFS
-#include "rxkad.h"
-#include "afs_tokens.h"
+#include "afscompat.h"
 #endif
-
-#define DLL
-#include <decldll.h>
-#undef DLL
 
 #include "leash-int.h"
 
@@ -36,7 +31,7 @@ typedef struct {
 
 DWORD   AfsOnLine = 1;
 
-EXPORT32 int not_an_API_LeashAFSGetToken(TicketList** ticketList);
+int not_an_API_LeashAFSGetToken(TicketList** ticketList);
 DWORD GetServiceStatus(LPSTR lpszMachineName, LPSTR lpszServiceName, DWORD *lpdwCurrentState);
 BOOL SetAfsStatus(DWORD AfsStatus);
 BOOL GetAfsStatus(DWORD *AfsStatus);
@@ -61,15 +56,6 @@ Leash_afs_unlog(
     char    HostName[64];
     DWORD   CurrentState;
 
-    if ((pktc_ListTokens == NULL) ||
-        (pktc_GetToken == NULL) ||
-        (pktc_SetToken == NULL) ||
-        (pcm_GetRootCellName == NULL) ||
-        (pcm_SearchCellFile == NULL))
-    {
-        return(0);
-    }
-
     if (GetAfsStatus(&AfsOnLine) && !AfsOnLine)
         return(0);
 
@@ -81,14 +67,17 @@ Leash_afs_unlog(
     if (CurrentState != SERVICE_RUNNING)
         return(0);
 
-    rc = (*pktc_ForgetAllTokens)();
+    rc = ktc_ForgetAllTokens();
 
     return(0);
 #endif
 }
 
 
-int FAR not_an_API_LeashAFSGetToken(TicketList** ticketList)
+int
+not_an_API_LeashAFSGetToken(
+    TicketList** ticketList
+    )
 {
 #ifdef NO_AFS
     return(0);
@@ -116,15 +105,6 @@ int FAR not_an_API_LeashAFSGetToken(TicketList** ticketList)
 
 
     TicketList* list = NULL; 
-	
-    if ((pktc_ListTokens == NULL) ||
-        (pktc_GetToken == NULL) ||
-        (pktc_SetToken == NULL) ||
-        (pcm_GetRootCellName == NULL) ||
-        (pcm_SearchCellFile == NULL))
-    {
-        return(0);
-    }
 
     if (GetAfsStatus(&AfsOnLine) && !AfsOnLine)
         return(0);
@@ -141,7 +121,7 @@ int FAR not_an_API_LeashAFSGetToken(TicketList** ticketList)
     cellNum = 0;
     while (1) 
     {
-        if ((rc = (*pktc_ListTokens)(cellNum, &cellNum, &aserver)))
+        if (rc = ktc_ListTokens(cellNum, &cellNum, &aserver))
         {
             if (rc != KTC_NOENT)
             {
@@ -154,7 +134,7 @@ int FAR not_an_API_LeashAFSGetToken(TicketList** ticketList)
         }
         BreakAtEnd = 1;
         memset(&atoken, '\0', sizeof(atoken));
-        if ((rc = (*pktc_GetToken)(&aserver, &atoken, sizeof(atoken), &aclient)))
+	if (rc = ktc_GetToken(&aserver, &atoken, sizeof(atoken), &aclient))
         {
             if (rc == KTC_ERROR)
             {
@@ -254,15 +234,6 @@ Leash_afs_klog(
     DWORD       CurrentState;
     char        HostName[64];
 
-    if ((pktc_ListTokens == NULL) ||
-        (pktc_GetToken == NULL) ||
-        (pktc_SetToken == NULL) ||
-        (pcm_GetRootCellName == NULL) ||
-        (pcm_SearchCellFile == NULL))
-    {
-        return(0);
-    }
-
     if (GetAfsStatus(&AfsOnLine) && !AfsOnLine)
         return(0);
 
@@ -355,7 +326,7 @@ Leash_afs_klog(
     atoken.ticketLen = creds.ticket_st.length;
     memcpy(atoken.ticket, creds.ticket_st.dat, atoken.ticketLen);
 
-    if (!(rc = (*pktc_GetToken)(&aserver, &btoken, sizeof(btoken), &aclient)) &&
+    if (!(rc = ktc_GetToken(&aserver, &btoken, sizeof(btoken), &aclient)) &&
         atoken.kvno == btoken.kvno &&
         atoken.ticketLen == btoken.ticketLen &&
         !memcmp(&atoken.sessionKey, &btoken.sessionKey, sizeof(atoken.sessionKey)) &&
@@ -377,8 +348,9 @@ Leash_afs_klog(
     // * NOTE: On WIN32, the order of SetToken params changed...
     // * to   ktc_SetToken(&aserver, &aclient, &atoken, 0)
     // * from ktc_SetToken(&aserver, &atoken, &aclient, 0) on Unix...
+    // * The afscompat ktc_SetToken provides the Unix order
 
-    if (rc = (*pktc_SetToken)(&aserver, &aclient, &atoken, 0))
+    if (rc = ktc_SetToken(&aserver, &atoken, &aclient, 0))
     {
         Leash_afs_error(rc, "ktc_SetToken()");
         AfsOnLine = 0;
@@ -436,7 +408,7 @@ static int get_cellconfig(char *cell, afsconf_cell *cellconfig, char *local_cell
     memset(cellconfig, 0, sizeof(*cellconfig));
 
     /* WIN32: cm_GetRootCellName(local_cell) - NOTE: no way to get max chars */
-    if (rc = (*pcm_GetRootCellName)(local_cell)) 
+    if (rc = cm_GetRootCellName(local_cell))
     {
         return(rc);
     }
@@ -446,7 +418,10 @@ static int get_cellconfig(char *cell, afsconf_cell *cellconfig, char *local_cell
 
     /* WIN32: cm_SearchCellFile(cell, pcallback, pdata) */
     strcpy(cellconfig->name, cell);
-    return((*pcm_SearchCellFile)(cell, get_cellconfig_callback, (void *)cellconfig)); 
+
+    return cm_SearchCellFile(cell, get_cellconfig_callback, (void*)cellconfig);
+
+
 #endif
 }
 
@@ -483,35 +458,24 @@ Leash_afs_error(LONG rc, LPCSTR FailedFunctionName)
     // Using AFS defines as error messages for now, until Transarc 
     // gets back to me with "string" translations of each of these 
     // const. defines. 
-    switch (rc)
-    {
-    case KTC_ERROR:		
-        errText = "KTC_ERROR";
-        break;
-    case KTC_TOOBIG:		
-        errText = "KTC_TOOBIG";
-    case KTC_INVAL:		
-        errText = "KTC_INVAL";
-        break;
-    case KTC_NOENT:		
-        errText = "KTC_NOENT";
-        break;
-    case KTC_PIOCTLFAIL:		
-        errText = "KTC_PIOCTLFAIL";
-        break;
-    case KTC_NOPIOCTL:		
-        errText = "KTC_NOPIOCTL";
-        break;   
-    case KTC_NOCELL:		
-        errText = "KTC_NOCELL";
-        break;    
-    case KTC_NOCM:		
-        errText = "KTC_NOCM: The service, Transarc AFS Daemon, most likely is not started!";
-        break;
-    default:
-        errText = "Unknown error!";
-        break;
-    };
+    if (rc == KTC_ERROR)
+      errText = "KTC_ERROR";
+    else if (rc == KTC_TOOBIG)
+      errText = "KTC_TOOBIG";
+    else if (rc == KTC_INVAL)
+      errText = "KTC_INVAL";
+    else if (rc == KTC_NOENT)
+      errText = "KTC_NOENT";
+    else if (rc == KTC_PIOCTLFAIL)
+      errText = "KTC_PIOCTLFAIL";
+    else if (rc == KTC_NOPIOCTL)
+      errText = "KTC_NOPIOCTL";
+    else if (rc == KTC_NOCELL)
+      errText = "KTC_NOCELL";
+    else if (rc == KTC_NOCM)
+      errText = "KTC_NOCM: The service, Transarc AFS Daemon, most likely is not started!";
+    else
+      errText = "Unknown error!";
 
     sprintf(message, "%s\n(%s failed)", errText, FailedFunctionName);
     MessageBox(NULL, message, "AFS", MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_SETFOREGROUND);

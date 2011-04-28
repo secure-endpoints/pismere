@@ -1,14 +1,1 @@
-*.aps
-*.plg
-*.opt
-*.ncb
-Debug
-Release
 docs
-*.wsp
-*.vcw
-*.WSP
-*.VCW
-WinDebug
-WinRel
-obj

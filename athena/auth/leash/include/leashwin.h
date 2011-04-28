@@ -15,8 +15,6 @@ typedef struct {
     LPSTR principal;
 } LSH_DLGINFO, FAR *LPLSH_DLGINFO;
 
-#define PASSWORDCHAR '#'
-
 typedef struct {                                                
     char    principal[MAX_K_NAME_SZ]; /* Principal name/instance/realm */
     int     btickets;                 /* Do we have tickets? */

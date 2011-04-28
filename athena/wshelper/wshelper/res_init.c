@@ -69,7 +69,6 @@ static char sccsid[] = "@(#)res_init.c  6.15 (Berkeley) 2/24/91";
 #include <toolhelp.h>
 #endif
 
-#include <decldll.h>
 #include <mitwhich.h>
                     
 #include "resource.h"
@@ -87,7 +86,7 @@ char debstr[80];
 #define WSH_MIT_PRIVATE_DOMAIN_SUBKEY TCPIP_PATH"\\Domain"
 #define WSH_MIT_PRIVATE_NAMESERVER_SUBKEY TCPIP_PATH"\\NameServer"
 
-EXPORT32 DWORD EXPORT WhichOS( DWORD *check);
+DWORD WhichOS( DWORD *check);
 
 static WORD WhichRegistry();
 static int set_nameservers_using_registry( DWORD which_reg );
@@ -183,7 +182,7 @@ _strnicmp( register const char *a, register const char *b, register size_t n)
 
 /*
 
-@func EXPORT32 int EXPORT WINAPI | res_init |
+@func int WINAPI | res_init |
 
 This function reads the resolver configuration files and retrieves 
 the default domain name, search order and name server address(es).  If 
@@ -201,9 +200,9 @@ by the first call to one of the other resolver functions.
 
 
 
-EXPORT32 int
+int
 #ifdef _WINDLL
-EXPORT WINAPI
+WINAPI
 #endif
 res_init()
 {
@@ -477,7 +476,7 @@ res_init()
 
 /* 
 
-  @func EXPORT32 void EXPORT WINAPI | res_setopts |
+  @func void WINAPI | res_setopts |
   
 Global information that is used by the resolver routines is kept 
 in the variable _res.  Most of the values have reasonable defaults and can be 
@@ -520,9 +519,9 @@ follows.
 
 */
 
-EXPORT32 void
+void
 #ifdef _WINDLL
-EXPORT WINAPI
+WINAPI
 #endif
 res_setopts(long opts)
 /* Set resolver options */
@@ -534,7 +533,7 @@ res_setopts(long opts)
 
 /* 
 
-  @func EXPORT32 long EXPORT WINAPI | res_getopts |
+  @func long WINAPI | res_getopts |
   
 Global information that is used by the resolver routines is kept 
 in the variable _res.  Most of the values have reasonable defaults and can be
@@ -576,9 +575,9 @@ stored in _res.options are defined in <lt> resolv.h <gt> and are as follows.
 
 */
 
-EXPORT32 long
+long
 #ifdef _WINDLL
-EXPORT WINAPI
+WINAPI
 #endif
 res_getopts()
 /* Get resolver options */
@@ -784,7 +783,7 @@ What we really want to figure out is the access method.
 
   @doc MISC
   
-  @func EXPORT32 DWORD EXPORT | WhichOS | This function will attempt to 
+  @func DWORD | WhichOS | This function will attempt to 
   determine which Operating System and subsystem is being used by the
   application. It should function under Win16, Windows NT amd Windows
   95 at least.  It does call WSAStartup() and WSACleanup(). This
@@ -820,9 +819,7 @@ The low word contains one of the following, which is derived from the winsock im
   @flag UNKNOWN_32_UNDER_16 (-5) | We don't know the stack.
 	
 */
-EXPORT32
 DWORD
-EXPORT
 WhichOS(
     DWORD *check
     )

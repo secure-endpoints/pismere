@@ -45,3 +45,10 @@ EXPORTS
 	Leash_timesync
 	Leash_get_default_lifetime
 	Leash_set_default_lifetime
+
+	; XXX - These have to go...
+	not_an_API_LeashAFSGetToken
+	not_an_API_LeashKRB5GetTickets
+	not_an_API_LeashFreeTicketList
+	not_an_API_LeashKRB4GetTickets
+	not_an_API_LeashGetTimeServerName

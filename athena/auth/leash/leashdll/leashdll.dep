@@ -1,14 +1,9 @@
 # Microsoft Developer Studio Generated Dependency File, included by leashdll.mak
 
 .\AFSroutines.c : \
-!ifndef NO_AFS
-	"..\..\afsauth\include\afs_tokens.h"\
-	"..\..\afsauth\include\rxkad.h"\
-!endif
 	"..\..\krb4\include\com_err.h"\
 	"..\..\krb4\include\conf-pc.h"\
 	"..\..\krb4\include\conf.h"\
-	"..\..\krb4\include\decldll.h"\
 	"..\..\krb4\include\des.h"\
 	"..\..\krb4\include\krb.h"\
 	"..\..\krb4\include\mit_copy.h"\
@@ -21,7 +16,6 @@
 	"..\..\krb4\include\com_err.h"\
 	"..\..\krb4\include\conf-pc.h"\
 	"..\..\krb4\include\conf.h"\
-	"..\..\krb4\include\decldll.h"\
 	"..\..\krb4\include\des.h"\
 	"..\..\krb4\include\kadm_err.h"\
 	"..\..\krb4\include\krb.h"\
@@ -36,7 +30,6 @@
 	"..\..\krb4\include\com_err.h"\
 	"..\..\krb4\include\conf-pc.h"\
 	"..\..\krb4\include\conf.h"\
-	"..\..\krb4\include\decldll.h"\
 	"..\..\krb4\include\des.h"\
 	"..\..\krb4\include\kadm_err.h"\
 	"..\..\krb4\include\krb.h"\
@@ -57,7 +50,6 @@
 	"..\..\krb4\include\com_err.h"\
 	"..\..\krb4\include\conf-pc.h"\
 	"..\..\krb4\include\conf.h"\
-	"..\..\krb4\include\decldll.h"\
 	"..\..\krb4\include\des.h"\
 	"..\..\krb4\include\kadm_err.h"\
 	"..\..\krb4\include\krb.h"\
@@ -80,7 +72,6 @@
 .\lshcallb.c : \
 	"..\..\krb4\include\conf-pc.h"\
 	"..\..\krb4\include\conf.h"\
-	"..\..\krb4\include\decldll.h"\
 	"..\..\krb4\include\des.h"\
 	"..\..\krb4\include\krb.h"\
 	"..\..\krb4\include\mit_copy.h"\
@@ -92,7 +83,6 @@
 	"..\..\krb4\include\com_err.h"\
 	"..\..\krb4\include\conf-pc.h"\
 	"..\..\krb4\include\conf.h"\
-	"..\..\krb4\include\decldll.h"\
 	"..\..\krb4\include\des.h"\
 	"..\..\krb4\include\kadm_err.h"\
 	"..\..\krb4\include\krb.h"\
@@ -109,7 +99,6 @@
 
 .\timesync.c : \
 	"..\..\krb4\include\com_err.h"\
-	"..\..\krb4\include\decldll.h"\
 	"..\..\krb4\include\winkrbid.h"\
 	"..\include\leasherr.h"\
 	".\leashdll.h"\
@@ -120,7 +109,6 @@
 	"..\..\krb4\include\com_err.h"\
 	"..\..\krb4\include\conf-pc.h"\
 	"..\..\krb4\include\conf.h"\
-	"..\..\krb4\include\decldll.h"\
 	"..\..\krb4\include\des.h"\
 	"..\..\krb4\include\kadm_err.h"\
 	"..\..\krb4\include\krb.h"\
@@ -134,7 +122,6 @@
 	"..\..\krb4\include\com_err.h"\
 	"..\..\krb4\include\conf-pc.h"\
 	"..\..\krb4\include\conf.h"\
-	"..\..\krb4\include\decldll.h"\
 	"..\..\krb4\include\des.h"\
 	"..\..\krb4\include\kadm_err.h"\
 	"..\..\krb4\include\krb.h"\

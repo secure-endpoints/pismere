@@ -177,11 +177,6 @@ extern TICKETINFO ticketinfoKrb5;
 #define KERB4DLL "krbv4w32.dll"
 #define KERB5DLL "krb5_32.dll"
 #define KERB5_PPROFILE_DLL "xpprof32.dll"
-#ifdef AFS36
-#define ASFDLL   "afsauthent.dll"
-#else
-#define ASFDLL   "libafstokens.dll"
-#endif
 
 extern BOOL SetRegistryVariable(const CString& regVariable, 
                                 const CString& regValue,

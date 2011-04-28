@@ -8,7 +8,6 @@
 
 .\hespdlg.cpp : \
 	"..\include\arpa\nameser.h"\
-	"..\include\decldll.h"\
 	"..\include\hesiod.h"\
 	"..\include\mitwhich.h"\
 	"..\include\resolv.h"\
@@ -27,7 +26,6 @@
 
 .\querydlg.cpp : \
 	"..\include\arpa\nameser.h"\
-	"..\include\decldll.h"\
 	"..\include\hesiod.h"\
 	"..\include\mitwhich.h"\
 	"..\include\resolv.h"\
@@ -39,7 +37,6 @@
 
 .\respdlg.cpp : \
 	"..\include\arpa\nameser.h"\
-	"..\include\decldll.h"\
 	"..\include\hesiod.h"\
 	"..\include\mitwhich.h"\
 	"..\include\resolv.h"\
@@ -70,7 +67,6 @@
 
 .\wshtevw.cpp : \
 	"..\include\arpa\nameser.h"\
-	"..\include\decldll.h"\
 	"..\include\hesiod.h"\
 	"..\include\mitwhich.h"\
 	"..\include\resolv.h"\

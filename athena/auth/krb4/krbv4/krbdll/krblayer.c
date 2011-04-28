@@ -3,10 +3,6 @@
 
 #include <windows.h>
 
-#define DLL
-#include <decldll.h>
-#undef DLL
-
 #include <sys/types.h>
 #include <winsock.h>
 #include <krb.h>

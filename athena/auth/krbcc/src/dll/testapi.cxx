@@ -13,6 +13,8 @@ static CCTEST_functions Funcs = {
 DWORD
 CCTEST(CCTEST_functions* funcs)
 {
+    CLIENT_INIT_EX(0, 0);
+
     if (!funcs || (funcs->size != sizeof(Funcs)))
         return ERROR_INVALID_PARAMETER;
     *funcs = Funcs;
@@ -24,9 +26,9 @@ CCTEST_reconnect(
     char* endpoint OPTIONAL
     )
 {
-    CcAutoLock AL(gClientLock);
+    CcAutoLock AL(Client::sLock);
     SecureClient s;
-    return reconnect_client(endpoint);
+    return Client::Reconnect(endpoint);
 }
 
 DWORD
@@ -39,7 +41,7 @@ CCTEST_shutdown(
     SecureClient* s = 0;
     SecureClient::Start(s);
     CcAutoLock* a = 0;
-    CcAutoLock::Start(a, gClientLock);
+    CcAutoLock::Start(a, Client::sLock);
 
     RpcTryExcept {
         Shutdown();

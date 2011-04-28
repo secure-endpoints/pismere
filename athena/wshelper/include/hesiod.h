@@ -18,7 +18,6 @@
 
 #if defined(_WINDOWS) || defined(_WIN32)
 #include <windows.h>
-#include <decldll.h>
 #endif
 
 #if defined(_WINDOWS) || defined(_WIN32)
@@ -56,19 +55,19 @@ extern "C" {
 
 #if defined(_WINDOWS) || defined(_WIN32)
 
-EXPORT32 LPSTR EXPORT WINAPI
+LPSTR WINAPI
 hes_to_bind(
     LPSTR HesiodName, 
     LPSTR HesiodNameType
     );
 
-EXPORT32 LPSTR * EXPORT WINAPI
+LPSTR * WINAPI
 hes_resolve(
     LPSTR HesiodName,
     LPSTR HesiodNameType
     );
 
-EXPORT32 int EXPORT WINAPI
+int WINAPI
 hes_error(
     void
     );
@@ -107,11 +106,11 @@ struct hes_postoffice {
 /* Other routines */
 
 #if defined(_WINDOWS) || defined(_WIN32)
-EXPORT32 struct hes_postoffice FAR * EXPORT WINAPI hes_getmailhost(LPSTR user);
-EXPORT32 struct servent FAR * EXPORT WINAPI hes_getservbyname(LPSTR name, 
+struct hes_postoffice FAR * WINAPI hes_getmailhost(LPSTR user);
+struct servent FAR * WINAPI hes_getservbyname(LPSTR name, 
                                                               LPSTR proto);
-EXPORT32 struct passwd FAR * EXPORT WINAPI hes_getpwnam(LPSTR nam);
-EXPORT32 struct passwd FAR * EXPORT WINAPI hes_getpwuid(int uid);
+struct passwd FAR * WINAPI hes_getpwnam(LPSTR nam);
+struct passwd FAR * WINAPI hes_getpwuid(int uid);
 #else
 struct hes_postoffice *hes_getmailhost();
 struct servent *hes_getservbyname();

@@ -121,3 +121,6 @@ EXPORTS
 
 		krb_get_krbconf2		@103
 		krb_get_krbrealm2		@104
+
+		krb_save_credentials		@105
+		krb_in_tkt			@106

@@ -16,7 +16,7 @@ do { \
     SecureClient* s = 0; \
     SecureClient::Start(s); \
     CcAutoLock* a = 0; \
-    CcAutoLock::Start(a, gClientLock); \
+    CcAutoLock::Start(a, Client::sLock); \
     RpcTryExcept { \
         DEBUG_PRINT((TRY #x "\n")); \
         x; \
@@ -35,7 +35,7 @@ handle_exception(DWORD code)
 {
     DEBUG_PRINT((D_EXCEPTION "Runtime reported exception %u\n", code));
     if (code == RPC_S_SERVER_UNAVAILABLE) {
-        reconnect_client(0);
+        Client::Reconnect(0);
     }
     return CC_IO;
 }
@@ -52,6 +52,7 @@ cc_initialize(
     const char** vendor
     )
 {
+    CLIENT_INIT_EX(true, CC_IO);
     CC_INT32 rc = CC_NOERROR;
     if (!cc_ctx)
         return CC_BAD_PARM;

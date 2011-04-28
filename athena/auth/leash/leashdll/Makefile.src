@@ -17,18 +17,25 @@ OBJS= \
 
 RES=$(O)\lsh_pwd.res
 
-LIBS=$(STD_LIBS) wsock32.lib \
-	$(PISMERE)\athena\util\loadfuncs\$(O)\loadfuncs.lib
-
-INCLUDES="..\include";..\..\krb5\src\include;..\..\krb4\include;"..\..\afsauth\include";"..\..\..\wshelper\include";..\..\..\util\loadfuncs
-
-C_DEFINE= \
-!ifndef MIT_ONLY
-	-DNO_AFS \
+LIBS=$(STD_LIBS) wsock32.lib loadfuncs.lib \
+!ifdef MIT_ONLY
+	afscompat.lib
 !endif
-	-DWINSOCK \
-	-DWIN32   \
-	-DWINDOWS
+
+LIB_PATHS=..\..\..\util\loadfuncs\$(O)
+!ifdef MIT_ONLY
+LIB_PATHS=$(LIB_PATHS);..\..\..\util\lib\afscompat\src\$(O)
+!endif
+
+INCLUDES=..\include;..\..\krb5\src\include;..\..\krb4\include;..\..\..\wshelper\include;..\..\..\util\loadfuncs
+!ifdef MIT_ONLY
+INCLUDES=$(INCLUDES);..\..\..\util\lib\afscompat\inc
+!endif
+
+C_DEFINE= -DWINSOCK -DWIN32 -DWINDOWS \
+!ifndef MIT_ONLY
+	-DNO_AFS
+!endif
 
 USE_LIBC_DLL=1
 DEF_FILE=leashw32.def

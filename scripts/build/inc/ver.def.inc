@@ -67,7 +67,7 @@
 #endif
 
 /* default is nodebug */
-#ifndef NODEBUG
+#ifdef _DEBUG
 #define VER_DEBUG                   VS_FF_DEBUG
 #else
 #define VER_DEBUG                   0
@@ -100,7 +100,7 @@
 #endif
 
 #ifndef VER_LEGALCOPYRIGHT_YEARS
-#define VER_LEGALCOPYRIGHT_YEARS    "1993-2000"
+#define VER_LEGALCOPYRIGHT_YEARS    "1993-2001"
 #endif
 
 #ifndef VER_LEGALCOPYRIGHT_STR

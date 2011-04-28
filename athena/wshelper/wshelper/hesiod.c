@@ -192,7 +192,7 @@ int hes_init( void )
 
 /* 
 
-  @func EXPORT32 char * EXPORT WINAPI  | hes_to_bind |
+  @func char * WINAPI  | hes_to_bind |
 
   The hes_to_bind function use the LHS and RHS values and 
   binds them with the parameters so that a well formed DNS query may
@@ -207,9 +207,9 @@ int hes_init( void )
          string containing a valid query is returned.
 
 */
-EXPORT32 char *
+char *
 #if defined  (_WINDLL) || defined (_DLL) || defined(_MT)
-EXPORT WINAPI 
+WINAPI 
 #endif
 hes_to_bind(LPSTR HesiodName,			
             LPSTR HesiodNameType)		
@@ -258,7 +258,7 @@ hes_to_bind(LPSTR HesiodName,
 
 
 /*
-  @func EXPORT32 char ** EXPORT WINAPI | hes_resolve |
+  @func char ** WINAPI | hes_resolve |
 
   This is the primary interface to the Hesiod name server.  It takes
   two arguments, a name to be resolved and a string, known as a
@@ -275,9 +275,9 @@ hes_to_bind(LPSTR HesiodName,
   further information.
 
 */
-EXPORT32 char **
+char **
 #if defined (_WINDLL) || defined (_WIN32)
-EXPORT WINAPI
+WINAPI
 #endif
 hes_resolve(LPSTR HesiodName, LPSTR HesiodNameType)
 {
@@ -343,7 +343,7 @@ hes_resolve(LPSTR HesiodName, LPSTR HesiodNameType)
 
 
 /* 
-@func EXPORT32 int EXPORT WINAPI | hes_error |
+@func int WINAPI | hes_error |
 
 The  function  hes_error may be called to determine the 
 source of the error.  It will return one of the HES_ER_* codes defined 
@@ -352,9 +352,9 @@ in hesiod.h. It does not take an argument.
 
 
 */
-EXPORT32 int 
+int 
 #if defined (_WINDLL) || (_WIN32)
-EXPORT WINAPI
+WINAPI
 #endif
 hes_error(void)
 {

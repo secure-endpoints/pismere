@@ -218,14 +218,19 @@ alloc_name_NT(
 {
     DWORD status = 0;
     HANDLE hToken = 0;
-    PTOKEN_USER ptu = 0;
     LUID auth_id;
-    DWORD len = 0;
+#ifdef _DEBUG
+    PTOKEN_USER ptu = 0;
     LPSTR name = 0;
     LPSTR domain = 0;
     LPSTR sid = 0;
+#endif
     char prefix[] = "krbcc";
-    char lid_buffer[80];
+    // Play it safe and say 3 characters are needed per 8 bits (byte).
+    // Note that 20 characters are needed for a 64-bit number in
+    // decimal (plus one for the string termination.
+    char lid[3*sizeof(LUID)+1];
+    DWORD len = 0;
 
     *pname = 0;
 
@@ -233,25 +238,41 @@ alloc_name_NT(
     CLEANUP_ON_STATUS(status);
     status = get_authentication_id(hToken, &auth_id);
     CLEANUP_ON_STATUS(status);
+
+#ifdef _DEBUG
     status = alloc_token_user(hToken, &ptu);
     CLEANUP_ON_STATUS(status);
     status = alloc_username(ptu->User.Sid, &name, &domain);
     CLEANUP_ON_STATUS(status);
     status = alloc_textual_sid(ptu->User.Sid, &sid);
     CLEANUP_ON_STATUS(status);
+#endif
 
-    _snprintf(lid_buffer, sizeof(lid_buffer), "%I64u", auth_id);
+    _snprintf(lid, sizeof(lid), "%I64u", auth_id);
+    lid[sizeof(lid)-1] = 0; // be safe
 
-    len = (sizeof(prefix) - 1) + 1 + strlen(domain) + 1 + strlen(name) + 1 + 
-        strlen(sid) + 1 + strlen(lid_buffer) + 1 + strlen(postfix) + 1;
+    len = (sizeof(prefix) - 1) + 1 + strlen(lid) + 1 + strlen(postfix) + 1;
     *pname = (LPSTR)malloc_alloc_p(len);
     if (!*pname)
         CLEANUP_STATUS(GetLastError());
 
-    _snprintf(*pname, len, "%s.%s.%s.%s.%s.%s", prefix, domain, name, sid, 
-              lid_buffer, postfix);
+    //
+    // We used to allocate a name of the form:
+    // "prefix.domain.name.sid.lid.postfix" (usually under 80
+    // characters, depending on username).  However, XP thought this
+    // was "invalid" (too long?) for some reason.
+    //
+    // Therefore, we now use "prefix.lid.postfix"
+    //
+
+    _snprintf(*pname, len, "%s.%s.%s", prefix, lid, postfix);
+#ifdef _DEBUG
+    DEBUG_PRINT(("SETUP: Associating %s with user = %s\\%s (sid = %s)",
+		 *pname, domain, name, sid));
+#endif
 
  cleanup:
+#ifdef _DEBUG
     if (sid)
         free_alloc_p(&sid);
     if (name)
@@ -260,6 +281,7 @@ alloc_name_NT(
         free_alloc_p(&domain);
     if (ptu)
         free_alloc_p(&ptu);
+#endif
     if (hToken && hToken != INVALID_HANDLE_VALUE)
         CloseHandle(hToken);
     if (status && *pname)

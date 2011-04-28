@@ -142,3 +142,11 @@ in_tkt(pname, pinst,prealm)
     return(KSUCCESS);
 #endif /* MM_CACHE */
 }
+
+int krb_in_tkt(pname, pinst, prealm)
+    char *pname;
+    char *pinst;
+    char *prealm;
+{
+    return in_tkt(pname, pinst, prealm);
+}

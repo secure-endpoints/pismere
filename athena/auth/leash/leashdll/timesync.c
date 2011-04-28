@@ -7,9 +7,6 @@
 #include <sys\timeb.h>
 #include <stdlib.h>
 #include <string.h>
-#define DLL
-#include <decldll.h>
-#undef DLL
 
 #include <winkrbid.h>
 
@@ -78,7 +75,7 @@ gettimeofday(
 }       
 
 
-EXPORT32 LONG 
+LONG 
 not_an_API_LeashGetTimeServerName(
     char *timeServerName, 
     const char *valueName

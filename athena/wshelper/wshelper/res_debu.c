@@ -58,7 +58,6 @@ static char sccsid[] = "@(#)res_debug.c 5.36 (Berkeley) 3/6/91";
 #include <stdio.h>
 #include <string.h>
 
-#include <decldll.h>
 #include "u-compat.h"
 
 static void __fp_query();

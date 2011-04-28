@@ -1,3 +1,4 @@
-DIRS=util\loadfuncs util\lib\getopt vs wshelper auth zephyr\winzephyr \
-	front\frontrpc util print moiradev afs\extra
-OPTDIRS=front\frontrpc util print moiradev afs\extra
+DIRS=util\loadfuncs util\lib\getopt vs wshelper util\lib\afscompat auth \ 
+	util\lib\about \
+	front\frontrpc util zephyr print moira service afs\extra afs-3.6
+OPTDIRS=front\frontrpc util print moira service afs\extra afs-3.6

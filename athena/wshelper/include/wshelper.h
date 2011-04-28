@@ -7,7 +7,6 @@
 #define _WSHELPER_
 
 #include <winsock.h>
-#include <decldll.h>
 #include <mitwhich.h>
 
 #include <resolv.h>
@@ -17,26 +16,26 @@
 extern "C" {
 #endif
 
-EXPORT32 struct hostent FAR* EXPORT WINAPI rgethostbyname(char FAR *name);
-EXPORT32 struct hostent FAR* EXPORT WINAPI rgethostbyaddr(char FAR *addr, 
+struct hostent FAR* WINAPI rgethostbyname(char FAR *name);
+struct hostent FAR* WINAPI rgethostbyaddr(char FAR *addr, 
                                                           int len, int type);
-EXPORT32 struct servent FAR* EXPORT WINAPI rgetservbyname(LPSTR name, 
+struct servent FAR* WINAPI rgetservbyname(LPSTR name, 
                                                           LPSTR proto); 
 
-EXPORT32 LPSTR EXPORT WINAPI gethinfobyname(LPSTR name);
-EXPORT32 LPSTR EXPORT WINAPI getmxbyname(LPSTR name);
-EXPORT32 LPSTR EXPORT WINAPI getrecordbyname(LPSTR name, int rectype);
-EXPORT32 DWORD EXPORT WINAPI rrhost( LPSTR lpHost );
+LPSTR WINAPI gethinfobyname(LPSTR name);
+LPSTR WINAPI getmxbyname(LPSTR name);
+LPSTR WINAPI getrecordbyname(LPSTR name, int rectype);
+DWORD WINAPI rrhost( LPSTR lpHost );
 
-EXPORT32 unsigned long EXPORT WINAPI inet_aton(register const char *cp, 
+unsigned long WINAPI inet_aton(register const char *cp, 
                                                struct in_addr *addr);
 
-EXPORT32 DWORD EXPORT WhichOS( DWORD *check);
+DWORD WhichOS( DWORD *check);
 
 #ifdef _WIN32
-EXPORT32 int EXPORT WINAPI wsh_gethostname(char* name, int size);
-EXPORT32 int EXPORT WINAPI wsh_getdomainname(char* name, int size);
-EXPORT32 LONG FAR EXPORT WSHGetHostID();
+int WINAPI wsh_gethostname(char* name, int size);
+int WINAPI wsh_getdomainname(char* name, int size);
+LONG FAR WSHGetHostID();
 #endif
 
 /* some definitions to determine which OS were using and which subsystem */

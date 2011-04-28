@@ -1,13 +1,10 @@
-#include <stdio.h>
+#include <windows.h>
+#include "leash-int.h"
 
-#include "leashdll.h"
-#include <krb.h>
-#include <leashwin.h>
+//#include <string.h>
 
-#include <string.h>
-
-#define DLGHT(ht) (HIWORD(GetDialogBaseUnits())*(ht)/8)
-#define DLGWD(wd) (LOWORD(GetDialogBaseUnits())*(wd)/4)
+static ATOM sAtom = 0;
+static HINSTANCE shInstance = 0;
 
 /* Callback for the MITPasswordControl
 This is a replacement for the normal edit control.  It does not show the 
@@ -15,8 +12,14 @@ annoying password char in the edit box so that the number of chars in the
 password are not known.
 */
 
-LRESULT CALLBACK
-MITPwdWinProcDLL(
+#define PASSWORDCHAR '#'
+#define DLGHT(ht) (HIWORD(GetDialogBaseUnits())*(ht)/8)
+#define DLGWD(wd) (LOWORD(GetDialogBaseUnits())*(wd)/4)
+
+static
+LRESULT
+CALLBACK
+MITPasswordEditProc(
     HWND hWnd,
     UINT message,
     WPARAM wParam,
@@ -86,4 +89,50 @@ MITPwdWinProcDLL(
     if (pass_the_buck)
         return SendMessage(GetDlgItem(hWnd, 1), message, wParam, lParam);
     return DefWindowProc(hWnd, message, wParam, lParam);
+}
+
+BOOL
+Register_MITPasswordEditControl(
+    HINSTANCE hInst
+    )
+{
+    if (!sAtom) {
+        WNDCLASS wndclass;
+
+        memset(&wndclass, 0, sizeof(WNDCLASS));
+
+        shInstance = hInst;
+
+        wndclass.style = CS_HREDRAW | CS_VREDRAW;
+        wndclass.lpfnWndProc = (WNDPROC)MITPasswordEditProc;
+        wndclass.cbClsExtra = sizeof(HWND);
+        wndclass.cbWndExtra = 0;
+        wndclass.hInstance = shInstance;
+        wndclass.hbrBackground = (void *)(COLOR_WINDOW + 1);
+        wndclass.lpszClassName = MIT_PWD_DLL_CLASS;
+        wndclass.hCursor = LoadCursor((HINSTANCE)NULL, IDC_IBEAM);
+    
+        sAtom = RegisterClass(&wndclass);
+    }
+    return sAtom ? TRUE : FALSE;
+}
+
+BOOL
+Unregister_MITPasswordEditControl(
+    HINSTANCE hInst
+    )
+{
+    BOOL result = TRUE;
+
+    if ((hInst != shInstance) || !sAtom) {
+        SetLastError(ERROR_INVALID_PARAMETER);
+        return FALSE;
+    }
+
+    result = UnregisterClass(MIT_PWD_DLL_CLASS, hInst);
+    if (result) {
+        sAtom = 0;
+        shInstance = 0;
+    }
+    return result;
 }

@@ -6,13 +6,15 @@
 #include "name.h"
 #include "secure.hxx"
 
-CcOsLock gClientLock;
-
 #define SECONDS_TO_WAIT 10
 
 #define STARTUP "CLIENT STARTUP: "
 #define DISCONNECT "CLIENT DISCONNECT: "
 
+bool Client::s_init = false;
+CcOsLock Client::sLock;
+
+static
 DWORD
 bind_client(
     char* ep OPTIONAL,
@@ -223,6 +225,7 @@ find_server(
     return status;
 }
 
+static
 DWORD
 authenticate_server(
     Init::InitInfo& info
@@ -260,7 +263,7 @@ authenticate_server(
     *pvalue = challenge;
 
     RpcTryExcept {
-        response = Connect((CC_CHAR*)mem_name);
+        response = ::Connect((CC_CHAR*)mem_name);
     }
     RpcExcept(1) {
         status = RpcExceptionCode();
@@ -290,7 +293,7 @@ authenticate_server(
 }
 
 DWORD
-disconnect_client(
+Client::Disconnect(
     )
 {
     DWORD status = 0;
@@ -305,7 +308,7 @@ disconnect_client(
 }
 
 DWORD
-connect_client(
+Client::Connect(
     char* ep OPTIONAL
     )
 {
@@ -328,21 +331,43 @@ connect_client(
     }
  cleanup:
     if (status)
-        disconnect_client();
+        Client::Disconnect();
     return status;
 }
 
 DWORD
-reconnect_client(
+Client::Initialize(
+    )
+{
+    CcAutoLock AL(Client::sLock);
+    SecureClient s;
+    if (s_init) return 0;
+    DWORD status = Client::Connect(0);
+    if (!status)
+        s_init = true;
+    return status;
+}
+
+DWORD
+Client::Cleanup(
+    )
+{
+    CcAutoLock AL(Client::sLock);
+    SecureClient s;
+    return Client::Disconnect();
+}
+
+DWORD
+Client::Reconnect(
     char* ep OPTIONAL
     )
 {
-    CcAutoLock AL(gClientLock);
+    CcAutoLock AL(Client::sLock);
     SecureClient s;
     DWORD status;
-    status = disconnect_client();
+    status = Client::Disconnect();
     CLEANUP_ON_STATUS(status);
-    status = connect_client(ep);
+    status = Client::Connect(ep);
  cleanup:
     return status;
 }

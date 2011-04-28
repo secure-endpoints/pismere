@@ -415,8 +415,8 @@ krb_get_in_tkt_preauth(
     if (in_tkt(user, instance, rlm) != KSUCCESS)
         return(INTK_ERR);
     /* stash ticket, session key, etc. for future use */
-    if (kerror = save_credentials(s_name, s_instance, rlm, ses,
-                                  lifetime, kvno, tkt, t_local.tv_sec))
+    if (kerror = krb_save_credentials(s_name, s_instance, rlm, ses,
+                                      lifetime, kvno, tkt, t_local.tv_sec))
         return(kerror);
     return(INTK_OK);
 }

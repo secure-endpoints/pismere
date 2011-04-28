@@ -58,7 +58,6 @@ static char sccsid[] = "@(#)res_send.c	6.27 (Berkeley) 2/24/91";
 #include <resolv.h>
 #include <string.h>
 
-#include <decldll.h>
 #include "u-compat.h"
 
 #ifdef _DEBUG
@@ -133,7 +132,7 @@ void __p_query(char *);
 
 /*
 
-  @func EXPORT32 int EXPORT WINAPI | res_send |
+  @func int WINAPI | res_send |
 
    sends a query to name servers and returns an answer. It will call
    res_init() if RES_INIT is not set, send the query to the local name
@@ -159,7 +158,7 @@ server to handle recursion.
 
 */
 #ifdef _WINDLL
-EXPORT32 int EXPORT WINAPI
+int WINAPI
 #endif
 res_send(const char *buf, int buflen, char *answer, int anslen)
 {

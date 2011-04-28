@@ -54,18 +54,17 @@ static char sccsid[] = "@(#)res_comp.c	6.22 (Berkeley) 3/19/91";
 #include <resolv.h>
 #include <stdio.h>
 
-#include <decldll.h>
 #include "u-compat.h"
 
 static dn_find();
 
 /*
 
- @func EXPORT32 int EXPORT WINAPI | rdn_expand| 
+ @func int WINAPI | rdn_expand| 
 
 
  Our replacement for dn_expand called rdn_expand. Older versions of
- the DLL used to export this as dn_expand but this has caused some
+ the DLL used to this as dn_expand but this has caused some
  conflict with more recent versions of the MSDEV
  libraries. rdn_expand() expands the compressed domain name comp_dn to
  a full domain name.  Expanded names are converted to upper case.
@@ -84,7 +83,7 @@ static dn_find();
 
 
 #ifdef _WINDLL
-EXPORT32 int EXPORT WINAPI
+int WINAPI
 #endif
 rdn_expand(const u_char *msg, const u_char *eomorig, 
 		   const u_char *comp_dn, u_char *exp_dn, int length)
@@ -154,7 +153,7 @@ rdn_expand(const u_char *msg, const u_char *eomorig,
 
 
 /*
- @func EXPORT32 int EXPORT WINAPI | dn_comp |
+ @func int WINAPI | dn_comp |
   Compress domain name 'exp_dn' into 'comp_dn'.
   Return the size of the compressed name or -1.
   'length' is the size of the array pointed to by 'comp_dn'.
@@ -168,7 +167,7 @@ rdn_expand(const u_char *msg, const u_char *eomorig,
 
  */
 #ifdef _WINDLL
-EXPORT32 int EXPORT WINAPI
+int WINAPI
 #endif
 dn_comp(const u_char *exp_dn, u_char *comp_dn, int length, 
         u_char **dnptrs, u_char **lastdnptr)

@@ -887,8 +887,8 @@ VOID CLeashView::OnUpdateDisplay()
         {
             m_gotAfsTokens = TRUE;
             m_tvinsert.item.pszText = "AFS Tokens";
-            m_tvinsert.item.iImage = ACTIVE_TICKET; //iconStatusKrb4;
-            m_tvinsert.item.iSelectedImage = ACTIVE_TICKET; //iconStatusKrb4;
+            m_tvinsert.item.iImage = iconStatusKrb4;
+            m_tvinsert.item.iSelectedImage = iconStatusKrb4;
         }
     	else
         {
@@ -901,8 +901,8 @@ VOID CLeashView::OnUpdateDisplay()
         m_hAFS = m_pTree->InsertItem(&m_tvinsert);
 
         m_tvinsert.hParent = m_hAFS;
-        m_tvinsert.item.iImage = ACTIVE_CLOCK; //ticketIconStatusKrb4;
-        m_tvinsert.item.iSelectedImage = ACTIVE_CLOCK; //ticketIconStatus_SelectedKrb4;
+        m_tvinsert.item.iImage = ticketIconStatusKrb4;
+        m_tvinsert.item.iSelectedImage = ticketIconStatus_SelectedKrb4;
 
         tempList = m_listAFS, *killList;
         while (tempList)

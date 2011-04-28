@@ -31,7 +31,6 @@
 #include <stdlib.h>
 
 #include <windows.h>
-#include <decldll.h>
 
 #include "pwd.h"
 #include "u-compat.h"
@@ -42,7 +41,7 @@ static char buf[256];
 
 /* 
 
-@func EXPORT32 struct passwd * EXPORT WINAPI | hes_getpwuid |
+@func struct passwd * WINAPI | hes_getpwuid |
 Given a UID this function will return the pwd information, eg username, uid,
 gid, fullname, office location, phone number, home directory, and default shell
 
@@ -52,9 +51,9 @@ gid, fullname, office location, phone number, home directory, and default shell
 
 
 */
-EXPORT32 struct passwd *
+struct passwd *
 #ifdef _WINDLL
-EXPORT WINAPI
+WINAPI
 #endif
 hes_getpwuid(int uid)
 {
@@ -106,7 +105,7 @@ hes_getpwuid(int uid)
 
 /*
 
-  @func EXPORT32 struct passwd * EXPORT WINAPI | hes_getpwnam |
+  @func struct passwd * WINAPI | hes_getpwnam |
 
 Given a username this function will return the pwd information, eg
 username, uid, gid, fullname, office location, phone number, home
@@ -117,10 +116,9 @@ directory, and default shell
   @rdesc NULL or a pointer to the passwd structure.
 
 */
-EXPORT32
 struct passwd *
 #ifdef _WINDLL
-EXPORT WINAPI
+WINAPI
 #endif
 hes_getpwnam(char *nam)
 {

@@ -7,7 +7,6 @@
 /* Private Inlclude files */
 #include "leashdll.h"
 #include <krb.h>
-#include <decldll.h>
 #include <leashwin.h>
 #include "leash-int.h"
 
@@ -69,7 +68,7 @@ char *GetTicketFlag(krb5_creds *cred)
 }
 
 
-EXPORT32 long 
+long 
 not_an_API_LeashKRB5GetTickets(
     TICKETINFO * ticketinfo, 
     TicketList** ticketList,

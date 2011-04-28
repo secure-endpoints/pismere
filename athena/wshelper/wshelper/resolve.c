@@ -23,7 +23,6 @@
 #include <resolv.h>
 #include "resscan.h"
 
-#include <decldll.h>
 
 unsigned short getshort(LPSTR msgp);
 #define _getshort getshort

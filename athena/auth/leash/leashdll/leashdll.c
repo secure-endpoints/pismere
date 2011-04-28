@@ -71,14 +71,6 @@ DECL_FUNC_PTR(krb5_free_unparsed_name);
 DECL_FUNC_PTR(com_err);
 DECL_FUNC_PTR(error_message);
 
-// AFS functions
-DECL_FUNC_PTR(ktc_ListTokens);
-DECL_FUNC_PTR(ktc_GetToken);
-DECL_FUNC_PTR(ktc_SetToken);
-DECL_FUNC_PTR(ktc_ForgetAllTokens);
-DECL_FUNC_PTR(cm_GetRootCellName);
-DECL_FUNC_PTR(cm_SearchCellFile);
-
 // Service functions
 DECL_FUNC_PTR(OpenSCManagerA);
 DECL_FUNC_PTR(OpenServiceA);
@@ -153,20 +145,6 @@ FUNC_INFO ce_fi[] = {
     END_FUNC_INFO
 };
 
-FUNC_INFO afst_fi[] = {
-    MAKE_FUNC_INFO(ktc_ListTokens),
-    MAKE_FUNC_INFO(ktc_GetToken),
-    MAKE_FUNC_INFO(ktc_SetToken),
-    MAKE_FUNC_INFO(ktc_ForgetAllTokens),
-    END_FUNC_INFO
-};
-
-FUNC_INFO afsc_fi[] = {
-    MAKE_FUNC_INFO(cm_GetRootCellName),
-    MAKE_FUNC_INFO(cm_SearchCellFile),
-    END_FUNC_INFO
-};
-
 FUNC_INFO service_fi[] = {
     MAKE_FUNC_INFO(OpenSCManagerA),
     MAKE_FUNC_INFO(OpenServiceA),
@@ -187,8 +165,6 @@ DllMain(
     LPVOID lpReserved
     )
 {
-    WNDCLASS	wndclass;
-
     hLeashInst = hinstDLL;
 
     switch (fdwReason) 
@@ -197,9 +173,6 @@ DllMain(
     {
         LoadFuncs(KRB4_DLL, k4_fi, &hKrb4, 0, 1, 0, 0);
         LoadFuncs(KRB5_DLL, k5_fi, &hKrb5, 0, 1, 0, 0);
-        if (LoadFuncs(AFSTOKENS_DLL, afst_fi, &hAfsTokens, 0, 1, 0, 0))
-            if (!LoadFuncs(AFSCONF_DLL, afsc_fi, &hAfsConf, 0, 1, 0, 0))
-                UnloadFuncs(afst_fi, hAfsTokens);
         LoadFuncs(COMERR_DLL, ce_fi, &hComErr, 0, 0, 1, 0);
         LoadFuncs(SERVICE_DLL, service_fi, &hService, 0, 1, 0, 0);
 
@@ -212,21 +185,13 @@ DllMain(
         if (plsh_LoadKrb4LeashErrorTables)
             plsh_LoadKrb4LeashErrorTables(hLeashInst, 0);
 
+        Register_MITPasswordEditControl(hLeashInst);
 
-        memset(&wndclass, 0, sizeof(WNDCLASS));
+#ifndef NO_AFS
+	afscompat_init();
+#endif
 
-        wndclass.style = CS_HREDRAW | CS_VREDRAW;
-        wndclass.lpfnWndProc = (WNDPROC)MITPwdWinProcDLL;
-        wndclass.cbClsExtra = sizeof(HWND);
-        wndclass.cbWndExtra = 0;
-        wndclass.hInstance = hinstDLL;
-        wndclass.hbrBackground = (void *)(COLOR_WINDOW + 1);
-        wndclass.lpszClassName = MIT_PWD_DLL_CLASS;
-        wndclass.hCursor = LoadCursor((HINSTANCE)NULL, IDC_IBEAM);
-	
-        RegisterClass(&wndclass);
-
-        return 1;  
+        return TRUE;
     }
     case DLL_PROCESS_DETACH:
         if (hKrb4)
@@ -241,8 +206,13 @@ DllMain(
             FreeLibrary(hComErr);
         if (hService)
             FreeLibrary(hService);
-        return 1;
+
+#ifndef NO_AFS
+	afscompat_close();
+#endif
+
+        return TRUE;
     default:
-        return 1;
+        return TRUE;
     }
 }

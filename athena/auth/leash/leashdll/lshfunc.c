@@ -12,10 +12,6 @@
 #include <leashwin.h>
 #include <mitwhich.h>
 
-#define DLL
-#include <decldll.h>
-#undef DLL
-
 #include <winkrbid.h>
 #include "reminder.h"
 
@@ -703,7 +699,7 @@ int com_addr(void)
     return 0;
 } 
 
-EXPORT32 long 
+long 
 not_an_API_LeashFreeTicketList(TicketList** ticketList) 
 {
     TicketList* tempList = *ticketList, *killList; 
@@ -725,7 +721,7 @@ not_an_API_LeashFreeTicketList(TicketList** ticketList)
     return 0;
 }
 
-EXPORT32 long 
+long 
 not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo, 
                                TicketList** ticketList) 
 {

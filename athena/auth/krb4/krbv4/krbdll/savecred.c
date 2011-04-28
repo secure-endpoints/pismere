@@ -28,7 +28,7 @@
  * by the tf_init() or tf_save_cred() routines.
  */
 
-save_credentials(service, instance, realm, session, lifetime, kvno,
+krb_save_credentials(service, instance, realm, session, lifetime, kvno,
                  ticket, issue_date)
     char *service;              /* Service name */
     char *instance;             /* Instance */

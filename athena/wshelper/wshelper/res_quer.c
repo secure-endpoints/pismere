@@ -56,7 +56,6 @@ static char sccsid[] = "@(#)res_query.c	5.11 (Berkeley) 3/6/91";
 #include <stdlib.h>
 #include <string.h>
 
-#include <decldll.h>
 
 #include "u-compat.h"
 
@@ -91,7 +90,7 @@ char debstr[80];
 
 /*
  *
- @func EXPORT32 int EXPORT WINAPI | res_query | 
+ @func int WINAPI | res_query | 
 	 Formulate a normal query, send, and await answer.
  Returned answer is placed in supplied buffer "answer".
  Perform preliminary check of answer, returning success only
@@ -109,9 +108,9 @@ char debstr[80];
 *	
 *
 */
-EXPORT32 int
+int
 #ifdef _WINDLL
-EXPORT WINAPI
+WINAPI
 #endif
 res_query(char *name, int qclass, int type, u_char *answer, int anslen)
     /* domain name, class and type of query, buffer to put answer, size of answer buffer */
@@ -234,7 +233,7 @@ res_query(char *name, int qclass, int type, u_char *answer, int anslen)
 
 /*
 
-  @func EXPORT32 int EXPORT WINAPI | res_search |
+  @func int WINAPI | res_search |
   
  Formulate a normal query, send, and retrieve answer in supplied buffer.
  Return the size of the response on success, -1 on error.
@@ -252,7 +251,7 @@ res_query(char *name, int qclass, int type, u_char *answer, int anslen)
 
  */
 #ifdef _WINDLL
-EXPORT32 int EXPORT WINAPI
+int WINAPI
 #endif
 res_search(const char *name, int qclass, int type, u_char *answer, int anslen)
     /* domain name, class and type of query, buffer to put answer, size of answer */

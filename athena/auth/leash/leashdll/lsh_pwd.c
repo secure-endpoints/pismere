@@ -39,59 +39,47 @@ extern int (*Lcom_err)(LPSTR,long,LPSTR,...);
 extern LPSTR (*Lerror_message)(long);
 extern LPSTR (*Lerror_table_name)(long);
 
-long FAR Leash_get_lsh_errno(LONG FAR *err_val)
+
+INT_PTR
+CALLBACK
+PasswordProc(
+    HWND hwndDlg,
+    UINT uMsg,
+    WPARAM wParam,
+    LPARAM lParam
+    );
+
+
+long Leash_get_lsh_errno(LONG *err_val)
 {
     return lsh_errno;
 }
 
 /*/////// ******** API Calls follow here.   ******** /////////*/
 
-int FAR Leash_kinit_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo)
+int Leash_kinit_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo)
 {
-
-    FARPROC lpfnPasswordProc;
-    int result;
+    lpdlginfo->dlgtype = DLGTYPE_PASSWD;
 
     /* set the help file */
     Leash_set_help_file(NULL);
 
-    /* Get Proc Instance */
-    lpfnPasswordProc = MakeProcInstance(PasswordProcDLL, hLeashInst);
-
-    lpdlginfo->dlgtype = DLGTYPE_PASSWD;
-
     /* Call the Dialog box with the DLL's Password Callback and the
        DLL's instance handle. */
-    result = DialogBoxParam(hLeashInst, "EnterPasswordDlg", hParent,
-                            (DLGPROC)lpfnPasswordProc, (LPARAM)lpdlginfo);
-
-    /* Release Proc Instance */
-    FreeProcInstance(lpfnPasswordProc);
-
-    return (result);
+    return DialogBoxParam(hLeashInst, "EnterPasswordDlg", hParent,
+                          PasswordProc, (LPARAM)lpdlginfo);
 }
 
 
-int FAR Leash_changepwd_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo)
+int Leash_changepwd_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo)
 {
-
-    FARPROC lpfnPasswordProc;
-    int result;
-
-    /* Get Proc Instance */
-    lpfnPasswordProc = MakeProcInstance(PasswordProcDLL, hLeashInst);
 
     lpdlginfo->dlgtype = DLGTYPE_CHPASSWD;
 
     /* Call the Dialog box with the DLL's Password Callback and the
        DLL's instance handle. */
-    result = DialogBoxParam(hLeashInst, "CHANGEPASSWORDDLG", hParent,
-                            (DLGPROC)lpfnPasswordProc, (LPARAM)lpdlginfo);
-
-    /* Release Proc Instance */
-    FreeProcInstance(lpfnPasswordProc);
-
-    return (result);
+    return DialogBoxParam(hLeashInst, "CHANGEPASSWORDDLG", hParent,
+                          PasswordProc, (LPARAM)lpdlginfo);
 }
 
 
@@ -158,12 +146,13 @@ int PaintLogoBitmap( HANDLE hPicFrame )
 /* Callback function for the Password Dialog box that initilializes and
    renews tickets. */
 
-BOOL FAR PASCAL _export
-PasswordProcDLL(
+INT_PTR
+CALLBACK
+PasswordProc(
     HWND hDialog,
-    WORD message,
-    WORD wParam,
-    LONG lParam
+    UINT message,
+    WPARAM wParam,
+    LPARAM lParam
     )
 {
     static POINT Position = { -1, -1 };

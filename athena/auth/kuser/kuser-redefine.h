@@ -73,4 +73,5 @@
 #define com_err pcom_err
 
 /* ------------------------------------------------------------------------- */
+#undef krb_get_err_text
 #define krb_get_err_text pget_krb_err_txt_entry

@@ -1,26 +1,29 @@
 #ifndef __LEASH_INT_H__
 #define __LEASH_INT_H__
 
-#ifdef _WIN32
-#define EXPORT
-#else
-#define EXPORT _export
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 
+#define MIT_PWD_DLL_CLASS "MITPasswordWndDLL"
+
+BOOL
+Register_MITPasswordEditControl(
+    HINSTANCE hInst
+    );
+
+BOOL
+Unregister_MITPasswordEditControl(
+    HINSTANCE hInst
+    );
+
 // Some defines swiped from leash.h
 //  These are necessary but they must be kept sync'ed with leash.h
-#define HELPFILE "kerberos.hlp"
+#define HELPFILE "leash32.hlp"
 extern char KRB_HelpFile[_MAX_PATH];
 
 // Function Prototypes.
 int lsh_com_err_proc (LPSTR whoami, long code, LPSTR fmt, va_list args);
-int EXPORT DoNiftyErrorReport(long errnum, LPSTR what);
-LONG FAR PASCAL EXPORT MITPwdWinProcDLL(HWND hWnd, WORD message, WORD wParam, LONG lParam);
-BOOL FAR PASCAL EXPORT PasswordProcDLL(HWND hDialog, WORD message, WORD wParam, LONG lParam);
-LONG FAR PASCAL EXPORT lsh_get_lsh_errno( LONG FAR *err_val);
+int DoNiftyErrorReport(long errnum, LPSTR what);
 LONG Leash_timesync(int);
 
 // Crap...

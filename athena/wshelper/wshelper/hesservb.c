@@ -27,7 +27,6 @@ static char sccsid[] = "@(#)getservbyname.c	5.3 (Berkeley) 5/19/86";
 
 #include "u-compat.h"
 
-#include <decldll.h>
 
 #include <stdlib.h>
 #include <malloc.h>
@@ -43,7 +42,7 @@ static char sccsid[] = "@(#)getservbyname.c	5.3 (Berkeley) 5/19/86";
 
 
 /*
-@func EXPORT32 struct servent * EXPORT WINAPI | hes_getservbyname |
+@func struct servent * WINAPI | hes_getservbyname |
 This function will query a Hesiod server for a servent structure given
 a service name and protocol. This is a replacement for the Winsock
 getservbyname function which normally just uses a local services
@@ -58,9 +57,9 @@ services.
 
 */
 
-EXPORT32 struct servent *
+struct servent *
 #ifdef _WINDLL
-EXPORT WINAPI
+WINAPI
 #endif
 hes_getservbyname(char *name, char *proto)
 {

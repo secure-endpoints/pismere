@@ -50,9 +50,11 @@ public:
         FP_RpcServerRegisterIfEx fRpcServerRegisterIfEx;
     };
 
-    static DWORD Attach();
-    static DWORD Detach();
+    static DWORD Initialize();
+    static DWORD Cleanup();
     static DWORD Info(InitInfo& info);
+
+    static bool Initialized() { return s_init; }
 
 private:
     static CcOsLock s_lock;
@@ -62,3 +64,13 @@ private:
     static InitInfo s_info;
     static HINSTANCE s_hRpcDll;
 };
+
+#define INIT_INIT_EX(trap, error) \
+do \
+{ \
+    if (!Init::Initialized()) \
+    { \
+        DWORD rc = Init::Initialize(); \
+        if (rc) return (trap) ? (error) : rc; \
+    } \
+} while(0)

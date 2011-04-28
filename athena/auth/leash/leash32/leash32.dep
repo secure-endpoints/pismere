@@ -88,7 +88,6 @@
 	"..\..\..\wshelper\include\resolv.h"\
 	"..\..\..\wshelper\include\wshelper.h"\
 	"..\..\krb4\include\com_err.h"\
-	"..\..\krb4\include\decldll.h"\
 	"..\..\krb5\src\include\profile.h"\
 	"..\..\krb5\src\include\win-mac.h"\
 	".\Krb4Properties.h"\
@@ -161,7 +160,6 @@
 	"..\..\..\wshelper\include\mitwhich.h"\
 	"..\..\..\wshelper\include\resolv.h"\
 	"..\..\..\wshelper\include\wshelper.h"\
-	"..\..\krb4\include\decldll.h"\
 	"..\..\krb5\src\include\com_err.h"\
 	"..\..\krb5\src\include\k5-int.h"\
 	"..\..\krb5\src\include\krb5.h"\
@@ -236,7 +234,6 @@
 	"..\..\..\wshelper\include\mitwhich.h"\
 	"..\..\..\wshelper\include\resolv.h"\
 	"..\..\..\wshelper\include\wshelper.h"\
-	"..\..\krb4\include\decldll.h"\
 	"..\..\krb5\src\include\com_err.h"\
 	"..\..\krb5\src\include\k5-int.h"\
 	"..\..\krb5\src\include\krb5.h"\

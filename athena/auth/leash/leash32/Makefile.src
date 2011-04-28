@@ -43,21 +43,30 @@ OBJS= \
 RES=$(O)\Leash.res
 
 USE_DEFAULTLIB=1
-#LIBS=$(STD_LIBS) wsock32.lib wshelp32.lib htmlhelp.lib
-LIBS=wshelp32.lib version.lib loadfuncs.lib
-
-LIB_PATHS=..\..\..\wshelper\wshelper\$(O);..\..\..\util\loadfuncs\$(O)\
-
-INCLUDES=..\include;..\..\krb5\src\include;..\..\krb4\include;..\..\..\wshelper\include;..\..\..\util\loadfuncs
-
 USE_LIBC_DLL=1
 USE_MFC=1           # gives us _AFXDLL!
 USE_CPP_EH=1        # gives us GX
 PCH_FILE=stdafx.h   # uses a PCH file
 
+LIBS=$(STD_LIBS) wshelp32.lib version.lib loadfuncs.lib \
+!ifdef MIT_ONLY
+	afscompat.lib
+!endif
+
+LIB_PATHS=..\..\..\util\loadfuncs\$(O);..\..\..\wshelper\wshelper\$(O)
+!ifdef MIT_ONLY
+LIB_PATHS=$(LIB_PATHS);..\..\..\util\lib\afscompat\src\$(O)
+!endif
+
+INCLUDES=..\include;..\..\krb5\src\include;..\..\krb4\include;..\..\..\wshelper\include;..\..\..\util\loadfuncs
+
+!ifdef MIT_ONLY
+INCLUDES=$(INCLUDES);..\..\..\util\lib\afscompat\inc
+!endif
+
 C_DEFINE=-D_WINDOWS -DWIN32 -DWINDOWS \
-!ifdef AFS36
- 	-DAFS36
+!ifndef MIT_ONLY
+	-DNO_AFS
 !endif
 
 

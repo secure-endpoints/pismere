@@ -53,10 +53,9 @@ static char sccsid[] = "@(#)inet_addr.c	5.11 (Berkeley) 12/9/91";
 #include <winsock.h>
 #include <ctype.h>
 
-#include <decldll.h>
 
 /* 
-@func EXPORT32 unsigned long EXPORT WINAPI | inet_aton |
+@func unsigned long WINAPI | inet_aton |
  Check whether "cp" is a valid ascii representation
  of an Internet address and convert to a binary address.
  Returns 1 if the address is valid, 0 if not.
@@ -71,8 +70,8 @@ parameter if successfull.
 
  
  */
-EXPORT32 unsigned long
-EXPORT WINAPI
+unsigned long
+WINAPI
 inet_aton(register const char *cp, struct in_addr *addr)
 {
     register u_long val, base, n;

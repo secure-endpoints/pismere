@@ -35,7 +35,7 @@ Init::Info(
 }
 
 DWORD
-Init::Attach(
+Init::Initialize(
     )
 {
     CcAutoLock AL(s_lock);
@@ -43,6 +43,7 @@ Init::Attach(
         s_refcount++;
         return 0;
     }
+    SecureClient s;
     DWORD status = 0;
     OSVERSIONINFO osvi;
     BOOL isSupportedVersion = FALSE;
@@ -120,7 +121,7 @@ Init::Attach(
 }
 
 DWORD
-Init::Detach(
+Init::Cleanup(
     )
 {
     CcAutoLock AL(s_lock);
@@ -136,7 +137,10 @@ Init::Detach(
     memset(&s_info, 0, sizeof(s_info));
     s_init = false;
     s_error = 0;
-    DEBUG_PRINT((INIT "Init::Detach() had an error (%u)\n", error));
+    if (error)
+    {
+        DEBUG_PRINT((INIT "Init::Detach() had an error (%u)\n", error));
+    }
     return error;
 }
 

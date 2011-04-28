@@ -50,7 +50,6 @@
 
 #if defined(_WINDOWS) || defined(_WIN32)
 #include <windows.h>
-#include <decldll.h>
 #endif
 
 /*
@@ -144,29 +143,29 @@ extern struct state _res;
 extern "C" {
 #endif
 
-EXPORT32 int  EXPORT WINAPI res_init();
-EXPORT32 void EXPORT WINAPI res_setopts(long opts);
-EXPORT32 long EXPORT WINAPI res_getopts(void);
-EXPORT32 int  EXPORT WINAPI res_mkquery(int op, const char FAR *dname, 
+int  WINAPI res_init();
+void WINAPI res_setopts(long opts);
+long WINAPI res_getopts(void);
+int  WINAPI res_mkquery(int op, const char FAR *dname, 
                                         int qclass, int type, 
                                         const char FAR *data, int datalen, 
                                         const struct rrec FAR *newrr,
                                         char FAR *buf, int buflen);
-EXPORT32 int  EXPORT WINAPI res_send(const char FAR *msg, int msglen, 
+int  WINAPI res_send(const char FAR *msg, int msglen, 
                                      char FAR *answer, int anslen);
-EXPORT32 int  EXPORT WINAPI res_querydomain(const char FAR *name, 
+int  WINAPI res_querydomain(const char FAR *name, 
                                             const char FAR *domain, 
                                             int qclass, int type, 
                                             u_char FAR *answer, int anslen);
-EXPORT32 int  EXPORT WINAPI res_search(const char FAR *name, 
+int  WINAPI res_search(const char FAR *name, 
                                        int qclass, int type, 
                                        u_char FAR *answer, int anslen);
 
-EXPORT32 int  EXPORT WINAPI dn_comp(const u_char FAR *exp_dn, 
+int  WINAPI dn_comp(const u_char FAR *exp_dn, 
                                     u_char FAR *comp_dn, 
                                     int length, u_char FAR * FAR *dnptrs, 
                                     u_char FAR * FAR *lastdnptr);
-EXPORT32 int  EXPORT WINAPI rdn_expand(const u_char FAR *msg, 
+int  WINAPI rdn_expand(const u_char FAR *msg, 
                                       const u_char FAR *eomorig, 
                                       const u_char FAR *comp_dn, 
                                       u_char FAR *exp_dn, 

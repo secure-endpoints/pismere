@@ -386,8 +386,6 @@ tkt_header far *tkt_ptr(void);
 
 char *tkt_string();
 
-#define MIT_PWD_DLL_CLASS "MITPasswordWndDLL"
-
 int gettimeofday(struct timeval *tv, struct timezone *tz);
 
 int PASCAL krb_sendauth(long, int, KTEXT_FP, char *, char *, char *,
@@ -444,5 +442,13 @@ int create_ciph(KTEXT, C_Block, char *, char *, char *, unsigned long, int,
 
 char *krb_get_krbconf2(char *, size_t *);
 char *krb_get_krbrealm2(char *, size_t *);
+
+int krb_save_credentials(char *service, char *instance, char *realm,
+                         C_Block session, int lifetime, int kvno,
+                         KTEXT ticket, long issue_date);
+
+#define krb_get_err_text get_krb_err_txt_entry
+
+int krb_in_tkt(char *pname, char *pinst, char *prealm);
 
 #endif  /* KRB_DEFS */

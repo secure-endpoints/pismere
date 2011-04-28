@@ -65,7 +65,6 @@ static char sccsid[] = "@(#)gethostnamadr.c	6.48 (Berkeley) 1/10/93";
 #include <ctype.h>
 #include <string.h>
 
-#include <decldll.h>
 #include "u-compat.h"
 
 #define MAXALIASES      35
@@ -89,7 +88,7 @@ char *strpbrk();
 #endif
 
 #ifdef _WINDLL
-EXPORT32 unsigned long EXPORT WINAPI inet_aton(register const char *, struct in_addr *);
+unsigned long WINAPI inet_aton(register const char *, struct in_addr *);
 #endif
 
 #if PACKETSZ > 1024
@@ -130,7 +129,7 @@ int h_errno;
 #endif
 #endif
 
-extern EXPORT32 int EXPORT WINAPI hes_error( void );
+extern int WINAPI hes_error( void );
 
 #if (defined (_WINDLL) || defined (_WIN32) )&& defined(_DEBUG)
 /* For debugging output */
@@ -150,7 +149,7 @@ getanswer(querybuf *answer, int anslen, int iquery)
     char **hap;
 
 #if defined (_WINDLL) || defined (_WIN32)
-    EXPORT32 int EXPORT WINAPI rdn_expand(u_char *, u_char *, u_char *, u_char *, int);
+    int WINAPI rdn_expand(u_char *, u_char *, u_char *, u_char *, int);
     int __dn_skipname(const u_char *, const u_char *);
 #endif  
 
@@ -322,7 +321,7 @@ getanswer(querybuf *answer, int anslen, int iquery)
 
 /*
 
-  @func EXPORT32 struct hostent * EXPORT WINAPI | rgethostbyname |
+  @func struct hostent * WINAPI | rgethostbyname |
   
 Searches for information for a host with the
 hostname specified by the character string parameter name.
@@ -336,9 +335,9 @@ hostname specified by the character string parameter name.
   locate  the  requested entry; otherwise they return NULL.
 
 */
-EXPORT32 struct hostent *
+struct hostent *
 #ifdef _WINDLL
-EXPORT WINAPI
+WINAPI
 #endif
 #if !defined (_WINDLL) && !defined (_WIN32)
 gethostbyname(const char *name)
@@ -352,7 +351,7 @@ rgethostbyname(const char *name)
     extern struct hostent *_gethtbyname();
 
 #ifdef _WINDLL
-    EXPORT32 unsigned long EXPORT WINAPI inet_aton(register const char *, struct in_addr *);
+    unsigned long WINAPI inet_aton(register const char *, struct in_addr *);
 #endif
     /*
      * disallow names consisting only of digits/dots, unless
@@ -420,7 +419,7 @@ rgethostbyname(const char *name)
 }
 
 
-/* @func EXPORT32 struct hostent * EXPORT WINAPI | rgethostbyaddr |
+/* @func struct hostent * WINAPI | rgethostbyaddr |
 
 Our replacement for gethostbyaddr, called rgethostbyaddr These
 functions are used to obtain entries describing hosts. Gethostbyaddr()
@@ -442,9 +441,9 @@ parameter len specifies the length of the buffer indicated by addr.
  @parm int | type | The parameter type specifies the family of the address. 
 
 */
-EXPORT32 struct hostent *
+struct hostent *
 #ifdef _WINDLL
-EXPORT WINAPI
+WINAPI
 #endif
 #if !defined (_WINDLL) && !defined (_WIN32)
 gethostbyaddr(const char *addr, int len, int type)
@@ -532,7 +531,7 @@ dbgetanswer(querybuf *answer, int anslen, int iquery, LPSTR FAR *info)
     int mxcount = 0;    
 
 #ifdef _WINDLL
-    EXPORT32 int EXPORT WINAPI rdn_expand(u_char *, u_char *, u_char *, u_char *, int);
+    int WINAPI rdn_expand(u_char *, u_char *, u_char *, u_char *, int);
 #endif
 
     eom = answer->buf + anslen;
@@ -651,7 +650,7 @@ dbgetanswer(querybuf *answer, int anslen, int iquery, LPSTR FAR *info)
 
   @doc MISC
 
-  @func EXPORT32 LPSTR EXPORT WINAPI | gethinfobyname | Given the name
+  @func LPSTR WINAPI | gethinfobyname | Given the name
   of a host query the nameservers for the T_HINFO information
   associated with the host.
   
@@ -661,9 +660,9 @@ dbgetanswer(querybuf *answer, int anslen, int iquery, LPSTR FAR *info)
 
 */
 
-EXPORT32 LPSTR
+LPSTR
 #ifdef _WINDLL
-EXPORT WINAPI
+WINAPI
 #endif
 gethinfobyname(LPSTR name)
 {
@@ -701,7 +700,7 @@ gethinfobyname(LPSTR name)
 
 /*
 
-  @func EXPORT32 struct mxent FAR * EXPORT WINAPI | getmxbyname | This
+  @func struct mxent FAR * WINAPI | getmxbyname | This
   function will query the nameservers for the MX records associated
   with the given hostname. Note that the return is a pointer to the
   mxent structure so an application making this call can iterate
@@ -714,9 +713,9 @@ gethinfobyname(LPSTR name)
 
  */
 
-EXPORT32 struct mxent FAR *
+struct mxent FAR *
 #ifdef _WINDLL
-EXPORT WINAPI
+WINAPI
 #endif
 getmxbyname(LPSTR name)
 {
@@ -754,7 +753,7 @@ getmxbyname(LPSTR name)
 
 /*
 
-  @func EXPORT32 LPSTR EXPORT WINAPI | getrecordbyname | This function
+  @func LPSTR WINAPI | getrecordbyname | This function
   will query the nameservers about the given hostname for and DNS
   record type that the application wishes to query.
   
@@ -768,9 +767,9 @@ getmxbyname(LPSTR name)
 
 */
 
-EXPORT32 LPSTR
+LPSTR
 #ifdef _WINDLL
-EXPORT WINAPI
+WINAPI
 #endif
 getrecordbyname(LPSTR name, int rectype)
 {
@@ -923,7 +922,7 @@ _gethtbyaddr(const char *addr, int len, int type)
 
 /*
 
-  @func EXPORT32 DWORD EXPORT WINAPI | rrhost | This function emulates the
+  @func DWORD WINAPI | rrhost | This function emulates the
   rhost function that was part of Excelan / Novell's LAN WorkPlace TCP/IP API.
   Given a pointer to an IP hostname it will return the IP address as a 32 bit
   integer.
@@ -935,7 +934,7 @@ _gethtbyaddr(const char *addr, int len, int type)
   
 */
 
-EXPORT32 DWORD EXPORT WINAPI rrhost( LPSTR lpHost )
+DWORD WINAPI rrhost( LPSTR lpHost )
 {
     struct hostent FAR *host_entry;
     static DWORD addr;
@@ -954,7 +953,7 @@ EXPORT32 DWORD EXPORT WINAPI rrhost( LPSTR lpHost )
 
   @doc RESOLVE
 
-  @func EXPORT32 struct servent FAR * EXPORT WINAPI | rgetservbyname |
+  @func struct servent FAR * WINAPI | rgetservbyname |
   This is equivalent to getservbyname but instead of just looking up
   the service entry in the local host file it will first query the
   Hesiod server(s) for the information. This allows a site to add new
@@ -976,7 +975,7 @@ EXPORT32 DWORD EXPORT WINAPI rrhost( LPSTR lpHost )
 
 */
 
-EXPORT32 struct servent FAR * EXPORT WINAPI rgetservbyname(LPCSTR name, LPCSTR proto)
+struct servent FAR * WINAPI rgetservbyname(LPCSTR name, LPCSTR proto)
 {
     struct servent FAR * WINAPI hes_getservbyname(LPCSTR name, LPCSTR proto);
     struct servent FAR *tmpent;
@@ -991,7 +990,7 @@ EXPORT32 struct servent FAR * EXPORT WINAPI rgetservbyname(LPCSTR name, LPCSTR p
 
 @doc MISC
 
-@func EXPORT32 LONG FAR EXPORT | WSHGetHostID | Get the local IP address using
+@func LONG FAR | WSHGetHostID | Get the local IP address using
 the following algorithm:<NL>
 
 	- get local host name with gethostname()<nl>
@@ -1006,7 +1005,7 @@ Network Programming" by Bob Quinn and Dave Shute, Copyright 1996
 Addision-Welsley Publishing Company, Inc., ISBN 0-201-63372-8
 
 */
-EXPORT32 LONG FAR EXPORT WSHGetHostID()
+LONG FAR WSHGetHostID()
 {
     char szLclHost [MAXHOSTNAME];
     LPHOSTENT lpstHostent;
