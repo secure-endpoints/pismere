@@ -299,10 +299,7 @@ Leash_afs_klog(
         rc = get_cellconfig(Dmycell, &ak_cellconfig, local_cell);
     }
     if (rc)
-    {
-        Leash_afs_error(rc, "get_cellconfig()");
         return(rc);
-    }
 
 #ifndef NO_KRB5
     if (!(r = Leash_krb5_initialize(&context, &_krb425_ccache))) {
@@ -654,11 +651,7 @@ static int get_cellconfig(char *cell, afsconf_cell *cellconfig, char *local_cell
     /* WIN32: cm_SearchCellFile(cell, pcallback, pdata) */
     strcpy(cellconfig->name, cell);
 
-#ifdef COMMENT
-    return cm_SearchCellFile(cell, get_cellconfig_callback, (void*)cellconfig);
-#else
     return cm_SearchCell(cell, get_cellconfig_callback, NULL, (void*)cellconfig);
-#endif
 #endif
 }
 

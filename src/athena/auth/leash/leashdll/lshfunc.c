@@ -780,10 +780,95 @@ Leash_renew(void)
     return 0;
 }
 
+static BOOL
+GetSecurityLogonSessionData(PSECURITY_LOGON_SESSION_DATA * ppSessionData)
+{
+    NTSTATUS Status = 0;
+    HANDLE  TokenHandle;
+    TOKEN_STATISTICS Stats;
+    DWORD   ReqLen;
+    BOOL    Success;
+
+    if (!ppSessionData)
+        return FALSE;
+    *ppSessionData = NULL;
+
+    Success = OpenProcessToken( GetCurrentProcess(), TOKEN_QUERY, &TokenHandle );
+    if ( !Success )
+        return FALSE;
+
+    Success = GetTokenInformation( TokenHandle, TokenStatistics, &Stats, sizeof(TOKEN_STATISTICS), &ReqLen );
+    CloseHandle( TokenHandle );
+    if ( !Success )
+        return FALSE;
+
+    Status = pLsaGetLogonSessionData( &Stats.AuthenticationId, ppSessionData );
+    if ( FAILED(Status) || !ppSessionData )
+        return FALSE;
+
+    return TRUE;
+}
+
+// IsKerberosLogon() does not validate whether or not there are valid tickets in the 
+// cache.  It validates whether or not it is reasonable to assume that if we 
+// attempted to retrieve valid tickets we could do so.  Microsoft does not 
+// automatically renew expired tickets.  Therefore, the cache could contain
+// expired or invalid tickets.  Microsoft also caches the user's password 
+// and will use it to retrieve new TGTs if the cache is empty and tickets
+// are requested.
+
+static BOOL
+IsKerberosLogon(VOID)
+{
+    PSECURITY_LOGON_SESSION_DATA pSessionData = NULL;
+    BOOL    Success = FALSE;
+
+    if ( GetSecurityLogonSessionData(&pSessionData) ) {
+        if ( pSessionData->AuthenticationPackage.Buffer ) {
+            WCHAR buffer[256];
+            WCHAR *usBuffer;
+            int usLength;
+
+            Success = FALSE;
+            usBuffer = (pSessionData->AuthenticationPackage).Buffer;
+            usLength = (pSessionData->AuthenticationPackage).Length;
+            if (usLength < 256)
+            {
+                lstrcpyn (buffer, usBuffer, usLength);
+                lstrcat (buffer,L"");
+                if ( !lstrcmp(L"Kerberos",buffer) )
+                    Success = TRUE;
+            }
+        }
+        pLsaFreeReturnBuffer(pSessionData);
+    }
+    return Success;
+}
+
+
+// This looks really ugly because it is.  The result of IsKerberosLogon()
+// does not prove whether or not there are Kerberos tickets available to 
+// be imported.  Only the call to Leash_ms2mit() which actually attempts
+// to import tickets can do that.  However, calling Leash_ms2mit() can
+// result in a TGS_REQ being sent to the KDC and since Leash_importable()
+// is called quite often we want to avoid this if at all possible.
+// Unfortunately, we have be shown at least one case in which the primary
+// authentication package was not Kerberos and yet there were Kerberos 
+// tickets available.  Therefore, if IsKerberosLogon() is not TRUE we 
+// must call Leash_ms2mit() but we still do not want to call it in a 
+// tight loop so we cache the response and assume it won't change.
 long FAR
 Leash_importable(void)
 {
-    return Leash_ms2mit(0);
+    if ( IsKerberosLogon() )
+        return TRUE;
+    else {
+        static int response = -1;
+        if (response == -1) {
+            response = Leash_ms2mit(0);
+        }
+        return response;
+    }
 }
 
 long FAR
@@ -3021,9 +3106,15 @@ not_an_API_Leash_AcquireInitialTicketsIfNeeded(krb5_context context, krb5_princi
     krb5_context        ctx;
     char newenv[256];
     char * env = 0;
+    DWORD dwMsLsaImport = Leash_get_default_mslsa_import();
 
-    if ( getenv("KERBEROSLOGIN_NEVER_PROMPT") ||
-         !pkrb5_init_context )
+    char loginenv[16];
+    BOOL prompt;
+
+    GetEnvironmentVariable("KERBEROSLOGIN_NEVER_PROMPT", loginenv, sizeof(loginenv));
+    prompt = (GetLastError() == ERROR_ENVVAR_NOT_FOUND);
+
+    if ( !prompt || !pkrb5_init_context )
         return;
 
     ctx = context;
@@ -3036,10 +3127,55 @@ not_an_API_Leash_AcquireInitialTicketsIfNeeded(krb5_context context, krb5_princi
     not_an_API_LeashKRB5GetTickets(&ticketinfo,&list,&ctx);
     not_an_API_LeashFreeTicketList(&list);
 
-    if ( ticketinfo.btickets != GOOD_TICKETS && Leash_importable() ) {
-        Leash_import();
-        not_an_API_LeashKRB5GetTickets(&ticketinfo,&list,&ctx);
-        not_an_API_LeashFreeTicketList(&list);
+    if ( ticketinfo.btickets != GOOD_TICKETS && 
+         Leash_get_default_mslsa_import() && Leash_importable() ) {
+        // We have the option of importing tickets from the MSLSA
+        // but should we?  Do the tickets in the MSLSA cache belong 
+        // to the default realm used by Leash?  If so, import.  
+        int import = 0;
+
+        if ( dwMsLsaImport == 1 ) {             /* always import */
+            import = 1;
+        } else if ( dwMsLsaImport == 2 ) {      /* import when realms match */
+            krb5_error_code code;
+            krb5_ccache mslsa_ccache=0;
+            krb5_principal princ = 0;
+            char ms_realm[128] = "", *def_realm = 0, *r;
+            int i;
+
+            if (code = pkrb5_cc_resolve(ctx, "MSLSA:", &mslsa_ccache))
+                goto cleanup;
+
+            if (code = pkrb5_cc_get_principal(ctx, mslsa_ccache, &princ))
+                goto cleanup;
+
+            for ( r=ms_realm, i=0; i<krb5_princ_realm(ctx, princ)->length; r++, i++ ) {
+                *r = krb5_princ_realm(ctx, princ)->data[i];
+            }
+            *r = '\0';
+
+            if (code = pkrb5_get_default_realm(ctx, &def_realm))
+                goto cleanup;
+
+            import = !strcmp(def_realm, ms_realm);
+
+          cleanup:
+            if (def_realm)
+                pkrb5_free_default_realm(ctx, def_realm);
+
+            if (princ)
+                pkrb5_free_principal(ctx, princ);
+
+            if (mslsa_ccache)
+                pkrb5_cc_close(ctx, mslsa_ccache);
+        }
+
+        if ( import ) {
+            Leash_import();
+
+            not_an_API_LeashKRB5GetTickets(&ticketinfo,&list,&ctx);
+            not_an_API_LeashFreeTicketList(&list);
+        }
     }
 
     if ( ticketinfo.btickets != GOOD_TICKETS ) 
@@ -3052,7 +3188,7 @@ not_an_API_Leash_AcquireInitialTicketsIfNeeded(krb5_context context, krb5_princi
                 for (p = desiredName; *p && *p != '@'; p++);
                 if ( *p == '@' ) {
                     *p = '\0';
-                    dlginfo.realm = ++p;
+                    desiredRealm = dlginfo.realm = ++p;
                 }
             }
         }
@@ -3084,8 +3220,10 @@ not_an_API_Leash_AcquireInitialTicketsIfNeeded(krb5_context context, krb5_princi
                 if ( desiredName ) {
                     strcpy(strs, desiredName);
                     strs += strlen(strs) + 1;
-                    strcpy(strs, desiredRealm);
-                    strs += strlen(strs) + 1;
+					if (desiredRealm) {
+						strcpy(strs, desiredRealm);
+						strs += strlen(strs) + 1;
+					}
                 } else {
                     *strs = 0;
                     strs++;

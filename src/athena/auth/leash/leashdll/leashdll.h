@@ -193,6 +193,7 @@ extern DECL_FUNC_PTR(krb5_decode_ticket);
 extern DECL_FUNC_PTR(krb5_get_host_realm);
 extern DECL_FUNC_PTR(krb5_free_host_realm);
 extern DECL_FUNC_PTR(krb5_c_random_make_octets);
+extern DECL_FUNC_PTR(krb5_free_default_realm);
 
 // Krb524 functions
 extern DECL_FUNC_PTR(krb524_init_ets);

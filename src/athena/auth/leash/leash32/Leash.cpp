@@ -102,9 +102,11 @@ CLeashApp::~CLeashApp()
         m_krbv5_profile = NULL;
     }
 
+#ifdef COMMENT
+	/* Do not free the locking objects.  Doing so causes an invalid handle access */
     CloseHandle(ticketinfo.lockObj);
     CloseHandle(m_tgsReqMutex);
-
+#endif
  	AfxFreeLibrary(m_hLeashDLL);
 	AfxFreeLibrary(m_hKrb4DLL); 
 	AfxFreeLibrary(m_hKrb5DLL);  
@@ -259,7 +261,7 @@ BOOL CLeashApp::InitInstance()
             else if (0 == stricmp(optionParam+1, "destroy") || 
                      0 == stricmp(optionParam+1, "d"))
             {
-                if (!pLeash_kdestroy())
+                if (pLeash_kdestroy())
                 {
                     MessageBox(hMsg, 
                                "There was an error destroying tickets!",
@@ -412,8 +414,8 @@ BOOL CLeashApp::InitInstance()
                 if (code = pkrb5_cc_get_principal(CLeashApp::m_krbv5_context, mslsa_ccache, &princ))
                     goto cleanup;
 
-                for ( r=ms_realm, i=0; i<krb5_princ_realm(ctx, princ)->length; r++, i++ ) {
-                    *r = krb5_princ_realm(ctx, princ)->data[i];
+                for ( r=ms_realm, i=0; i<krb5_princ_realm(CLeashApp::m_krb5v5_context, princ)->length; r++, i++ ) {
+                    *r = krb5_princ_realm(CLeashApp::m_krb5v5_context, princ)->data[i];
                 }
                 *r = '\0';
 

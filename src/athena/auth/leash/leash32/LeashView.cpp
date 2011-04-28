@@ -1640,10 +1640,20 @@ VOID CLeashView::OnUpdateRenewTicket(CCmdUI* pCmdUI)
 
 VOID CLeashView::OnUpdateImportTicket(CCmdUI* pCmdUI)
 {
+	bool ccIsMSLSA = false;
+
     if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
         throw("Unable to lock TGS request mutex");
 
-    if (!CLeashApp::m_hKrbLSA || !pLeash_importable())
+    if (CLeashApp::m_krbv5_context)
+    {
+        const char *ccName = pkrb5_cc_default_name(CLeashApp::m_krbv5_context);
+
+		if (ccName)
+			ccIsMSLSA = !strcmp(ccName, "MSLSA:");
+    }
+
+    if (!CLeashApp::m_hKrbLSA || !pLeash_importable() || ccIsMSLSA)
         pCmdUI->Enable(FALSE);
     else
         pCmdUI->Enable(TRUE);
@@ -2558,7 +2568,10 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
         CMainFrame::m_isBeingResized = FALSE;
     }
 
-    return CFormView::PreTranslateMessage(pMsg);
+	if (::IsWindow(pMsg->hwnd))
+		return CFormView::PreTranslateMessage(pMsg);
+	else
+		return FALSE;
 }
 
 VOID CLeashView::OnLowTicketAlarm()

@@ -1061,7 +1061,13 @@ GTGTPrivate(
 	
     if ((lKerror) || (bExpired == TRUE)) 
     {
-        if ( pLeash_kinit_dlg_ex && getenv("KERBEROSLOGIN_NEVER_PROMPT") == NULL ) {
+        char env[16];
+        BOOL prompt;
+        
+        GetEnvironmentVariable("KERBEROSLOGIN_NEVER_PROMPT",env, sizeof(env));
+        prompt = (GetLastError() == ERROR_ENVVAR_NOT_FOUND);
+
+        if ( pLeash_kinit_dlg_ex && prompt ) {
             LSH_DLGINFO_EX dlginfo;
 
             GRAB_KERBEROS();

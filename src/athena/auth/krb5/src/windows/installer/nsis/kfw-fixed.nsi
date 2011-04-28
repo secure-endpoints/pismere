@@ -408,7 +408,25 @@ addAllowTgtKey:
   ReadRegDWORD $R0 HKLM "SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters" "AllowTGTSessionKey" 
   WriteRegDWORD HKLM "${KFW_REGKEY_ROOT}\Client\${KFW_VERSION}" "AllowTGTSessionKeyBackup" $R0
   WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters" "AllowTGTSessionKey" "1"
+  ReadRegDWORD $R0 HKLM "SYSTEM\CurrentControlSet\Control\Lsa\Kerberos" "AllowTGTSessionKey" 
+  WriteRegDWORD HKLM "${KFW_REGKEY_ROOT}\Client\${KFW_VERSION}" "AllowTGTSessionKeyBackupXP" $R0
+  WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Lsa\Kerberos" "AllowTGTSessionKey" "1"
 skipAllowTgtKey:  
+
+  ; The following are keys added for Terminal Server compatibility
+  ; http://support.microsoft.com/default.aspx?scid=kb;EN-US;186499
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\leash32.exe" "Flags" 0x408
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kinit.exe" "Flags" 0x408
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\klist.exe" "Flags" 0x408
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kdestroy.exe" "Flags" 0x408
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\aklog.exe" "Flags" 0x408
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\gss.exe" "Flags" 0x408
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\gss-client.exe" "Flags" 0x408
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\gss-server.exe" "Flags" 0x408
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\k524init.exe" "Flags" 0x408
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kpasswd.exe" "Flags" 0x408
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kvno.exe" "Flags" 0x408
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\ms2mit.exe" "Flags" 0x408
 
 SectionEnd
 
@@ -986,6 +1004,22 @@ StartRemove:
   ; Restore previous value of AllowTGTSessionKey 
   ReadRegDWORD $R0 HKLM "${KFW_REGKEY_ROOT}\Client\${KFW_VERSION}" "AllowTGTSessionKeyBackup"
   WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters" "AllowTGTSessionKey" $R0
+  ReadRegDWORD $R0 HKLM "${KFW_REGKEY_ROOT}\Client\${KFW_VERSION}" "AllowTGTSessionKeyBackupXP"
+  WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Lsa\Kerberos" "AllowTGTSessionKey" $R0
+
+  ; The following are keys added for Terminal Server compatibility
+  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\leash32.exe"
+  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kinit.exe"
+  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\klist.exe"
+  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kdestroy.exe"
+  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\aklog.exe"
+  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\gss.exe"
+  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\gss-client.exe"
+  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\gss-server.exe"
+  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\k524init.exe"
+  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kpasswd.exe"
+  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kvno.exe"
+  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\ms2mit.exe"
 
   DeleteRegKey HKLM "${KFW_REGKEY_ROOT}\Client\CurrentVersion"
   DeleteRegKey HKLM "${KFW_REGKEY_ROOT}\Client"

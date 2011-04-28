@@ -35,6 +35,11 @@ krb_get_cred(
     int tf_status;              /* return value of tf function calls */
     struct timeval local_time;
     int kinited = 0;
+    char env[16];
+    BOOL prompt;
+
+    GetEnvironmentVariable("KERBEROSLOGIN_NEVER_PROMPT",env, sizeof(env));
+    prompt = (GetLastError() == ERROR_ENVVAR_NOT_FOUND);
 
 	c->pname[0] = c->pinst[0] = '\0';
 
@@ -76,19 +81,24 @@ cache_checked:
     // If we are requesting a tgt, prompt for it
 	if (tf_status != KSUCCESS && !kinited && 
         strncmp(service, "krbtgt", ANAME_SZ) == 0 && 
-        getenv("KERBEROSLOGIN_NEVER_PROMPT") == NULL) 
+        prompt) 
     {
         static int (*pLeash_kinit_dlg_ex)(HWND hParent, LPLSH_DLGINFO_EX lpdlginfoex) = 0;
+        static DWORD (*pLeash_get_default_use_krb4)() = 0;
 
         kinited = 1;
 
         if ( !m_hLeashDLL ) {
             m_hLeashDLL = LoadLibrary(LEASHDLL);
-            if ( m_hLeashDLL )
+            if ( m_hLeashDLL ) {
                 (FARPROC)pLeash_kinit_dlg_ex=GetProcAddress(m_hLeashDLL,"Leash_kinit_dlg_ex");
+                (FARPROC)pLeash_get_default_use_krb4=GetProcAddress(m_hLeashDLL,"Leash_get_default_use_krb4");
+            }
         }
 
-        if ( pLeash_kinit_dlg_ex ) {
+        if ( pLeash_get_default_use_krb4 &&
+             pLeash_get_default_use_krb4() &&
+             pLeash_kinit_dlg_ex ) {
             LSH_DLGINFO_EX dlginfo;
             int success;
 

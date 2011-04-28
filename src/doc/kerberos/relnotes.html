@@ -1,19 +1,19 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-  <title>Release Notes for Kerberos for Windows 2.6.2</title>
+  <title>Release Notes for Kerberos for Windows 2.6.4</title>
   <meta content="Jeffrey Altman &lt;jaltman@mit.edu&gt;" name="author">
 </head>
 <body>
 <center>
-<h1>Kerberos for Windows 2.6.2<br>
+<h1>Kerberos for Windows 2.6.4<br>
 </h1>
 <p>
 </p>
 <h2>Release Notes</h2>
 <p>
 </p>
-<h3>24 May 2004</h3>
+<h3>12 July 2004</h3>
 </center>
 <h3>Table of Contents</h3>
 <ul type="disc">
@@ -55,15 +55,10 @@ Configuration</a> </li>
   <li><a href="#build">Building from Sources</a></li>
   <li><a href="#installer_notes">Notes on the NSIS Installer Scripts</a><br>
   </li>
-  <li><a
- href="file:///C:/src/kerberos/mit-cvs/pismere/doc/kerberos/relnotes.html#leashw32_api">Leashw32
+  <li><a href="#leashw32_api">Leashw32
 API</a></li>
-  <li><a
- href="file:///C:/src/kerberos/mit-cvs/pismere/doc/kerberos/relnotes.html#devnotes_registry">Registry
-and Environment Settings</a></li>
-  <li><a
- href="file:///C:/src/kerberos/mit-cvs/pismere/doc/kerberos/relnotes.html#mslsa">Integration
-with Microsoft Kerberos LSA</a></li>
+  <li><a href="#devnotes_registry">Registry and Environment Settings</a></li>
+  <li><a href="#mslsa">Integration with Microsoft Kerberos LSA</a></li>
   <li><a href="#gss-client">GSS Sample Client</a><br>
   </li>
   <li><a href="#issues">Known Issues</a></li>
@@ -75,9 +70,10 @@ with Microsoft Kerberos LSA</a></li>
       <li><a href="#devnotes_old">Some older notes from prior
 releases...</a> </li>
     </ul>
+  </li>
 <!--
-<li><a href="#feedback">Feedback</a>
---> </li>
+<li><a href="#feedback">Feedback</a></li>
+--> 
 </ul>
 <!-- ---------------------------------------------------------------------- -->
 <p></p>
@@ -107,6 +103,36 @@ same thing.
 <p></p>
 <hr><a name="whatsnew"></a>
 <h2>What's New in Kerberos for Windows 2.6</h2>
+<h3>2.6.4</h3>
+<ul>
+  <li>Solve problem in MSLSA: ccache which would result in premature
+process termination on non-English versions of Windows if Kerberos
+credentials were not available from LSA credential manager.</li>
+</ul>
+<ul>
+  <li>Apply automatic import restrictions from the MSLSA credentials
+cache to the GSSAPI acquire credentials code when necessary.</li>
+</ul>
+<ul>
+  <li>Kerberos 5 library updated to release 1.3.4.&nbsp; See the
+Kerberos 5 README file for details of the changes in the
+Kerberos 5 version 1.3.4 distribution.</li>
+</ul>
+<ul>
+  <li>Add support for the location of the AllowTGTSessionKey registry 
+value in Windows XP SP2 to the installer</li>
+</ul>
+<ul>
+  <li>Add support for Terminal Server compatibility flags to the
+installer<br>
+  </li>
+</ul>
+<h3>2.6.3</h3>
+<ul>
+  <li>Prevent Leash from flooding the KDC with TGS_REQ messages when
+the Windows Logon Session is authenticated using Kerberos.<br>
+  </li>
+</ul>
 <h3>2.6.2</h3>
 <ul>
   <li>The behavior of the Leash automatic importing of credentials from
@@ -157,7 +183,7 @@ passwords are expired.<br>
 </ul>
 <ul>
   <li>Leash implements IP address change detection which is used in
-conjunction with KDC Probing to determine when ticket getting dialogs
+conjunction with KDC Probing to determine when dialogs for obtaining tickets
 should be displayed to the end user</li>
 </ul>
 <ul>
@@ -612,7 +638,7 @@ download site</a> and manually install each missing DLL.
 <p>Note: <code>psapi.dll</code> is also available by itself from the
 <a href="http://www.microsoft.com/downloads/release.asp?ReleaseID=30337">Microsoft
 Download Center</a>. The other DLLs can also be retrieved from the <a
- href="http://msdn.microsoft.com/vstudio/sp/vs6sp5/mmoverview.asp">Visual
+ href="http://msdn.microsoft.com/vstudio/downloads/updates/sp/vs6/sp5/mmoverview.aspx">Visual
 Studio Service Pack 5 Merge Modules</a>, though that is kind of
 difficult to do.
 <!-- ---------------------------------------------------------------------- --></p>
@@ -640,7 +666,7 @@ difficult to do.
       <td style="vertical-align: top;"><br>
       </td>
       <td style="vertical-align: top;">command-line app to retrieve AFS
-tokens using Kerberos 4 tickets<br>
+tokens using Kerberos tickets<br>
       </td>
     </tr>
     <tr valign="top">
@@ -873,7 +899,7 @@ editor such as Notepad.<br>
 <p>
 See the <a href="../../athena/auth/krb5/doc/admin.html#SEC17">krb5.conf</a>
 <a
- href="http://web.mit.edu/kerberos/www/krb5-1.3/krb5-1.3/doc/krb5-admin.html#SEC17">(MIT
+ href="http://web.mit.edu/kerberos/www/krb5-1.3/krb5-1.3/doc/krb5-admin.html#krb5.conf">(MIT
 website)</a>section in the <a
  href="../../athena/auth/krb5/doc/admin_toc.html">Kerberos
 v5 System
@@ -1079,7 +1105,7 @@ The command line options for <b>leash32</b> are:
 <h3><a name="kinit"></a>kinit</h3>
 <pre style="margin-left: 40px;">Usage: kinit [-5] [-4] [-V] [-l lifetime] [-s start_time]<br>        [-r renewable_life] [-f | -F | --forwardable | --noforwardable]<br>        [-p | -P | --proxiable | --noproxiable]<br>        [-A | --addresses | --noaddresses]<br>        [-v] [-R] [-k [-t keytab_file]]<br>        [-c cachename] [-S service_name] [principal]<br><br>    options:                                          valid with Kerberos:<br>	-5 Kerberos 5 (available)<br>	-4 Kerberos 4 (available)<br>	   (Default behavior is to try Kerberos 5 and Kerberos 4)<br>	-V verbose                                        Either 4 or 5<br>	-l lifetime                                       Either 4 or 5<br>	-s start time                                     5<br>	-r renewable lifetime                             5<br>	-f forwardable                                    5<br>	-F not forwardable                                5<br>	-p proxiable                                      5<br>	-P not proxiable                                  5<br>	-A do not include addresses                       5<br>	-v validate                                       5<br>	-R renew                                          5, or both 5 and 4<br>	-k use keytab                                     5, or both 5 and 4<br>	-t filename of keytab to use                      5, or both 5 and 4<br>	-c Kerberos 5 cache name                          5<br>	-S service                                        5, or both 5 and 4<br></pre>
 <h3><a name="klist"></a>klist</h3>
-<pre style="margin-left: 40px;"><span style="font-family: sans-serif;">Usage: klist.exe [-5] [-4] [-e] [[-c] [-C] [-f] [-s] [-a [-n]]] [-k [-t] [-K]] [name]<br><br>        -5 Kerberos 5 (available)<br>        -4 Kerberos 4 (available)<br>           (Default is Kerberos 5 and Kerberos 4)<br>        -c specifies credentials cache<br>	-C enumerates all credentials caches<br>        -k specifies keytab<br>           (Default is credentials cache)<br>        -e shows the encryption type<br>        options for credential caches:<br>                -f shows credentials flags<br>                -s sets exit status based on valid tgt existence<br>                -a displays the address list<br>                        -n do not reverse-resolve<br>        options for keytabs:<br>                -t shows keytab entry timestamps<br>                -K shows keytab entry DES keys</span><br></pre>
+<pre style="margin-left: 40px;">Usage: klist.exe [-5] [-4] [-e] [[-c] [-C] [-f] [-s] [-a [-n]]] [-k [-t] [-K]] [name]<br><br>        -5 Kerberos 5 (available)<br>        -4 Kerberos 4 (available)<br>           (Default is Kerberos 5 and Kerberos 4)<br>        -c specifies credentials cache<br>	-C enumerates all credentials caches<br>        -k specifies keytab<br>           (Default is credentials cache)<br>        -e shows the encryption type<br>        options for credential caches:<br>                -f shows credentials flags<br>                -s sets exit status based on valid tgt existence<br>                -a displays the address list<br>                        -n do not reverse-resolve<br>        options for keytabs:<br>                -t shows keytab entry timestamps<br>                -K shows keytab entry DES keys<br></pre>
 <h3><a name="kdestroy"></a>kdestroy</h3>
 <pre style="margin-left: 40px;">Usage: kdestroy.exe [-5] [-4] [-q] [-c cache_name]<br>        -5 Kerberos 5 (available)<br>        -4 Kerberos 4 (available)<br>           (Default is Kerberos 5 and Kerberos 4)<br>        -q quiet mode<br>        -c specify name of credentials cache<br></pre>
 <h3><a name="aklog"></a>aklog</h3>
@@ -1091,14 +1117,15 @@ The command line options for <b>leash32</b> are:
 Windows XP. While building on Windows 9x/Me might work, it is not
 supported.
 </p>
-<p>First, make sure that you have Microsoft Visual C++ 6.0, a recent
-release of the <a
- href="http://msdn.microsoft.com/downloads/sdks/platform/default.asp">Microsoft
+<p>First, make sure that you have a Microsoft Visual C++ compiler (version 6.0 or 
+<a href="http://msdn.microsoft.com/visualc/vctoolkit2003/">newer</a>),
+a recent release of the <a
+ href="http://www.microsoft.com/msdownload/platformsdk/sdkupdate/">Microsoft
 Platform SDK</a> (August 2001 or higher is known to work), <a
  href="http://www.activestate.com/">ActiveState Perl</a> (build 631 is
 known to work), sed, gawk, cat, and rm in your PATH. You can get sed,
 gawk, cat, and rm from the <a
- href="http://sourceware.cygnus.com/cygwin/">Cygwin distribution</a>.
+ href="http://cygwin.com/">Cygwin distribution</a>.
 Also make sure that your INCLUDE path includes the Microsoft Platform
 SDK before the Microsoft Visual C++ include files and that perl has
 been installed so that .pl files are automatically executed with perl.
@@ -1413,7 +1440,7 @@ leash32.hlp file instead of the new leash32.chm file<br>
 To build an installer execute the following steps:<br>
 <ul>
   <li>cl.exe killer.cpp advapi32.lib</li>
-  <li>"c:\program files\nsis\makensis.exe" kfw.nsi</li>
+  <li>"%PROGRAMFILES%\nsis\makensis.exe" kfw.nsi</li>
 </ul>
 It is worth noting that the "makensis.exe" used to build the MIT
 distributed installer was built from the NSIS sources with two
@@ -1427,7 +1454,7 @@ very long PATH environment variables</li>
 </ul>
 The installer constructs the following registry keys for maintaining
 version and module specific information:<br>
-<pre style="margin-left: 40px;">Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/15/2004 - 9:59 PM<br>Value 0<br>  Name:            InstallDir<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 1<br>  Name:            Installer Language<br>  Type:            REG_SZ<br>  Data:            1033<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Client<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Client\2.6<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br>Value 8<br>  Name:            AllowTGTSessionKeyBackup<br>  Type:            REG_DWORD<br>  Data:            0x1<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Client\CurrentVersion<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Documentation<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Documentation\2.6<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Documentation\CurrentVersion<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\SDK<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\SDK\2.6<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\SDK\CurrentVersion<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0</pre>
+<pre style="margin-left: 40px;">Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/15/2004 - 9:59 PM<br>Value 0<br>  Name:            InstallDir<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 1<br>  Name:            Installer Language<br>  Type:            REG_SZ<br>  Data:            1033<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Client<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Client\2.6<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br>Value 8<br>  Name:            AllowTGTSessionKeyBackup<br>  Type:            REG_DWORD<br>  Data:            0x1<br><br>Value 9<br>  Name:            AllowTGTSessionKeyBackupXP<br>  Type:            REG_DWORD<br>  Data:            0x1<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Client\CurrentVersion<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Documentation<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Documentation\2.6<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Documentation\CurrentVersion<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\SDK<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\SDK\2.6<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\SDK\CurrentVersion<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0</pre>
 <br>
 <p></p>
 <hr><a name="issues"></a>
@@ -1598,20 +1625,23 @@ or 2 - matching realms )<br>
 <hr style="width: 100%; height: 2px;">
 <pre><a name="mslsa"></a><br></pre>
 <h2>Integration with Microsoft Kerberos LSA</h2>
-As of the 1.3.2 release, a new cache type, MSLSA:, has been added for<br>
-use in accessing the Microsoft Kerberos Logon Session credentials<br>
+<p>
+As of the 1.3.2 release, a new cache type, MSLSA:, has been added for
+use in accessing the Microsoft Kerberos Logon Session credentials
 cache.&nbsp; The MSLSA: cache is available when the user logon is
-performed<br>
-using Kerberos either to an Active Directory Domain or a non-Microsoft<br>
-KDC.<br>
-<br>
-A user is able to logon to Windows using the Kerberos LSA if the machine<br>
-is part of a Windows 2000 or Windows 2003 Active Directory domain or<br>
+performed
+using Kerberos either to an Active Directory Domain or a non-Microsoft
+KDC.
+</p>
+<p>
+A user is able to logon to Windows using the Kerberos LSA if the machine
+is part of a Windows 2000 or Windows 2003 Active Directory domain or
 if the machine has been configured to authenticate to a non-Microsoft
-KDC<br>
-such as MIT.&nbsp; The instructions for configuring a Windows 2000 XP<br>
-workstation to authenticate to a non-Microsoft KDC are documented<br>
-in TechNet somewhere.&nbsp; In brief:<br>
+KDC
+such as MIT.&nbsp; The instructions for configuring a Windows 2000 XP
+workstation to authenticate to a non-Microsoft KDC are documented
+in TechNet somewhere.&nbsp; In brief:
+</p>
 <ol>
   <li>Install the Windows 2000 or XP support tools in order to obtain
 the tools: KSETUP.EXE and KTPASS.EXE.</li>
@@ -1650,19 +1680,25 @@ domain name of "example.com":<br>
   <li>cifs/mymachine@EXAMPLE.COM</li>
   <li>cifs/mymachine.example.com@EXAMPLE.COM</li>
 </ul>
-There may very well be other serivces for which principals must be
-created depending<br>
-on what services are being executed on the machine.<br>
-<br>
+<p>
+There may very well be other services for which principals must be
+created depending
+on what services are being executed on the machine.
+</p>
+<p>
 It is very important to note that while you can successfully log into a
-Windows<br>
+Windows
 workstation by authenticating to the KDC without creating a host key;
-the logon<br>
+the logon
 session you receive will not be a Kerberos Logon Session.&nbsp; There
-will be no Kerberos<br>
-principal and no LSA cache to access.<br>
-<br>
-The result of a real KSETUP configuration looks like this:<br>
+will be no Kerberos
+principal and no LSA cache to access.
+</p>
+
+<p>
+The result of a real KSETUP configuration looks like this:
+</p>
+
 <br>
 <pre>&nbsp;&nbsp; [C:\4\4NT]ksetup</pre>
 <pre>&nbsp;&nbsp; default realm = KRB5.COLUMBIA.EDU (external)</pre>
@@ -1689,43 +1725,39 @@ The result of a real KSETUP configuration looks like this:<br>
 <pre>&nbsp;&nbsp; Mapping jaltman@CC.COLUMBIA.EDU to jaltman.</pre>
 <pre>&nbsp;&nbsp; Mapping jaltman@ATHENA.MIT.EDU to jaltman.</pre>
 <pre>&nbsp;&nbsp; Mapping all users (*) to a local account by the same name (*).<br><br></pre>
-The MSLSA: credential cache relies on the ability to extract the entire<br>
-Kerberos ticket including the session key from the Kerberos LSA.&nbsp;
-In an<br>
-attempt to increase security Microsoft has begun to implement a feature<br>
-by which they no longer export the session keys for Ticket Getting
-Tickets.<br>
-This has the side effect of making them useless to the MIT krb5 library<br>
-when attempting to request additional service tickets.<br>
-<br>
+<p>&nbsp;</p>
+
+<p>
+The MSLSA: credential cache relies on the ability to extract the entire 
+Kerberos ticket including the session key from the Kerberos LSA.&nbsp; In an 
+attempt to increase security Microsoft has begun to implement a feature 
+by which they no longer export the session keys for Ticket Getting Tickets. 
+This has the side effect of making them useless to the MIT krb5 library 
+when attempting to request additional service tickets.
+</p>
+
+<p>
 This new feature has been seen in Windows 2003 Server, Windows 2000
-Server SP4,<br>
-and Windows XP SP2 Beta.&nbsp; We assume that it will be implemented in
-all future<br>
-Microsoft operating systems supporting the Kerberos SSPI.&nbsp;
-Microsoft does work<br>
-closely with MIT and has provided a registry key to disable this new
-feature.<br>
+Server SP4, and Windows XP SP2.&nbsp; We assume that it will be implemented in
+all future Microsoft operating systems supporting the Kerberos SSPI.&nbsp;
+Microsoft does work closely with MIT and has provided a registry key to disable 
+this new feature.
+</p>
+
+<pre>&nbsp; HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters</pre>
+<pre>&nbsp;&nbsp;&nbsp; AllowTGTSessionKey = 0x01 (DWORD)</pre><br>
+</pre>
+On Windows XP SP2 the key is specified as <br>
 <br>
-&nbsp; HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters<br>
-&nbsp;&nbsp;&nbsp; AllowTGTSessionKey = 0x01 (DWORD)<br>
-<br>
-On Windows XP SP2 Beta 1 the key was specified as <br>
-<br>
-&nbsp; HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos<br>
-&nbsp;&nbsp;&nbsp; AllowTGTSessionKey = 0x01 (DWORD)<br>
-<br>
-However, we anticipate that this will be changed to match the Server
-platforms <br>
-in time for SP2 RC1.<br>
-<br>
+<pre>&nbsp; HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos</pre>
+<pre>&nbsp;&nbsp;&nbsp; AllowTGTSessionKey = 0x01 (DWORD)</pre><br>
+
+<p>
 It has been noted that the Microsoft Kerberos LSA does not provide
-enough <br>
-information within its KERB_EXTERNAL_TICKET structure to properly
-construct<br>
-the Client Principal simply by examining a single ticket. From the MSDN<br>
-Library:<br>
-<br>
+enough information within its KERB_EXTERNAL_TICKET structure to properly
+construct the Client Principal simply by examining a single ticket.&nbsp; From
+the MSDN Library:
+</p>
 &nbsp; <span style="font-weight: bold;">ClientName </span><br>
 &nbsp;&nbsp;&nbsp; KERB_EXTERNAL_NAME structure that contains the
 client name in the ticket. <br>
@@ -1753,46 +1785,49 @@ request the ticket (the <br>
 &nbsp;&nbsp;&nbsp; Kerberos Key Distribution Center (KDC) may do name
 mapping), this string <br>
 &nbsp;&nbsp;&nbsp; contains the original name. <br>
-<br>
+<p>
 Unfortunately, there is no field here which contains the domain of the
-client.<br>
-In order for the krb5_ccache to properly report the client principal
-name, the <br>
-client principal name is constructed by utilizing the ClientName and
-DomainName<br>
-fields of the Initial TGT associated with the Kerberos LSA credential
-cache.<br>
-To disable the use of the TGT info and instead simply use the
-"DomainName" field<br>
-of the current ticket define one of the following registry keys
-depending on<br>
-whether the change should be system global or just for the current user.<br>
-<br>
-&nbsp;&nbsp; HKLM\Software\MIT\Kerberos5\<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PreserveInitialTicketIdentity = 0x0
-(DWORD)<br>
-<br>
-&nbsp;&nbsp; HKCU\Software\MIT\Kerberos5\<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PreserveInitialTicketIdentity = 0x0
-(DWORD)<br>
-<br>
+client. In order for the krb5_ccache to properly report the client 
+principal name, the client principal name is constructed by utilizing 
+the ClientName and DomainName fields of the Initial TGT associated with
+the Kerberos LSA credential cache. To disable the use of the TGT info and 
+instead simply use the "DomainName" field of the current ticket define 
+one of the following registry keys depending on whether the change should
+be system global or just for the current user.
+</p>
+<pre>&nbsp;&nbsp; HKLM\Software\MIT\Kerberos5\</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PreserveInitialTicketIdentity = 0x0 (DWORD)</pre><br>
+
+<pre>&nbsp;&nbsp; HKCU\Software\MIT\Kerberos5\</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PreserveInitialTicketIdentity = 0x0 (DWORD)</pre><br>
+
+<p>
+As of KFW 2.6.4 it may be possible sometime in the future for the
+correct client
+realm to be obtained from the LSA credential cache contents.&nbsp;
+However, it will
+require a fix from Microsoft which at the present time is not available.
+</p>
 <hr style="width: 100%; height: 2px;"><a name="gss-client"></a>
 <h2>GSSAPI Sample Client (gss.exe):</h2>
+<p>
 The GSS API Sample Client provided in this distribution is compatible
-with the<br>
+with the
 gss-server application built on Unix/Linux systems.&nbsp; This client
-is not compatible<br>
+is not compatible
 with the Platform SDK/Samples/Security/SSPI/GSS/ samples which
-Microsoft has been<br>
+Microsoft has been
 shipping as of January 2004.&nbsp; Revised versions of these samples
-are available upon <br>
+are available upon 
 request to krbdev@mit.edu.&nbsp; Microsoft is committed to distribute
-revised samples<br>
+revised samples
 which are compatible with the MIT distributed tools in a future SDK and
-via MSDN.<br>
-<br>
+via MSDN.
+</p>
+
+<p>
 The following configuration options may be set for testing GSSAPI
-connections with a compatible server:<br>
+connections with a compatible server:</p>
 <ul>
   <li><span style="font-weight: bold;">Hostname</span>&nbsp; The fully
 qualified domain name of the host on which the GSS Sample Server is
@@ -1840,7 +1875,7 @@ You must have acquired forwardable TGTs for this to work.&nbsp;
   <li><span style="font-weight: bold;">Mutual</span>&nbsp; This option
 specifies whether or not mutual authentication will be requested.&nbsp;
 (default is on)</li>
-  <li><span style="font-weight: bold;">Reply</span>&nbsp; This option
+  <li><span style="font-weight: bold;">Replay</span>&nbsp; This option
 specifies whether or not replay detection will be requested. (default
 is on)</li>
   <li><span style="font-weight: bold;">Sequence</span>&nbsp; This
@@ -1937,7 +1972,7 @@ credentials cache had to be shortened for XP.) </li>
 short.
     <p></p>
   </li>
-  <li>Kerberos v4 and v5 now build with <a href="#dns">DNS support</a>
+  <li>Kerberos v4 and v5 now build with <a href="#config_dns">DNS support</a>
 by
 default.
     <p></p>

@@ -1,6 +1,7 @@
 DIRS=\
 	lib	\
 	locker	\
+	logonbefore \
 	athdir	\
 	athinfo	\
 	beep	\
@@ -30,6 +31,7 @@ DIRS=\
 OPTDIRS=\
 	lib	\
 	locker	\
+	logonbefore \
 	athdir	\
 	athinfo	\
 	beep	\

@@ -42,7 +42,8 @@ typedef struct {
     } out;
 } LSH_DLGINFO_EX, FAR *LPLSH_DLGINFO_EX;
 
-#define LSH_DLGINFO_EX_V1_SZ (sizeof(DWORD) + 3 * sizeof(LPSTR) * 8 * sizeof(int))
+#define LSH_DLGINFO_EX_V1_SZ (sizeof(DWORD) + 3 * sizeof(LPSTR) + 8 * sizeof(int))
+#define LSH_DLGINFO_EX_V2_SZ (sizeof(DWORD) + 3 * sizeof(LPSTR) + 8 * sizeof(int) + max(LEASH_USERNAME_SZ,LEASH_REALM_SZ))
 
 typedef struct {                                                
     char    principal[MAX_K_NAME_SZ]; /* Principal name/instance/realm */

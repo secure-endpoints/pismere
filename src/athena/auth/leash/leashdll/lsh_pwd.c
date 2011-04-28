@@ -1305,7 +1305,7 @@ AuthenticateProc(
         *( (LPLSH_DLGINFO_EX far *)(&lpdi) ) = (LPLSH_DLGINFO_EX)(LPSTR)lParam;
 
 		if ((lpdi->size != LSH_DLGINFO_EX_V1_SZ && 
-             lpdi->size != sizeof(LSH_DLGINFO_EX)) ||
+             lpdi->size < sizeof(LSH_DLGINFO_EX)) ||
 			lpdi->dlgtype != DLGTYPE_PASSWD) {
 
 			MessageBox(hDialog, "An incorrect initialization data structure was provided.",
@@ -1314,7 +1314,7 @@ AuthenticateProc(
 			return FALSE;
 		}
 
-        if ( lpdi->size == sizeof(LSH_DLGINFO_EX) ) {
+        if ( lpdi->size >= sizeof(LSH_DLGINFO_EX) ) {
             lpdi->out.username[0] = 0;
             lpdi->out.realm[0] = 0;
         }
@@ -1752,7 +1752,7 @@ AuthenticateProc(
                     Leash_set_default_noaddresses(noaddresses);
                 }
 
-                if ( lpdi->size == sizeof(LSH_DLGINFO_EX) ) {
+                if ( lpdi->size >= sizeof(LSH_DLGINFO_EX) ) {
                     strncpy(lpdi->out.username, username, LEASH_USERNAME_SZ);
                     lpdi->out.username[LEASH_USERNAME_SZ-1] = 0;
                     strncpy(lpdi->out.realm, realm, LEASH_REALM_SZ);
@@ -1814,7 +1814,7 @@ NewPasswordProc(
 
         *( (LPLSH_DLGINFO_EX far *)(&lpdi) ) = (LPLSH_DLGINFO_EX)(LPSTR)lParam;
 
-		if ((lpdi->size != sizeof(LSH_DLGINFO_EX) && 
+		if ((lpdi->size < sizeof(LSH_DLGINFO_EX) && 
              lpdi->size != LSH_DLGINFO_EX_V1_SZ) ||
 			 lpdi->dlgtype != DLGTYPE_CHPASSWD) {
 
@@ -1824,7 +1824,7 @@ NewPasswordProc(
 			return FALSE;
 		}
 
-        if ( lpdi->size == sizeof(LSH_DLGINFO_EX) ) {
+        if ( lpdi->size >= sizeof(LSH_DLGINFO_EX) ) {
             lpdi->out.username[0] = 0;
             lpdi->out.realm[0] = 0;
         }
@@ -2105,7 +2105,7 @@ NewPasswordProc(
                     return TRUE;
 				}
 
-                if ( lpdi->size == sizeof(LSH_DLGINFO_EX) ) {
+                if ( lpdi->size >= sizeof(LSH_DLGINFO_EX) ) {
                     strncpy(lpdi->out.username, username, LEASH_USERNAME_SZ);
                     lpdi->out.username[LEASH_USERNAME_SZ-1] = 0;
                     strncpy(lpdi->out.realm, realm, LEASH_REALM_SZ);

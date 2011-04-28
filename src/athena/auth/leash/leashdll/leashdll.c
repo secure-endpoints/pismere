@@ -46,7 +46,6 @@ DECL_FUNC_PTR(dest_tkt);
 DECL_FUNC_PTR(lsh_LoadKrb4LeashErrorTables); // XXX
 DECL_FUNC_PTR(krb_in_tkt);
 DECL_FUNC_PTR(krb_save_credentials);
-DECL_FUNC_PTR(krb5_free_addresses);
 DECL_FUNC_PTR(krb_get_krbconf2);
 DECL_FUNC_PTR(krb_get_krbrealm2);
 DECL_FUNC_PTR(krb_life_to_time);
@@ -109,6 +108,8 @@ DECL_FUNC_PTR(krb5_decode_ticket);
 DECL_FUNC_PTR(krb5_get_host_realm);
 DECL_FUNC_PTR(krb5_free_host_realm);
 DECL_FUNC_PTR(krb5_c_random_make_octets);
+DECL_FUNC_PTR(krb5_free_addresses);
+DECL_FUNC_PTR(krb5_free_default_realm);
 
 // Krb524 functions
 DECL_FUNC_PTR(krb524_init_ets);
@@ -234,6 +235,7 @@ FUNC_INFO k5_fi[] = {
     MAKE_FUNC_INFO(krb5_get_host_realm),
     MAKE_FUNC_INFO(krb5_free_host_realm),
     MAKE_FUNC_INFO(krb5_c_random_make_octets),
+    MAKE_FUNC_INFO(krb5_free_default_realm),
 	END_FUNC_INFO
 };
 

@@ -1,3 +1,54 @@
+2004-07-07  Jeffrey Altman <jaltman@mit.edu>
+
+    * cc_mslsa.c:  Fix thread safety
+
+2004-07-07  Jeffrey Altman <jaltman@mit.edu>
+
+    * cc_mslsa.c:  When obtaining a TGT from MSLSA, do not ignore 
+      the cache if the requested enctype is the NULL enctype.
+
+2004-06-29  Jeffrey Altman <jaltman@mit.edu>
+
+    * cc_mslsa.c: 
+    - is_windows_2000() indicates the OS is Windows 2000 or higher
+    - is_windows_xp() indicates the OS is Windows XP or higher which
+      indicates that PKERB_QUERY_TKT_CACHE_EX_RESPONSE and 
+      PKERB_TICKET_CACHE_INFO_EX are available.
+    - does_retrieve_ticket_cache_ticket() checks to see if a Microsoft
+      private fix is available which adds a new Cache Flag,
+      KERB_RETRIEVE_TICKET_CACHE_TICKET, which when set causes the 
+      requested ticket to be stored in the LSA cache even when the
+      TicketFlags and EncType are not set to 0.
+    - KerbExternalTicketMatch() is a test to determine if two 
+      Microsoft External Tickets are identical
+    + use the KerbQueryTicketCacheExMessage LSA call on XP or higher
+    + specify the KERB_RETRIEVE_TICKET_CACHE_TICKET flag when it is
+      available
+    = The combination of both + items will cause the ClientRealm
+      to be displayed properly for all cross realm tickets obtained
+      via the MSLSA
+    
+
+2004-06-21  Jeffrey Altman <jaltman@mit.edu>
+
+    * cc_mslsa.c: Comment out call to FormatMessage() which fails
+      horribly on non-English systems.  We do not need the output
+      or printf statements as part of a library.  Therefore, we 
+      will ignore this for the time being.   When we decide we
+      want to log event to the Event Log then we can properly 
+      implement this function.
+
+2004-06-18  Jeffrey Altman <jaltman@mit.edu>
+
+    * cc_mslsa.c: Enforce acceptable enctypes by checking against
+      the default_tgs_enctypes list instead of the permitted_enctypes
+      list;  only enforce the desired enctype when retrieving tickets
+      to deliver to an application.  do not enforce when attempting 
+      to determine the current principal name.  this is important
+      because specifying an enctype results in a TGS_REQ being sent
+      to the KDC;  close memory leak of krb5_cred objects in 
+      krb5_lcc_retrieve().
+
 2004-05-25  Jeffrey Altman <jaltman@mit.edu>
 
     * cc_mslsa.c:  GetMSTGT().  Initialize pTicketRequest to NULL 
