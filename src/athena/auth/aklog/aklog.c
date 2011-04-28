@@ -1,11 +1,11 @@
 /*
-* $Id: aklog.c,v 1.12 2004/03/31 08:22:25 jaltman Exp $
+* $Id: aklog.c,v 1.13 2004/07/29 17:17:43 jaltman Exp $
 *
 * Copyright 1990,1991 by the Massachusetts Institute of Technology
 * For distribution and copying rights, see the file "mit-copyright.h"
 */
 
-static const char rcsid[] = "$Id: aklog.c,v 1.12 2004/03/31 08:22:25 jaltman Exp $";
+static const char rcsid[] = "$Id: aklog.c,v 1.13 2004/07/29 17:17:43 jaltman Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -392,7 +392,7 @@ static char *afs_realm_of_cell(struct afsconf_cell *cellconfig)
 #ifdef AKLOG_KRB5
 static char *afs_realm_of_cell5(krb5_context context, struct afsconf_cell *cellconfig)
 {
-	char ** krbrlms;
+	char ** krbrlms = 0;
 	static char krbrlm[REALM_SZ+1];
 	krb5_error_code status;
 
@@ -401,14 +401,14 @@ static char *afs_realm_of_cell5(krb5_context context, struct afsconf_cell *cellc
 
 	status = krb5_get_host_realm( context, cellconfig->hostName[0], &krbrlms );
 
-	if(krbrlms && krbrlms[0])
+	if (status == 0 && krbrlms && krbrlms[0])
 		strcpy(krbrlm, krbrlms[0]);
 	else {
 		strcpy(krbrlm, cellconfig->name);
 		strupr(krbrlm);
 	}
 
-	if(krbrlms)
+	if (status == 0 && krbrlms)
 		krb5_free_host_realm( context, krbrlms );
 
 	return krbrlm;

@@ -423,7 +423,7 @@ void do_ccache(name)
     krb5_cc_cursor cur;
     krb5_creds creds;
     krb5_principal princ;
-    krb5_flags flags;
+    krb5_flags flags = 0;
     krb5_error_code code;
 	    
     if (status_only)
@@ -445,7 +445,10 @@ void do_ccache(name)
 	}
     }
  
-    flags = 0;				/* turns off OPENCLOSE mode */
+#ifdef KRB5_TC_NOTICKET
+    /* turn off OPENCLOSE mode and turn on NOTICKET mode */
+    flags = show_etype ? 0 : KRB5_TC_NOTICKET;
+#endif
     if ((code = krb5_cc_set_flags(kcontext, cache, flags))) {
 	if (code == KRB5_FCC_NOFILE) {
 	    if (!status_only) {

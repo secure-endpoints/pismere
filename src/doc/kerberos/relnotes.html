@@ -1,19 +1,19 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-  <title>Release Notes for Kerberos for Windows 2.6.4</title>
+  <title>Release Notes for Kerberos for Windows 2.6.5</title>
   <meta content="Jeffrey Altman &lt;jaltman@mit.edu&gt;" name="author">
 </head>
 <body>
 <center>
-<h1>Kerberos for Windows 2.6.4<br>
+<h1>Kerberos for Windows 2.6.5<br>
 </h1>
 <p>
 </p>
 <h2>Release Notes</h2>
 <p>
 </p>
-<h3>12 July 2004</h3>
+<h3>17 September 2004</h3>
 </center>
 <h3>Table of Contents</h3>
 <ul type="disc">
@@ -73,7 +73,7 @@ releases...</a> </li>
   </li>
 <!--
 <li><a href="#feedback">Feedback</a></li>
---> 
+-->
 </ul>
 <!-- ---------------------------------------------------------------------- -->
 <p></p>
@@ -82,11 +82,11 @@ releases...</a> </li>
 <p>MIT Kerberos for Windows (<em>KfW</em>) is an integrated <a
  href="http://web.mit.edu/kerberos/">Kerberos</a> release
 for Microsoft Windows operating systems. It includes the Kerberos v4
-library, Kerberos v5 library version 1.3.2, Kerberos v5 GSS API
+library, Kerberos v5 library version 1.3.5, Kerberos v5 GSS API
 library,
 Kerberos 524 library, KClient
 API library, Leash API library, Leash GUI credentials manager,
-kinit/klist/kdestroy/krb524init/aklog command-line credentials
+kinit/klist/kdestroy/krb524init/ms2mit/aklog command-line credentials
 managers, and
 an in-memory credentials cache.
 </p>
@@ -103,6 +103,25 @@ same thing.
 <p></p>
 <hr><a name="whatsnew"></a>
 <h2>What's New in Kerberos for Windows 2.6</h2>
+<h3>2.6.5</h3>
+<ul>
+  <li>Correct incompatibility between Kerberos 5 MSLSA krb5_ccache and
+Windows 2000 (introduced in 2.6.4)</li>
+</ul>
+<ul>
+  <li>Kerberos 5 library updated to release 1.3.5.&nbsp; Corrects two
+security holes which could allow a rouge KDC to execute arbitrary code
+on the client.&nbsp; See the Kerberos 5 README file for details of the
+changes in the Kerberos 5 version 1.3.5 distribution.</li>
+</ul>
+<ul>
+  <li>Add a new MSI based installation option for organizations which
+need to distribute KFW via group policy.&nbsp; The source for the
+installer is part of the KFW SDK.&nbsp; The MSI may be customized via
+the use of MSI transforms. See the file
+install\wix\msi-deployment-guide.txt for details.<br>
+  </li>
+</ul>
 <h3>2.6.4</h3>
 <ul>
   <li>Solve problem in MSLSA: ccache which would result in premature
@@ -119,7 +138,7 @@ Kerberos 5 README file for details of the changes in the
 Kerberos 5 version 1.3.4 distribution.</li>
 </ul>
 <ul>
-  <li>Add support for the location of the AllowTGTSessionKey registry 
+  <li>Add support for the location of the AllowTGTSessionKey registry
 value in Windows XP SP2 to the installer</li>
 </ul>
 <ul>
@@ -183,7 +202,8 @@ passwords are expired.<br>
 </ul>
 <ul>
   <li>Leash implements IP address change detection which is used in
-conjunction with KDC Probing to determine when dialogs for obtaining tickets
+conjunction with KDC Probing to determine when dialogs for obtaining
+tickets
 should be displayed to the end user</li>
 </ul>
 <ul>
@@ -1117,15 +1137,16 @@ The command line options for <b>leash32</b> are:
 Windows XP. While building on Windows 9x/Me might work, it is not
 supported.
 </p>
-<p>First, make sure that you have a Microsoft Visual C++ compiler (version 6.0 or 
-<a href="http://msdn.microsoft.com/visualc/vctoolkit2003/">newer</a>),
+<p>First, make sure that you have a Microsoft Visual C++ compiler
+(version 6.0 or <a
+ href="http://msdn.microsoft.com/visualc/vctoolkit2003/">newer</a>),
 a recent release of the <a
  href="http://www.microsoft.com/msdownload/platformsdk/sdkupdate/">Microsoft
 Platform SDK</a> (August 2001 or higher is known to work), <a
  href="http://www.activestate.com/">ActiveState Perl</a> (build 631 is
 known to work), sed, gawk, cat, and rm in your PATH. You can get sed,
-gawk, cat, and rm from the <a
- href="http://cygwin.com/">Cygwin distribution</a>.
+gawk, cat, and rm from the <a href="http://cygwin.com/">Cygwin
+distribution</a>.
 Also make sure that your INCLUDE path includes the Microsoft Platform
 SDK before the Microsoft Visual C++ include files and that perl has
 been installed so that .pl files are automatically executed with perl.
@@ -1634,7 +1655,8 @@ using Kerberos either to an Active Directory Domain or a non-Microsoft
 KDC.
 </p>
 <p>
-A user is able to logon to Windows using the Kerberos LSA if the machine
+A user is able to logon to Windows using the Kerberos LSA if the
+machine
 is part of a Windows 2000 or Windows 2003 Active Directory domain or
 if the machine has been configured to authenticate to a non-Microsoft
 KDC
@@ -1694,11 +1716,9 @@ session you receive will not be a Kerberos Logon Session.&nbsp; There
 will be no Kerberos
 principal and no LSA cache to access.
 </p>
-
 <p>
 The result of a real KSETUP configuration looks like this:
 </p>
-
 <br>
 <pre>&nbsp;&nbsp; [C:\4\4NT]ksetup</pre>
 <pre>&nbsp;&nbsp; default realm = KRB5.COLUMBIA.EDU (external)</pre>
@@ -1724,38 +1744,35 @@ The result of a real KSETUP configuration looks like this:
 <pre>&nbsp;&nbsp; Mapping jaltman@KRB5.COLUMBIA.EDU to jaltman.</pre>
 <pre>&nbsp;&nbsp; Mapping jaltman@CC.COLUMBIA.EDU to jaltman.</pre>
 <pre>&nbsp;&nbsp; Mapping jaltman@ATHENA.MIT.EDU to jaltman.</pre>
-<pre>&nbsp;&nbsp; Mapping all users (*) to a local account by the same name (*).<br><br></pre>
-<p>&nbsp;</p>
-
-<p>
-The MSLSA: credential cache relies on the ability to extract the entire 
-Kerberos ticket including the session key from the Kerberos LSA.&nbsp; In an 
-attempt to increase security Microsoft has begun to implement a feature 
-by which they no longer export the session keys for Ticket Getting Tickets. 
-This has the side effect of making them useless to the MIT krb5 library 
-when attempting to request additional service tickets.
+<pre>&nbsp;&nbsp; Mapping all users (*) to a local account by the same name (*)</pre>
+<p>The MSLSA: credential cache relies on the ability to extract the
+entire Kerberos ticket including the session key from the Kerberos
+LSA.&nbsp; In an attempt to increase security Microsoft has begun to
+implement a feature by which they no longer export the session keys for
+Ticket Getting Tickets. This has the side effect of making them useless
+to the MIT krb5 library when attempting to request additional service
+tickets.
 </p>
-
 <p>
 This new feature has been seen in Windows 2003 Server, Windows 2000
-Server SP4, and Windows XP SP2.&nbsp; We assume that it will be implemented in
-all future Microsoft operating systems supporting the Kerberos SSPI.&nbsp;
-Microsoft does work closely with MIT and has provided a registry key to disable 
-this new feature.
+Server SP4, and Windows XP SP2.&nbsp; We assume that it will be
+implemented in
+all future Microsoft operating systems supporting the Kerberos
+SSPI.&nbsp;
+Microsoft does work closely with MIT and has provided a registry key to
+disable this new feature.
 </p>
-
 <pre>&nbsp; HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters</pre>
-<pre>&nbsp;&nbsp;&nbsp; AllowTGTSessionKey = 0x01 (DWORD)</pre><br>
-</pre>
+<pre>&nbsp;&nbsp;&nbsp; AllowTGTSessionKey = 0x01 (DWORD)</pre>
 On Windows XP SP2 the key is specified as <br>
-<br>
 <pre>&nbsp; HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos</pre>
-<pre>&nbsp;&nbsp;&nbsp; AllowTGTSessionKey = 0x01 (DWORD)</pre><br>
-
+<pre>&nbsp;&nbsp;&nbsp; AllowTGTSessionKey = 0x01 (DWORD)</pre>
 <p>
 It has been noted that the Microsoft Kerberos LSA does not provide
-enough information within its KERB_EXTERNAL_TICKET structure to properly
-construct the Client Principal simply by examining a single ticket.&nbsp; From
+enough information within its KERB_EXTERNAL_TICKET structure to
+properly
+construct the Client Principal simply by examining a single
+ticket.&nbsp; From
 the MSDN Library:
 </p>
 &nbsp; <span style="font-weight: bold;">ClientName </span><br>
@@ -1787,26 +1804,26 @@ mapping), this string <br>
 &nbsp;&nbsp;&nbsp; contains the original name. <br>
 <p>
 Unfortunately, there is no field here which contains the domain of the
-client. In order for the krb5_ccache to properly report the client 
-principal name, the client principal name is constructed by utilizing 
+client. In order for the krb5_ccache to properly report the client
+principal name, the client principal name is constructed by utilizing
 the ClientName and DomainName fields of the Initial TGT associated with
-the Kerberos LSA credential cache. To disable the use of the TGT info and 
-instead simply use the "DomainName" field of the current ticket define 
-one of the following registry keys depending on whether the change should
+the Kerberos LSA credential cache. To disable the use of the TGT info
+and instead simply use the "DomainName" field of the current ticket
+define one of the following registry keys depending on whether the
+change should
 be system global or just for the current user.
 </p>
 <pre>&nbsp;&nbsp; HKLM\Software\MIT\Kerberos5\</pre>
-<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PreserveInitialTicketIdentity = 0x0 (DWORD)</pre><br>
-
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PreserveInitialTicketIdentity = 0x0 (DWORD)</pre>
 <pre>&nbsp;&nbsp; HKCU\Software\MIT\Kerberos5\</pre>
-<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PreserveInitialTicketIdentity = 0x0 (DWORD)</pre><br>
-
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PreserveInitialTicketIdentity = 0x0 (DWORD)</pre>
 <p>
 As of KFW 2.6.4 it may be possible sometime in the future for the
 correct client
 realm to be obtained from the LSA credential cache contents.&nbsp;
 However, it will
-require a fix from Microsoft which at the present time is not available.
+require a fix from Microsoft which at the present time is not
+available.
 </p>
 <hr style="width: 100%; height: 2px;"><a name="gss-client"></a>
 <h2>GSSAPI Sample Client (gss.exe):</h2>
@@ -1818,13 +1835,12 @@ is not compatible
 with the Platform SDK/Samples/Security/SSPI/GSS/ samples which
 Microsoft has been
 shipping as of January 2004.&nbsp; Revised versions of these samples
-are available upon 
-request to krbdev@mit.edu.&nbsp; Microsoft is committed to distribute
+are available upon request to krbdev@mit.edu.&nbsp; Microsoft is
+committed to distribute
 revised samples
 which are compatible with the MIT distributed tools in a future SDK and
 via MSDN.
 </p>
-
 <p>
 The following configuration options may be set for testing GSSAPI
 connections with a compatible server:</p>
@@ -1972,7 +1988,8 @@ credentials cache had to be shortened for XP.) </li>
 short.
     <p></p>
   </li>
-  <li>Kerberos v4 and v5 now build with <a href="#config_dns">DNS support</a>
+  <li>Kerberos v4 and v5 now build with <a href="#config_dns">DNS
+support</a>
 by
 default.
     <p></p>

@@ -75,10 +75,13 @@ END_MESSAGE_MAP()
 // CLeashApp construction
 CLeashApp::CLeashApp()
 {
-	m_krbv5_context = NULL;
+    m_krbv5_context = NULL;
     m_krbv5_profile = NULL;
     // TODO: add construction code here,
-	// Place all significant initialization in InitInstance
+    // Place all significant initialization in InitInstance
+
+    // Memory may not be initialized to zeros (in debug)
+    memset(&ticketinfo, 0, sizeof(ticketinfo));
 
     ticketinfo.lockObj = CreateMutex(NULL, FALSE, NULL);
     m_tgsReqMutex = CreateMutex(NULL, FALSE, NULL);
@@ -157,7 +160,7 @@ BOOL CLeashApp::InitInstance()
     	*pPath = 0;
     	pPath--;   
     }
-	strcat(modulePath, LEASH_HELP_FILE);
+    strcat(modulePath, LEASH_HELP_FILE);
     m_helpFile = modulePath;
 
     ///strcat(dllFile, LEASH_DLL);  
@@ -168,10 +171,10 @@ BOOL CLeashApp::InitInstance()
     if (!InitDLLs())
         return FALSE; //exit program, can't load LEASHDLL
 
-	// Check for args (switches)
+    // Check for args (switches)
     LPCTSTR exeFile		= __targv[0];
     LPCTSTR optionParam =  __targv[1];
-	
+
     if (optionParam)
     {	
         if (*optionParam  == '-' || *optionParam  == '/')
@@ -352,15 +355,15 @@ BOOL CLeashApp::InitInstance()
 #endif
 
     // Registry key under which our settings are stored.
-	if (m_pszAppName)
-		free((void*)m_pszAppName);
-	m_pszAppName = _tcsdup("Leash32");    
+    if (m_pszAppName)
+        free((void*)m_pszAppName);
+    m_pszAppName = _tcsdup("Leash32");    
     SetRegistryKey(_T("MIT"));
 
     LoadStdProfileSettings(); // Load standard INI file options (including MRU)
 
-	// Register the application's document templates.  Document templates
-	//  serve as the connection between documents, frame windows and views.
+    // Register the application's document templates.  Document templates
+    //  serve as the connection between documents, frame windows and views.
 
     CSingleDocTemplate* pDocTemplate;
     pDocTemplate = new CSingleDocTemplate(

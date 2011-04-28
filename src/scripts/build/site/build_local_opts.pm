@@ -2,6 +2,8 @@ package build_local_opts;
 
 use strict;
 
+print "<<" . $ENV{HOSTNAME} . ">>\n";
+
 if ($ENV{HOSTNAME} && ($ENV{HOSTNAME} =~ /\.mit\.edu$/i) &&
     !(grep(/^MIT_ONLY=/, @ARGV))) {
     push(@ARGV, 'MIT_ONLY=1');

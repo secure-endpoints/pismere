@@ -266,6 +266,7 @@ Leash_afs_klog(
     krb5_creds * k5creds = 0;
     krb5_error_code r;
     krb5_principal client_principal = 0;
+    krb5_flags		flags = 0;
 #endif /* NO_KRB5 */
 
     if (!AfsAvailable || GetAfsStatus(&AfsOnLine) && !AfsOnLine)
@@ -360,26 +361,35 @@ Leash_afs_klog(
         /* Ask for DES since that is what V4 understands */
         increds.keyblock.enctype = ENCTYPE_DES_CBC_CRC;
 
-        r = (*pkrb5_get_credentials)(context, 0, _krb425_ccache, &increds, &k5creds);
+#ifdef KRB5_TC_NOTICKET
+        flags = 0;
+        r = pkrb5_cc_set_flags(context, _krb425_ccache, flags);
+#endif
+        r = pkrb5_get_credentials(context, 0, _krb425_ccache, &increds, &k5creds);
         if (r == KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN ||
 			r == KRB5KRB_ERR_GENERIC /* Heimdal */) {
             /* Next try Service@REALM */
             pkrb5_free_principal(context, increds.server);
-            r = (*pkrb5_build_principal)(context, &increds.server,
-                                         strlen(RealmName),
-                                          RealmName,
-                                          ServiceName,
-                                          0);
+            r = pkrb5_build_principal(context, &increds.server,
+                                      strlen(RealmName),
+                                      RealmName,
+                                      ServiceName,
+                                      0);
             if (r == 0)
-                r = (*pkrb5_get_credentials)(context, 0, _krb425_ccache, &increds, &k5creds);
+                r = pkrb5_get_credentials(context, 0, _krb425_ccache, &increds, &k5creds);
         }
+
         pkrb5_free_principal(context, increds.server);
-		pkrb5_free_principal(context, client_principal);
+        pkrb5_free_principal(context, client_principal);
+#ifdef KRB5_TC_NOTICKET
+        flags = KRB5_TC_NOTICKET;
+        r = pkrb5_cc_set_flags(context, _krb425_ccache, flags);
+#endif
         (void) pkrb5_cc_close(context, _krb425_ccache);
         _krb425_ccache = 0;
 
         if (r) {
-			pkrb5_free_context(context);
+            pkrb5_free_context(context);
             try_krb5 = 0;
             goto use_krb4;
         }

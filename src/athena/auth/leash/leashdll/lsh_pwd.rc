@@ -126,12 +126,12 @@ BEGIN
     LTEXT           "Kerberos 5 Options:",IDC_STATIC_KRB5,22,139,101,8
     LTEXT           "HMS",IDC_STATIC_LIFETIME_VALUE,89,103,131,8
     LTEXT           "HMS",IDC_STATIC_RENEW_TILL_VALUE,102,193,141,8
-    LTEXT           "version",IDC_STATIC_VERSION,7,244,143,8
+    LTEXT           "",IDC_STATIC_VERSION,7,244,143,8
     ICON            LEASHICON,IDC_PICTURE_LEASH,21,15,20,20
     LTEXT           "You are required to type your Kerberos Password",
                     IDC_STATIC_NOTICE,51,23,276,8
     RTEXT           "Renew Till:",IDC_STATIC_RENEW,37,193,59,8
-    LTEXT           "copyright",IDC_STATIC_COPYRIGHT,7,256,323,8
+    LTEXT           "",IDC_STATIC_COPYRIGHT,7,256,323,8
 END
 
 IDD_PASSWORD DIALOG DISCARDABLE  0, 0, 382, 198

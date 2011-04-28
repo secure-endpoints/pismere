@@ -1,10 +1,10 @@
 #define VER_PROD_MAJOR 2
 #define VER_PROD_MINOR 6
-#define VER_PROD_REV   4
+#define VER_PROD_REV   5
 
 #define VER_PROD_MAJOR_STR  "2"
 #define VER_PROD_MINOR_STR  "6"
-#define VER_PROD_REV_STR    "4"
+#define VER_PROD_REV_STR    "5"
 
 #define VER_PRODUCTNAME_STR "MIT Kerberos for Windows"
 

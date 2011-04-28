@@ -7,7 +7,7 @@
 #  !include <win32.mak>
 # -------------------------------------------------------------------------
 #
-# Define APPVER = [ 4.0 | 5.0 ] prior to including win32.mak to get
+# Define APPVER = [ 4.0 | 5.0 | 5.01 ] prior to including win32.mak to get
 #  build time checking for version dependencies and to mark the executable
 #  with version information.
 #
@@ -103,11 +103,20 @@ TARGETOS = WINNT
 APPVER = 4.0
 !ENDIF
 
+!IF "$(APPVER)" != "5.01"
 !IF "$(APPVER)" != "5.0"
 !IF "$(APPVER)" != "4.0"
-!ERROR Must specify APPVER environment variable (4.0, 5.0)
+!ERROR Must specify APPVER environment variable (4.0, 5.0, 5.01)
 !ENDIF
 !ENDIF
+!ENDIF
+
+
+!IF "$(APPVER)" =="5.01"
+!IFNDEF _WIN32_IE
+_WIN32_IE = 0x0501
+!ENDIF # _WIN32_IE
+!ENDIF # APPVER == 5.01
 
 !IF "$(APPVER)" =="5.0"
 !IFNDEF _WIN32_IE
@@ -203,6 +212,13 @@ _WIN32_IE = 0x0300
 NMAKE_WINVER = 0x0500
 ! IFNDEF _WIN32_IE
 _WIN32_IE = 0x0400
+! ENDIF
+
+!ELSEIF "$(APPVER)" == "5.01"
+
+NMAKE_WINVER = 0x0501
+! IFNDEF _WIN32_IE
+_WIN32_IE = 0x0501
 ! ENDIF
 
 !ENDIF

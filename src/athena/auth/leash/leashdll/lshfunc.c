@@ -789,7 +789,7 @@ GetSecurityLogonSessionData(PSECURITY_LOGON_SESSION_DATA * ppSessionData)
     DWORD   ReqLen;
     BOOL    Success;
 
-    if (!ppSessionData)
+    if (!ppSessionData || !pLsaGetLogonSessionData)
         return FALSE;
     *ppSessionData = NULL;
 
