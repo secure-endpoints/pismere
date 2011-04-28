@@ -38,12 +38,19 @@ freefunc(
     void convert(a&, b&); \
     void free_convert(a&)
 
-Marshall_DECLARE_PAIR(CC_CHAR*, const char*);
-Marshall_DECLARE_PAIR(char*, const CC_CHAR*);
-Marshall_DECLARE_PAIR(infoNC**, const NC_INFO_LIST);
-Marshall_DECLARE_PAIR(NC_INFO_LIST*, const infoNC* const *);
-Marshall_DECLARE_PAIR(cred_union*, const CRED_UNION);
-Marshall_DECLARE_PAIR(CRED_UNION*, const cred_union);
+Marshall_DECLARE_PAIR(CC_CHAR*,  char*);
+Marshall_DECLARE_PAIR(char*,  CC_CHAR*);
+Marshall_DECLARE_PAIR(infoNC**,  NC_INFO_LIST);
+Marshall_DECLARE_PAIR(NC_INFO_LIST*,  infoNC* *);
+Marshall_DECLARE_PAIR(cred_union*,  CRED_UNION);
+Marshall_DECLARE_PAIR(CRED_UNION*,  cred_union);
+
+Marshall_DECLARE_PAIR(CC_CHAR*,  const char*);
+Marshall_DECLARE_PAIR(char*,  const CC_CHAR*);
+Marshall_DECLARE_PAIR(infoNC**,  const NC_INFO_LIST);
+Marshall_DECLARE_PAIR(NC_INFO_LIST*,  const infoNC* *);
+Marshall_DECLARE_PAIR(cred_union*,  const CRED_UNION);
+Marshall_DECLARE_PAIR(CRED_UNION*,  const cred_union);
 
 template <typename T1, typename T2>
 int

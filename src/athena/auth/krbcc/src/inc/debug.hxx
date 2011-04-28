@@ -9,7 +9,7 @@ private:
 public:
     PtrStr(void** ptr) {
         if (ptr)
-            _snprintf(str, sizeof(str), "0x%08X", *ptr);
+            _snprintf(str, sizeof(str), "0x%08p", *ptr);
         else
             _snprintf(str, sizeof(str), "(null)");
     }

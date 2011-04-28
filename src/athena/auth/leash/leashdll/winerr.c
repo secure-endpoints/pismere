@@ -56,15 +56,18 @@ LPSTR err_describe(LPSTR buf, long code)
 
     switch(table_num)
     {
+#ifndef NO_KRB4
     case krb_err_base:
     case kadm_err_base:
 	break;
+#endif
     default:
 	lstrcpy(buf, com_err_msg);
 	return buf;
     }
 
     cp = buf;
+#ifndef NO_KRB4
     if (table_num == krb_err_base)
         switch(offset)
         {
@@ -158,22 +161,24 @@ LPSTR err_describe(LPSTR buf, long code)
              */
 	
             com_err_msg = "You have entered an insecure or weak password.";
-	
         default:
             /* no extra error msg */
             break;
         }
+#endif /* NO_KRB4 */
     if(com_err_msg != buf)
         lstrcpy(buf, com_err_msg);
     cp = buf + lstrlen(buf);
     *cp++ = '\n';
     switch(table_num) {
+#ifndef NO_KRB4
     case krb_err_base:
         etype = "Kerberos";
         break;
     case kadm_err_base:
         etype = "Kerberos supplemental";
         break;
+#endif
     default:
         etype = Lerror_table_name(table_num);
         break;

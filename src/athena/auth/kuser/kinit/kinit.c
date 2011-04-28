@@ -483,6 +483,19 @@ parse_options(
     return opts->principal_name;
 }
 
+static krb5_context errctx;
+static void 
+extended_com_err_fn (const char *myprog, errcode_t code,
+                     const char *fmt, va_list args)
+{
+    const char *emsg;
+    emsg = krb5_get_error_message (errctx, code);
+    fprintf (stderr, "%s: %s ", myprog, emsg);
+    krb5_free_error_message (errctx, emsg);
+    vfprintf (stderr, fmt, args);
+    fprintf (stderr, "\n");
+}
+
 int
 k5_begin(
     struct k_opts* opts,
@@ -495,10 +508,14 @@ struct k4_data* k4)
     if (!got_k5)
 	return 0;
 
+
     if (code = krb5_init_context(&k5->ctx)) {
 	com_err(progname, code, "while initializing Kerberos 5 library");
 	return 0;
     }
+    set_com_err_hook (extended_com_err_fn);
+    errctx = k5->ctx;
+
     if (opts->k5_cache_name)
     {
 	code = krb5_cc_resolve(k5->ctx, opts->k5_cache_name, &k5->cc);
@@ -597,8 +614,10 @@ k5_end(
 	krb5_free_principal(k5->ctx, k5->me);
     if (k5->cc)
 	krb5_cc_close(k5->ctx, k5->cc);
-    if (k5->ctx)
+    if (k5->ctx) {
+        set_com_err_hook ((FARPROC)NULL);
 	krb5_free_context(k5->ctx);
+    }
     memset(k5, 0, sizeof(*k5));
 }
 

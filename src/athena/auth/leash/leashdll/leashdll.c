@@ -6,7 +6,9 @@
 
 HINSTANCE hLeashInst;
 
+#ifndef NO_KRB4
 HINSTANCE hKrb4 = 0;
+#endif
 HINSTANCE hKrb5 = 0;
 HINSTANCE hKrb524 = 0;
 HINSTANCE hSecur32 = 0;
@@ -19,6 +21,7 @@ HINSTANCE hCcapi = 0;
 
 DWORD     AfsAvailable = 0;
 
+#ifndef NO_KRB4
 // krb4 functions
 DECL_FUNC_PTR(get_krb_err_txt_entry);
 DECL_FUNC_PTR(k_isinst);
@@ -50,6 +53,7 @@ DECL_FUNC_PTR(krb_save_credentials);
 DECL_FUNC_PTR(krb_get_krbconf2);
 DECL_FUNC_PTR(krb_get_krbrealm2);
 DECL_FUNC_PTR(krb_life_to_time);
+#endif
 
 // krb5 functions
 DECL_FUNC_PTR(krb5_change_password);
@@ -114,9 +118,11 @@ DECL_FUNC_PTR(krb5_free_default_realm);
 DECL_FUNC_PTR(krb5_principal_compare);
 DECL_FUNC_PTR(krb5_string_to_deltat);
 
+#ifndef NO_KRB4
 // Krb524 functions
 DECL_FUNC_PTR(krb524_init_ets);
 DECL_FUNC_PTR(krb524_convert_creds_kdc);
+#endif
 
 // ComErr functions
 DECL_FUNC_PTR(com_err);
@@ -151,6 +157,7 @@ DECL_FUNC_PTR(cc_shutdown);
 DECL_FUNC_PTR(cc_get_NC_info);
 DECL_FUNC_PTR(cc_free_NC_info);
 
+#ifndef NO_KRB4
 FUNC_INFO k4_fi[] = {
     MAKE_FUNC_INFO(get_krb_err_txt_entry),
     MAKE_FUNC_INFO(k_isinst),
@@ -184,6 +191,7 @@ FUNC_INFO k4_fi[] = {
     MAKE_FUNC_INFO(krb_life_to_time),
     END_FUNC_INFO
 };
+#endif
 
 FUNC_INFO k5_fi[] = {
     MAKE_FUNC_INFO(krb5_change_password),
@@ -250,11 +258,13 @@ FUNC_INFO k5_fi[] = {
     END_FUNC_INFO
 };
 
+#ifndef NO_KRB4
 FUNC_INFO k524_fi[] = {
     MAKE_FUNC_INFO(krb524_init_ets),
     MAKE_FUNC_INFO(krb524_convert_creds_kdc),
     END_FUNC_INFO
 };
+#endif
 
 FUNC_INFO profile_fi[] = {
     MAKE_FUNC_INFO(profile_init),
@@ -336,12 +346,16 @@ DllMain(
     case DLL_PROCESS_ATTACH:
     {
         OSVERSIONINFO osvi;
+#ifndef NO_KRB4
         LoadFuncs(KRB4_DLL, k4_fi, &hKrb4, 0, 1, 0, 0);
+#endif
         LoadFuncs(KRB5_DLL, k5_fi, &hKrb5, 0, 1, 0, 0);
         LoadFuncs(COMERR_DLL, ce_fi, &hComErr, 0, 0, 1, 0);
         LoadFuncs(SERVICE_DLL, service_fi, &hService, 0, 1, 0, 0);
         LoadFuncs(SECUR32_DLL, lsa_fi, &hSecur32, 0, 1, 1, 1);
+#ifndef NO_KRB4
         LoadFuncs(KRB524_DLL, k524_fi, &hKrb524, 0, 1, 1, 1);
+#endif
 	LoadFuncs(PROFILE_DLL, profile_fi, &hProfile, 0, 1, 0, 0);
 	LoadFuncs(CCAPI_DLL, ccapi_fi, &hCcapi, 0, 1, 0, 0);
 
@@ -374,8 +388,10 @@ DllMain(
          * zero any fields we don't explicitly set
          */
         hLeashInst = hinstDLL;
+#ifndef NO_KRB4
         if (plsh_LoadKrb4LeashErrorTables)
             plsh_LoadKrb4LeashErrorTables(hLeashInst, 0);
+#endif
 
         Register_MITPasswordEditControl(hLeashInst);
 
@@ -396,8 +412,10 @@ DllMain(
 #ifndef NO_AFS
         afscompat_close();
 #endif
+#ifndef NO_KRB4
         if (hKrb4)
             FreeLibrary(hKrb4);
+#endif
         if (hKrb5)
             FreeLibrary(hKrb5);
 	if (hCcapi)
@@ -410,8 +428,10 @@ DllMain(
             FreeLibrary(hService);
         if (hSecur32)
             FreeLibrary(hSecur32);
+#ifndef NO_KRB4
         if (hKrb524)
             FreeLibrary(hKrb524);
+#endif
         if (hPsapi)
             FreeLibrary(hPsapi);
         if (hToolHelp32)

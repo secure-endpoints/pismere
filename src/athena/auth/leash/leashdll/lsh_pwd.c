@@ -453,10 +453,12 @@ int lsh_getkeystate(WORD keyid)
 
 LPSTR krb_err_func(int offset, long code)
 {
+#ifdef NO_KRB4
+    return(NULL);
+#else
     return pget_krb_err_txt_entry(offset);
+#endif
 }
-
-
 
 /****** End of Added utils from leash.c  ******/
 
@@ -732,7 +734,7 @@ PasswordProc(
         case IDOK:
 	{
 	    char* p_Principal;
-        DWORD value = 0;
+            DWORD value = 0;
 
 	    GETITEMTEXT(ids[state], (LPSTR)strings[state], 255);
 
@@ -804,9 +806,12 @@ PasswordProc(
                     case LSH_INVPRINCIPAL:
                     case LSH_INVINSTANCE:
                     case LSH_INVREALM:
+#ifndef NO_KRB4
                     case KRBERR(KDC_PR_UNKNOWN):
+#endif
 			next_state = STATE_PRINCIPAL;
 			break;
+#ifndef NO_KRB4
                     case KRBERR(RD_AP_TIME):
                     case KRBERR(KDC_SERVICE_EXP):
                         check_time = Leash_timesync(1);
@@ -820,6 +825,7 @@ PasswordProc(
                             return(TRUE);
                         }
                         break;
+#endif
                     }
 		    capslock = lsh_getkeystate(VK_CAPITAL);
                     /* low-order bit means caps lock is
@@ -968,13 +974,13 @@ GetProfileFile(
 {
     char **configFile = NULL;
     if (hKrb5 &&
-		pkrb5_get_default_config_files(&configFile)) 
+         pkrb5_get_default_config_files(&configFile)) 
     {
         GetWindowsDirectory(confname,szConfname);
         confname[szConfname-1] = '\0';
-		strncat(confname, "\\",sizeof(confname)-strlen(confname));
+        strncat(confname, "\\",sizeof(confname)-strlen(confname));
         confname[szConfname-1] = '\0';
-		strncat(confname, KRB5_FILE,sizeof(confname)-strlen(confname));
+        strncat(confname, KRB5_FILE,sizeof(confname)-strlen(confname));
         confname[szConfname-1] = '\0';
         return FALSE;
     }
@@ -991,9 +997,9 @@ GetProfileFile(
     {
         GetWindowsDirectory(confname,szConfname);
         confname[szConfname-1] = '\0';
-		strncat(confname, "\\",sizeof(confname)-strlen(confname));
+        strncat(confname, "\\",sizeof(confname)-strlen(confname));
         confname[szConfname-1] = '\0';
-		strncat(confname, KRB5_FILE,sizeof(confname)-strlen(confname));
+        strncat(confname, KRB5_FILE,sizeof(confname)-strlen(confname));
         confname[szConfname-1] = '\0';
     }
     
@@ -1006,53 +1012,59 @@ GetKrb4ConFile(
     UINT szConfname
     )
 {
-    if (hKrb5 && !hKrb4)
-	{ // hold krb.con where krb5.ini is located
-		CHAR krbConFile[MAX_PATH]="";
-		LPSTR pFind;
+    if (hKrb5
+#ifndef NO_KRB4
+         && !hKrb4
+#endif
+         )
+    { // hold krb.con where krb5.ini is located
+        CHAR krbConFile[MAX_PATH]="";
+        LPSTR pFind;
 
-	    //strcpy(krbConFile, CLeashApp::m_krbv5_profile->first_file->filename);
+        //strcpy(krbConFile, CLeashApp::m_krbv5_profile->first_file->filename);
         if (GetProfileFile(krbConFile, sizeof(krbConFile)))	
         {
-		    GetWindowsDirectory(krbConFile,sizeof(krbConFile));
+            GetWindowsDirectory(krbConFile,sizeof(krbConFile));
             krbConFile[MAX_PATH-1] = '\0';
-			strncat(krbConFile, "\\",sizeof(krbConFile)-strlen(krbConFile));
+            strncat(krbConFile, "\\",sizeof(krbConFile)-strlen(krbConFile));
             krbConFile[MAX_PATH-1] = '\0';
-			strncat(krbConFile, KRB5_FILE,sizeof(krbConFile)-strlen(krbConFile));
+            strncat(krbConFile, KRB5_FILE,sizeof(krbConFile)-strlen(krbConFile));
             krbConFile[MAX_PATH-1] = '\0';
         }
 
-		pFind = strrchr(krbConFile, '\\');
-		if (pFind)
-		{
-			*pFind = 0;
-			strncat(krbConFile, "\\",sizeof(krbConFile)-strlen(krbConFile));
+        pFind = strrchr(krbConFile, '\\');
+        if (pFind)
+        {
+            *pFind = 0;
+            strncat(krbConFile, "\\",sizeof(krbConFile)-strlen(krbConFile));
             krbConFile[MAX_PATH-1] = '\0';
-			strncat(krbConFile, KRB_FILE,sizeof(krbConFile)-strlen(krbConFile));
+            strncat(krbConFile, KRB_FILE,sizeof(krbConFile)-strlen(krbConFile));
             krbConFile[MAX_PATH-1] = '\0';
-		}
-		else
-			krbConFile[0] = 0;
-		
-		strncpy(confname, krbConFile, szConfname);
+        }
+        else
+            krbConFile[0] = 0;
+
+        strncpy(confname, krbConFile, szConfname);
         confname[szConfname-1] = '\0';
-	}
-	else if (hKrb4)
-	{ 
+    }
+#ifndef NO_KRB4
+    else if (hKrb4)
+    { 
         unsigned int size = szConfname;
         memset(confname, '\0', szConfname);
- 		if (!pkrb_get_krbconf2(confname, &size))
-		{ // Error has happened
-		    GetWindowsDirectory(confname,szConfname);
+        if (!pkrb_get_krbconf2(confname, &size))
+        { // Error has happened
+            GetWindowsDirectory(confname,szConfname);
             confname[szConfname-1] = '\0';
-			strncat(confname, "\\",szConfname-strlen(confname));
+            strncat(confname, "\\",szConfname-strlen(confname));
             confname[szConfname-1] = '\0';
-			strncat(confname,KRB_FILE,szConfname-strlen(confname));
+            strncat(confname,KRB_FILE,szConfname-strlen(confname));
             confname[szConfname-1] = '\0';
-		}
-	}
+        }
+    }
+#endif
     return FALSE;
-}
+}       
 
 BOOL
 GetKrb4RealmFile(
@@ -1060,52 +1072,58 @@ GetKrb4RealmFile(
     UINT szConfname
     )
 {
-    if (hKrb5 && !hKrb4)
-	{ // hold krb.con where krb5.ini is located
-		CHAR krbRealmConFile[MAX_PATH];
-		LPSTR pFind;
+    if (hKrb5 
+#ifndef NO_KRB4
+         && !hKrb4
+#endif
+         )
+    { // hold krb.con where krb5.ini is located
+        CHAR krbRealmConFile[MAX_PATH];
+        LPSTR pFind;
 
-		//strcpy(krbRealmConFile, CLeashApp::m_krbv5_profile->first_file->filename);
-		if (GetProfileFile(krbRealmConFile, sizeof(krbRealmConFile)))	
+        //strcpy(krbRealmConFile, CLeashApp::m_krbv5_profile->first_file->filename);
+        if (GetProfileFile(krbRealmConFile, sizeof(krbRealmConFile)))	
         {
-		    GetWindowsDirectory(krbRealmConFile,sizeof(krbRealmConFile));
+            GetWindowsDirectory(krbRealmConFile,sizeof(krbRealmConFile));
             krbRealmConFile[MAX_PATH-1] = '\0';
-			strncat(krbRealmConFile, "\\",sizeof(krbRealmConFile)-strlen(krbRealmConFile));
+            strncat(krbRealmConFile, "\\",sizeof(krbRealmConFile)-strlen(krbRealmConFile));
             krbRealmConFile[MAX_PATH-1] = '\0';
-			strncat(krbRealmConFile, KRB5_FILE,sizeof(krbRealmConFile)-strlen(krbRealmConFile));
+            strncat(krbRealmConFile, KRB5_FILE,sizeof(krbRealmConFile)-strlen(krbRealmConFile));
             krbRealmConFile[MAX_PATH-1] = '\0';
         }
 
-		pFind = strrchr(krbRealmConFile, '\\');
-		if (pFind)
-		{
-			*pFind = 0;
-			strncat(krbRealmConFile, "\\", sizeof(krbRealmConFile)-strlen(krbRealmConFile));
+        pFind = strrchr(krbRealmConFile, '\\');
+        if (pFind)
+        {
+            *pFind = 0;
+            strncat(krbRealmConFile, "\\", sizeof(krbRealmConFile)-strlen(krbRealmConFile));
             krbRealmConFile[MAX_PATH-1] = '\0';
-			strncat(krbRealmConFile, KRBREALM_FILE, sizeof(krbRealmConFile)-strlen(krbRealmConFile));
+            strncat(krbRealmConFile, KRBREALM_FILE, sizeof(krbRealmConFile)-strlen(krbRealmConFile));
             krbRealmConFile[MAX_PATH-1] = '\0';
-		}
-		else
-			krbRealmConFile[0] = 0;
-		
-		strncpy(confname, krbRealmConFile, szConfname);
+        }
+        else
+            krbRealmConFile[0] = 0;
+
+        strncpy(confname, krbRealmConFile, szConfname);
         confname[szConfname-1] = '\0';
-	}
-	else if (hKrb4)
-	{ 
+    }
+#ifndef NO_KRB4
+    else if (hKrb4)
+    { 
         unsigned int size = szConfname;
         memset(confname, '\0', szConfname);
         if (!pkrb_get_krbrealm2(confname, &size))
-		{ 
-		    GetWindowsDirectory(confname,szConfname);
+        { 
+            GetWindowsDirectory(confname,szConfname);
             confname[szConfname-1] = '\0';
-			strncat(confname, "\\",szConfname-strlen(confname));
+            strncat(confname, "\\",szConfname-strlen(confname));
             confname[szConfname-1] = '\0';
-			strncat(confname,KRBREALM_FILE,szConfname-strlen(confname));
+            strncat(confname,KRBREALM_FILE,szConfname-strlen(confname));
             confname[szConfname-1] = '\0';
             return TRUE;
-		}
-	}	
+        }
+    }	
+#endif
     return FALSE;
 }
 
@@ -1950,7 +1968,9 @@ AuthenticateProc(
 		    {
 		    case LSH_INVPRINCIPAL:
 		    case LSH_INVINSTANCE:
+#ifndef NO_KRB4
                     case KRBERR(KDC_PR_UNKNOWN):
+#endif
                         CSendDlgItemMessage(hDialog, IDC_EDIT_PRINCIPAL, EM_SETSEL, 0, 256);
                         SetFocus(GetDlgItem(hDialog,IDC_EDIT_PRINCIPAL));
                         break;
@@ -1958,6 +1978,7 @@ AuthenticateProc(
                         CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, EM_SETSEL, 0, 256);
                         SetFocus(GetDlgItem(hDialog,IDC_COMBO_REALM));
 			break;
+#ifndef NO_KRB4
 		    case KRBERR(RD_AP_TIME):
 		    case KRBERR(KDC_SERVICE_EXP):
 			check_time = Leash_timesync(1);
@@ -1969,6 +1990,7 @@ AuthenticateProc(
 			    return(TRUE);
 			}
 			break;
+#endif
                     default:
                         CSendDlgItemMessage(hDialog, IDC_EDIT_PASSWORD, EM_SETSEL, 0, 256);
                         SetFocus(GetDlgItem(hDialog,IDC_EDIT_PASSWORD));
@@ -2337,8 +2359,11 @@ NewPasswordProc(
 		    case LSH_INVPRINCIPAL:
 		    case LSH_INVINSTANCE:
 		    case LSH_INVREALM:
+#ifndef NO_KRB4
 		    case KRBERR(KDC_PR_UNKNOWN):
+#endif
 			break;
+#ifndef NO_KRB4
 		    case KRBERR(RD_AP_TIME):
 		    case KRBERR(KDC_SERVICE_EXP):
 			check_time = Leash_timesync(1);
@@ -2350,6 +2375,7 @@ NewPasswordProc(
 			    return(TRUE);
 			}
 			break;
+#endif
 		    default:
 			return(TRUE);
 		    }

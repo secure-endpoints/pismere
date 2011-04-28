@@ -229,7 +229,9 @@ alloc_name_NT(
     // Play it safe and say 3 characters are needed per 8 bits (byte).
     // Note that 20 characters are needed for a 64-bit number in
     // decimal (plus one for the string termination.
-    char lid[3*sizeof(LUID)+1];
+    // and include room for sessionId.
+    char lid[3*sizeof(LUID)+1+5];
+    DWORD sessionId;
     DWORD len = 0;
 
     *pname = 0;
@@ -238,6 +240,8 @@ alloc_name_NT(
     CLEANUP_ON_STATUS(status);
     status = get_authentication_id(hToken, &auth_id);
     CLEANUP_ON_STATUS(status);
+    if (!ProcessIdToSessionId(GetCurrentProcessId(), &sessionId))
+	sessionId = 0;
 
 #ifdef _DEBUG
     status = alloc_token_user(hToken, &ptu);
@@ -248,7 +252,7 @@ alloc_name_NT(
     CLEANUP_ON_STATUS(status);
 #endif
 
-    _snprintf(lid, sizeof(lid), "%I64u", auth_id);
+    _snprintf(lid, sizeof(lid), "%I64u.%u", auth_id, sessionId);
     lid[sizeof(lid)-1] = 0; // be safe
 
     len = (sizeof(prefix) - 1) + 1 + strlen(lid) + 1 + strlen(postfix) + 1;
@@ -263,6 +267,7 @@ alloc_name_NT(
     // was "invalid" (too long?) for some reason.
     //
     // Therefore, we now use "prefix.lid.postfix"
+    // and for Terminal server we use "prefix.lid.sessionId.postfix"
     //
 
     _snprintf(*pname, len, "%s.%s.%s", prefix, lid, postfix);

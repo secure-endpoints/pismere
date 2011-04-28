@@ -1,0 +1,179 @@
+TARGETTYPE=NONE
+
+!ifdef NODEBUG
+VCDBG=FREE
+!else
+VCDBG=CHECKED
+!endif
+
+# Note: the build system and the setupbuild.bat make different assumptions about $(PISMERE)
+# The build system assume this points to the script directory. The setupbuild.bat assumes
+# that the value is equivalent to scripts\..
+
+MAKECMD = nmake
+MAKEFILE = NTMakefile
+
+# Yes, we want to build the MIT aklog and network provider.
+#set AFSDEV_PACKAKLOG=1
+
+
+
+
+all::
+	- subst x: /d
+	- subst y: /d
+!ifndef MSVCDIR
+	if exist "$(VCINSTALLDIR)\..\..\MICROSOFT VISUAL STUDIO 8" subst x: "$(VCINSTALLDIR)"
+!else
+	subst x: "$(MSVCDIR)"
+!endif
+	subst y: .
+
+	if exist NTMakefile del NTMakefile
+	copy src\NTMakefile
+!if "$(CPU)" == "AMD64" 
+	set SYS_NAME=amd64_w2k
+!else
+	set SYS_NAME=i386_w2k
+!endif
+	- mkdir "$(MAKEDIR)\dest"
+	- mkdir "$(MAKEDIR)\obj"
+	- mkdir "$(MAKEDIR)\dest\$(CPU)_w2k"
+	- mkdir "$(MAKEDIR)\obj\$(CPU)_w2k"
+	
+	set AFSROOT=Y:
+!if exists("$(VCINSTALLDIR)\..\..\MICROSOFT VISUAL STUDIO 8")
+	set APPVER=5.02
+	SET _WIN32_IE=0x502
+	SET MSVCVer=8.0
+	set AFSVER_CL=1400
+!else
+	set AFSVER_CL=1310
+	SET _WIN32_IE=0x500
+	set APPVER=5.0
+!endif
+	set AFSDEV_BUILDTYPE=$(VCDBG)
+	set AFSDEV_INCLUDE=y:\extra;$(PISMERE)\..\athena\auth\krb4;$(PISMERE)\..\athena\auth\krb4\include;$(INCLUDE);$(MAKEDIR)\extra
+#	set AFSDEV_BIN=$(PATH)
+#	set AFSDEV_PACKAKLOG=1
+	set LANGNAME=en_US
+	set LANGID=1033
+	set LANGCP=1252
+!ifdef NODEBUG
+	set AFSDEV_DESTDIR=$(MAKEDIR)\dest\$(CPU)\rel
+	set AFSDEV_LIB=$(LIB);$(PISMERE)\target\lib\$(CPU)\rel
+	set LIB=$(AFSDEV_LIB)
+	set AFSDEV_AUXCDEFINES=-DNTPROTO_ENV -DREGISTER_POWER_NOTIFICATIONS
+!else
+	set AFSDEV_DESTDIR=$(MAKEDIR)\dest\$(CPU)\dbg
+	set AFSDEV_LIB=$(LIB);$(PISMERE)\target\lib\$(CPU)\dbg
+	set AFSDEV_AUXCDEFINES=-DNTPROTO_ENV -DREGISTER_POWER_NOTIFICATIONS -DDEBUG_VERBOSE
+!	if [set AFSDEV_LIB=%AFSDEV_LIB:;;=;%]
+!	endif
+!	if [set LIB=%AFSDEV_LIB%]
+!	endif
+
+	echo LIB is $(LIB)
+!endif
+	src\config\ntlang eng
+	nmake /f ntmakefile install 
+#	nmake /f ntmakefile msi
+
+
+
+
+clean::
+	- subst x: /d
+	- subst y: /d
+!ifndef MSVCDIR
+	if exist "$(VCINSTALLDIR)\..\..\MICROSOFT VISUAL STUDIO 8" subst x: "$(VCINSTALLDIR)"
+!else
+	subst x: "$(MSVCDIR)"
+!endif
+	subst y: .
+	if exist NTMakefile del NTMakefile
+	copy src\NTMakefile
+!if "$(CPU)" == "AMD64" 
+	set SYS_NAME=amd64_w2k
+!else
+	set SYS_NAME=i386_w2k
+!endif
+	set AFSDEV_BUILDTYPE=$(VCDBG)
+	set AFSDEV_INCLUDE=$(INCLUDE);$(MAKEDIR)\extra
+	set AFSDEV_BIN=$(PATH)
+	set AFSDEV_PACKAKLOG=1
+	set AFSROOT=Y:
+	set LANGNAME=en_US
+	set LANGID=1033
+	set LANGCP=1252
+!if exists("$(VCINSTALLDIR)\..\..\MICROSOFT VISUAL STUDIO 8")
+	set APPVER=5.02
+	SET _WIN32_IE=0x502
+	SET MSVCVer=8.0
+	set AFSVER_CL=1400
+!else
+	set AFSVER_CL=1310
+	SET _WIN32_IE=0x500
+	set APPVER=5.0
+!endif
+!ifdef NODEBUG
+	set AFSDEV_DESTDIR=$(MAKEDIR)\dest\$(CPU)\rel
+	set AFSDEV_LIB=$(LIB)$(PISMERE)\target\lib\$(CPU)\rel
+	set LIB=$(AFSDEV_LIB)
+!else
+	set AFSDEV_DESTDIR=$(MAKEDIR)\dest\$(CPU)\dbg
+	set AFSDEV_LIB=$(LIB)$(PISMERE)\target\lib\$(CPU)\dbg
+	set LIB=$(AFSDEV_LIB)
+!endif
+	src\config\ntlang eng
+	nmake /f ntmakefile clean
+	if exist DEST rd /s /q DEST
+
+
+msi::
+	- subst x: /d
+	- subst y: /d
+!ifndef MSVCDIR
+	if exist "$(VCINSTALLDIR)\..\..\MICROSOFT VISUAL STUDIO 8" subst x: "$(VCINSTALLDIR)"
+!else
+	subst x: "$(MSVCDIR)"
+!endif
+	subst y: .
+	if exist NTMakefile del NTMakefile
+	copy src\NTMakefile
+#	if not exist DEST mkdir DEST
+#	if not exist DEST\WinInstall mkdir DEST\WinInstall
+#	if not exist DEST\WinInstall\config mkdir DEST\WinInstall\config
+#	if not exist DEST\WinInstall\config\afsdcell.mit copy src\config\afsdcell.mit DEST\WinInstall\config\afsdcell.mit
+!if "$(CPU)" == "AMD64" 
+	set SYS_NAME=amd64_w2k
+!else
+	set SYS_NAME=i386_w2k
+!endif
+	set AFSDEV_BUILDTYPE=$(VCDBG)
+	set AFSDEV_INCLUDE=y:\extra;$(PISMERE)\..\athena\auth\krb4;$(PISMERE)\..\athena\auth\krb4\include;$(INCLUDE);$(MAKEDIR)\extra
+#	set AFSDEV_BIN=$(PATH)
+	set AFSROOT=Y:
+	set LANGNAME=en_US
+	set LANGID=1033
+	set LANGCP=1252
+!if exists("$(VCINSTALLDIR)\..\..\MICROSOFT VISUAL STUDIO 8")
+	set APPVER=5.02
+	SET _WIN32_IE=0x502
+	SET MSVCVer=8.0
+	set AFSVER_CL=1400
+!else
+	set AFSVER_CL=1310
+	SET _WIN32_IE=0x500
+	set APPVER=5.0
+!endif
+!ifdef NODEBUG
+	set AFSDEV_DESTDIR=$(MAKEDIR)\dest\$(CPU)\rel
+	set AFSDEV_LIB=$(LIB)$(PISMERE)\target\lib\$(CPU)\rel
+	set LIB=$(AFSDEV_LIB)
+!else
+	set AFSDEV_DESTDIR=$(MAKEDIR)\dest\$(CPU)\dbg
+	set AFSDEV_LIB=$(LIB)$(PISMERE)\target\lib\$(CPU)\dbg
+	set LIB=$(AFSDEV_LIB)
+!endif
+	nmake /f ntmakefile msi

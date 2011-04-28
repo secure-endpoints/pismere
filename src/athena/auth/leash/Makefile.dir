@@ -1,1 +1,2 @@
 DIRS=leashdll leash32 help htmlhelp
+WIN64DIRS=leashdll

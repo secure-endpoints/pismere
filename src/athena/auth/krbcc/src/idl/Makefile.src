@@ -17,10 +17,19 @@ S_FILE=$(S_DIR)\$(IDL_BASE)_s.c
 
 FILES=$(H_FILE) $(C_FILE) $(S_FILE)
 
+!if "$(CPU)" == "AMD64"
+TYPE=x64
+!elseif "($CPU)" == "IA64"
+TYPE=ia64
+!else
+TYPE=win32
+!endif
+
+
 all:: $(FILES)
 
 $(FILES): $(IDL_BASE).idl $(IDL_BASE).acf
-	midl -nologo -oldnames -Oic -error all -env win32 -h $(H_FILE) -cstub $(C_FILE) -sstub $(S_FILE) $(IDL_BASE).idl
+	midl -nologo -oldnames -Oic -error all -env $(TYPE) -h $(H_FILE) -cstub $(C_FILE) -sstub $(S_FILE) $(IDL_BASE).idl
 
 clean::
 	-@for %a in ( $(FILES) ) do @if exist %a del %a

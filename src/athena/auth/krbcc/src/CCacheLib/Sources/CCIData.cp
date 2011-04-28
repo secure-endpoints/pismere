@@ -24,7 +24,7 @@ CCISharedCCDataArray::CCISharedCCDataArray (
 	}
 };
 
-namespace Implementations {
+namespace CallImplementations {
 	typedef ::CCISharedCCData CCISharedCCData;
 	typedef ::CCISharedCCDataArray CCISharedCCDataArray;
 }

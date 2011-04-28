@@ -37,7 +37,7 @@ class CCISharedCCDataArray:
 		typedef Implementations::Vector <CCISharedCCData*>::Shared::iterator	iterator;
 		typedef Implementations::Vector <CCISharedCCData*>::Shared::const_iterator	const_iterator;
 			
-		CCIUInt32 GetSize () const { return mItems.size (); }
+		CCIUInt32 GetSize () const { return (CCIUInt32) mItems.size (); }
 			
 		iterator begin () { return mItems.begin (); }
 		iterator end () { return mItems.end (); }
@@ -49,7 +49,8 @@ class CCISharedCCDataArray:
 		Implementations::Vector <CCISharedCCData*>::Shared	mItems;
 };
 
-namespace Implementations {
-	typedef ::CCISharedCCData CCISharedCCData;
+namespace CallImplementations {
+	typedef ::CCISharedCCData      CCISharedCCData;
 	typedef ::CCISharedCCDataArray CCISharedCCDataArray;
 }
+

@@ -2,7 +2,11 @@
 # see makefile.html for instuctions.
 #
 
+!if  ("$(CPU)" == "IA64" ) || ("$(CPU)" == "AMD64" ) || ("$(CPU)" == "ALPHA64" )
+NAME=krbcc64s
+!else
 NAME=krbcc32s
+!endif
 TARGETTYPE=EXE
 TARGETSS=console
 
@@ -18,7 +22,12 @@ USE_DEFAULTLIB=1
 NO_LIBC_LINK=1
 USE_LIBC_DLL=1
 DEP_LIBS=..\lib\$(O)\ccutil.lib ..\CCacheLib\Sources\$(O)\CCache.lib
-LIBS=rpcrt4.lib $(DEP_LIBS) $(STD_LIBS)
+!if  ("$(CPU)" == "IA64" ) || ("$(CPU)" == "AMD64" ) || ("$(CPU)" == "ALPHA64" )
+SCLIB=bufferoverflowu.lib
+!else
+SCLIB=
+!endif
+LIBS=rpcrt4.lib $(DEP_LIBS) $(STD_LIBS) $(SCLIB)
 INCLUDES=..\inc
 
 USE_CPP_EH=1

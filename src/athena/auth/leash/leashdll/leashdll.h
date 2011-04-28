@@ -2,6 +2,7 @@
 #define _LEASHDLL_H_
 
 #include <com_err.h>
+#ifndef NO_KRB4
 /*
  * This is a hack needed because the real com_err.h does
  * not define err_func.  We need it in the case where
@@ -23,6 +24,7 @@ extern void Leash_initialize_kadm_error_table(struct et_list **);
 #undef init_kadm_err_tbl
 #define init_kadm_err_tbl() Leash_initialize_kadm_error_table(&_et_list)
 #define kadm_err_base ERROR_TABLE_BASE_kadm
+#endif
 
 #define krb_err_func Leash_krb_err_func
 
@@ -56,7 +58,9 @@ void FAR Leash_load_com_err_callback(FARPROC,FARPROC,FARPROC);
 #endif
 #include <ntsecapi.h>
 
+#ifndef NO_KRB4
 extern HINSTANCE hKrb4;
+#endif
 extern HINSTANCE hKrb5;
 extern HINSTANCE hProfile;
 
@@ -84,19 +88,25 @@ typedef struct TicketList
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#ifdef _WIN64
+#define LEASH_DLL     "leashw64.dll"
+#define KRBCC32_DLL   "krbcc64.dll"
+#else
 #define LEASH_DLL     "leashw32.dll"
 #define KRBCC32_DLL   "krbcc32.dll"
+#endif
 #define SERVICE_DLL   "advapi32.dll"
 #define SECUR32_DLL   "secur32.dll"
-#define PROFILE_DLL   "xpprof32.dll"
 
 //////////////////////////////////////////////////////////////////////////////
 
 #include <loadfuncs-com_err.h>
 #include <loadfuncs-krb5.h>
 #include <loadfuncs-profile.h>
+#ifndef NO_KRB4
 #include <loadfuncs-krb.h>
 #include <loadfuncs-krb524.h>
+#endif
 #include <loadfuncs-lsa.h>
 
 #include <errno.h>
@@ -113,6 +123,7 @@ typedef BOOL (WINAPI *FP_CloseServiceHandle)(SC_HANDLE);
 
 //////////////////////////////////////////////////////////////////////////////
 
+#ifndef NO_KRB4
 // krb4 functions
 extern DECL_FUNC_PTR(get_krb_err_txt_entry);
 extern DECL_FUNC_PTR(k_isinst);
@@ -144,6 +155,7 @@ extern DECL_FUNC_PTR(krb_save_credentials);
 extern DECL_FUNC_PTR(krb_get_krbconf2);
 extern DECL_FUNC_PTR(krb_get_krbrealm2);
 extern DECL_FUNC_PTR(krb_life_to_time);
+#endif
 
 // krb5 functions
 extern DECL_FUNC_PTR(krb5_change_password);
@@ -209,9 +221,11 @@ extern DECL_FUNC_PTR(krb5_free_default_realm);
 extern DECL_FUNC_PTR(krb5_principal_compare);
 extern DECL_FUNC_PTR(krb5_string_to_deltat);
 
+#ifndef NO_KRB4
 // Krb524 functions
 extern DECL_FUNC_PTR(krb524_init_ets);
 extern DECL_FUNC_PTR(krb524_convert_creds_kdc);
+#endif
 
 // ComErr functions
 extern DECL_FUNC_PTR(com_err);

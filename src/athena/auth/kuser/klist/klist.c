@@ -71,8 +71,10 @@ krb5_context kcontext;
 
 char * etype_string (krb5_enctype );
 void show_credential (char *, krb5_context, krb5_creds *);
-	
+     
+#ifdef CCAPIV2_COMPAT
 void do_all_ccache (void);
+#endif
 void do_ccache (char *);
 void do_keytab (char *);
 void printtime (time_t);
@@ -105,6 +107,19 @@ static int default_k4 = 0;
 #endif
 
 static int exit_status = 0;
+
+static void 
+extended_com_err_fn (const char *myprog, errcode_t code,
+                     const char *fmt, va_list args)
+{
+    const char *emsg;
+    emsg = krb5_get_error_message (kcontext, code);
+    fprintf (stderr, "%s: %s ", myprog, emsg);
+    krb5_free_error_message (kcontext, emsg);
+    vfprintf (stderr, fmt, args);
+    fprintf (stderr, "\n");
+}
+
 
 void usage()
 {
@@ -262,11 +277,15 @@ main(
             com_err(progname, retval, "while initializing krb5");
             exit(1);
         }
+        set_com_err_hook (extended_com_err_fn);
 
         if (mode == DEFAULT || mode == CCACHE) { 
+#ifdef CCAPIV2_COMPAT
             if ( got_cc && all_ccaches && !name ) {
                 do_all_ccache();
-            } else {
+            } else 
+#endif
+            {
                 do_ccache(name);
             }
         } else {
@@ -374,6 +393,7 @@ void do_keytab(
      exit(0);
 }
 
+#ifdef CCAPIV2_COMPAT
 void do_all_ccache()
 {
     krb5_error_code retval;
@@ -396,19 +416,17 @@ void do_all_ccache()
     for ( i=0; pNCi[i]; i++ ) {
         switch (pNCi[i]->vers) {
         case CC_CRED_V5:
-			if (got_k5)
-				do_ccache(pNCi[i]->name);
+            if (got_k5)
+                do_ccache(pNCi[i]->name);
             break;
 #ifdef KRB5_KRB4_COMPAT
         case CC_CRED_V4:
-			if (got_k4)
-				do_v4_ccache(pNCi[i]->name);
+            if (got_k4)
+                do_v4_ccache(pNCi[i]->name);
             break;
-        }
-#else
-		}
 #endif /* KRB5_KRB4_COMPAT */
-		printf("\n\n");
+        }
+        printf("\n\n");
     }
 
     if (pNCi)
@@ -417,6 +435,7 @@ void do_all_ccache()
         cc_shutdown(&cc_ctx);
     exit(exit_status);
 }
+#endif
 
 void do_ccache(char* name)
 {

@@ -1,2 +1,2 @@
 DIRS=kinit klist kdestroy
-WIN64DIRS=kinit kdestroy
+WIN64DIRS=kinit klist kdestroy

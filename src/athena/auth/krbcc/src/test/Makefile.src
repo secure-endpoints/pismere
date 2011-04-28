@@ -11,8 +11,15 @@ OBJS= \
 
 USE_DEFAULTLIB=1
 USE_LIBC_DLL=1
+
+!if  ("$(CPU)" == "IA64" ) || ("$(CPU)" == "AMD64" ) || ("$(CPU)" == "ALPHA64" )
+DEP_LIBS=..\dll\$(O)\krbcc64.lib ..\lib\$(O)\ccutil.lib
+SCLIB=bufferoverflowu.lib
+!else
 DEP_LIBS=..\dll\$(O)\krbcc32.lib ..\lib\$(O)\ccutil.lib
-LIBS=$(DEP_LIBS) user32.lib advapi32.lib 
+SCLIB=
+!endif
+LIBS=$(DEP_LIBS) user32.lib advapi32.lib $(SCLIB)
 INCLUDES=..\inc
 
 C_DEFINE=-DWIN32_LEAN_AND_MEAN -D_CRTAPI1=_cdecl

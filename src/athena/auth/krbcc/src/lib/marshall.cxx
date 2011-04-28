@@ -141,6 +141,15 @@ free_string(
 void
 Marshall::convert(
     CC_CHAR*& to,
+    char*& from
+    )
+{
+    copy_string(to, from);
+}
+
+void
+Marshall::convert(
+    CC_CHAR*& to,
     const char*& from
     )
 {
@@ -153,6 +162,15 @@ Marshall::free_convert(
     )
 {
     free_string(data);
+}
+
+void
+Marshall::convert(
+    char*& to,
+    CC_CHAR*& from
+    )
+{
+    copy_string(to, from);
 }
 
 void
@@ -492,6 +510,24 @@ Marshall::free_ex(
 void
 Marshall::convert(
     CRED_UNION*& rcreds,
+    cred_union& creds
+    )
+{
+    copy_creds<CRED_UNION, cred_union, V4_CRED, V5_CRED, V4Cred_type, cc_creds>(rcreds, creds);
+}
+
+void
+Marshall::convert(
+    cred_union*& creds,
+    CRED_UNION& rcreds
+    )
+{
+    copy_creds<cred_union, CRED_UNION, V4Cred_type, cc_creds, V4_CRED, V5_CRED>(creds, rcreds);
+}
+
+void
+Marshall::convert(
+    CRED_UNION*& rcreds,
     const cred_union& creds
     )
 {
@@ -528,7 +564,40 @@ Marshall::free_convert(
 void
 Marshall::convert(
     NC_INFO_LIST*& rinfo,
-    const infoNC* const *& info
+    infoNC**& info
+    )
+{
+    rinfo = 0;
+
+    try {
+        CC_UINT32 n = 0;
+        while(info[n])
+            n++;
+
+        rinfo = (NC_INFO_LIST*) Marshall::Alloc(sizeof(NC_INFO_LIST));
+        rinfo->length = n;
+        rinfo->info = 0;
+
+        if (rinfo->length) {
+            rinfo->info = (NC_INFO*) Marshall::SafeAlloc(rinfo->length * 
+                                                         sizeof(NC_INFO));
+            for (n = 0; n < rinfo->length; n++)
+            {
+                copy_string(rinfo->info[n].name, info[n]->name);
+                copy_string(rinfo->info[n].principal, info[n]->principal);
+                rinfo->info[n].vers = info[n]->vers;
+            }
+        }
+    } catch (std::bad_alloc&) {
+        if (rinfo) Marshall::free_convert(rinfo);
+        throw Marshall::Exception(Marshall::ME_NO_MEM);
+    }
+}
+
+void
+Marshall::convert(
+    NC_INFO_LIST*& rinfo,
+    const infoNC**& info
     )
 {
     rinfo = 0;
@@ -572,6 +641,30 @@ Marshall::free_convert(
     }
     Marshall::Free(rinfo);
     rinfo = 0;
+}
+
+void
+Marshall::convert(
+    infoNC**& info,
+    NC_INFO_LIST& rinfo
+    )
+{
+    info = 0;
+    try {
+        info = (infoNC**) Marshall::SafeAlloc((rinfo.length+1) * 
+                                              sizeof(infoNC*));
+        CC_UINT32 n;
+        for (n = 0; n < rinfo.length; n++) {
+            info[n] = (infoNC*) Marshall::SafeAlloc(sizeof(infoNC));
+            copy_string(info[n]->name, rinfo.info[n].name);
+            copy_string(info[n]->principal, rinfo.info[n].principal);
+            info[n]->vers = rinfo.info[n].vers;
+        }
+        info[n] = 0;
+    } catch (std::bad_alloc&) {
+        if (info) Marshall::free_convert(info);
+        throw Marshall::Exception(Marshall::ME_NO_MEM);
+    }
 }
 
 void

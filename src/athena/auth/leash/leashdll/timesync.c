@@ -164,7 +164,11 @@ LONG Leash_timesync(int MessageP)
     WSADATA             wsaData;
     char                name[80];
 
-    if ((ptkt_string == NULL) && (pkrb5_init_context == NULL))
+    if ((pkrb5_init_context == NULL)
+#ifndef NO_KRB4 
+        && (ptkt_string == NULL)
+#endif
+         )
         return(0);
 
     wVersionRequested = 0x0101;

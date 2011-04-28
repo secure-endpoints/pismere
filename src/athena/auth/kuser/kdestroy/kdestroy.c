@@ -67,6 +67,18 @@ int default_k4 = 1;
 int default_k4 = 0;
 #endif
 
+static krb5_context kcontext;
+static void 
+extended_com_err_fn (const char *myprog, errcode_t code,
+                     const char *fmt, va_list args)
+{
+    const char *emsg;
+    emsg = krb5_get_error_message (kcontext, code);
+    fprintf (stderr, "%s: %s ", myprog, emsg);
+    krb5_free_error_message (kcontext, emsg);
+    vfprintf (stderr, fmt, args);
+    fprintf (stderr, "\n");
+}
 
 void usage()
 {
@@ -90,7 +102,6 @@ main(
     int argc,
     char **argv)
 {
-    krb5_context kcontext;
     krb5_error_code retval;
     int c;
     krb5_ccache cache = NULL;
@@ -174,8 +185,9 @@ main(
 	    com_err(progname, retval, "while initializing krb5");
 	    exit(1);
 	}
+        set_com_err_hook (extended_com_err_fn);
 
-	if (cache_name) {
+        if (cache_name) {
 #ifdef KRB5_KRB4_COMPAT
 	    v4 = 0;	/* Don't do v4 if doing v5 and cache name given. */
 #endif
@@ -204,6 +216,9 @@ main(
 		errflg = 1;
 	    }
 	}
+
+        set_com_err_hook ((FARPROC)NULL);
+        krb5_free_context(kcontext);
     }
 #ifdef KRB5_KRB4_COMPAT
     if (got_k4 && v4) {

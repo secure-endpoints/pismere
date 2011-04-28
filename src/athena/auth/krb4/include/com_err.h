@@ -5,6 +5,10 @@
 #ifndef _DCNS_MIT_COM_ERR_H
 #define _DCNS_MIT_COM_ERR_H
 
+#ifdef __COM_ERR_H
+#error com_err header collision
+#endif
+
 #if defined(__cplusplus)
 extern "C"
 {
@@ -46,7 +50,11 @@ LPSTR error_table_name(long num);
 
 #endif
 
-
+/* 
+ * Prevent the krb5 com_err.h from being processed if this
+ * file already was.
+ */
+#define __COM_ERR_H
 
 #if defined(__cplusplus)
 }

@@ -19,7 +19,7 @@ WIN64_PLACE= \
         src\clients\kvno\$(O)\kvno.exe \
         src\clients\kpasswd\$(O)\kpasswd.exe \
 	src\windows\cns\$(O)\krb5.exe \
-#	src\windows\gss\$(O)\gss.exe \
+	src\windows\gss\$(O)\gss.exe \
         src\windows\ms2mit\$(O)\ms2mit.exe
 
 WSHELPER_PATH=$(PISMERE)\athena\wshelper

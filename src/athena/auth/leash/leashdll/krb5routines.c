@@ -83,7 +83,7 @@ Leash_convert524(
      krb5_context alt_ctx
      )
 {
-#ifdef NO_KRB5
+#if defined(NO_KRB5) || defined(NO_KRB4)
     return(0);
 #else
     krb5_context ctx = 0;
@@ -1094,11 +1094,11 @@ Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
         {
             if (*cache != NULL) {
                 pkrb5_cc_close(*ctx, *cache);
-				*cache = NULL;
-			}
+                *cache = NULL;
+            }
 	
             pkrb5_free_context(*ctx);
-			*ctx = NULL;
+            *ctx = NULL;
         }
     }
 

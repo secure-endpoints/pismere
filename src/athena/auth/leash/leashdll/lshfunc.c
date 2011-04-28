@@ -25,6 +25,7 @@ char KRB_HelpFile[_MAX_PATH] =	HELPFILE;
 
 #define LIFE    DEFAULT_TKT_LIFE  /* lifetime of ticket in 5-minute units */
 
+#ifndef NO_KRB4
 char *
 short_date(dp)
     long   *dp;
@@ -35,7 +36,7 @@ short_date(dp)
     cp[12] = '\0'; // Don't display seconds
     return (cp);
 }
-
+#endif
 
 static
 char*
@@ -178,6 +179,7 @@ make_postfix(
     return ret;
 }
 
+#ifndef NO_KRB4
 static
 long
 make_temp_cache_v4(
@@ -208,6 +210,7 @@ make_temp_cache_v4(
     }
     return 0;
 }
+#endif
 
 static
 long
@@ -292,7 +295,9 @@ Leash_int_checkpwd(
     long rc = 0;
 	krb5_context ctx = 0;	// statically allocated in make_temp_cache_v5
     // XXX - we ignore errors in make_temp_cache_v?  This is BAD!!!
+#ifndef NO_KRB4
     make_temp_cache_v4("_checkpwd");
+#endif
     make_temp_cache_v5("_checkpwd", &ctx);
     rc = Leash_int_kinit_ex( ctx, 0,
 							 principal, password, 0, 0, 0, 0,
@@ -300,7 +305,9 @@ Leash_int_checkpwd(
 							 Leash_get_default_publicip(),
                              displayErrors
 							 );
+#ifndef NO_KRB4
     make_temp_cache_v4(0);
+#endif
     make_temp_cache_v5(0, &ctx);
     return rc;
 }
@@ -412,6 +419,7 @@ Leash_changepwd_v5(
    return rc;
 }
 
+#ifndef NO_KRB4
 static
 long
 Leash_changepwd_v4(
@@ -434,6 +442,7 @@ Leash_changepwd_v4(
     make_temp_cache_v4(0);
     return k_errno;
 }
+#endif
 
 /*
  * Leash_changepwd
@@ -470,11 +479,13 @@ Leash_int_changepwd(
     if (hKrb5)
         rc = rc5 = Leash_changepwd_v5(principal, password, newpassword,
                                       &v5_error_str);
+#ifndef NO_KRB4
     if (hKrb4 && 
-		Leash_get_default_use_krb4() &&
-	    (!hKrb5 || rc5))
+         Leash_get_default_use_krb4() &&
+         (!hKrb5 || rc5))
         rc = rc4 = Leash_changepwd_v4(principal, password, newpassword, 
                                       &v4_error_str);
+#endif
     if (!rc)
         return 0;
     if (v5_error_str || v4_error_str) {
@@ -649,6 +660,7 @@ Leash_int_kinit_ex(
         }
         else
         {
+#ifndef NO_KRB4
             if (pkname_parse != NULL)
             {
                 memset(first_part, '\0', sizeof(first_part));
@@ -658,6 +670,7 @@ Leash_int_kinit_ex(
                 strcpy(inst, second_part);
             }
             else
+#endif
             {
                 strcpy(aname, temp);
             }
@@ -685,6 +698,7 @@ Leash_int_kinit_ex(
                             addressless,
                             publicip
                             );
+#ifndef NO_KRB4
     if ( Leash_get_default_use_krb4() ) {
         rc4 = KSUCCESS;
 
@@ -741,7 +755,7 @@ Leash_int_kinit_ex(
             }
         }
     }
-
+#endif
 #ifndef NO_AFS
     if ( !rc5 || (Leash_get_default_use_krb4() && !rc4) ) {
         char c;
@@ -762,7 +776,13 @@ Leash_int_kinit_ex(
 
  cleanup:
     return leash_error_message("Ticket initialization failed.", 
-                               rcL, (rc5 && rc4)?KRBERR(rc4):0, rc5, rcA, 0,
+                               rcL, 
+#ifdef NO_KRB4
+                               0,
+#else
+                               (rc5 && rc4)?KRBERR(rc4):0, 
+#endif
+                               rc5, rcA, 0,
                                displayErrors);
 }
 
@@ -772,8 +792,10 @@ Leash_renew(void)
     if ( hKrb5 && !LeashKRB5_renew() ) {
         int lifetime;
         lifetime = Leash_get_default_lifetime() / 5;
-		if (hKrb4 && Leash_get_default_use_krb4())
-			Leash_convert524(0);
+#ifndef NO_KRB4
+        if (hKrb4 && Leash_get_default_use_krb4())
+            Leash_convert524(0);
+#endif
 #ifndef NO_AFS
         {
             TicketList * list = NULL, * token;
@@ -951,8 +973,10 @@ Leash_import(void)
     if ( Leash_ms2mit(1) ) {
         int lifetime;
         lifetime = Leash_get_default_lifetime() / 5;
-		if (hKrb4 && Leash_get_default_use_krb4())
-			Leash_convert524(0);
+#ifndef NO_KRB4
+        if (hKrb4 && Leash_get_default_use_krb4())
+            Leash_convert524(0);
+#endif
 #ifndef NO_AFS
         {
             char c;
@@ -1012,6 +1036,9 @@ Leash_import(void)
 long
 Leash_kdestroy(void)
 {
+#ifdef NO_KRB4
+    return 0;
+#else
     int k_errno;
 
     Leash_afs_unlog();
@@ -1025,8 +1052,10 @@ Leash_kdestroy(void)
     }
 
     return 0;
+#endif
 }
 
+#ifndef NO_KRB4
 int com_addr(void)
 {
     long ipAddr;
@@ -1059,6 +1088,7 @@ int com_addr(void)
     } // while()
     return 0;
 } 
+#endif
 
 long FAR
 not_an_API_LeashFreeTicketList(TicketList** ticketList) 
@@ -1104,6 +1134,9 @@ long
 not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo, 
                                TicketList** ticketList) 
 {
+#ifdef NO_KRB4
+    return(KFAILURE);
+#else
     // Puts tickets in a returned linklist - Can be used with many
     // diff. controls
     char    pname[ANAME_SZ];
@@ -1281,10 +1314,14 @@ cleanup:
                    MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_SETFOREGROUND);
     }
     return k_errno;
+#endif
 }
 
 long FAR Leash_klist(HWND hlist, TICKETINFO FAR *ticketinfo)
 {
+#ifdef NO_KRB4
+    return(KFAILURE);
+#else
     // Don't think this function will be used anymore - ADL 5-15-99    
     // Old fucntion to put tickets in a listbox control  
     // Use function  "not_an_API_LeashKRB4GetTickets()" instead! 
@@ -1416,6 +1453,7 @@ cleanup:
     if (k_errno != 0)
         return KRBERR(k_errno);
     return 0;
+#endif
 }
 
 

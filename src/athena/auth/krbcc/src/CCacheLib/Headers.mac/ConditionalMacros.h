@@ -808,13 +808,44 @@
 		#define FOUR_CHAR_CODE(x)			(x) 
 		#define TYPE_EXTENDED				0
 		#define TYPE_LONGLONG				0
-		#if defined(__cplusplus) && (_MSC_VER >= 1100)
+		#if (_MSC_VER >= 1100)
 			#define TYPE_BOOL				1
 		#else
 			#define TYPE_BOOL				0
 		#endif
 
-		#elif defined(_M_ALPHA)		/* Visual C++ with Dec Alpha target */
+        #elif defined(_M_AMD64)	/* Visual C++ with AMD64 and Intel X64 target */
+                #define TARGET_CPU_PPC  			0
+                #define TARGET_CPU_68K  			0
+                #define TARGET_CPU_X86  			1
+                #define TARGET_CPU_MIPS 			0
+                #define TARGET_CPU_SPARC			0
+                #define TARGET_CPU_ALPHA			0
+                #define TARGET_OS_MAC				0
+                #define TARGET_OS_WIN32				1
+                #define TARGET_OS_UNIX				0
+                #define TARGET_RT_LITTLE_ENDIAN		        1
+                #define TARGET_RT_BIG_ENDIAN		        0
+                #define TARGET_RT_MAC_CFM			0
+                #define TARGET_RT_MAC_68881			0
+                #define PRAGMA_IMPORT				0
+                #define PRAGMA_STRUCT_ALIGN			0
+                #define PRAGMA_ONCE		 		0
+                #define PRAGMA_STRUCT_PACK			1
+                #define PRAGMA_STRUCT_PACKPUSH		        1
+                #define PRAGMA_ENUM_PACK			0
+                #define PRAGMA_ENUM_ALWAYSINT		        0
+                #define PRAGMA_ENUM_OPTIONS			0
+                #define FOUR_CHAR_CODE(x)			(x) 
+                #define TYPE_EXTENDED				0
+                #define TYPE_LONGLONG				1
+                #if (_MSC_VER >= 1100)
+                #define TYPE_BOOL				1
+                #else
+                #define TYPE_BOOL				0
+                #endif
+                
+         #elif defined(_M_ALPHA)		/* Visual C++ with Dec Alpha target */
 		#define TARGET_CPU_PPC  			0
 		#define TARGET_CPU_68K  			0
 		#define TARGET_CPU_X86  			0
