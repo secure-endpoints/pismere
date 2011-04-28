@@ -156,6 +156,12 @@ default build is a debug build.
 <dt><code><b>NODEBUG</b></code><dd> Set to 1 to build an optimized
 version of your app with no debug info (i.e., a release build).
 
+<dt><code><b>SELF_REGISTER</b></code><dd> Set to 1 to have
+self-registerable components register themselves during the build.  Do
+this only if you need to test the component(s) you are building on the
+local workstation.  This option does not affect components that are
+not marked as <code>SELF_REGISTERABLE</code> (see below).
+
 <dt><code><b>VENDORMOD</b></code><dd> Set to the organization making a
 modification to the sources.  This helps figure out who made this
 modified build.
@@ -221,7 +227,7 @@ standard Win32 libraries.
 
 <dt><code><b>NAME</b></code><dd> Base name of target (no extension).
 
-<dt><code><b>TARGETTYPE</b></code><dd> [ EXE | DLL | LIB | NONE ] -
+<dt><code><b>TARGETTYPE</b></code><dd> [ EXE | DLL | LIB | CPL | SCR | NONE ] -
 Type of target.  <em>Note:</em> When the target type is NONE, it is
 not necessary (or even desirable) to define <code>NAME</code>,
 <code>TARGETSS</code>, or <code>OBJS</code>.  NONE is very useful as a
@@ -250,17 +256,25 @@ $(O)\foo.res).
 <p>
 
 <dt><code><b>PLACE</b></code><dd> List of additional files to place.
+The build fails if these files do not exist (unless NO_PLACE is
+used).
+
+<dt><code><b>PLACE_OPTIONAL</b></code><dd> List of additional optional
+files to place.  If these do not exist, the build continues.
 
 <dt><code><b>NO_PLACE</b></code><dd> If defined, will not try to place
 output files.
 
 <dt><code><b>NO_EXTERNAL_DEPS</b></code><dd> If defined, will not use
-$(NAME).dep as a dependency file (overrides USE_EXTERNAL_DEPS).  The
-default is to silently try to use a $(NAME).dep file.
+$(NAME).dep and Makefile.dep as a dependency file (overrides
+USE_EXTERNAL_DEPS).  The default is to silently try to use a
+$(NAME).dep and Makefile.dep.  (Note: Usage of just Makefile.dep is
+preferred.)
 
 <dt><code><b>USE_EXTERNAL_DEPS</b></code><dd> If defined, will give
-warning if $(NAME).dep is not present.  The default is to silently try
-to use a $(NAME).dep file.
+warning if $(NAME).dep and Makefile.dep are not present.  The default
+is to silently try to use $(NAME).dep and Makefle.dep.  (Note: Usage
+of just Makefile.dep is preferred.)
 
 <p>
 
@@ -378,6 +392,11 @@ support more options.  If it's a <code>-D</code> definition, put it in
 
 <dt><code><b>USE_SUFFIX_CP</b></code><dd> Define this to allow
 <code>.cp</code> files to be treated as C++ source files.
+
+<p>
+
+<dt><code><b>SELF_REGISTERABLE</b></code><dd> Define this to specify
+that the component being built is self-registerable.
 
 </dl>
 

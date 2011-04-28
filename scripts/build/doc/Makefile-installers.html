@@ -1,0 +1,196 @@
+<html>
+<head>
+<title>Pismere Installer Build Documentation</title>
+</head>
+
+<body>
+
+<center>
+<h1>Pismere Installer Build Documentation</h1>
+</center>
+
+<h2>The Build Script</h2>
+
+<p>
+The Pismere team uses the script <code>buildinst.pl</code> to build its
+installers.  This script has been tested with  ActivePerl build 522 and 618.  
+(<a href="http://www.activestate.com/"</a>www.activestate.com</a>).  Newer
+builds probably work...try them at your own risk.
+</p>
+
+
+<a name="running">
+<h2>Running the Build</h2>
+</a>
+
+<p>
+Go to the directory you want to build and invoke the build script.
+The invocation will vary depending on how your system is set up.  Here
+some common ways to build:
+</p>
+
+<ul>
+<li><code>buildinst.pl -?</code> - show usage information.
+<li><code>buildinst.pl --docs</code> - show this documentation.
+<li><code>buildinst.pl</code> - builds release target.
+<li><code>buildinst.pl debug</code> - builds debug target.
+<li><code>buildinst.pl getfiles</code> - gets files only
+<li><code>buildinst.pl module</code> - getfiles and build module target.
+<li><code>buildinst.pl clean</code> - cleans all targets.
+</ul>
+
+<p>
+You may need to put <code>perl</code> at the start of each of the
+above commands, depending on whether your shell knows how to execute a
+<code>.pl</code> file.
+</p>
+
+<h3>Adding a subdirectory to the build</h3>
+
+<p>
+If you need to build subdirectories, create a
+<code>Makefile.dir</code> in the directory.  At least one of these
+variables must be defined in <code>Makefile.dir</code>.
+
+<dl>
+
+<dt><code><b>PREDIRS</b></code><dd> List of directories to build
+before building the current directory.
+
+<dt><code><b>DIRS</b></code><dd> List of directories to build after
+building the current directory.
+
+<dt><code><b>OPTDIRS</b></code><dd> List of optional directories to
+build after building the current directory.  (These directories will
+only be built if at least one of <code>dirname/Makefile.src</code>,
+<code>dirname/Makefile.dir</code>, or <code>dirname/Makefile</code>
+exists).
+
+</dl>
+
+<h4>Example</h4>
+
+<pre>
+DIRS=dir_1 dir_2
+</pre>
+
+Where <code>dir_n</code> is the name of the subdirectory you want to
+build.  The build will first build the current directory then the
+subdirectories.
+
+<a name="creating">
+<h2>Creating Modular Installers</h2>
+</a>
+
+<p>
+Many Pismere deliverables need to exist in two installers:
+<UL>
+<LI>A stand-alone installer that only installs that component
+<LI>A large installer that installs most or all of our deliverables
+</UL>
+
+For example, customers running Windows NT may like to install the 
+<code>KLP</code> printing system.  This is also a component of a Pismere
+Workstation install.
+</p>
+
+
+<P>
+Creating a modular installer can be broken down into several steps:
+<OL>
+<LI>Create the <CODE>notes.txt</CODE> file
+<LI>Create the <CODE>Makefile.inst</CODE> file
+<LI>Execute <CODE>buildinst.pl getfiles</CODE>
+<LI>Create x.wsm as defined in notes.txt
+<LI>Execute <CODE>buildinst.pl module</CODE>
+<LI>(If stand-alone) Create x.wsi as defined in notes.txt
+<LI>(If desired) Incorporate into a larger installer
+</OL>
+</P>
+
+<H3>Create the notes.txt file</H3>
+Create a notes.txt file defining all of the steps that the installer should 
+accomplish.  This document should be sufficiently verbose to allow someone to 
+recreate the installer without having a working copy.  This document should be 
+checked into the tree in the 'doc' subfolder of the installer you are creating.  
+For examples, see notes.txt in klp\doc and athinfod\doc.
+
+<H3>Create the <CODE>Makefile.inst</CODE> file</H3>
+The next step in creating a modular installer is to create the <CODE>Makefile.inst</CODE>
+file.  This file basically tells the build script what files your installer will use, and
+where to get them from.  See the documentaion below for specific details on syntax.
+
+<H3>Execute <CODE>buildinst.pl getfiles</CODE></H3>
+This will parse your <CODE>Makefile.inst</CODE>, and retrieve the files your installer will use.
+
+<H3>Create x.wsm as defined in notes.txt</H3>
+This should implement the modular section in your notes.txt file
+
+<H3>Execute <CODE>buildinst.pl module</CODE></H3>
+This will build the module, so that it can be incorporated into installers.
+
+<H3>(If stand-alone) Create x.wsi as defined in notes.txt</H3>
+This will allow people to test the component separately.
+
+<H3>(If desired) Incorporate into a larger installer</H3>
+You might want to incorporate your module into the pismere installer (ask 
+<A HREF="mailto:dalmeida@mit.edu">Danilo</A> before you do this), or you might
+want to bundle several modules together (e.g. the Kerberos module and some of the 
+redist modules).
+
+<a name="reference">
+<h2><CODE>Makefile.inst</CODE> Reference</h2>
+
+<P>A ‘#’ comments out the rest of a line.  To escape a '#', use '^#'.</P>
+
+<P>Lines can be continued by using the ‘\’ character.</P>
+
+The following are required and can only occur once in a valid <CODE>Makefile.inst</CODE>: 
+<DL>
+<DT><CODE><B>NAME</B></CODE><DD> Base name of target (don’t specify extension)
+<DT><CODE><B>TYPE</B></CODE><DD> Initially, only wsi and wsm types will be accepted. You can specify both but make sure wsm comes before wsi. (space delimited)
+</DL>
+
+The following are optional and can only occur once in a valid <CODE>Makefile.inst</CODE>: 
+<DL>
+<DT><CODE><B>OUTPUT</B></CODE><DD> Name of output files (.msi or .msm extension added automatically) 
+<DT><CODE><B>NOPLACE</B></CODE><DD> Don’t place the output files
+</DL>
+Some of the source we build (e.g. AFS 3.6) does not use the Pismere target directories.  
+For this reason, properties starting with <CODE><B>PATH_</B></CODE> or <CODE><B>FILES_</B></CODE> are special.<BR>
+They will not get passed to the compiler.  Instead, they are used when getting the files for an installer.
+For example, the AFS 3.6 <CODE>Makefile.inst</CODE> includes:<BR>
+<CODE>
+PATH_ROOT.SERVER=$(PISMERE)\athena\afs-3.6\dest\$(CPU)\$(T)\root.server\usr\afs\bin<BR>
+FILES_ROOT.SERVER= \  ...<P>
+</CODE>
+The files listed in <CODE><B>FILES_ROOT.SERVER</B></CODE> will be copied from the path given by <CODE><B>PATH_ROOT.SERVER</B></CODE> into the .\files\root.server directory.<BR>
+For convenience, the following common <CODE><B>PATH_</B></CODE> properties have defaults:
+<DL>
+<DT><CODE><B>PATH_BIN</B></CODE><DD> Source directory for binary files, defaults to $(PISMERE)\target\bin\$(CPU)\$(T)
+<DT><CODE><B>PATH_LIB</B></CODE><DD> Source directory for library files, defaults to $(PISMERE)\target\lib\$(CPU)\$(T)
+<DT><CODE><B>PATH_INC</B></CODE><DD> Source directory for header files, defaults to $(PISMERE)\target\inc
+<DT><CODE><B>PATH_EXTRA</B></CODE><DD> Source directory for random files, defaults to .
+</DL>
+
+When copying, the following rules apply:<BR>
+<UL>
+<LI>filename1:filename2 will rename filename1 to filename2 during the copy
+<LI>$(PISMERE) will be replaced by the top pismere directory
+<LI>$(CPU) will be replaced by the cpu type
+<LI>$(T) will be replaced by 'dbg' if the target is debug, and 'rel' otherwise
+</UL>
+<DL>
+<DT><CODE><B>FILES_BIN</B></CODE><DD> Files to copy from PATH_BIN into files\bin (space delimited)
+<DT><CODE><B>FILES_LIB</B></CODE><DD> Files to copy from PATH_LIB into files\lib (space delimited)
+<DT><CODE><B>FILES_INC</B></CODE><DD> Files to copy from PATH_INC into files\inc (space delimited)
+<DT><CODE><B>FILES_EXTRA</B></CODE><DD> Files to copy from PATH_EXTRA into files\extra (space delimited)
+</DL>
+
+Any other value of the form "<B>PROP=VAL</B>" will set the property <B>PROP</B> to the value <B>VAL</B> in the installers.<BR>
+<CODE>buildinst.pl</CODE> passes the <B>DEBUGBUILD</B> property in by default during debug builds, so that actions inside the<BR>
+installer can be conditioned on this property.<P>
+For an example, see the notes for the KLP installer, which uses a custom action to redefine the product name for debug installations.
+
+</body>
+</html>

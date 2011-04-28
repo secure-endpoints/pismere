@@ -1,0 +1,159 @@
+<HTML>
+
+<HEAD>
+<TITLE>Delay Load DLLs API</TITLE>
+</HEAD>
+
+<BODY>
+
+<CENTER><H1>Delay Load DLLs API</H1></CENTER>
+
+<P>
+This API allows a user to try to pre-load all delay load DLLs and get
+back information on any delay load DLLs that failed to load properly.
+You can also unload the delay load DLLs.
+
+<P>
+The API will first be described in a generic, language-agnostic
+manner.  The C bindings will be given later.
+
+<P>
+The basic API operations (aka functions) are: LOAD, UNLOAD,
+GET_DLL_ERRORS, GET_FUNC_ERRORS, IS_DLL_LOADED, IS_DLL_FULLY_LOADED.
+
+<P>Each of the operations returns a status code along with any other
+return values.  The status code is a Win32 error value.  It is used to
+signal an error in calling the function (ERROR_INVALID_PARAMETER) or
+an out of memory condition (ERROR_NOT_ENOUGH_MEMORY).  Otherwise, the
+status code will be zero (ERROR_SUCCESS).
+
+
+<P>
+
+<DL>
+
+<DT><B>LOAD</B>
+
+<DD>Loads all delay load DLLs for the calling module.  Also checks
+whether each of the function pointers from each delay load DLL could
+be loaded.  Returns a handle representing the state of the load
+operation.  The process error mode is set to not display system
+critical error message boxes while each DLL is loaded.  It is up to
+the caller to make sure that this does not cause any problems for the
+calling application.  Unless there is not enough memory, this function
+will always succeed, but the load state may contain errors in loading
+individual DLLs.  If there is not enough memory, the status code will
+be ERROR_NOT_ENOUGH_MEMORY.
+
+<DT><EM>Status Codes</EM>
+<DD><CODE>ERROR_SUCCESS, ERROR_NOT_ENOUGH_MEMORY</CODE>
+
+<DT><EM>Example</EM>
+<DD><CODE>handle = LOAD()</CODE>
+
+
+<P>
+
+<DT><B>UNLOAD</B>
+
+<DD>Given a handle, unload all loaded delay load DLLs.
+
+<DT><EM>Status Codes</EM>
+<DD><CODE>ERROR_SUCCESS, ERROR_INVALID_PARAMETER</CODE>
+
+<DT><EM>Example</EM>
+<DD><CODE>UNLOAD(handle)</CODE>
+
+<P>
+
+<DT><B>GET_DLL_ERRORS</B>
+
+<DD>Given a handle, get a list of DLLs that failed to load along with
+the error codes resulting from the attempt to load each of these DLLs.
+
+<DT><EM>Status Codes</EM>
+<DD><CODE>ERROR_SUCCESS, ERROR_INVALID_PARAMETER</CODE>
+
+<DT><EM>Example</EM>
+<DD><CODE>dll_errors = GET_DLL_ERRORS(handle)</CODE>
+
+<P>
+
+<DT><B>GET_FUNC_ERRORS</B>
+
+<DD>Given a handle, get a list of functions that failed to load along
+with the error codes resulting from the attempt to load each of these
+DLLs.
+
+<DT><EM>Status Codes</EM>
+<DD><CODE>ERROR_SUCCESS, ERROR_INVALID_PARAMETER</CODE>
+
+<DT><EM>Example</EM>
+<DD><CODE>func_errors = GET_FUNC_ERRORS(handle)</CODE>
+
+<P>
+
+<DT><B>IS_DLL_LOADED</B>
+
+<DD>Given a handle and DLL name, checkes whether the given DLL name is
+loaded.  Note that a DLL might have been loaded without being able to
+resolve all of its function pointers specified in the dealy load DLL
+import table.  In this case, this function will still return TRUE.  If
+a DLL name that was not a delay load DLL for the current module is
+specified, FALSE will be returned.
+
+<DT><EM>Status Codes</EM>
+<DD><CODE>ERROR_SUCCESS, ERROR_INVALID_PARAMETER</CODE>
+
+<DT><EM>Example</EM>
+<DD><CODE>boolean = IS_DLL_LOADED(handle, dll_name)</CODE>
+
+<P>
+
+<DT><B>IS_DLL_FULLY_LOADED</B>
+
+<DD>Given a handle and DLL name, checkes whether the given DLL name is
+loaded and that all of the desired function pointers for the DLL were
+loaded.  If a DLL name that was not a delay load DLL for the current
+module is specified, FALSE will be returned.
+
+<DT><EM>Status Codes</EM>
+<DD><CODE>ERROR_SUCCESS, ERROR_INVALID_PARAMETER</CODE>
+
+<DT><EM>Example</EM>
+<DD><CODE>boolean = IS_DLL_FULLY_LOADED(handle, dll_name)</CODE>
+
+</DL>
+
+<H2>C Function Names</H2>
+
+<TABLE>
+<TR><TD><B>API Function</B><TD>&nbsp;&nbsp;&nbsp;<TD><B>C Function</B>
+<TR><TD>LOAD			<TD><TD>DelayLoadDllsLoad
+<TR><TD>UNLOAD			<TD><TD>DelayLoadDllsFree
+<TR><TD>GET_DLL_ERRORS		<TD><TD>DelayLoadDllsGetDllErrors
+<TR><TD>GET_FUNC_ERRORS		<TD><TD>DelayLoadDllsGetFuncErrors
+<TR><TD>IS_DLL_LOADED		<TD><TD>DelayLoadDllsLoadedDll
+<TR><TD>IS_DLL_FULLY_LOADED	<TD><TD>DelayLoadDllsLoadedDllAll
+</TABLE>
+
+<H2>To Do</H2>
+
+<P>
+If a DLL fails to load, it would be nice to figure out whether it, in
+turn, failed to load a DLL.  If so, report the failed DLL.
+
+<P>A potential way to do this might be to traverse a DLL's import
+table...TBD...
+
+<H2>Lessons Learned</H2>
+
+<P>
+Write API documentation first.  Take care to have better function
+names.  (Reading <EM>Code Complete</EM> and writing the API
+documentation in a language-agnostic way (as opposed to C-centric)
+helps a lot.)
+
+</BODY>
+
+</HTML>

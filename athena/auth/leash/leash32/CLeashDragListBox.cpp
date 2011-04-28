@@ -20,7 +20,7 @@ CLeashDragListBox::~CLeashDragListBox()
 	DestroyWindow();
 }
 
-CLeashDragListBox::initOtherListbox(CPropertyPage* pPage, CListBox* pOtherListBox)
+void CLeashDragListBox::initOtherListbox(CPropertyPage* pPage, CListBox* pOtherListBox)
 {
 	m_pPage = pPage;  
 	m_pOtherListBox = pOtherListBox;

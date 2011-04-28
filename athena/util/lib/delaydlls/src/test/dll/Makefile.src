@@ -1,0 +1,16 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=testdll
+TARGETTYPE=DLL
+TARGETSS=console
+
+OBJS= \
+	$(O)\dllmain.obj
+
+USE_DEFAULTLIB=1
+NO_PLACE=1
+
+INCLUDES=..\inc
+DEF_FILE=testdll.def

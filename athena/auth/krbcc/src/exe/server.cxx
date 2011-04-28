@@ -435,7 +435,7 @@ shutdown_server(
 }
 
 /* main:  register the interface, start listening for clients */
-void _CRTAPI1 main(int argc, char * argv[])
+void main(int argc, char * argv[])
 {
     RPC_STATUS status;
 

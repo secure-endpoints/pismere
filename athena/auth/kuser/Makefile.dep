@@ -1,0 +1,17 @@
+kuser.c: \
+	$(PISMERE)\athena\util\loadfuncs\loadfuncs-com_err.h \
+	$(PISMERE)\athena\util\loadfuncs\loadfuncs-krb.h \
+	$(PISMERE)\athena\util\loadfuncs\loadfuncs-krb5.h \
+	$(PISMERE)\athena\util\loadfuncs\loadfuncs.h \
+	..\krb4\include\conf-pc.h \
+	..\krb4\include\conf.h \
+	..\krb4\include\des.h \
+	..\krb4\include\krb.h \
+	..\krb4\include\mit_copy.h \
+	..\krb4\include\osconf.h \
+	..\krb5\src\include\com_err.h \
+	..\krb5\src\include\krb5.h \
+	..\krb5\src\include\profile.h \
+	..\krb5\src\include\win-mac.h \
+	.\kuser.h \
+

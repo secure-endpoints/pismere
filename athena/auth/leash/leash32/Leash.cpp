@@ -50,7 +50,6 @@ HINSTANCE CLeashApp::m_hPsapi;
 HINSTANCE CLeashApp::m_hToolHelp32; 
 krb5_context CLeashApp::m_krbv5_context;
 profile_t CLeashApp::m_krbv5_profile;
-BOOL CLeashApp::GetProfileFile(LPSTR confname, CONST INT szConfname);
 
 /////////////////////////////////////////////////////////////////////////////
 // CLeashApp
@@ -321,7 +320,7 @@ DECL_FUNC_PTR(krb5_get_default_config_files);
 DECL_FUNC_PTR(krb5_free_config_files);
 DECL_FUNC_PTR(krb5_free_context);
 DECL_FUNC_PTR(krb5_get_default_realm);
-DECL_FUNC_PTR(krb5_get_host_realm);
+// DECL_FUNC_PTR(krb5_get_host_realm);
 
 FUNC_INFO krb5_fi[] = {
     MAKE_FUNC_INFO(krb5_cc_default_name),
@@ -329,7 +328,7 @@ FUNC_INFO krb5_fi[] = {
     MAKE_FUNC_INFO(krb5_free_config_files),
     MAKE_FUNC_INFO(krb5_free_context),
     MAKE_FUNC_INFO(krb5_get_default_realm),
-    MAKE_FUNC_INFO(krb5_get_host_realm),
+//  MAKE_FUNC_INFO(krb5_get_host_realm),
     END_FUNC_INFO
 };
 

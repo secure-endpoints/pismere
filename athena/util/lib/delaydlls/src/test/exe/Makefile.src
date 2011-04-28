@@ -1,0 +1,20 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=test
+TARGETTYPE=EXE
+TARGETSS=console
+
+OBJS= \
+	$(O)\main.obj
+
+DELAY_DLLS=testdll.dll
+
+USE_DEFAULTLIB=1
+
+NO_PLACE=1
+
+DEP_LIBS= ..\..\lib\$(O)\delaydlls.lib ..\dll\$(O)\testdll.lib
+LIBS=$(DEP_LIBS)
+INCLUDES=..\..\..\inc;..\inc

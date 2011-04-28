@@ -2,6 +2,7 @@
 #include <time.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 
 char *progname;
 
@@ -383,7 +384,7 @@ k_read_password(
     const char		* prompt,
     const char		* prompt2,
     char		* password,
-    int			* pwsize
+    unsigned int	* pwsize
     )
 {
     HANDLE		handle;
@@ -464,141 +465,50 @@ cleanup:
     return errcode;
 }
 
-DECL_FUNC_PTR(get_krb_err_txt_entry);
-DECL_FUNC_PTR(krb_realmofhost);
-DECL_FUNC_PTR(tkt_string);
-DECL_FUNC_PTR(k_isname);
-DECL_FUNC_PTR(k_isinst);
-DECL_FUNC_PTR(k_isrealm);
-DECL_FUNC_PTR(tf_close);
-DECL_FUNC_PTR(tf_init);
-DECL_FUNC_PTR(tf_get_pinst);
-DECL_FUNC_PTR(tf_get_pname);
-DECL_FUNC_PTR(tf_get_cred);
-DECL_FUNC_PTR(kname_parse);
-DECL_FUNC_PTR(krb_get_pw_in_tkt);
-DECL_FUNC_PTR(k_gethostname);
-DECL_FUNC_PTR(krb_get_lrealm);
-DECL_FUNC_PTR(krb_get_tf_realm);
-DECL_FUNC_PTR(krb_get_cred);   
-DECL_FUNC_PTR(krb_mk_req);
-DECL_FUNC_PTR(krb_get_krbhst);
-DECL_FUNC_PTR(krb_get_tf_fullname);
-DECL_FUNC_PTR(krb_check_serv);
-DECL_FUNC_PTR(dest_tkt);
+DECL_FUNC_PTR(krb5_string_to_deltat) = k_string_to_deltat;
+DECL_FUNC_PTR(krb5_string_to_timestamp) = k_string_to_timestamp;
+DECL_FUNC_PTR(krb5_timestamp_to_sfstring) = k_timestamp_to_sfstring;
+DECL_FUNC_PTR(krb5_read_password) = k_read_password;
+DECL_FUNC_PTR(com_err) = fake_com_err;
 
-DECL_FUNC_PTR(krb5_free_unparsed_name);
-DECL_FUNC_PTR(krb5_free_principal);
-DECL_FUNC_PTR(krb5_free_context);
-DECL_FUNC_PTR(krb5_free_cred_contents);
-DECL_FUNC_PTR(krb5_free_ticket);
-DECL_FUNC_PTR(krb5_unparse_name);
-DECL_FUNC_PTR(krb5_timestamp_to_sfstring);
-DECL_FUNC_PTR(krb5_init_context);
-DECL_FUNC_PTR(krb5_cc_default);
-DECL_FUNC_PTR(krb5_cc_resolve);
-DECL_FUNC_PTR(krb5_timeofday);
-DECL_FUNC_PTR(krb5_parse_name);
-DECL_FUNC_PTR(krb5_build_principal_ext);
-DECL_FUNC_PTR(krb5_get_in_tkt_with_password);
-DECL_FUNC_PTR(krb5_get_in_tkt_with_keytab);
-DECL_FUNC_PTR(krb5_get_validated_creds);
-DECL_FUNC_PTR(krb5_get_renewed_creds);
-DECL_FUNC_PTR(krb5_kt_default);
-DECL_FUNC_PTR(krb5_kt_resolve);
-DECL_FUNC_PTR(krb5_sname_to_principal);
-DECL_FUNC_PTR(krb5_decode_ticket);
-DECL_FUNC_PTR(krb5_enctype_to_string);
-DECL_FUNC_PTR(krb5_timestamp_to_sfstring);
-DECL_FUNC_PTR(krb5_string_to_deltat);
-DECL_FUNC_PTR(krb5_string_to_timestamp);
-DECL_FUNC_PTR(krb5_524_conv_principal);
-DECL_FUNC_PTR(krb5_get_prompt_types);
-DECL_FUNC_PTR(krb5_prompter_posix);
-DECL_FUNC_PTR(krb5_get_init_creds_keytab);
-DECL_FUNC_PTR(krb5_get_init_creds_password);
-DECL_FUNC_PTR(krb5_free_addresses);
-DECL_FUNC_PTR(krb5_get_init_creds_opt_set_address_list);
-DECL_FUNC_PTR(krb5_os_localaddr);
-DECL_FUNC_PTR(krb5_get_init_creds_opt_set_proxiable);
-DECL_FUNC_PTR(krb5_get_init_creds_opt_set_forwardable);
-DECL_FUNC_PTR(krb5_get_init_creds_opt_set_renew_life);
-DECL_FUNC_PTR(krb5_get_init_creds_opt_set_tkt_life);
-DECL_FUNC_PTR(krb5_get_init_creds_opt_init);
-DECL_FUNC_PTR(krb5_read_password);
+#include <delaydlls.h>
 
-DECL_FUNC_PTR(com_err);
+void
+dynamic_load(
+    int * pgot_k4,
+    int * pgot_k5
+    )
+{
+    int got_com_err = 0;
+    int got_k5 = 0;
+    int got_k4 = 0;
 
-FUNC_INFO k4_fi[] = {
-    MAKE_FUNC_INFO(get_krb_err_txt_entry),
-    MAKE_FUNC_INFO(krb_realmofhost),
-    MAKE_FUNC_INFO(tkt_string),
-    MAKE_FUNC_INFO(k_isname),
-    MAKE_FUNC_INFO(k_isinst),
-    MAKE_FUNC_INFO(k_isrealm),
-    MAKE_FUNC_INFO(tf_close),
-    MAKE_FUNC_INFO(tf_init),
-    MAKE_FUNC_INFO(tf_get_pinst),
-    MAKE_FUNC_INFO(tf_get_pname),
-    MAKE_FUNC_INFO(tf_get_cred),
-    MAKE_FUNC_INFO(kname_parse),
-    MAKE_FUNC_INFO(krb_get_pw_in_tkt),
-    MAKE_FUNC_INFO(k_gethostname),
-    MAKE_FUNC_INFO(krb_get_lrealm),
-    MAKE_FUNC_INFO(krb_get_tf_realm),
-    MAKE_FUNC_INFO(krb_get_cred),   
-    MAKE_FUNC_INFO(krb_mk_req),
-    MAKE_FUNC_INFO(krb_get_krbhst),
-    MAKE_FUNC_INFO(krb_get_tf_fullname),
-    MAKE_FUNC_INFO(krb_check_serv),
-    MAKE_FUNC_INFO(dest_tkt),
-    END_FUNC_INFO
-};
+    DelayLoadDlls_handle_t hDlls = DelayLoadDllsLoad(NULL);
+    if (!hDlls)
+    {
+	got_com_err = 0;
+	got_k5 = 0;
+	got_k4 = 0;
+    }
+    else
+    {
+	got_com_err = DelayLoadDllsLoadedDllAll(hDlls, COMERR_DLL, NULL);
+	got_k4 = DelayLoadDllsLoadedDllAll(hDlls, KRB4_DLL, NULL);
+	got_k5 = DelayLoadDllsLoadedDllAll(hDlls, KRB5_DLL, NULL);
+    }
 
-FUNC_INFO k5_fi[] = {
-    MAKE_FUNC_INFO(krb5_free_unparsed_name),
-    MAKE_FUNC_INFO(krb5_free_principal),
-    MAKE_FUNC_INFO(krb5_free_context),
-    MAKE_FUNC_INFO(krb5_free_cred_contents),
-    MAKE_FUNC_INFO(krb5_free_ticket),
-    MAKE_FUNC_INFO(krb5_unparse_name),
-    MAKE_FUNC_INFO(krb5_timestamp_to_sfstring),
-    MAKE_FUNC_INFO(krb5_init_context),
-    MAKE_FUNC_INFO(krb5_cc_default),
-    MAKE_FUNC_INFO(krb5_cc_resolve),
-    MAKE_FUNC_INFO(krb5_timeofday),
-    MAKE_FUNC_INFO(krb5_parse_name),
-    MAKE_FUNC_INFO(krb5_build_principal_ext),
-    MAKE_FUNC_INFO(krb5_get_in_tkt_with_password),
-    MAKE_FUNC_INFO(krb5_get_in_tkt_with_keytab),
-    MAKE_FUNC_INFO(krb5_get_validated_creds),
-    MAKE_FUNC_INFO(krb5_get_renewed_creds),
-    MAKE_FUNC_INFO(krb5_kt_default),
-    MAKE_FUNC_INFO(krb5_kt_resolve),
-    MAKE_FUNC_INFO(krb5_sname_to_principal),
-    MAKE_FUNC_INFO(krb5_decode_ticket),
-    MAKE_FUNC_INFO(krb5_enctype_to_string),
-    MAKE_FUNC_INFO(krb5_timestamp_to_sfstring),
-    MAKE_FUNC_INFO(krb5_string_to_deltat),
-    MAKE_FUNC_INFO(krb5_string_to_timestamp),
-    MAKE_FUNC_INFO(krb5_524_conv_principal),
-    MAKE_FUNC_INFO(krb5_get_prompt_types),
-    MAKE_FUNC_INFO(krb5_prompter_posix),
-    MAKE_FUNC_INFO(krb5_get_init_creds_keytab),
-    MAKE_FUNC_INFO(krb5_get_init_creds_password),
-    MAKE_FUNC_INFO(krb5_free_addresses),
-    MAKE_FUNC_INFO(krb5_get_init_creds_opt_set_address_list),
-    MAKE_FUNC_INFO(krb5_os_localaddr),
-    MAKE_FUNC_INFO(krb5_get_init_creds_opt_set_proxiable),
-    MAKE_FUNC_INFO(krb5_get_init_creds_opt_set_forwardable),
-    MAKE_FUNC_INFO(krb5_get_init_creds_opt_set_renew_life),
-    MAKE_FUNC_INFO(krb5_get_init_creds_opt_set_tkt_life),
-    MAKE_FUNC_INFO(krb5_get_init_creds_opt_init),
-    MAKE_FUNC_INFO(krb5_read_password),
-    END_FUNC_INFO
-};
+    if (got_com_err)
+    {
+	pcom_err = com_err;
+    }
+    if (got_k5)
+    {
+	pkrb5_string_to_deltat = krb5_string_to_deltat;
+	pkrb5_string_to_timestamp = krb5_string_to_timestamp;
+        pkrb5_timestamp_to_sfstring = krb5_timestamp_to_sfstring;
+	pkrb5_read_password = krb5_read_password;
+    }
 
-FUNC_INFO ce_fi[] = {
-    MAKE_FUNC_INFO(com_err),
-    END_FUNC_INFO
-};
+    *pgot_k4 = got_k4;
+    *pgot_k5 = got_k5;
+}

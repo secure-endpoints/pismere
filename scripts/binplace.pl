@@ -60,22 +60,28 @@ sub set_map
        exe => $DIR->{BIN},
        dll => $DIR->{BIN},
        cpl => $DIR->{BIN},
+       scr => $DIR->{BIN},
        hlp => $DIR->{BIN},
+       cnt => $DIR->{BIN},
        lib => $DIR->{LIB},
        h   => $DIR->{INC},
-	 sys => $DIR->{BIN},
-	 inf => $DIR->{BIN},
-	 msc => $DIR->{BIN},
-	 htm => $DIR->{BIN},
-	html => $DIR->{BIN},
+       sys => $DIR->{BIN},
+       inf => $DIR->{BIN},
+       msc => $DIR->{BIN},
+       htm => $DIR->{BIN},
+       html => $DIR->{BIN},
+       conf => $DIR->{BIN},
+       cmd => $DIR->{BIN},
+       pl => $DIR->{BIN},
       };
     $EXTRA =
       {
        exe => ['pdb', 'bsc'],
+       scr => ['pdb', 'bsc'],
        dll => ['pdb', 'bsc', 'lib'],
        cpl => ['pdb', 'bsc', 'lib'],
        lib => ['pdb', 'bsc'],
-	 sys => ['pdb', 'bsc'],
+       sys => ['pdb', 'bsc'],
       }
 }
 
@@ -119,6 +125,7 @@ sub main
 		    "nodebug",
 		    "cpu=s",
 		    "exclude|x=s@",
+		    "optional",
 		   )) {
 	usage();
 	die "\n";
@@ -168,7 +175,11 @@ sub place
     my $dir_extras = shift;
 
     if (!-e $file) {
-	die "ERROR: Cannot find $file\n" if in_list($file, \@FILES);
+	if ($OPT->{optional}) {
+	    print "WARNING: Cannot find $file\n" if in_list($file, \@FILES);
+	} else {
+	    die "ERROR: Cannot find $file\n" if in_list($file, \@FILES);
+	}
 	return;
     }
     return if (!-e $file);
@@ -176,14 +187,14 @@ sub place
 
     my $dir = get_by_ext($file) || $dir_extras;
     if (!$dir) {
-	print "ERROR: No target dir for $file\n";
+	die "ERROR: No target dir for $file\n";
 	return;
     }
     if (! -d $dir) {
 	mkpath([ $dir ]);
     }
     if (! -d $dir) {
-	print "ERROR: Could not create directory $dir\n";
+	die "ERROR: Could not create directory $dir\n";
 	return;
     }
     return if !mycopy($file, $dir);
@@ -213,8 +224,8 @@ sub mycopy
 	}
     }
 
-    my $stin = stat($file);
-    my $stout = stat($outfile);
+    my $stin = -e $file ? stat($file) : 0;
+    my $stout = -e $outfile ? stat($outfile) : 0;
     if ($stin && $stout) {
 	if ($stout->mtime > $stin->mtime) {
 	    print "WARNING: $name in $pdir is newer...SKIPPED\n";
@@ -232,7 +243,7 @@ sub mycopy
 	utime($stin->atime, $stin->mtime, $outfile);
 	print "COPIED: $name to $pdir\n";
     } else {
-	print "ERROR: Could not copy $name to $pdir\n";
+	die "ERROR: Could not copy $name to $pdir\n";
     }
     return $rc;
 }
@@ -249,6 +260,7 @@ Usage: $0 [options] file(s)
     --excludep=file    exclude pathname
     --exclude=file     exclude basename (w/extension)
     --cpu=cputype      override CPU setting
+    --optional         do not bomb out if file does not exist
 USAGE
 }
 

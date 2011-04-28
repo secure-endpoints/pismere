@@ -9,8 +9,14 @@ TARGETSS=console
 OBJS= \
 	$(O)\kuser.obj
 
-INCLUDES=..\krb5\src\include;..\krb4\include;$(PISMERE)\athena\util\loadfuncs
-LIBS=$(PISMERE)\athena\util\loadfuncs\$(O)\loadfuncs.lib
+INCLUDES=..\krb5\src\include;..\krb4\include;\
+	$(PISMERE)\athena\util\loadfuncs;\
+	$(PISMERE)\athena\util\lib\delaydlls\inc
+
+DEP_LIBS=$(PISMERE)\target\lib\$(T)\loadfuncs.lib \
+	$(PISMERE)\target\lib\$(T)\delaydlls.lib
+
+LIBS=$(DEP_LIBS)
 
 USE_DEFAULTLIB=1
 NO_PLACE=1

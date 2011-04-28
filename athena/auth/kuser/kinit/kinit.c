@@ -1076,19 +1076,7 @@ main(argc, argv)
       This is where we would put in code to dynamically load Kerberos
       libraries.  Currenlty, we just get them implicitly.
     */
-    if (!LoadFuncs(COMERR_DLL, ce_fi, 0, 0, 1, 0, 1))
-        pcom_err = fake_com_err;
-    got_k5 = LoadFuncs(KRB5_DLL, k5_fi, 0, 0, 1, 0, 1);
-#ifdef KRB5_KRB4_COMPAT
-    got_k4 = LoadFuncs(KRB4_DLL, k4_fi, 0, 0, 1, 0, 1);
-#endif
-
-    if (!pkrb5_string_to_deltat)
-	pkrb5_string_to_deltat = k_string_to_deltat;
-    if (!pkrb5_string_to_timestamp)
-	pkrb5_string_to_timestamp = k_string_to_timestamp;
-    if (!pkrb5_read_password)
-	pkrb5_read_password = k_read_password;
+    dynamic_load(&got_k4, &got_k5);
 
     memset(&opts, 0, sizeof(opts));
     opts.action = INIT_PW;

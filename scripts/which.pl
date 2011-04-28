@@ -20,6 +20,7 @@ sub main
 	       'all|a',
 	       'quiet|q',
 	       'debug|d',
+	       'path:s',
 	       );
 
     my $f = shift @ARGV;
@@ -29,7 +30,7 @@ sub main
 	exit(1);
     }
 
-    my $p = $ENV{PATH};
+    my $p = $OPT->{path} || $ENV{PATH};
     my $s = $Config{path_sep};
     my @d = split(/$s/, $p);
     my @e = split(/$s/, lc($ENV{PATHEXT} || '.bat;.exe;.com'));
@@ -60,6 +61,7 @@ Usage: $0 [options] command
     -d, --debug     debug output
     -a, --all       find all such commands in PATH
     -q, --quiet     no output, exit with non-zero errorcode if not found
+    --path PATHARG  search PATHARG instead of the PATH environment variable
     -?, -H, --help  help
 USAGE
 }

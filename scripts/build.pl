@@ -4,7 +4,7 @@ use strict;
 use FindBin;
 use File::Spec;
 use File::Basename;
-use lib $FindBin::Bin;
+use lib "$FindBin::Bin/build/lib";
 use Logger;
 use Getopt::Long;
 use Cwd;
@@ -61,7 +61,9 @@ sub main
 	       'nolog|n',
 	       'softdirs',
 	       'norecurse',
-	       'oldstyle|O',
+	       'oldstyle|o',
+	       'tools',
+	       'toolsonly',
 	       );
 
     if ($OPT->{help} || !$OPT->{logfile}) {
@@ -112,11 +114,20 @@ sub main
     if ($OPT->{top} && !chdir($DIR_BUILD)) {
 	die "Could not chdir to $DIR_BUILD\n";
     }
+
+    if ($OPT->{toolsonly}) {
+	print_tools();
+	exit(0);
+    }
+
     my $l;
     if (!$OPT->{nolog}) {
 	$l = new Logger $OPT->{logfile};
 	$l->start;
     }
+
+    print_tools() if $OPT->{tools};
+
     unshift(@ARGV, '/nologo');
     print "$0 invoking $MAKE with the following options:\n";
     map { print "\t$_\n" } @ARGV;
@@ -281,6 +292,68 @@ sub do_dir
     return 0;
 }
 
+sub print_tools
+{
+    sub get_info
+    {
+	my $cmd = shift || die;
+	my $which = makescript('which.pl');
+	my $full = `$which $cmd`;
+	return 0 if ($? / 256);
+	chomp($full);
+	$full = "\"".$full."\"";
+	my $ver = `filever $full`;
+	chomp($ver);
+	return { cmd => $cmd, full => $full, ver => $ver };
+    }
+    sub get_info_alt
+    {
+	my $cmd = shift || die;
+	my $which = makescript('which.pl');
+	my $full = `$which $cmd`;
+	return 0 if ($? / 256);
+	chomp($full);
+	$full = "\"".$full."\"";
+	my $ver = `$full --version`;
+	chomp($ver);
+	return { cmd => $cmd, full => $full, ver => $ver };
+    }
+    my $V =
+      {
+       COMPILER => get_info('cl.exe'),
+       LINKER => get_info('link.exe'),
+       LIB => get_info('lib.exe'),
+       NMAKE => get_info( 'nmake.exe'),
+       PERL => get_info('perl.exe'),
+       sed => get_info_alt('sed.exe'),
+       sed => get_info('sed.exe'),
+       awk => get_info_alt('gawk.exe'),
+       awk => get_info('gawk.exe'),
+      };
+    my $PATH = $ENV{PATH} || '';
+    my $INCLUDE = $ENV{INCLUDE} || '';
+    my $LIB = $ENV{LIB} || '';
+
+    print <<DATA;
+
+PATH=$PATH
+
+INCLUDE=$INCLUDE
+LIB=$LIB
+
+DATA
+
+    foreach my $k ('COMPILER', 'LINKER', 'LIB', 'NMAKE', 'PERL', 'sed', 'awk') {
+	if ($V->{$k}) {
+	    print "$k: $V->{$k}->{full}\n$V->{$k}->{ver}\n";
+	} else {
+	    print "$k: NOT FOUND\n";
+	}
+    }
+
+    print "\n";
+}
+
 sub usage
 {
     print <<USAGE;
@@ -295,7 +368,9 @@ Usage: $0 [options] $MAKE-options
     --nolog, -n         do not log
     --softdirs          do not bail on missing directories
     --norecurse         do not recurse
-    --oldstyle, -O      use old style
+    --oldstyle, -o      use old style
+    --tools             show tools
+    --toolsonly         show tools and exit
   Other:
     $MAKE-options       any options you want to pass to $MAKE, which can be:
                         (note: /nologo is always used)

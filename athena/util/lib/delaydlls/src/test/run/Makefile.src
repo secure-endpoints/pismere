@@ -1,0 +1,6 @@
+TARGETTYPE=NONE
+
+all:: output_dir
+	copy ..\dll\$(O)\testdll.dll .\$(O)\.
+	copy ..\exe\$(O)\test.exe .\$(O)\.
+	 .\$(O)\test.exe

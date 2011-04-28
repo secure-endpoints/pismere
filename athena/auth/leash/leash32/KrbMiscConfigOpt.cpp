@@ -36,7 +36,6 @@ static char THIS_FILE[] = __FILE__;
 CString CKrbMiscConfigOpt::m_DefaultLifeTime;
 CString CKrbMiscConfigOpt::m_initDefaultLifeTime;
 CString CKrbMiscConfigOpt::m_newDefaultLifeTime;
-void CKrbMiscConfigOpt::ResetDefaultLifeTimeEditBox();
 CEdit CKrbMiscConfigOpt::m_krbLifeTimeEditbox;
 
 IMPLEMENT_DYNCREATE(CKrbMiscConfigOpt, CPropertyPage)

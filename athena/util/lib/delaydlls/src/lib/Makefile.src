@@ -1,0 +1,12 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=delaydlls
+TARGETTYPE=LIB
+TARGETSS=console
+
+OBJS= \
+	$(O)\delaydlls.obj
+
+INCLUDES=..\..\inc

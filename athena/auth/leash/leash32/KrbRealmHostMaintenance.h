@@ -40,6 +40,8 @@ private:
 	BOOL m_isRealmListBoxInFocus;	
 	BOOL m_isStart;
 	
+	bool OnButtonKdchostAddInternal();
+
 	//void ResetDefaultRealmComboBox();
 
 public:
@@ -79,7 +81,7 @@ protected:
 	afx_msg void OnSelchangeListKdcRealm();
 	afx_msg void OnButtonAdminserver();
 	afx_msg void OnSetfocusListKdcRealm();
-	afx_msg void* OnButtonKdchostAdd();
+	afx_msg void OnButtonKdchostAdd();
 	afx_msg void OnButtonKdchostRemove();
 	afx_msg void OnButtonRemoveAdminserver();
 	afx_msg void OnSelchangeListKdcHost();

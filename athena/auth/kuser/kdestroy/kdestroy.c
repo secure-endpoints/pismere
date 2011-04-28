@@ -108,12 +108,7 @@ main(argc, argv)
 
     progname = GET_PROGNAME(argv[0]);
 
-    if (!LoadFuncs(COMERR_DLL, ce_fi, 0, 0, 1, 0, 1))
-	pcom_err = fake_com_err;
-    got_k5 = LoadFuncs(KRB5_DLL, k5_fi, 0, 0, 1, 0, 1);
-#ifdef KRB5_KRB4_COMPAT
-    got_k4 = LoadFuncs(KRB4_DLL, k4_fi, 0, 0, 1, 0, 1);
-#endif
+    dynamic_load(&got_k4, &got_k5);
 
     while ((c = getopt(argc, argv, "54qc:")) != -1) {
 	switch (c) {

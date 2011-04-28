@@ -40,7 +40,6 @@ static char THIS_FILE[] = __FILE__;
 CString CKrbConfigOptions::m_newDefaultRealm;
 CString CKrbConfigOptions::m_hostServer;
 CComboBox CKrbConfigOptions::m_krbRealmEditbox;
-void CKrbConfigOptions::ResetDefaultRealmComboBox();
 BOOL CKrbConfigOptions::m_profileError;
 BOOL CKrbConfigOptions::m_dupEntiesError; 
 

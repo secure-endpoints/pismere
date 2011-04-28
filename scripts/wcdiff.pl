@@ -13,6 +13,8 @@ use File::Basename;
 use DirHandle;
 $0 = fileparse($0);
 
+my $DIFF='windiff';
+
 my @cvs_revisions = ();  # holds the revisions to fetch from cvs
 my @cvs_dates = ();      # holds the dates to fetch from cvs
 my $files = "";          # string containing the files the user asked for
@@ -22,8 +24,18 @@ my $global_u = "";       # global nolock option
 my $verbosity = "-Q";    # verbosity - super quiet by default
 my $not_recursive = "";  # don't do a recursive check
 my $dp_option = "-dP";   # use cvs up -dP
+my $k_option = "";
 my $cur;                 # base directory
 my $relative_dir = "";   # relative dir from $cur or $tmp2
+
+# This will store any regexp filters for our files
+# By default, we will be ignoring certain files
+my @globally_ignored_regexps = ('^.+\.obj$',  # ignore *.obj
+                                '^.+\.exe$',  # ignore *.exe
+                                '^cvs$',      # ignore CVS subdir
+                                '^obj$'       # ignore obj subdir
+                               );
+
 
 # Fairly self-evident - figures out where the temp directory for
 # this user is and creates a unique subdirectory
@@ -41,7 +53,7 @@ sub mktmpdir
 
 # parse command line options
 # call put_files_in_tmp_dirs subroutine
-# call windiff on new folders
+# call DIFF on new folders
 # delete the temporary directories
 sub main
 {
@@ -54,7 +66,9 @@ sub main
                "help|H|?",
                "global_u|u",
                "not_recursive|l",
+	       "no_keywords|k",
                "verbose|V",
+               "diff|d=s" => \$DIFF,
                "r=s" => \@cvs_revisions,
                "D=s" => \@cvs_dates,
 	       ) || usage();
@@ -72,12 +86,19 @@ sub main
         $dp_option = "";
     }
 
+    if ($OPT->{no_keywords}) {
+	$k_option = "-k k";
+    }
+
     if ($OPT->{global_u}) {
         $global_u = "-u";
     }
     if ($OPT->{verbose}) {
         $verbosity = "";
     }
+
+    # If the user has a global .cvsignore file, use it.
+    @globally_ignored_regexps = (@globally_ignored_regexps, parse_cvsignore("$ENV{HOMEDRIVE}$ENV{HOMEPATH}"));
 
     $cur = cwd() || do_error_exit("Could not cwd");
     $ENV{TEMP} || do_error_exit("No environmental variable named TEMP");
@@ -86,14 +107,23 @@ sub main
 
     put_files_in_tmp_dirs();
 
-    !(system("start /wait windiff $tmp1 $tmp2") / 256) || do_error_exit("Could not run windiff");
+    print "Executing: start /wait $DIFF $tmp1 $tmp2\n";
+    !(system("start /wait $DIFF $tmp1 $tmp2") / 256) || do_error_exit("Could not run $DIFF");
 
     if (-d $tmp1) { rmtree($tmp1, !$verbosity); }
     if (-d $tmp2) { rmtree($tmp2, !$verbosity); }
 }
 
+sub cvs_cmd
+{
+    my $stuff_to_get = shift;
+    my $cvs_cmd = "cvs $verbosity $global_u up $k_option $dp_option $not_recursive $stuff_to_get $files";
+    return $cvs_cmd;
+}
+
 sub put_files_in_tmp_dirs
 {
+    my $cvs_cmd;
     my $stuff_to_get = "";
 
     print "Using: $tmp1\n";
@@ -113,8 +143,9 @@ sub put_files_in_tmp_dirs
         $stuff_to_get = "-D ".$cvs_dates[0];
     }
 
-    print "Executing: cvs $verbosity $global_u up $dp_option $not_recursive $stuff_to_get $files\n";
-    !(system("cvs $verbosity $global_u up $dp_option $not_recursive $stuff_to_get $files") / 256)
+    $cvs_cmd = cvs_cmd($stuff_to_get);
+    print "Executing: $cvs_cmd\n";
+    !(system($cvs_cmd) / 256)
            || do_error_exit("Could not run cvs up");
     find(\&f, $tmp1);
     chdir($cur);
@@ -125,7 +156,7 @@ sub put_files_in_tmp_dirs
     if($#cvs_revisions + $#cvs_dates != 0) {
         print "Copying files from: $cur\n";
         chdir($cur);
-        copy_dir("");
+        copy_dir('.');
         chdir($cur);
         return;
     }
@@ -146,12 +177,43 @@ sub put_files_in_tmp_dirs
         $stuff_to_get = "-D ".$cvs_dates[1];
     }
 
-    print "Executing: cvs $verbosity $global_u up $dp_option $not_recursive $stuff_to_get $files\n";
-    !(system("cvs $verbosity $global_u up $dp_option $not_recursive $stuff_to_get $files") / 256)
+    $cvs_cmd = cvs_cmd($stuff_to_get);
+    print "Executing: $cvs_cmd\n";
+    !(system($cvs_cmd) / 256)
            || do_error_exit("Could not run cvs up");
 
     find(\&f, $tmp2);
     chdir($cur);
+}
+
+# This function takes one argument, the path to a directory
+# It tries to open the .cvsignore file in that directory.
+# If successful, it returns a list of regular expressions 
+# specifying the things we should ignore.
+# The path should include a trailing '\'
+sub parse_cvsignore
+{
+    my @ignore_regexps = ();
+    my $dir_path = shift;
+    if(open(CVSIGNORE, "<$dir_path.cvsignore")) {
+        print "Found $dir_path.cvsignore - parsing\n" if !$verbosity;
+        my @lines = <CVSIGNORE>;     # read it into an array
+        close(CVSIGNORE);            # close the file
+        foreach my $line (@lines) {  # assign @lines to $line, one at a time
+	    # Convert the regexp from .cvsignore format to perl format
+            chomp($line);
+            next if ($line =~ m/^\s*$/);  # ignore blank lines in .cvsignore
+	    if ($line =~ m/\./) {         # restrict a file type
+		print "restricting file type: $line\n" if !$verbosity;
+		$line =~ s/\./\\\./;      # replace . with \.
+		$line =~ s/\*/.+/;        # replace * with .+
+	    } else {                      # restrict a subdir
+		print "restricting subdir: $line\n" if !$verbosity;
+	    }
+            push(@ignore_regexps, "^$line\$");
+        }
+    }
+    return @ignore_regexps;
 }
 
 # This function copies all of the files in our current directory
@@ -173,36 +235,12 @@ sub copy_dir
         return;
     }
 
-    # This will store any regexp filters for our files
-    # By default, we will be ignoring certain files
-    my @ignore_regexps = ('^.+\.obj$',  # ignore *.obj
-                          '^.+\.exe$',  # ignore *.exe
-                          '^cvs$'       # ignore CVS subdir
-                         );
+    # This will store any regexp filters for the current directory
+    my @ignore_regexps = (@globally_ignored_regexps, parse_cvsignore($relative_dir.'\\'));
 
     chdir($complete_dir);
     print "Checking: $relative_dir\n" if !$verbosity;
     mkpath($tmp2.$relative_dir, !$verbosity);
-
-    # if there is a .cvsignore file, open it up and add
-    # some regexps to ignore the correct type of files
-    if(open(CVSIGNORE, "<.cvsignore")) {
-        print "Found $relative_dir\\.cvsignore - parsing\n" if !$verbosity;
-        my @lines = <CVSIGNORE>;     # read it into an array
-        close(CVSIGNORE);            # close the file
-        foreach my $line (@lines) {  # assign @lines to $line, one at a time
-            chomp($line);
-            next if ($line =~ m/^\s*$/);  # ignore blank lines in .cvsignore
-            if ($line =~ m/\./) {         # restrict a file type
-                print "restricting file type: $line\n" if !$verbosity;
-                $line =~ s/\./\\\./;      # replace . with \.
-                $line =~ s/\*/.+/;        # replace * with .+
-            } else {                      # restrict a subdir
-                print "restricting subdir: $line\n" if !$verbosity;
-            }
-            push(@ignore_regexps, "^$line\$");
-        }
-    }
 
     # copy every file that we aren't told to ignore
     my $d = new DirHandle $complete_dir;
@@ -217,7 +255,7 @@ sub copy_dir
 
 		foreach my $regexp (@ignore_regexps) {   # skip any ignores
 		    if ($f =~ m/$regexp/i) {
-			    print "Ignoring file: $relative_dir$f\n" if !$verbosity;
+			    print "Ignoring file: $relative_dir\\$f\n" if !$verbosity;
 			    $bad_file = 1;
 			}
 		}
@@ -233,7 +271,7 @@ sub copy_dir
     $d = new DirHandle $complete_dir;
     @files = $d->read;
     $d->close;
-	my $bad_dir;
+    my $bad_dir;
     while ($files[0]) {
 	    $bad_dir = 0;
         my $f = shift @files;
@@ -244,8 +282,8 @@ sub copy_dir
             if ($f =~ m/$regexp/i) {
                 print "Ignoring directory: $relative_dir\\$f\n" if !$verbosity;
                 $bad_dir = 1;
-			}
-		}
+            }
+        }
         next if($bad_dir);
 
         copy_dir($relative_dir."\\".$f);
@@ -257,6 +295,7 @@ sub f
     if (($_ eq 'CVS') && (-d $File::Find::name))
     {
         rmtree($File::Find::name);
+	$File::Find::prune = 1;
     }
 }
 
@@ -280,6 +319,7 @@ Usage: $0 [-ulV] [[-r rev1 | -D date1] [-r rev2 | -D date2]] [files...]
 
 Options:
     -?, -H, --help        Help
+    -d, --diff program    Use 'program' to diff (default: $DIFF)
     -u, --global_u        Use cvs -u (nolock) option
     -l, --not_recursive   Local directory only, not recursive
     -V, --verbose         Verbose output

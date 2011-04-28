@@ -1,0 +1,20 @@
+klist.c: \
+	$(PISMERE)\athena\util\lib\getopt\getopt.h \
+	..\..\krb4\include\conf-pc.h \
+	..\..\krb4\include\conf.h \
+	..\..\krb4\include\des.h \
+	..\..\krb4\include\krb.h \
+	..\..\krb4\include\mit_copy.h \
+	..\..\krb4\include\osconf.h \
+	..\..\krb5\src\include\com_err.h \
+	..\..\krb5\src\include\krb5.h \
+	..\..\krb5\src\include\profile.h \
+	..\..\krb5\src\include\win-mac.h \
+	..\kuser-redefine.h \
+	..\kuser.h \
+
+klist.rc: \
+	$(PISMERE)\athena\include\export.ver \
+	$(PISMERE)\athena\include\kerberos.ver \
+	$(PISMERE)\scripts\build\inc\ver.inc \
+

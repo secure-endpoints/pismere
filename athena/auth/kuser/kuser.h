@@ -51,90 +51,62 @@ k_read_password(
     const char		* prompt,
     const char		* prompt2,
     char		* password,
-    int			* pwsize
+    unsigned int	* pwsize
     );
 
 /* ------------------------------------------------------------------------- */
 
-#include "loadfuncs-krb5.h"
+void
+dynamic_load(
+    int * pgot_k4,
+    int * pgot_k5
+    );
 
-extern FUNC_INFO k5_fi[];
+#define COMERR_DLL    "comerr32.dll"
+#define KRB5_DLL      "krb5_32.dll"
+#define KRB4_DLL      "krbv4w32.dll"
 
-extern DECL_FUNC_PTR(krb5_free_unparsed_name);
-extern DECL_FUNC_PTR(krb5_free_principal);
-extern DECL_FUNC_PTR(krb5_free_context);
-extern DECL_FUNC_PTR(krb5_free_cred_contents);
-extern DECL_FUNC_PTR(krb5_free_ticket);
-extern DECL_FUNC_PTR(krb5_unparse_name);
-extern DECL_FUNC_PTR(krb5_timestamp_to_sfstring);
-extern DECL_FUNC_PTR(krb5_init_context);
-extern DECL_FUNC_PTR(krb5_cc_default);
-extern DECL_FUNC_PTR(krb5_cc_resolve);
-extern DECL_FUNC_PTR(krb5_timeofday);
-extern DECL_FUNC_PTR(krb5_parse_name);
-extern DECL_FUNC_PTR(krb5_build_principal_ext);
-extern DECL_FUNC_PTR(krb5_get_in_tkt_with_password);
-extern DECL_FUNC_PTR(krb5_get_in_tkt_with_keytab);
-extern DECL_FUNC_PTR(krb5_get_validated_creds);
-extern DECL_FUNC_PTR(krb5_get_renewed_creds);
-extern DECL_FUNC_PTR(krb5_kt_default);
-extern DECL_FUNC_PTR(krb5_kt_resolve);
-extern DECL_FUNC_PTR(krb5_sname_to_principal);
-extern DECL_FUNC_PTR(krb5_decode_ticket);
-extern DECL_FUNC_PTR(krb5_enctype_to_string);
-extern DECL_FUNC_PTR(krb5_timestamp_to_sfstring);
+#include <loadfuncs.h>
+
+TYPEDEF_FUNC(
+    void,
+    KRB5_CALLCONV_C,
+    com_err,
+    (const char FAR *, errcode_t, const char FAR *, ...)
+    );
+TYPEDEF_FUNC(
+    krb5_error_code,
+    KRB5_CALLCONV,
+    krb5_string_to_deltat,
+    (char *, krb5_deltat *)
+    );
+TYPEDEF_FUNC(
+    krb5_error_code,
+    KRB5_CALLCONV,
+    krb5_string_to_timestamp,
+    (char *, krb5_timestamp *)
+    );
+TYPEDEF_FUNC(
+    krb5_error_code,
+    KRB5_CALLCONV,
+    krb5_timestamp_to_sfstring,
+    (krb5_timestamp, char *, size_t, char *)
+    );
+TYPEDEF_FUNC(
+    krb5_error_code,
+    KRB5_CALLCONV,
+    krb5_read_password,
+    (krb5_context,
+     const char *,
+     const char *,
+     char *,
+     unsigned int * )
+    );
+
 extern DECL_FUNC_PTR(krb5_string_to_deltat);
 extern DECL_FUNC_PTR(krb5_string_to_timestamp);
-extern DECL_FUNC_PTR(krb5_524_conv_principal);
-extern DECL_FUNC_PTR(krb5_get_prompt_types);
-extern DECL_FUNC_PTR(krb5_prompter_posix);
-extern DECL_FUNC_PTR(krb5_get_init_creds_keytab);
-extern DECL_FUNC_PTR(krb5_get_init_creds_password);
-extern DECL_FUNC_PTR(krb5_free_addresses);
-extern DECL_FUNC_PTR(krb5_get_init_creds_opt_set_address_list);
-extern DECL_FUNC_PTR(krb5_os_localaddr);
-extern DECL_FUNC_PTR(krb5_get_init_creds_opt_set_proxiable);
-extern DECL_FUNC_PTR(krb5_get_init_creds_opt_set_forwardable);
-extern DECL_FUNC_PTR(krb5_get_init_creds_opt_set_renew_life);
-extern DECL_FUNC_PTR(krb5_get_init_creds_opt_set_tkt_life);
-extern DECL_FUNC_PTR(krb5_get_init_creds_opt_init);
 extern DECL_FUNC_PTR(krb5_read_password);
-
-/* ------------------------------------------------------------------------- */
-
-#include "loadfuncs-krb.h"
-
-extern FUNC_INFO k4_fi[];
-
-extern DECL_FUNC_PTR(get_krb_err_txt_entry);
-extern DECL_FUNC_PTR(krb_realmofhost);
-extern DECL_FUNC_PTR(tkt_string);
-extern DECL_FUNC_PTR(k_isname);
-extern DECL_FUNC_PTR(k_isinst);
-extern DECL_FUNC_PTR(k_isrealm);
-extern DECL_FUNC_PTR(tf_close);
-extern DECL_FUNC_PTR(tf_init);
-extern DECL_FUNC_PTR(tf_get_pinst);
-extern DECL_FUNC_PTR(tf_get_pname);
-extern DECL_FUNC_PTR(tf_get_cred);
-extern DECL_FUNC_PTR(kname_parse);
-extern DECL_FUNC_PTR(krb_get_pw_in_tkt);
-extern DECL_FUNC_PTR(k_gethostname);
-extern DECL_FUNC_PTR(krb_get_lrealm);
-extern DECL_FUNC_PTR(krb_get_tf_realm);
-extern DECL_FUNC_PTR(krb_get_cred);   
-extern DECL_FUNC_PTR(krb_mk_req);
-extern DECL_FUNC_PTR(krb_get_krbhst);
-extern DECL_FUNC_PTR(krb_get_tf_fullname);
-extern DECL_FUNC_PTR(krb_check_serv);
-extern DECL_FUNC_PTR(dest_tkt);
-
-/* ------------------------------------------------------------------------- */
-
-#include "loadfuncs-com_err.h"
-
-extern FUNC_INFO ce_fi[];
-
+extern DECL_FUNC_PTR(krb5_timestamp_to_sfstring);
 extern DECL_FUNC_PTR(com_err);
 
 #endif /* __KUSER_H__ */

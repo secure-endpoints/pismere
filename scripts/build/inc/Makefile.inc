@@ -143,8 +143,10 @@ STD_LIBS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.li
 
 !if defined(NO_PLACE) || !defined(BINPLACE_CMD)
 BINPLACE=echo NOT PLACING:
+BINPLACE_OPTIONAL=$(BINPLACE)
 !else
 BINPLACE=$(BINPLACE_CMD) $(BINPLACE_FLAGS)
+BINPLACE_OPTIONAL=$(BINPLACE) --optional
 !endif
 
 #--------------------------------------------------------
@@ -216,6 +218,15 @@ clean_outdir:
 	@if not exist $(OUTDIR2)$(DIRNUL) if exist $(OUTDIR1)$(DIRNUL) echo The directory $(OUTDIR1) is not empty.
 
 #------------------------------------------------------------------------------
+
+!ifdef DELAY_DLLS
+!ifndef DELAY_HELP_LIB
+DELAY_HELP_LIB=delayimp.lib
+!endif
+LINK_DELAY_OPTS=-delay:unload -delayload:$(DELAY_DLLS:,= -delayload:)
+!else
+!undef LINK_DELAY_OPTS
+!endif
 
 !ifdef C_FLAGS
 MESSAGE_C_FLAGS=1
@@ -374,6 +385,14 @@ LTAR=-entry:wWinMainCRTStartup
 !endif
 !endif
 
+!if "$(TARGETTYPE)"=="SCR"
+OUTFILE=$(O)\$(NAME).scr
+VER_TARGET=VFT_APP
+!if "$(TARGETSS)"=="windows" && defined(UNICODE) && !defined(NO_LIBC) 
+LTAR=-entry:wWinMainCRTStartup
+!endif
+!endif
+
 !if "$(TARGETTYPE)"=="LIB"
 OUTFILE=$(O)\$(NAME).lib
 VER_TARGET=VFT_STATIC_LIB
@@ -464,11 +483,11 @@ $(BSCFILE): $(O) $(SBRS)
 
 all:: output_dir
 
-LINK_LINE=-nologo $(ldebug) $(LIBFLAGS) $(LSS) $(LDEF) $(LNDL) $(LTAR) $(LMAP) -out:$(OUTFILE) -pdb:$(O)\$(NAME).pdb -pdbtype:sept $(LIBC_LIB) $(optlibs) $(LIBS) $(OBJS) $(RES)
+LINK_LINE=-nologo $(ldebug) $(LIBFLAGS) $(LSS) $(LDEF) $(LNDL) $(LTAR) $(LMAP) -out:$(OUTFILE) -pdb:$(O)\$(NAME).pdb -pdbtype:sept $(LINK_DELAY_OPTS) $(LIBC_LIB) $(optlibs) $(LIBS) $(DELAY_HELP_LIB) $(OBJS) $(RES)
 
 LIB_LINE=-nologo -out:$@ $(LIBFLAGS) $(OBJS) $(LIBS) $(LNDL)
 
-!if ("$(TARGETTYPE)"=="DLL") || ("$(TARGETTYPE)"=="EXE") || ("$(TARGETTYPE)"=="CPL")
+!if ("$(TARGETTYPE)"=="DLL") || ("$(TARGETTYPE)"=="EXE") || ("$(TARGETTYPE)"=="CPL") || ("$(TARGETTYPE)"=="SCR")
 $(OUTFILE): $(OBJS) $(RES) $(DEF_FILE) $(DEP_LIBS)
 	$(link) $(LINK_LINE)
 #	@echo $(link) $(LINK_LINE)
@@ -483,7 +502,7 @@ $(OUTFILE): $(OBJS) $(DEP_LIBS)
 #$(LIB_LINE)
 #<<
 !else
-!error Invalid TARGETTYPE $(TARGETTYPE) (must be one of DLL EXE LIB CPL NONE)
+!error Invalid TARGETTYPE $(TARGETTYPE) (must be one of DLL EXE LIB CPL SCR NONE)
 !endif
 
 !ifdef NO_BSC
@@ -493,10 +512,31 @@ all:: $(OUTFILE) $(BSCFILE)
 !endif
 	@$(BINPLACE) $(OUTFILE)
 
+!ifdef SELF_REGISTERABLE
+HLINE=*****************************************************************************
+!ifndef SELF_REGISTER
+all:: $(OUTFILE)
+	@echo.
+	@echo $(HLINE)
+	@echo This is a self-registering component.  You can automatically register this 
+	@echo component by setting SELF_REGISTER=1 for the build.
+	@echo $(HLINE)
+	@echo.
+!else
+all::
+	@echo.
+	@echo $(HLINE)
+	@echo Registering component:
+	regsvr32 /s /c $(OUTFILE)
+	@echo $(HLINE)
+	@echo.
+!endif # SELF_REGISTER
+!endif # SELF_REGISTERABLE
+
 !else # OUTFILE
 
 !if ("$(TARGETTYPE)"!="NONE")
-!error Invalid TARGETTYPE $(TARGETTYPE) (must be one of DLL EXE LIB CPL NONE)
+!error Invalid TARGETTYPE $(TARGETTYPE) (must be one of DLL EXE LIB CPL SCR NONE)
 !endif
 
 !endif # OUTFILE
@@ -504,6 +544,11 @@ all:: $(OUTFILE) $(BSCFILE)
 !ifdef PLACE
 all::
 	@$(BINPLACE) $(PLACE)
+!endif
+
+!ifdef PLACE_OPTIONAL
+all::
+	@$(BINPLACE_OPTIONAL) $(PLACE_OPTIONAL)
 !endif
 
 #------------------------------------------------------------------------------

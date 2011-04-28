@@ -68,19 +68,17 @@ int timestamp_width;
 
 krb5_context kcontext;
 
-char * etype_string KRB5_PROTOTYPE((krb5_enctype ));
-void show_credential KRB5_PROTOTYPE((char *,
-				krb5_context,
-				krb5_creds *));
+char * etype_string (krb5_enctype );
+void show_credential (char *, krb5_context, krb5_creds *);
 	
-void do_ccache KRB5_PROTOTYPE((char *));
-void do_keytab KRB5_PROTOTYPE((char *));
-void printtime KRB5_PROTOTYPE((time_t));
-void one_addr KRB5_PROTOTYPE((krb5_address *));
-void fillit KRB5_PROTOTYPE((FILE *, int, int));
+void do_ccache (char *);
+void do_keytab (char *);
+void printtime (time_t);
+void one_addr (krb5_address *);
+void fillit (FILE *, int, int);
 
 #ifdef KRB5_KRB4_COMPAT
-void do_v4_ccache KRB5_PROTOTYPE((char *));
+void do_v4_ccache (char *);
 #endif /* KRB5_KRB4_COMPAT */
 
 #define DEFAULT 0
@@ -141,14 +139,7 @@ main(argc, argv)
     int mode;
     int use_k5 = 0, use_k4 = 0;
 
-    if (!LoadFuncs(COMERR_DLL, ce_fi, 0, 0, 1, 0, 1))
-	pcom_err = fake_com_err;
-    got_k5 = LoadFuncs(KRB5_DLL, k5_fi, 0, 0, 1, 0, 1);
-#ifdef KRB5_KRB4_COMPAT
-    got_k4 = LoadFuncs(KRB4_DLL, k4_fi, 0, 0, 1, 0, 1);
-#endif
-    if (!pkrb5_timestamp_to_sfstring)
-	pkrb5_timestamp_to_sfstring = k_timestamp_to_sfstring;
+    dynamic_load(&got_k4, &got_k5);
 
     progname = GET_PROGNAME(argv[0]);
 

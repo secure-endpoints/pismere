@@ -100,7 +100,6 @@ BOOL CLeashView::m_lowTicketAlarmSound;
 BOOL CLeashView::m_gotKrb4Tickets;
 BOOL CLeashView::m_gotKrb5Tickets;
 BOOL CLeashView::m_gotAfsTokens;
-VOID CLeashView::AlarmBeep();
 
 bool change_icon_size = true;
 

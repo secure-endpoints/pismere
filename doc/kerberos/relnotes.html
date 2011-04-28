@@ -1,18 +1,18 @@
 <html>
 <head>
 <title>
-Release Notes for Kerberos for Windows 2.1.2
+Release Notes for Kerberos for Windows 2.2 Beta 1
 </title>
 </head>
 
 <body>
 
 <center>
-<h1>Kerberos for Windows 2.1.2</h1>
+<h1>Kerberos for Windows 2.2 Beta 1</h1>
 <p>
 <h2>Release Notes</h2>
 <p>
-<h3>February 6, 2002</h3>
+<h3>April 10, 2002</h3>
 
 </center>
 
@@ -92,22 +92,34 @@ same thing.
 
 <p>
 <li>
-Kerberos v5 support is from MIT Kerberos v5 Release 1.2.3.
-This release of Kerberos v5 includes the ms2mit program to transfer a
-user's Microsoft Windows domain Kerberos credentials into the MIT
-Kerberos 5 credentials cache.
+Kerberos v5 support is from MIT Kerberos v5 Release 1.2.5 beta 1.  In
+addition to bug fixes, this release of Kerberos 5 includes several
+important changes:
 
 <p>
-<li>ms2mit was removed from the Extra Binaries package since it is now
-part of the included MIT Kerberos v5 component.
+
+<ul>
+
+<li>The public API has been more clearly defined.  The krb5.h header
+file now marks non-public functions with KRB5_PRIVATE and deprecated
+functions with KRB5_DEPRECATED.  You should not define these in your
+builds.
 
 <p>
-<li>The Microsoft Redistributable Components package no longer
-includes the Winsock 2 Update for Windows 95.  A pointer to download
-it from Microsoft is now included.
+<li>The krb5_32.dll exports have been cleaned up to try to reflect
+that API.  However, the Kerberos 5 DLL still exports some private
+functions that are currently used by the GSSAPI implementation.  Make
+sure you do not use these (check krb5.h).
 
 <p>
-<li>The release notes have been significantly revamped.
+<li>
+The Kerberos 5 ccache and keytab accessors are now functions instead
+of macros.
+
+</ul>
+
+<p>
+See the README file for Kerberos 5 for more information.
 
 </ul>
 
@@ -585,10 +597,10 @@ supported.
 <p>First, make sure that you have Microsoft Visual C++ 6.0, a recent
 release of the <a
 href="http://msdn.microsoft.com/downloads/sdks/platform/default.asp">Microsoft
-Platform SDK</a> (July 2000 or higher is known to work), <a
-href="http://www.activestate.com/">ActiveState Perl</a> (build 517 or
-higher), sed, gawk, cat, and rm in your PATH.  You can get sed, gawk,
-cat, and rm from the <a
+Platform SDK</a> (August 2001 or higher is known to work), <a
+href="http://www.activestate.com/">ActiveState Perl</a> (build 631 is
+known to work), sed, gawk, cat, and rm in your PATH.  You can get sed,
+gawk, cat, and rm from the <a
 href="http://sourceware.cygnus.com/cygwin/">Cygwin distribution</a>.
 Also make sure that your INCLUDE path includes the Microsoft Platform
 SDK before the Microsoft Visual C++ include files and that perl has
@@ -678,6 +690,31 @@ if this is the source package.)
 In general, the latest release of KfW is recommended.  However, it may
 be useful (and entertaining) to understand the history of KfW by
 looking at its release history.
+
+<h3>KfW 2.1.2</h3>
+
+<ul>
+
+<p>
+<li>
+Kerberos v5 support is from MIT Kerberos v5 Release 1.2.3.
+This release of Kerberos v5 includes the ms2mit program to transfer a
+user's Microsoft Windows domain Kerberos credentials into the MIT
+Kerberos 5 credentials cache.
+
+<p>
+<li>ms2mit was removed from the Extra Binaries package since it is now
+part of the included MIT Kerberos v5 component.
+
+<p>
+<li>The Microsoft Redistributable Components package no longer
+includes the Winsock 2 Update for Windows 95.  A pointer to download
+it from Microsoft is now included.
+
+<p>
+<li>The release notes have been significantly revamped.
+
+</ul>
 
 <h3>KfW 2.1.1</h3>
 

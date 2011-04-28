@@ -232,7 +232,7 @@ make_temp_cache_v5(
     if (old_cache) {
         krb5_ccache cc = 0;
         if (!pkrb5_cc_resolve(ctx, pkrb5_cc_default_name(ctx), &cc))
-            krb5_cc_destroy(ctx, cc);
+            pkrb5_cc_destroy(ctx, cc);
         pkrb5_cc_set_default_name(ctx, old_cache);
         free(old_cache);
         old_cache = 0;

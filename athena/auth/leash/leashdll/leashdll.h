@@ -35,6 +35,8 @@ typedef struct
 #include <loadfuncs-krb5.h>
 #include <loadfuncs-krb.h>
 
+#include <errno.h>
+
 #ifndef NO_AFS
 #include "afscompat.h"
 #endif
@@ -87,6 +89,18 @@ extern DECL_FUNC_PTR(krb5_cc_resolve);
 extern DECL_FUNC_PTR(krb5_cc_default);
 extern DECL_FUNC_PTR(krb5_cc_default_name);
 extern DECL_FUNC_PTR(krb5_cc_set_default_name);
+extern DECL_FUNC_PTR(krb5_cc_initialize);
+extern DECL_FUNC_PTR(krb5_cc_destroy);
+extern DECL_FUNC_PTR(krb5_cc_close);
+extern DECL_FUNC_PTR(krb5_cc_store_cred);
+// extern DECL_FUNC_PTR(krb5_cc_retrieve_cred);
+extern DECL_FUNC_PTR(krb5_cc_get_principal);
+extern DECL_FUNC_PTR(krb5_cc_start_seq_get);
+extern DECL_FUNC_PTR(krb5_cc_next_cred);
+extern DECL_FUNC_PTR(krb5_cc_end_seq_get);
+// extern DECL_FUNC_PTR(krb5_cc_remove_cred);
+extern DECL_FUNC_PTR(krb5_cc_set_flags);
+// extern DECL_FUNC_PTR(krb5_cc_get_type);
 extern DECL_FUNC_PTR(krb5_free_context);
 extern DECL_FUNC_PTR(krb5_free_cred_contents);
 extern DECL_FUNC_PTR(krb5_free_principal);
@@ -102,7 +116,7 @@ extern DECL_FUNC_PTR(krb5_sname_to_principal);
 extern DECL_FUNC_PTR(krb5_get_credentials_renew);
 extern DECL_FUNC_PTR(krb5_free_data);
 extern DECL_FUNC_PTR(krb5_free_data_contents);
-extern DECL_FUNC_PTR(krb5_get_realm_domain);
+// extern DECL_FUNC_PTR(krb5_get_realm_domain);
 extern DECL_FUNC_PTR(krb5_free_unparsed_name);
 
 // ComErr functions

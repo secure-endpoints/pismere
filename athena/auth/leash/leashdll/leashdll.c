@@ -49,6 +49,18 @@ DECL_FUNC_PTR(krb5_cc_resolve);
 DECL_FUNC_PTR(krb5_cc_default);
 DECL_FUNC_PTR(krb5_cc_default_name);
 DECL_FUNC_PTR(krb5_cc_set_default_name);
+DECL_FUNC_PTR(krb5_cc_initialize);
+DECL_FUNC_PTR(krb5_cc_destroy);
+DECL_FUNC_PTR(krb5_cc_close);
+DECL_FUNC_PTR(krb5_cc_store_cred);
+// DECL_FUNC_PTR(krb5_cc_retrieve_cred);
+DECL_FUNC_PTR(krb5_cc_get_principal);
+DECL_FUNC_PTR(krb5_cc_start_seq_get);
+DECL_FUNC_PTR(krb5_cc_next_cred);
+DECL_FUNC_PTR(krb5_cc_end_seq_get);
+// DECL_FUNC_PTR(krb5_cc_remove_cred);
+DECL_FUNC_PTR(krb5_cc_set_flags);
+// DECL_FUNC_PTR(krb5_cc_get_type);
 DECL_FUNC_PTR(krb5_free_context);
 DECL_FUNC_PTR(krb5_free_cred_contents);
 DECL_FUNC_PTR(krb5_free_principal);
@@ -64,7 +76,7 @@ DECL_FUNC_PTR(krb5_sname_to_principal);
 DECL_FUNC_PTR(krb5_get_credentials_renew);
 DECL_FUNC_PTR(krb5_free_data);
 DECL_FUNC_PTR(krb5_free_data_contents);
-DECL_FUNC_PTR(krb5_get_realm_domain);
+// DECL_FUNC_PTR(krb5_get_realm_domain);
 DECL_FUNC_PTR(krb5_free_unparsed_name);
 
 // ComErr functions
@@ -119,6 +131,18 @@ FUNC_INFO k5_fi[] = {
     MAKE_FUNC_INFO(krb5_cc_default),
     MAKE_FUNC_INFO(krb5_cc_default_name),
     MAKE_FUNC_INFO(krb5_cc_set_default_name),
+    MAKE_FUNC_INFO(krb5_cc_initialize),
+    MAKE_FUNC_INFO(krb5_cc_destroy),
+    MAKE_FUNC_INFO(krb5_cc_close),
+    MAKE_FUNC_INFO(krb5_cc_store_cred),
+// MAKE_FUNC_INFO(krb5_cc_retrieve_cred),
+    MAKE_FUNC_INFO(krb5_cc_get_principal),
+    MAKE_FUNC_INFO(krb5_cc_start_seq_get),
+    MAKE_FUNC_INFO(krb5_cc_next_cred),
+    MAKE_FUNC_INFO(krb5_cc_end_seq_get),
+// MAKE_FUNC_INFO(krb5_cc_remove_cred),
+    MAKE_FUNC_INFO(krb5_cc_set_flags),
+// MAKE_FUNC_INFO(krb5_cc_get_type),
     MAKE_FUNC_INFO(krb5_free_context),
     MAKE_FUNC_INFO(krb5_free_cred_contents),
     MAKE_FUNC_INFO(krb5_free_principal),
@@ -134,7 +158,7 @@ FUNC_INFO k5_fi[] = {
     MAKE_FUNC_INFO(krb5_get_credentials_renew),
     MAKE_FUNC_INFO(krb5_free_data),
     MAKE_FUNC_INFO(krb5_free_data_contents),
-    MAKE_FUNC_INFO(krb5_get_realm_domain),
+//  MAKE_FUNC_INFO(krb5_get_realm_domain),
     MAKE_FUNC_INFO(krb5_free_unparsed_name),
     END_FUNC_INFO
 };

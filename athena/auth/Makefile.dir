@@ -1,1 +1,1 @@
-DIRS=krbcc krb4 krb5 kuser leash aklog
+DIRS=krbcc krb4 krb5 kuser leash aklog sasl

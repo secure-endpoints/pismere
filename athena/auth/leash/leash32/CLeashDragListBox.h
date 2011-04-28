@@ -16,7 +16,7 @@ class CLeashDragListBox : public CDragListBox
 // Constructors
 public:
 	CLeashDragListBox();
-	initOtherListbox(CPropertyPage* pPage, CListBox* pOtherListBox);
+	void initOtherListbox(CPropertyPage* pPage, CListBox* pOtherListBox);
 	
 // Attributes
 	//int ItemFromPt(CPoint pt, BOOL bAutoScroll = TRUE) const;

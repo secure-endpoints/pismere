@@ -141,7 +141,7 @@ extern DECL_FUNC_PTR(krb5_get_default_config_files);
 extern DECL_FUNC_PTR(krb5_free_config_files);
 extern DECL_FUNC_PTR(krb5_free_context);
 extern DECL_FUNC_PTR(krb5_get_default_realm);
-extern DECL_FUNC_PTR(krb5_get_host_realm);
+// extern DECL_FUNC_PTR(krb5_get_host_realm);
 
 // profile functions
 extern DECL_FUNC_PTR(profile_release);

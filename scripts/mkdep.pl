@@ -1,5 +1,15 @@
 #!perl -w
 
+# XXX - Fix INCLUDES search so that we use implicit . only for "foo.h"
+# and not for <foo.h>
+
+# XXX - convert all \ into / ... (DONE?)
+
+# XXX - process .rc file directives: CURSOR, ICON, BITMAP, RCDATA
+
+# Use CL /E to process #include directives...as though building
+# Also use CL /E to handle .rc files
+
 use strict;
 use FindBin;
 use File::Spec;
@@ -56,6 +66,7 @@ sub read_source_file
 	my $line = $fh->getline();
 	if ($line =~ /^\s*\#\s*include\s*[\"\<]([^\"\>]+)[\"\>]/) {
 	    my $inc = $1;
+	    $inc =~ s/\//\\/;
 	    my $found = find_include($info, $ginfo, $inc, $source);
 	    if ($found) {
 		if (!$info->{dep_h}->{lc($orig)}->{lc($inc)}) {
@@ -152,20 +163,20 @@ sub get_build_info
     my $vars = parse_lines(@lines);
 
     add_from_vars($info->{inc},
-		  $vars, 'INCLUDES', ';');
+		  $vars, 'INCLUDES', '\s*;\s*');
     if (!@{$ginfo->{inc}->{env}}) {
 	add_from_vars($ginfo->{inc}->{env},
-		      $vars, 'ENV_INCLUDE', ';');
+		      $vars, 'ENV_INCLUDE', '\s*;\s*');
     }
     if (!@{$ginfo->{inc}->{build}}) {
 	add_from_vars($ginfo->{inc}->{build},
-		      $vars, 'BUILD_INCLUDE', ';');
+		      $vars, 'BUILD_INCLUDE', '\s*;\s*');
 	fix_binc($ginfo->{inc}->{build}, $ginfo->{inc}->{env});
     }
     $ginfo->{pismere} = ($ginfo->{pismere} ||
 			 add_from_vars(0, $vars, 'PISMERE'));
-    add_from_vars($info->{objs}, $vars, 'OBJS', ' ');
-    add_from_vars($info->{objs}, $vars, 'RES', ' ');
+    add_from_vars($info->{objs}, $vars, 'OBJS', '\s+');
+    add_from_vars($info->{objs}, $vars, 'RES', '\s+');
 }
 
 sub parse_lines
@@ -188,13 +199,15 @@ sub add_from_vars
     my $var = shift || die;
     my $split = shift;
     if ($vars->{$var}) {
+	my $varcopy = $vars->{$var};
+	$varcopy =~ s/\//\\/;
 	if ($list) {
 	    die if !$split;
-	    push(@$list, split(/$split/, $vars->{$var}));
+	    push(@$list, split(/$split/, $varcopy));
 	    @$list = grep(!/^\s*$/, @$list);
 	    return $list;
 	} else {
-	    return $vars->{$var};
+	    return $varcopy;
 	}
     }
     return 0;
@@ -407,10 +420,13 @@ sub print_file
     }
 
     map {
+	# XXX - a hack:
+	my %printed;
 	print $fh "$_: \\\n";
 	map {
 	    if ($OPT->{site} || !/[\\\/]site[\\\/]/) {
-		print $fh "\t$_ \\\n";
+		print $fh "\t\"$_\"\\\n" if !$printed{lc($_)};
+		$printed{lc($_)} = 1;
 	    }
 	} sort insensitive @{$info->{dep}->{$_}};
 	print $fh "\n";

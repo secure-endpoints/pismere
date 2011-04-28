@@ -9,8 +9,17 @@
 <center>by <a href="mailto:dalmeida@mit.edu">Danilo Almeida</a></center>
 
 <p>
+<font color="#FF0000">
+<strong><em>NEW</em></strong>: New information includes <a
+href="#strings">Strings</a> and <a href="#cleanup">Errors &
+Cleanup</a>.  The <a href="#format">formatting information</a> has
+been updated on using Visual Studio 6.0 and Emacs to help keep your
+code formatted properly.
+</font>
+
+<p>
 <strong><em>
-Revision 0.4 - This is a draft.  Please send feedback to <a
+Revision 0.5 - This is a draft.  Please send feedback to <a
 href="mailto:pismere-team@mit.edu">pismere-team@mit.edu</a> for
 discussion.
 </em></strong>
@@ -28,14 +37,19 @@ copyright.
 </font>
 
 <p>
-<font color="#FF0000"><strong><em>NOTE</em></strong>: This first cut
-has been cobbled together from GNU and Athena coding standards.  It
-still needs a bunch of re-org work.  Please feel free to send
-suggestions.  Currently, we only deal with C.  We need to add
-C++-specific stuff.</font>
+<font color="#FF0000"
+background="#FF00FF"><strong><em>NOTE</em></strong>: This first cut has
+been cobbled together from GNU and Athena coding standards.  It still
+needs a bunch of re-org work.  Please feel free to send suggestions.
+Currently, we only deal with C.  We need to add C++-specific
+stuff.</font>
 
 <p>
 <table>
+
+<tr>
+<td><a href="#intro">Introduction</a>
+<td>A few words to get you started
 
 <tr>
 <td><a href="#format">Formatting</a>
@@ -71,10 +85,30 @@ C++-specific stuff.</font>
 <td>Symbol namespaces
 
 <tr>
+<td><a href="#strings">Strings</a>
+<td>Using strings
+
+<tr>
+<td><a href="#cleanup">Errors & Cleanup</a>
+<td>Error-handling and resource cleanup
+
+<tr>
 <td><a href="#portability_3rd">Portability (3rd party)</a>
 <td>Portability considerations for code we get from third parties
 
 </table>
+
+
+<!---------------------------------------------------------------------------->
+<hr>
+<a name="intro">
+<h2>Introducton</h2>
+</a>
+
+<p>
+We want all of our code to have a consistent coding style.  For code
+that comes from third parties, we will generally maintain the original
+style of that code.
 
 
 <!---------------------------------------------------------------------------->
@@ -94,11 +128,18 @@ should be 4 characters.
 <strong>QUESTION:</strong> Do we want to outlaw tabs altogether?
 </font>
 
+<h3>Putting Visual Studio 6.0 to Work for You</h3>
+
+<p>
+You can use <a href="site/reg/user/msdev-editor.reg">this registry
+file</a> to set up Visual Studio 6.0 to have the proper tabbing
+defaults.
+
 <h3>Putting Emacs to Work for You</h3>
 
 <p>
 You can use Emacs to help you format your source code.  First, you add
-the emacs locker by running <code>\\tremont\locker\addlocker
+the emacs locker by running <code>\\fqd.isnt.mit.edu\locker\addlocker
 emacs</code> from a prompt.  Then, from that prompt, start up Emacs
 with the command-line: <code>runemacs.cmd</code> (the <em>.cmd</em> is
 important).
@@ -106,9 +147,8 @@ important).
 <p>
 You can then hit TAB to indent the current line or select an entire
 region (like, say, the entire buffer) and do <code>M-x
-indent-region</code>.  The <code>site-start.el</code> in the
-<code>site-lisp</code> directory of Emacs shows how we set up our
-Emacs to do the proper indenting (and syntax highlighting).
+indent-region</code>.  You can also do <code>M-x
+pismre-remove-ws</code> to remove trailing whitespace from your files.
 
 <h3>Back to Formatting</h3>
 
@@ -867,6 +907,101 @@ with the user's namespace because the user might have "#define"'d them
 to something before including your header file, but applications
 generally shouldn't be "#define"ing lots of lowercase symbols, so this
 is not a real worry.
+
+<!---------------------------------------------------------------------------->
+<hr>
+<a name="strings">
+<h2>Strings</h2>
+</a>
+
+<p>
+Here are a few guidelines you should follow:
+
+<ol>
+<p>
+<li>
+In general, a function should dynamically allocate strings rather than
+having fixed arbitrary sizes for strings.  This applies to buffers
+used inside a function, buffers passed into a function (i.e., the
+function should have a buffer size argument), and buffers returned by
+a function (i.e., the function allocates the buffer and the caller
+calls a function to free the buffer after the buffer is no longer
+needed).
+<p>
+<li>
+If a function is using fixed-size buffers, the function must check
+that it does not write past the end of the buffer no matter what the
+caller feeds the function.  This can be done by using the "n" versions
+of the string handling routines and keeping track of buffer sizes when
+doing string operations.  Failing to do so can result in unexpected
+crashes and even security holes.
+</ol>
+
+<!---------------------------------------------------------------------------->
+<hr>
+<a name="cleanup">
+<h2>Errors & Cleanup</h2>
+</a>
+
+
+<p>
+A function will need to cleanup resources that it uses internally.
+However, a function must still be easy.  It is not acceptable for a
+function's "normal" code path to be a sequence of nested if's that
+check for errors.  Neither is it acceptable to embed resource cleanup
+at every point where an error might occur.
+
+<p>
+Rather, a function should initialize all resource variables to a known
+initial state and clean up all allocated resources in a single
+location.  Critical errors should cause the function to execute this
+single block of cleanup code.  The cleanup code will have a
+<code>cleanup:</code> label.  On an error, the main function body
+should set an error flag and go to the label (i.e., <code>goto
+cleanup:</code>).
+
+<p>
+To properly be able to do this, the function must initialize all
+resources and error variables that may need to be checked or cleaned
+up on returning from the function.  Here is an example:
+
+<blockquote>
+<pre>
+int
+check_dir_file(
+    char* dir,
+    char* file
+    )
+{
+    int result = 0;
+    char* buffer = 0;
+
+    buffer = malloc(strlen(first) + strlen(file) + sizeof(MY_PATH_SEPARATOR));
+    if (!buffer)
+    {
+        result = MY_ERROR_NO_MEMORY;
+        goto cleanup;
+    }
+    /*
+     * We know that first and file won't be changing lengths, so we can
+     * safely write into the buffer w/o checking sizes.  We choose to use
+     * strcat() to the start of the buffer each time because we prefer to
+     * sacrifice a little speed to have the code a little more readable.
+     * 
+     */
+    buffer[0] = 0;
+    strcat(buffer, dir);
+    strcat(buffer, MY_PATH_SEPARATOR);
+    strcat(buffer, file);
+    result = check_filepath(buffer);
+
+  cleanup:
+    if (buffer)
+        free(buffer);
+    return result;
+}
+</pre>
+</blockquote>
 
 <!---------------------------------------------------------------------------->
 <hr>

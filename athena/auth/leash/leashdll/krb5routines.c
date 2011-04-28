@@ -118,7 +118,7 @@ not_an_API_LeashKRB5GetTickets(
 	
     flags = 0;
 
-    if ((code = krb5_cc_set_flags(ctx, cache, flags)))
+    if ((code = pkrb5_cc_set_flags(ctx, cache, flags)))
     {
         if (code != KRB5_FCC_NOFILE)
             Leash_krb5_error(code, "krb5_cc_set_flags()", 0, ctx, 
@@ -126,13 +126,13 @@ not_an_API_LeashKRB5GetTickets(
         else if (code != KRB5_FCC_NOFILE && ctx != NULL)
         {
             if (cache != NULL)
-                krb5_cc_close(ctx, cache);
+                pkrb5_cc_close(ctx, cache);
         }
 
         return code;
     }
 	
-    if (code = krb5_cc_get_principal(ctx, cache, 
+    if (code = pkrb5_cc_get_principal(ctx, cache, 
                                      &KRBv5Principal))
     {
         functionName = "krb5_cc_get_principal()";
@@ -153,7 +153,7 @@ not_an_API_LeashKRB5GetTickets(
         if (ctx != NULL)
         {
             if (cache != NULL)
-                krb5_cc_close(ctx, cache);
+                pkrb5_cc_close(ctx, cache);
         }
 	
         return(code);
@@ -168,7 +168,7 @@ not_an_API_LeashKRB5GetTickets(
         if (ctx != NULL)
         {
             if (cache != NULL)
-                krb5_cc_close(ctx, cache);
+                pkrb5_cc_close(ctx, cache);
         }
 		
         return(code);
@@ -185,7 +185,7 @@ not_an_API_LeashKRB5GetTickets(
             if (ctx != NULL)
             {
                 if (cache != NULL)
-                    krb5_cc_close(ctx, cache);
+                    pkrb5_cc_close(ctx, cache);
             }
 			
             return(code);
@@ -195,7 +195,7 @@ not_an_API_LeashKRB5GetTickets(
     wsprintf(ticketinfo->principal, "%s", PrincipalName);
 
     (*pkrb5_free_principal)(ctx, KRBv5Principal);
-    if ((code = krb5_cc_start_seq_get(ctx, cache, &KRBv5Cursor))) 
+    if ((code = pkrb5_cc_start_seq_get(ctx, cache, &KRBv5Cursor))) 
     {
         functionName = "krb5_cc_start_seq_get()";
         freeContextFlag = 1;
@@ -204,7 +204,7 @@ not_an_API_LeashKRB5GetTickets(
 	
     memset(&KRBv5Credentials, '\0', sizeof(KRBv5Credentials));
 
-    while (!(code = krb5_cc_next_cred(ctx, cache, &KRBv5Cursor, &KRBv5Credentials))) 
+    while (!(code = pkrb5_cc_next_cred(ctx, cache, &KRBv5Cursor, &KRBv5Credentials))) 
     {
         if (!list)
         {
@@ -344,7 +344,7 @@ not_an_API_LeashKRB5GetTickets(
 
     if ((code == KRB5_CC_END) || (code == KRB5_CC_NOTFOUND))
     {
-        if ((code = krb5_cc_end_seq_get(ctx, cache, &KRBv5Cursor))) 
+        if ((code = pkrb5_cc_end_seq_get(ctx, cache, &KRBv5Cursor))) 
         {
             functionName = "krb5_cc_end_seq_get()";
             freeContextFlag = 1;
@@ -352,7 +352,7 @@ not_an_API_LeashKRB5GetTickets(
         }
 
         flags = KRB5_TC_OPENCLOSE;
-        if ((code = krb5_cc_set_flags(ctx, cache, flags))) 
+        if ((code = pkrb5_cc_set_flags(ctx, cache, flags))) 
         {
             functionName = "krb5_cc_set_flags()";
             freeContextFlag = 1;
@@ -369,7 +369,7 @@ not_an_API_LeashKRB5GetTickets(
     if (ctx != NULL)
     {
         if (cache != NULL)
-            krb5_cc_close(ctx, cache);
+            pkrb5_cc_close(ctx, cache);
     }
 	
     return(code);
@@ -455,10 +455,10 @@ Leash_krb5_kinit(
                                        &options);
     if (code) goto cleanup;
 
-    code = krb5_cc_initialize(ctx, cc, me);
+    code = pkrb5_cc_initialize(ctx, cc, me);
     if (code) goto cleanup;
 
-    code = krb5_cc_store_cred(ctx, cc, &my_creds);
+    code = pkrb5_cc_store_cred(ctx, cc, &my_creds);
     if (code) goto cleanup;
 
  cleanup:
@@ -470,7 +470,7 @@ Leash_krb5_kinit(
     if (me)
 	pkrb5_free_principal(ctx, me);
     if (cc)
-	krb5_cc_close(ctx, cc);
+	pkrb5_cc_close(ctx, cc);
     if (ctx && (ctx != alt_ctx))
 	pkrb5_free_context(ctx);
     return(code);
@@ -498,7 +498,7 @@ Leash_krb5_kdestroy(
     if (rc = Leash_krb5_initialize(&ctx, &cache))
         return(rc);
 	
-    rc = krb5_cc_destroy(ctx, cache);
+    rc = pkrb5_cc_destroy(ctx, cache);
 
     if (ctx != NULL)
         pkrb5_free_context(ctx);
@@ -588,7 +588,7 @@ Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
         if (ctx != NULL)
         {
             if (cache != NULL)
-                krb5_cc_close(ctx, cache);
+                pkrb5_cc_close(ctx, cache);
 	
             pkrb5_free_context(ctx);
         }

@@ -380,7 +380,7 @@ void CKrbRealmHostMaintenance::OnButtonRealmHostAdd()
 				   "Leash32", MB_OK);
 		
 		m_KDCHostList.ResetContent();
-        if (OnButtonKdchostAdd())
+        if (OnButtonKdchostAddInternal())
 		{ // Cancel 
 			
 			long retval = pprofile_rename_section(CLeashApp::m_krbv5_profile, 
@@ -414,8 +414,13 @@ void CKrbRealmHostMaintenance::OnButtonRealmHostAdd()
 		GetDlgItem(IDC_BUTTON_REALM_EDIT)->EnableWindow();
 	}
 }
-	
-void* CKrbRealmHostMaintenance::OnButtonKdchostAdd() 
+
+void CKrbRealmHostMaintenance::OnButtonKdchostAdd()
+{
+    OnButtonKdchostAddInternal();
+}
+
+bool CKrbRealmHostMaintenance::OnButtonKdchostAddInternal()
 {
 	CString newHost; // new section in the profile linklist
     CKrbAddHostServer addHostServer; 
@@ -435,7 +440,7 @@ void* CKrbRealmHostMaintenance::OnButtonKdchostAdd()
 			MessageBox("We can't have duplicate Host Servers for the same Realm!\
                         \nYour entry was not saved to list.", 
                        "Leash32", MB_OK);
-			return (void*) 1;
+			return true;
 		}
 
 		m_KDCRealmList.GetText(m_KDCRealmList.GetCurSel(), theSection);
@@ -448,7 +453,7 @@ void* CKrbRealmHostMaintenance::OnButtonKdchostAdd()
                         \nIf this error persist, contact your administrator.", 
 					   "Leash32", MB_OK);
 
-			return (void*) 1;
+			return true;
 		}
 		
         if (LB_ERR == m_KDCHostList.AddString(newHost))
@@ -457,7 +462,7 @@ void* CKrbRealmHostMaintenance::OnButtonKdchostAdd()
 		SetModified(TRUE);
 	}	
 	else
-	  return (void*) 1;
+	  return true;
 	
 	if (m_KDCHostList.GetCount() > 1)
     {
@@ -474,7 +479,7 @@ void* CKrbRealmHostMaintenance::OnButtonKdchostAdd()
 		GetDlgItem(IDC_BUTTON_KDCHOST_EDIT)->EnableWindow();
 	}
 
-	return (void*) 0;	
+	return false;
 }
 
 void CKrbRealmHostMaintenance::OnButtonRealmHostEdit() 
