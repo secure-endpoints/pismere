@@ -155,6 +155,9 @@ config_boolean_to_int(
     const char *s
     );
 
+BOOL GetSecurityLogonSessionData(PSECURITY_LOGON_SESSION_DATA * ppSessionData);
+BOOL IsKerberosLogon(VOID);
+
 #ifndef NO_KRB5
 int Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName, 
                      int FreeContextFlag, krb5_context *ctx,
@@ -256,7 +259,7 @@ typedef struct _infoNC {
 
 TYPEDEF_FUNC(
 CCACHE_API,
-CALLCONV_C,
+__cdecl,
 cc_initialize,
     (
     apiCB** cc_ctx,           // <  DLL's primary control structure.
@@ -269,7 +272,7 @@ cc_initialize,
 
 TYPEDEF_FUNC(
 CCACHE_API,
-CALLCONV_C,
+__cdecl,
 cc_shutdown,
     (
     apiCB** cc_ctx            // <> DLL's primary control structure. NULL after
@@ -278,7 +281,7 @@ cc_shutdown,
 
 TYPEDEF_FUNC(
 CCACHE_API,
-CALLCONV_C,
+__cdecl,
 cc_get_NC_info,
     (
     apiCB* cc_ctx,          // >  DLL's primary control structure
@@ -289,7 +292,7 @@ cc_get_NC_info,
 
 TYPEDEF_FUNC(
 CCACHE_API,
-CALLCONV_C,
+__cdecl,
 cc_free_NC_info,
     (
     apiCB* cc_ctx,

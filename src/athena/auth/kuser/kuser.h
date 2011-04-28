@@ -63,10 +63,16 @@ dynamic_load(
     int * pgot_cc
     );
 
+#ifdef _WIN64
+#define COMERR_DLL    "comerr64.dll"
+#define KRB5_DLL      "krb5_64.dll"
+#define CCAPI_DLL     "krbcc64.dll"
+#else
 #define COMERR_DLL    "comerr32.dll"
 #define KRB5_DLL      "krb5_32.dll"
 #define KRB4_DLL      "krbv4w32.dll"
 #define CCAPI_DLL     "krbcc32.dll"
+#endif
 
 #include <loadfuncs.h>
 

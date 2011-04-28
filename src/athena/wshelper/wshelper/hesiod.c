@@ -101,8 +101,11 @@ int hes_init( void )
     Hes_RHS[0] = '\0';
 
     // Note: these must match the DEF file entries
-
-    hModWSHelp = GetModuleHandle( "WSHELP32" );
+#if defined(_WIN64)
+	hModWSHelp = GetModuleHandle( "WSHELP64" );
+#else
+	hModWSHelp = GetModuleHandle( "WSHELP32" );
+#endif
 
     if(!LoadString( hModWSHelp, IDS_DEF_HES_CONFIG_FILE, 
                     HesConfigFile, sizeof(HesConfigFile) )){

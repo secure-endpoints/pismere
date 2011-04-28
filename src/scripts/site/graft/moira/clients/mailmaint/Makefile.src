@@ -12,9 +12,9 @@ OBJS= \
 DEP_LIBS=..\..\util\et\$(O)\mrcomerr.lib ..\..\lib\$(O)\libmoira.lib ..\lib\$(O)\libmrclient.lib
 
 USE_DEFAULTLIB=1
-LIBS=pdcurses.lib $(DEP_LIBS) krbv4w32.lib wshelp32.lib ws2_32.lib shlwapi.lib user32.lib
+LIBS=pdcurses.lib $(DEP_LIBS) krbv4w32.lib krb5_32.lib wshelp32.lib ws2_32.lib shlwapi.lib user32.lib
 
-LIB_PATHS=$(PISMERE)\athena\auth\krb4\krbv4\krbdll\$(O);$(PISMERE)\athena\wshelper\wshelper\$(O);$(PISMERE)\athena\util\lib\curses\$(O)
+LIB_PATHS=$(PISMERE)\athena\auth\krb5\src\lib\$(O);$(PISMERE)\athena\auth\krb4\krbv4\krbdll\$(O);$(PISMERE)\athena\wshelper\wshelper\$(O);$(PISMERE)\athena\util\lib\curses\$(O)
 INCLUDES=..\..\include;..\..\util\et;$(PISMERE)\athena\auth\krb4\include;$(PISMERE)\athena\util\lib\curses
 
 USE_LIBC_DLL=1

@@ -72,8 +72,14 @@ hes_getservbyname(char *name, char *proto)
     if (cp == NULL) 
 	return(NULL);
     p = (struct servent*)(TlsGetValue(dwHesServIndex));
-    if (p == NULL)
-        return NULL;
+    if (p == NULL) {
+	LPVOID lpvData = (LPVOID) LocalAlloc(LPTR, sizeof(struct servent)); 
+	if (lpvData != NULL) {
+	    TlsSetValue(dwHesServIndex, lpvData);
+	    p = (struct servent*)lpvData;
+	} else
+	    return NULL;
+    }
     if (!p->s_name)
         p->s_name = LocalAlloc(LPTR, DNS_MAX_LABEL_BUFFER_LENGTH);
     if (!p->s_proto)

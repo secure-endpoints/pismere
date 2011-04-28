@@ -564,7 +564,7 @@ sub do_builds
 	if ($err) {
 		my $n = 20;
 		print TEMP_FILE "Last $n lines:\n";
-		my $lines = `tail -n $n $sharedir\\$todays_dir\\$1`;
+		my $lines = `tail -$n $sharedir\\$todays_dir\\$1`;
 		$lines =~ s/^/  /mg; # indent 2 spaces
 		$lines =~ s|\[../../.. ..:..:..\] ||g; # remove annoying timestamps
 		print TEMP_FILE $lines;
@@ -586,13 +586,14 @@ sub do_builds
     close(TEMP_FILE);            # Close the file
 
     if (!$OPT->{nomail}) {
+	my $host = hostname();
         my $commandline =  "blat $complete_dir\\$summary -q ";
         if($all_succeeded) {
-            $commandline .= "-s \"wash$DIR_SUFFIX SUCCEEDED on $today\" ";
+            $commandline .= "-s \"wash$DIR_SUFFIX SUCCEEDED on $today on $host\" ";
         } elsif (!$log_pass) {
-	    $commandline .= "-s \"wash$DIR_SUFFIX FAILED (read log) on $today\" ";
+	    $commandline .= "-s \"wash$DIR_SUFFIX FAILED (read log) on $today on $host\" ";
 	} else {
-            $commandline .= "-s \"wash$DIR_SUFFIX FAILED on $today\" ";
+            $commandline .= "-s \"wash$DIR_SUFFIX FAILED on $today on $host\" ";
         }
         $commandline .= "-t \"$who_to_mail\" ";
         $commandline .= "-f $from ";

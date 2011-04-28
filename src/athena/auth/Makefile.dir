@@ -1,2 +1,3 @@
-DIRS=krbcc krb4 krb5 kuser leash
-OPTDIRS=
+DIRS=krbcc krb4 krb5 kuser leash aklog sasl
+WIN64DIRS=krb5 kuser sasl
+OPTDIRS=aklog sasl

@@ -64,6 +64,10 @@ khm_krb4_list_tickets(void);
 
 int khm_krb4_kdestroy(void);
 
+khm_handle
+khm_krb4_find_tgt(khm_handle credset, 
+                  khm_handle identity);
+
 LONG
 write_registry_setting(
     char* setting,
@@ -107,6 +111,9 @@ int
 config_boolean_to_int(
     const char *s
     );
+
+void
+khm_krb4_set_def_tkt_string(void);
 
 wchar_t * khm_krb5_get_default_realm(void);
 wchar_t * khm_krb5_get_realm_list(void);

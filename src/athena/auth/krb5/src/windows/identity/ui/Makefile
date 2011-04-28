@@ -27,7 +27,7 @@ MODULE=ui
 
 EXEFILE=$(BINDIR)\netidmgr.exe
 
-MANIFESTFILE=$(BINDIR)\netidmgr.exe.manifest
+MANIFESTFILE=$(BINDIR)\netidmgr.exe.static.manifest
 
 OBJFILES= 			\
 	$(OBJ)\main.obj 	\
@@ -48,17 +48,22 @@ OBJFILES= 			\
 	$(OBJ)\aboutwnd.obj	\
 	$(OBJ)\reqdaemon.obj	\
 	$(OBJ)\addrchange.obj	\
+	$(OBJ)\debugfuncs.obj	\
 	$(OBJ)\cfg_general_wnd.obj \
 	$(OBJ)\cfg_identities_wnd.obj \
 	$(OBJ)\cfg_notif_wnd.obj \
-	$(OBJ)\cfg_plugins_wnd.obj
+	$(OBJ)\cfg_plugins_wnd.obj \
+	$(OBJ)\cfg_appear_wnd.obj
 
 RESFILES= \
 	$(OBJ)\khapp.res	\
 	$(OBJ)\appver.res
 
-LIBFILES=			\
-	$(LIBDIR)\nidmgr32.lib
+!if  ("$(CPU)" == "IA64" ) || ("$(CPU)" == "AMD64" ) || ("$(CPU)" == "ALPHA64" )
+LIBFILES=$(LIBDIR)\nidmgr64.lib
+!else
+LIBFILES=$(LIBDIR)\nidmgr32.lib
+!endif
 
 SDKLIBFILES= 			\
 	comctl32.lib 		\
@@ -83,8 +88,15 @@ $(MANIFESTFILE): netidmgr.manifest.$(CPU).$(KH_CLVER).debug
 !endif
 	$(CP) $** $@
 
+!if  ("$(CPU)" == "IA64" ) || ("$(CPU)" == "AMD64" ) || ("$(CPU)" == "ALPHA64" )
+SCLIB=bufferoverflowu.lib
+!else
+SCLIB=
+!endif
+
 $(EXEFILE): $(OBJFILES) $(RESFILES) $(LIBFILES)
-	$(EXEGUILINK) $(SDKLIBFILES)
+	$(EXEGUILINK) $(SDKLIBFILES) $(SCLIB)
+	$(_VC_MANIFEST_EMBED_EXE) $(MANIFESTFILE)
+	$(_VC_MANIFEST_CLEAN)
 
-all: mkdirs $(EXEFILE) $(MANIFESTFILE)
-
+all: mkdirs $(MANIFESTFILE) $(EXEFILE)

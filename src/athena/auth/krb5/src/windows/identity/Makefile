@@ -1,5 +1,6 @@
 #
 # Copyright (c) 2004 Massachusetts Institute of Technology
+# Copyright (c) 2006 Secure Endpoints Inc.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -33,15 +34,25 @@ MODULE=all
 !ifndef CLEANRUN
 !ifndef TESTRUN
 !ifndef ETAGRUN
+
+# Define KH_NO_WX if the build should not fail on warnings.  The
+# default is to treat warnings as errors.
+
+#RMAKE=$(MAKECMD) /nologo all KH_NO_WX=1
 RMAKE=$(MAKECMD) /nologo all
+RMAKE_W2K=$(MAKECMD) /nologo all KHBUILD_W2K=1
+
 !else
 RMAKE=$(MAKECMD) /nologo etag
+RMAKE_W2K=echo Skipping W2K target for ETAGS run.
 !endif
 !else
 RMAKE=$(MAKECMD) /nologo test
+RMAKE_W2K=$(MAKECMD) /nologo test KHBUILD_W2K=1
 !endif
 !else
 RMAKE=$(MAKECMD) /nologo clean
+RMAKE_W2K=$(MAKECMD) /nologo clean KHBUILD_W2K=1
 !endif
 
 start:
@@ -113,6 +124,7 @@ uilib: help
 	$(ECHO) -- Entering $@:
 	$(CD) $@
 	$(RMAKE)
+	$(RMAKE_W2K)
 	$(CD) ..
 	$(ECHO) -- Done with $@
 
@@ -120,6 +132,7 @@ nidmgrdll: uilib
 	$(ECHO) -- Entering $@
 	$(CD) $@
 	$(RMAKE)
+	$(RMAKE_W2K)
 	$(CD) ..
 	$(ECHO) -- Done with $@
 
@@ -127,6 +140,7 @@ ui: nidmgrdll
 	$(ECHO) -- Entering $@:
 	$(CD) $@
 	$(RMAKE)
+	$(RMAKE_W2K)
 	$(CD) ..
 	$(ECHO) -- Done with $@
 
@@ -146,7 +160,7 @@ krb5plugin: plugincommon
 	$(ECHO) -- Done with $@
 
 !ifndef NO_KRB4
-finale: krb4plugin
+doc: krb4plugin
 
 krb4plugin: plugincommon
 	$(ECHO) -- Entering $@
@@ -167,7 +181,13 @@ afsplugin: plugincommon
 	$(ECHO) -- Done with $@
 !endif
 
-finale: krb5plugin
+!ifdef NODOCBUILD
+doctarget=
+!else
+doctarget=doc
+!endif
+
+finale: krb5plugin $(doctarget)
 	$(ECHO) -- Done.
 
 pdoc:

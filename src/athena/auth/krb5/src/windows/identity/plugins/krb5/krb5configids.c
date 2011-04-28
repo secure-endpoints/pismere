@@ -29,11 +29,8 @@
 #include<assert.h>
 #include<lm.h>
 #include<commctrl.h>
-
-#pragma warning(push)
-#pragma warning(disable: 4995)
 #include<shlwapi.h>
-#pragma warning(pop)
+
 
 typedef struct tag_k5_ids_dlg_data {
     khui_config_init_data cfg;

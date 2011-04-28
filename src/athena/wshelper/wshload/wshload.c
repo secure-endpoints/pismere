@@ -89,7 +89,11 @@ load_wshelp32(void)
     }
      
     load_attempted = 1;
+#if defined(_WIN64)
+    hWSHELP32 = LoadLibrary("WSHELP64");
+#else
     hWSHELP32 = LoadLibrary("WSHELP32");
+#endif
     if ( hWSHELP32 == NULL )
         return 0;
 

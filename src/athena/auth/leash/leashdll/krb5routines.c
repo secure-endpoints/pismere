@@ -87,8 +87,8 @@ Leash_convert524(
 
     if (!pkrb5_init_context ||
         !pkrb_in_tkt ||
-		!pkrb524_init_ets ||
-		!pkrb524_convert_creds_kdc)
+	!pkrb524_init_ets ||
+	!pkrb524_convert_creds_kdc)
         return 0;
 
 	v4creds = (CREDENTIALS *) malloc(sizeof(CREDENTIALS));
@@ -1095,74 +1095,6 @@ Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
 #endif //!NO_KRB5
 }
 
-
-#ifndef NO_KRB5
-static BOOL
-GetSecurityLogonSessionData(PSECURITY_LOGON_SESSION_DATA * ppSessionData)
-{
-    NTSTATUS Status = 0;
-    HANDLE  TokenHandle;
-    TOKEN_STATISTICS Stats;
-    DWORD   ReqLen;
-    BOOL    Success;
-
-    if (!ppSessionData)
-        return FALSE;
-    *ppSessionData = NULL;
-
-    Success = OpenProcessToken( GetCurrentProcess(), TOKEN_QUERY, &TokenHandle );
-    if ( !Success )
-        return FALSE;
-
-    Success = GetTokenInformation( TokenHandle, TokenStatistics, &Stats, sizeof(TOKEN_STATISTICS), &ReqLen );
-    CloseHandle( TokenHandle );
-    if ( !Success )
-        return FALSE;
-
-    Status = pLsaGetLogonSessionData( &Stats.AuthenticationId, ppSessionData );
-    if ( FAILED(Status) || !ppSessionData )
-        return FALSE;
-
-    return TRUE;
-}
-
-// IsKerberosLogon() does not validate whether or not there are valid tickets in the 
-// cache.  It validates whether or not it is reasonable to assume that if we 
-// attempted to retrieve valid tickets we could do so.  Microsoft does not 
-// automatically renew expired tickets.  Therefore, the cache could contain
-// expired or invalid tickets.  Microsoft also caches the user's password 
-// and will use it to retrieve new TGTs if the cache is empty and tickets
-// are requested.
-
-static BOOL
-IsKerberosLogon(VOID)
-{
-    PSECURITY_LOGON_SESSION_DATA pSessionData = NULL;
-    BOOL    Success = FALSE;
-
-    if ( GetSecurityLogonSessionData(&pSessionData) ) {
-        if ( pSessionData->AuthenticationPackage.Buffer ) {
-            WCHAR buffer[256];
-            WCHAR *usBuffer;
-            int usLength;
-
-            Success = FALSE;
-            usBuffer = (pSessionData->AuthenticationPackage).Buffer;
-            usLength = (pSessionData->AuthenticationPackage).Length;
-            if (usLength < 256)
-            {
-                lstrcpynW (buffer, usBuffer, usLength);
-                lstrcatW (buffer,L"");
-                if ( !lstrcmpW(L"Kerberos",buffer) )
-                    Success = TRUE;
-            }
-        }
-        pLsaFreeReturnBuffer(pSessionData);
-    }
-    return Success;
-}
-
-#endif /* NO_KRB5 */
 
 BOOL
 Leash_ms2mit(BOOL save_creds)

@@ -25,9 +25,13 @@
 MODULE=nidmgrdll
 !include <../config/Makefile.w32>
 
+!if  ("$(CPU)" == "IA64" ) || ("$(CPU)" == "AMD64" ) || ("$(CPU)" == "ALPHA64" )
+DLLFILE=$(BINDIR)\nidmgr64.dll
+LIBFILE=$(LIBDIR)\nidmgr64.lib
+!else
 DLLFILE=$(BINDIR)\nidmgr32.dll
-
 LIBFILE=$(LIBDIR)\nidmgr32.lib
+!endif
 
 UTILDIR=$(OBJDIR)\util
 
@@ -101,10 +105,19 @@ SDKLIBFILES= \
 	shlwapi.lib			\
 	version.lib
 
+!if  ("$(CPU)" == "IA64" ) || ("$(CPU)" == "AMD64" ) || ("$(CPU)" == "ALPHA64" )
+SCLIB=bufferoverflowu.lib
+!else
+SCLIB=
+!endif
+
 $(DLLFILE): $(OBJFILES) $(RESFILES)
-	$(DLLGUILINK) $(LIBFILES) $(SDKLIBFILES)
+	$(DLLGUILINK) $(LIBFILES) $(SDKLIBFILES) $(SCLIB)
+	$(_VC_MANIFEST_EMBED_DLL)
+	$(_VC_MANIFEST_CLEAN)
 
 all: mkdirs $(DLLFILE)
 
 clean::
 	$(RM) $(DLLFILE)
+	$(RM) $(DLLFILE).manifest

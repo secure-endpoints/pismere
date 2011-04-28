@@ -64,7 +64,7 @@ kcdb_identity_set_provider(khm_handle sub)
         kcdb_ident_sub = sub;
 
         if (kcdb_ident_sub)
-            kmq_post_sub_msg(kcdb_ident_sub,
+            kmq_send_sub_msg(kcdb_ident_sub,
                              KMSG_IDENT,
                              KMSG_IDENT_INIT,
                              0,
@@ -321,12 +321,6 @@ kcdb_identity_delete(khm_handle vid) {
        are freed.  Once they are released, kcdb_identity_delete() will
        be called again. */
 
-#if 0
-    EnterCriticalSection(&cs_ident);
-    if(id->refcount == 0) {
-        /*TODO: free up the identity */
-    }
-#endif
  _exit:
     LeaveCriticalSection(&cs_ident);
 
@@ -570,8 +564,8 @@ kcdbint_ident_set_default(khm_handle vid,
 
         LeaveCriticalSection(&cs_ident);
 
-        if (invoke_identpro)
-            kcdbint_ident_post_message(KCDB_OP_NEW_DEFAULT, new_def);
+        /* if (invoke_identpro) */
+        kcdbint_ident_post_message(KCDB_OP_NEW_DEFAULT, new_def);
     } else {
         LeaveCriticalSection(&cs_ident);
     }
@@ -616,8 +610,16 @@ kcdb_identity_get_config(khm_handle vid,
                             flags | KCONF_FLAG_NOPARSENAME,
                             &hident);
 
-        if(KHM_FAILED(rv))
+        if(KHM_FAILED(rv)) {
+            khm_int32 oldflags;
+            EnterCriticalSection(&cs_ident);
+            oldflags = id->flags;
+            id->flags &= ~KCDB_IDENT_FLAG_CONFIG;
+            LeaveCriticalSection(&cs_ident);
+            if (oldflags & KCDB_IDENT_FLAG_CONFIG)
+                kcdbint_ident_post_message(KCDB_OP_DELCONFIG, id);
             goto _exit;
+        }
 
         EnterCriticalSection(&cs_ident);
         id->flags |= KCDB_IDENT_FLAG_CONFIG;
@@ -646,11 +648,16 @@ kcdbint_ident_post_message(khm_int32 op, kcdb_identity * id) {
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_hold(khm_handle vid) {
     kcdb_identity * id;
+
+    EnterCriticalSection(&cs_ident);
     if(kcdb_is_active_identity(vid)) {
         id = vid;
-        InterlockedIncrement(&(id->refcount));
-    } else
+        id->refcount++;
+    } else {
+        LeaveCriticalSection(&cs_ident);
         return KHM_ERROR_INVALID_PARAM;
+    }
+    LeaveCriticalSection(&cs_ident);
     return ERROR_SUCCESS;
 }
 
@@ -659,20 +666,23 @@ KHMEXP khm_int32 KHMAPI
 kcdb_identity_release(khm_handle vid) {
     kcdb_identity * id;
     khm_int32 refcount;
+
+    EnterCriticalSection(&cs_ident);
     if(kcdb_is_identity(vid)) {
         id = vid;
-        refcount = InterlockedDecrement(&(id->refcount));
+        refcount = --id->refcount;
         if(refcount == 0) {
-            EnterCriticalSection(&cs_ident);
             /* We only delete identities which do not have a
                configuration. */
             if (id->refcount == 0 &&
                 !(id->flags & KCDB_IDENT_FLAG_CONFIG))
                 kcdb_identity_delete(vid);
-            LeaveCriticalSection(&cs_ident);
         }
-    } else
+    } else {
+        LeaveCriticalSection(&cs_ident);
         return KHM_ERROR_INVALID_PARAM;
+    }
+    LeaveCriticalSection(&cs_ident);
     return ERROR_SUCCESS;
 }
 
@@ -788,11 +798,11 @@ kcdb_identity_refresh_all(void) {
              ident != NULL;
              ident = next) {
 
-            next = LNEXT(ident);
-
             if (!kcdb_is_active_identity(ident) ||
-                ident->refresh_cycle == kcdb_ident_refresh_cycle)
+                ident->refresh_cycle == kcdb_ident_refresh_cycle) {
+                next = LNEXT(ident);
                 continue;
+            }
 
             kcdb_identity_hold((khm_handle) ident);
 
@@ -802,6 +812,7 @@ kcdb_identity_refresh_all(void) {
 
             EnterCriticalSection(&cs_ident);
 
+            next = LNEXT(ident);
             kcdb_identity_release((khm_handle) ident);
 
             hit_count++;
@@ -917,7 +928,7 @@ _exit:
 
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_set_attrib(khm_handle vid,
-                         wchar_t * attr_name,
+                         const wchar_t * attr_name,
                          void * buffer,
                          khm_size cbbuf)
 {
@@ -1013,7 +1024,7 @@ _exit:
 
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_get_attrib(khm_handle vid,
-                         wchar_t * attr_name,
+                         const wchar_t * attr_name,
                          khm_int32 * attr_type,
                          void * buffer,
                          khm_size * pcbbuf)
@@ -1031,8 +1042,7 @@ kcdb_identity_get_attrib(khm_handle vid,
 }
 
 KHMEXP khm_int32 KHMAPI 
-kcdb_identity_get_attr_string(
-                              khm_handle vid,
+kcdb_identity_get_attr_string(khm_handle vid,
                               khm_int32 attr_id,
                               wchar_t * buffer,
                               khm_size * pcbbuf,
@@ -1110,9 +1120,8 @@ _exit:
 }
 
 KHMEXP khm_int32 KHMAPI 
-kcdb_identity_get_attrib_string(
-                                khm_handle vid,
-                                wchar_t * attr_name,
+kcdb_identity_get_attrib_string(khm_handle vid,
+                                const wchar_t * attr_name,
                                 wchar_t * buffer,
                                 khm_size * pcbbuf,
                                 khm_int32 flags)
@@ -1146,8 +1155,13 @@ kcdb_identpro_validate_name(const wchar_t * name)
        before calling the identity provider */
     if(FAILED(StringCchLength(name, KCDB_IDENT_MAXCCH_NAME, &cch)))
         return KHM_ERROR_TOO_LONG;
+
+    /* We can't really make an assumption about the valid characters
+       in an identity.  So we let the identity provider decide */
+#ifdef VALIDATE_IDENTIY_CHARACTERS
     if(wcsspn(name, KCDB_IDENT_VALID_CHARS) != cch)
         return KHM_ERROR_INVALID_NAME;
+#endif
     
     EnterCriticalSection(&cs_ident);
     if(kcdb_ident_sub != NULL) {
@@ -1206,8 +1220,7 @@ kcdb_identpro_validate_identity(khm_handle identity)
 }
 
 KHMEXP khm_int32 KHMAPI 
-kcdb_identpro_canon_name(
-                         const wchar_t * name_in, 
+kcdb_identpro_canon_name(const wchar_t * name_in, 
                          wchar_t * name_out, 
                          khm_size * cb_name_out)
 {
@@ -1218,8 +1231,7 @@ kcdb_identpro_canon_name(
     khm_size cch;
 
     if(cb_name_out == 0 ||
-       FAILED(StringCchLength(name_in, KCDB_IDENT_MAXCCH_NAME, &cch)) ||
-       wcsspn(name_in, KCDB_IDENT_VALID_CHARS) != cch)
+       FAILED(StringCchLength(name_in, KCDB_IDENT_MAXCCH_NAME, &cch)))
         return KHM_ERROR_INVALID_NAME;
 
     EnterCriticalSection(&cs_ident);
@@ -1240,8 +1252,7 @@ kcdb_identpro_canon_name(
         namex.cb_name_dest = sizeof(name_tmp);
         namex.result = KHM_ERROR_NOT_IMPLEMENTED;
 
-        rv = kmq_send_sub_msg(
-                              sub,
+        rv = kmq_send_sub_msg(sub,
                               KMSG_IDENT,
                               KMSG_IDENT_CANON_NAME,
                               0,
@@ -1276,23 +1287,23 @@ kcdb_identpro_canon_name(
 }
 
 KHMEXP khm_int32 KHMAPI 
-kcdb_identpro_compare_name(
-                           const wchar_t * name1,
+kcdb_identpro_compare_name(const wchar_t * name1,
                            const wchar_t * name2)
 {
     khm_handle sub;
     kcdb_ident_name_xfer namex;
     khm_int32 rv = 0;
 
+    /* Generally in kcdb_identpro_* functions we don't emulate
+       any behavior if the provider is not available, but lacking
+       a way to make this known, we emulate here */
+    rv = wcscmp(name1, name2);
+
     EnterCriticalSection(&cs_ident);
     if(kcdb_ident_sub != NULL) {
         sub = kcdb_ident_sub;
     } else {
         sub = NULL;
-        /* Generally in kcdb_identpro_* functions we don't emulate
-           any behavior if the provider is not available, but lacking
-           a way to make this known, we emulate here */
-        rv = wcscmp(name1, name2);
     }
     LeaveCriticalSection(&cs_ident);
 
@@ -1300,6 +1311,7 @@ kcdb_identpro_compare_name(
         ZeroMemory(&namex, sizeof(namex));
         namex.name_src = name1;
         namex.name_alt = name2;
+        namex.result = rv;
 
         kmq_send_sub_msg(sub,
                          KMSG_IDENT,
@@ -1309,7 +1321,7 @@ kcdb_identpro_compare_name(
 
         rv = namex.result;
     }
-    
+
     return rv;
 }
 
@@ -1333,8 +1345,7 @@ kcdb_identpro_set_default(khm_handle identity)
     LeaveCriticalSection(&cs_ident);
 
     if(sub != NULL) {
-        rv = kmq_send_sub_msg(
-                              sub,
+        rv = kmq_send_sub_msg(sub,
                               KMSG_IDENT,
                               KMSG_IDENT_SET_DEFAULT,
                               (identity != NULL),
@@ -1345,8 +1356,7 @@ kcdb_identpro_set_default(khm_handle identity)
 }
 
 KHMEXP khm_int32 KHMAPI 
-kcdb_identpro_set_searchable(
-                             khm_handle identity,
+kcdb_identpro_set_searchable(khm_handle identity,
                              khm_boolean searchable)
 {
     khm_handle sub;
@@ -1436,7 +1446,8 @@ kcdb_identpro_notify_create(khm_handle identity)
     return rv;
 }
 
-KHMEXP khm_int32 KHMAPI kcdb_identpro_get_ui_cb(void * rock)
+KHMEXP khm_int32 KHMAPI 
+kcdb_identpro_get_ui_cb(void * rock)
 {
     khm_handle sub;
     khm_int32 rv = KHM_ERROR_SUCCESS;
@@ -1462,12 +1473,12 @@ KHMEXP khm_int32 KHMAPI kcdb_identpro_get_ui_cb(void * rock)
     return rv;
 }
 
-KHMEXP khm_int32 KHMAPI kcdb_identity_enum(
-    khm_int32 and_flags,
-    khm_int32 eq_flags,
-    wchar_t * name_buf,
-    khm_size * pcb_buf,
-    khm_size * pn_idents)
+KHMEXP khm_int32 KHMAPI 
+kcdb_identity_enum(khm_int32 and_flags,
+                   khm_int32 eq_flags,
+                   wchar_t * name_buf,
+                   khm_size * pcb_buf,
+                   khm_size * pn_idents)
 {
     kcdb_identity * id;
     khm_int32 rv = KHM_ERROR_SUCCESS;

@@ -30,6 +30,8 @@
 #include<utils.h>
 #include<assert.h>
 
+#include<strsafe.h>
+
 khm_int32 cfgui_node_serial;
 LONG init_once = 0;
 CRITICAL_SECTION cs_cfgui;
@@ -182,11 +184,27 @@ khui_cfg_register(khui_config_node vparent,
         parent = cfgui_node_i_from_handle(vparent);
     }
 
-    //node->owner = kmm_this_plugin();
+    /* plugin handles should not be obtained lightly.  For the moment,
+       the cleanup of nodes doesn't happen until module unload and
+       module unload doesn't happen until all the plugin and module
+       handles have been freed. */
+    /* node->owner = kmm_this_plugin(); */
 
     EnterCriticalSection(&cs_cfgui);
     TADDCHILD(parent, node);
+
+    if (hwnd_cfgui) {
+        SendMessage(hwnd_cfgui, KHUI_WM_CFG_NOTIFY,
+                    MAKEWPARAM(0, WMCFG_SYNC_NODE_LIST), 0);
+    }
+
     LeaveCriticalSection(&cs_cfgui);
+
+    /* when the root config list changes, we need to notify the UI.
+       this way, the Options menu can be kept in sync. */
+    if (parent == cfgui_root_config) {
+        kmq_post_message(KMSG_ACT, KMSG_ACT_SYNC_CFG, 0, 0);
+    }
 
     return KHM_ERROR_SUCCESS;
 }
@@ -244,6 +262,12 @@ khui_cfg_remove(khui_config_node vnode) {
     EnterCriticalSection(&cs_cfgui);
     node = cfgui_node_i_from_handle(vnode);
     node->flags |= KHUI_CN_FLAG_DELETED;
+
+    if (hwnd_cfgui) {
+        SendMessage(hwnd_cfgui, KHUI_WM_CFG_NOTIFY,
+                    MAKEWPARAM(0, WMCFG_SYNC_NODE_LIST), 0);
+    }
+
     LeaveCriticalSection(&cs_cfgui);
 
     return KHM_ERROR_SUCCESS;
@@ -325,7 +349,9 @@ khui_cfg_get_first_child(khui_config_node vparent,
 
     if (parent) {
         for(c = TFIRSTCHILD(parent);
-            c && (c->reg.flags & KHUI_CNFLAG_SUBPANEL);
+            c &&
+                ((c->reg.flags & KHUI_CNFLAG_SUBPANEL) ||
+                 (c->flags & KHUI_CN_FLAG_DELETED));
             c = LNEXT(c));
     } else {
         c = NULL;
@@ -366,7 +392,9 @@ khui_cfg_get_first_subpanel(khui_config_node vparent,
 
     if (parent) {
         for(c = TFIRSTCHILD(parent);
-            c && !(c->reg.flags & KHUI_CNFLAG_SUBPANEL);
+            c &&
+                (!(c->reg.flags & KHUI_CNFLAG_SUBPANEL) ||
+                 (c->flags & KHUI_CN_FLAG_DELETED));
             c = LNEXT(c));
     } else {
         c = NULL;
@@ -434,8 +462,9 @@ khui_cfg_get_next_release(khui_config_node * pvnode) {
         node = cfgui_node_i_from_handle(*pvnode);
         for(nxt_node = LNEXT(node);
             nxt_node &&
-                ((node->reg.flags ^ nxt_node->reg.flags) & 
-                 KHUI_CNFLAG_SUBPANEL);
+                (((node->reg.flags ^ nxt_node->reg.flags) & 
+                  KHUI_CNFLAG_SUBPANEL) ||
+                 (nxt_node->flags & KHUI_CN_FLAG_DELETED));
             nxt_node = LNEXT(nxt_node));
         if (nxt_node)
             cfgui_hold_node(nxt_node);
@@ -586,6 +615,11 @@ khui_cfg_set_param(khui_config_node vnode, LPARAM param) {
     LeaveCriticalSection(&cs_cfgui);
 }
 
+static void
+clear_node_data(khui_config_node_i * node) {
+    node->n_data = 0;
+}
+
 static cfg_node_data *
 get_node_data(khui_config_node_i * node,
               void * key, 
@@ -623,6 +657,10 @@ get_node_data(khui_config_node_i * node,
     }
 
     node->data[node->n_data].key = key;
+    node->data[node->n_data].hwnd = NULL;
+    node->data[node->n_data].param = 0;
+    node->data[node->n_data].flags = 0;
+
     node->n_data++;
 
     return &(node->data[node->n_data - 1]);
@@ -763,6 +801,8 @@ cfgui_clear_params(khui_config_node_i * node) {
     node->hwnd = NULL;
     node->param = 0;
     node->flags &= KHUI_CNFLAGMASK_STATIC;
+    clear_node_data(node);
+
     c = TFIRSTCHILD(node);
     while(c) {
         cfgui_clear_params(c);
@@ -801,8 +841,7 @@ khui_cfg_set_flags(khui_config_node vnode,
     mask &= KHUI_CNFLAGMASK_DYNAMIC;
 
     EnterCriticalSection(&cs_cfgui);
-    if (cfgui_is_valid_node_handle(vnode) &&
-        hwnd_cfgui != NULL) {
+    if (cfgui_is_valid_node_handle(vnode)) {
 
         node = cfgui_node_i_from_handle(vnode);
 
@@ -926,8 +965,7 @@ khui_cfg_get_flags(khui_config_node vnode) {
         return 0;
 
     EnterCriticalSection(&cs_cfgui);
-    if (cfgui_is_valid_node_handle(vnode) &&
-        hwnd_cfgui != NULL) {
+    if (cfgui_is_valid_node_handle(vnode)) {
 
         node = cfgui_node_i_from_handle(vnode);
 
@@ -950,8 +988,7 @@ khui_cfg_get_name(khui_config_node vnode,
         return KHM_ERROR_INVALID_PARAM;
 
     EnterCriticalSection(&cs_cfgui);
-    if (cfgui_is_valid_node_handle(vnode) &&
-        hwnd_cfgui != NULL) {
+    if (cfgui_is_valid_node_handle(vnode)) {
         khm_size cb;
 
         node = cfgui_node_i_from_handle(vnode);

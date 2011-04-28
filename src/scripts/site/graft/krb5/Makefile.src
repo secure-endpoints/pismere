@@ -11,6 +11,17 @@ PLACE= \
 	src\windows\gss\$(O)\gss.exe \
         src\windows\ms2mit\$(O)\ms2mit.exe
 
+WIN64_PLACE= \
+	src\lib\$(O)\comerr64.dll \
+	src\lib\$(O)\krb5_64.dll \
+	src\lib\$(O)\gssapi64.dll \
+	src\lib\$(O)\xpprof64.dll \
+        src\clients\kvno\$(O)\kvno.exe \
+        src\clients\kpasswd\$(O)\kpasswd.exe \
+	src\windows\cns\$(O)\krb5.exe \
+#	src\windows\gss\$(O)\gss.exe \
+        src\windows\ms2mit\$(O)\ms2mit.exe
+
 WSHELPER_PATH=$(PISMERE)\athena\wshelper
 
 DNS_OPTIONS=\
@@ -25,9 +36,10 @@ KRB4_PATH=$(PISMERE)\athena\auth\krb4
 #	USE_ALTERNATE_KRB4_LIB=$(KRB4_PATH)\krbv4\krbdll\$(O)\krbv4w32.lib
 
 KRB4_INCDIR=krb4inc
-KRB4_OPTIONS=\
-	USE_ALTERNATE_KRB4_INCLUDES=$(MAKEDIR)\$(KRB4_INCDIR) \
-	USE_ALTERNATE_KRB4_LIB=$(KRB4_PATH)\krbv4\krbdll\$(O)\krbv4w32.lib
+#KRB4_OPTIONS=\
+#	USE_ALTERNATE_KRB4_INCLUDES=$(MAKEDIR)\$(KRB4_INCDIR) \
+#	USE_ALTERNATE_KRB4_LIB=$(KRB4_PATH)\krbv4\krbdll\$(O)\krbv4w32.lib
+
 
 KFW_OPTIONS=\
         KRB5_KFW_COMPILE=1 \
@@ -57,7 +69,7 @@ all-src:
 
 clean-src:
 	cd src
-	$(MAKE) -$(MAKEFLAGS) /nologo clean
+	$(MAKE) -$(MAKEFLAGS) /nologo clean $(KRB5_OPTIONS)
 	cd ..
 
 all-krb524:
@@ -67,7 +79,7 @@ all-krb524:
 
 clean-krb524:
 	cd src\krb524
-	if exist Makefile $(MAKE) -$(MAKEFLAGS) /nologo clean
+	if exist Makefile $(MAKE) -$(MAKEFLAGS) /nologo clean $(KRB5_OPTIONS)
 	cd ..\..
 
 PLACE_OPTIONAL=\
@@ -89,6 +101,29 @@ PLACE_OPTIONAL=\
         src\windows\identity\$(O)\nidmgr32.dll  \
         src\windows\identity\$(O)\netidmgr.exe \
         src\windows\identity\help\netidmgr.chm \
+	src\windows\identity\$(O)\doc\netiddev.chm \
+	src\windows\kfwlogon\$(O)\kfwlogon.dll \
+	src\windows\kfwlogon\$(O)\kfwcpcc.exe
+
+WIN64_PLACE_OPTIONAL=\
+	src\lib\$(O)\k5sprt64.dll \
+        src\clients\kcpytkt\$(O)\kcpytkt.exe \
+        src\clients\kdeltkt\$(O)\kdeltkt.exe \
+        src\windows\ms2mit\$(O)\mit2ms.exe \
+	src\appl\gssftp\ftp\$(O)\ftp.exe \
+        src\appl\gss-sample\$(O)\gss-server.exe \
+        src\appl\gss-sample\$(O)\gss-client.exe \
+	src\krb524\$(O)\krb524.dll \
+	src\krb524\$(O)\k524init.exe \
+        src\windows\identity\$(O)\krb5cred.dll  \
+        src\windows\identity\$(O)\krb5cred_en_us.dll  \
+!ifndef NO_KRB4
+        src\windows\identity\$(O)\krb4cred.dll \
+        src\windows\identity\$(O)\krb4cred_en_us.dll \
+!endif
+        src\windows\identity\$(O)\nidmgr64.dll  \
+        src\windows\identity\$(O)\netidmgr.exe \
+        src\windows\identity\help\netidmgr.chm \
 	src\windows\kfwlogon\$(O)\kfwlogon.dll \
 	src\windows\kfwlogon\$(O)\kfwcpcc.exe
 
@@ -100,5 +135,5 @@ src/Makefile: src/config/win-pre.in src/Makefile.in src/config/win-post.in
 	@$(WHICH_CMD) rm
 	@echo We found them!
 	cd src
-	$(MAKE) -$(MAKEFLAGS) /nologo -f Makefile.in prep-windows
+	$(MAKE) -$(MAKEFLAGS) /nologo -f Makefile.in prep-windows $(KRB5_OPTIONS)
 	cd ..

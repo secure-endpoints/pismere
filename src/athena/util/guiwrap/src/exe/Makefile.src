@@ -7,5 +7,6 @@ OBJS= \
 
 USE_DEFAULTLIB=1
 LIBS=user32.lib
+WIN64LIBS=user32.lib bufferoverflowu.lib
 
 USE_CPP_EH=1

@@ -49,15 +49,52 @@ typedef struct tag_k5_new_cred_data {
     HWND hw_realm;
 } k5_new_cred_data;
 
+static
+void
+trim_str(wchar_t * s, khm_size cch) {
+    wchar_t * c, * last_ws;
+
+    for (c = s; *c && iswspace(*c) && ((khm_size)(c - s)) < cch; c++);
+
+    if (((khm_size)(c - s)) >= cch)
+        return;
+
+    if (c != s && ((khm_size)(c - s)) < cch) {
+#if _MSC_VER >= 1400
+        wmemmove_s(s, cch, c, cch - ((khm_size)(c - s)));
+#else
+        memmove(s, c, (cch - ((khm_size)(c - s))) * sizeof(wchar_t));
+#endif
+    }
+
+    last_ws = NULL;
+    for (c = s; *c && ((khm_size)(c - s)) < cch; c++) {
+        if (!iswspace(*c))
+            last_ws = NULL;
+        else if (last_ws == NULL)
+            last_ws = c;
+    }
+
+    if (last_ws)
+        *last_ws = L'\0';
+}
+
 /* Runs in the UI thread */
 int 
 k5_get_realm_from_nc(khui_new_creds * nc, 
                      wchar_t * buf, 
                      khm_size cch_buf) {
     k5_new_cred_data * d;
+    khm_size s;
 
     d = (k5_new_cred_data *) nc->ident_aux;
-    return GetWindowText(d->hw_realm, buf, (int) cch_buf);
+    buf[0] = L'\0';
+    GetWindowText(d->hw_realm, buf, (int) cch_buf);
+    trim_str(buf, cch_buf);
+
+    StringCchLength(buf, cch_buf, &s);
+
+    return (int) s;
 }
 
 /* set the primary identity of a new credentials dialog depending on
@@ -74,6 +111,7 @@ set_identity_from_ui(khui_new_creds * nc,
     khm_size cch_left;
     khm_handle ident;
     LRESULT idx = CB_ERR;
+    khm_int32 rv = KHM_ERROR_SUCCESS;
 
     cch = GetWindowTextLength(d->hw_username);
 
@@ -82,6 +120,7 @@ set_identity_from_ui(khui_new_creds * nc,
     assert(cch < KCDB_IDENT_MAXCCH_NAME - 1);
 
     GetWindowText(d->hw_username, un, ARRAYLENGTH(un));
+    trim_str(un, ARRAYLENGTH(un));
 
     realm = khm_get_realm_from_princ(un);
     if (realm)          /* realm was specified */
@@ -91,23 +130,35 @@ set_identity_from_ui(khui_new_creds * nc,
        be exact.  For caveats see MSDN for GetWindowTextLength. */
     StringCchLength(un, KCDB_IDENT_MAXCCH_NAME, &cch);
 
+    if (cch >= KCDB_IDENT_MAXCCH_NAME - 3) {
+        /* has to allow space for the '@' and at least a single
+           character realm, and the NULL terminator. */
+        rv = KHM_ERROR_TOO_LONG;
+        goto _set_null_ident;
+    }
+
     realm = un + cch;   /* now points at terminating NULL */
     cch_left = KCDB_IDENT_MAXCCH_NAME - cch;
 
     *realm++ = L'@';
+    *realm = L'\0';
     cch_left--;
 
     cch = GetWindowTextLength(d->hw_realm);
-    if (cch == 0 || cch >= cch_left)
+    if (cch == 0 || cch >= cch_left) {
+        rv = KHM_ERROR_INVALID_NAME;
         goto _set_null_ident;
+    }
 
     GetWindowText(d->hw_realm, realm, (int) cch_left);
+    trim_str(realm, cch_left);
 
  _set_ident:
-    if (KHM_FAILED(kcdb_identity_create(un,
-                                        KCDB_IDENT_FLAG_CREATE,
-                                        &ident)))
+    if (KHM_FAILED(rv = kcdb_identity_create(un,
+                                             KCDB_IDENT_FLAG_CREATE,
+                                             &ident))) {
         goto _set_null_ident;
+    }
 
     khui_cw_set_primary_id(nc, ident);
 
@@ -115,7 +166,37 @@ set_identity_from_ui(khui_new_creds * nc,
     return;
 
  _set_null_ident:
-    khui_cw_set_primary_id(nc, NULL);
+    {
+        khui_new_creds_by_type * nct = NULL;
+        wchar_t cmsg[256];
+
+        khui_cw_find_type(nc, credtype_id_krb5, &nct);
+        if (nct && nct->hwnd_panel) {
+
+            switch(rv) {
+            case KHM_ERROR_TOO_LONG:
+                LoadString(hResModule, IDS_NCERR_IDENT_TOO_LONG,
+                           cmsg, ARRAYLENGTH(cmsg));
+                break;
+
+            case KHM_ERROR_INVALID_NAME:
+                LoadString(hResModule, IDS_NCERR_IDENT_INVALID,
+                           cmsg, ARRAYLENGTH(cmsg));
+                break;
+
+            default:
+                LoadString(hResModule, IDS_NCERR_IDENT_UNKNOWN,
+                           cmsg, ARRAYLENGTH(cmsg));
+            }
+
+            SendMessage(nct->hwnd_panel,
+                        KHUI_WM_NC_NOTIFY,
+                        MAKEWPARAM(0, K5_SET_CRED_MSG),
+                        (LPARAM) cmsg);
+        }
+
+        khui_cw_set_primary_id(nc, NULL);
+    }
     return;
 }
 
@@ -141,11 +222,14 @@ update_crossfeed(khui_new_creds * nc,
     GetWindowText(d->hw_username,
                   un,
                   ARRAYLENGTH(un));
+    trim_str(un, ARRAYLENGTH(un));
 
     un_realm = khm_get_realm_from_princ(un);
 
-    if (un_realm == NULL)
+    if (un_realm == NULL) {
+        EnableWindow(d->hw_realm, TRUE);
         return FALSE;
+    }
 
     if (ctrl_id_src == K5_NCID_UN) {
 
@@ -170,7 +254,7 @@ update_crossfeed(khui_new_creds * nc,
                         (WPARAM) idx,
                         (LPARAM) srealm);
 
-            if (!wcsicmp(srealm, un_realm) && wcscmp(srealm, un_realm)) {
+            if (!_wcsicmp(srealm, un_realm) && wcscmp(srealm, un_realm)) {
                 /* differ only by case */
 
                 StringCchCopy(un_realm, ARRAYLENGTH(un) - (un_realm - un),
@@ -188,6 +272,15 @@ update_crossfeed(khui_new_creds * nc,
         SetWindowText(d->hw_realm,
                       un_realm);
 
+        if (GetFocus() == d->hw_realm) {
+            HWND hw_next = GetNextDlgTabItem(nc->hwnd, d->hw_realm,
+                                             FALSE);
+            if (hw_next)
+                SetFocus(hw_next);
+        }
+
+        EnableWindow(d->hw_realm, FALSE);
+
         return TRUE;
     }
     /* else... */
@@ -204,6 +297,7 @@ update_crossfeed(khui_new_creds * nc,
 
     GetWindowText(d->hw_realm, realm,
                   ARRAYLENGTH(realm));
+    trim_str(realm, ARRAYLENGTH(realm));
 
     idx = (int)SendMessage(d->hw_realm,
                            CB_FINDSTRINGEXACT,
@@ -218,7 +312,7 @@ update_crossfeed(khui_new_creds * nc,
                     (WPARAM) idx,
                     (LPARAM) srealm);
 
-        if (!wcsicmp(srealm, realm) && wcscmp(srealm, realm)) {
+        if (!_wcsicmp(srealm, realm) && wcscmp(srealm, realm)) {
             StringCbCopy(realm, sizeof(realm), srealm);
 
             SetWindowText(d->hw_realm, srealm);
@@ -656,6 +750,7 @@ k5_ident_valiate_name(khm_int32 msg_type,
     char princ_name[KCDB_IDENT_MAXCCH_NAME];
     kcdb_ident_name_xfer * nx;
     krb5_error_code code;
+    wchar_t * atsign;
 
     nx = (kcdb_ident_name_xfer *) vparam;
 
@@ -676,11 +771,18 @@ k5_ident_valiate_name(khm_int32 msg_type,
         return KHM_ERROR_SUCCESS;
     }
 
-    if (princ != NULL) 
+    if (princ != NULL)
         pkrb5_free_principal(k5_identpro_ctx,
                              princ);
 
-    nx->result = KHM_ERROR_SUCCESS;
+    /* krb5_parse_name() accepts principal names with no realm or an
+       empty realm.  We don't. */
+    atsign = wcschr(nx->name_src, L'@');
+    if (atsign == NULL || atsign[1] == L'\0') {
+        nx->result = KHM_ERROR_INVALID_NAME;
+    } else {
+        nx->result = KHM_ERROR_SUCCESS;
+    }
 
     return KHM_ERROR_SUCCESS;
 }
@@ -705,149 +807,120 @@ k5_ident_set_default(khm_int32 msg_type,
                      khm_ui_4 uparam,
                      void * vparam) {
 
-    /* Logic for setting the default identity:
-
-    When setting identity I as the default;
-
-    - If KRB5CCNAME is set
-    - If I["Krb5CCName"] == %KRB5CCNAME%
-    - do nothing
-    - Else
-    - Copy the contents of I["Krb5CCName"] to %KRB5CCNAME
-    - Set I["Krb5CCName"] to %KRB5CCNAME
-    - Else
-    - Set HKCU\Software\MIT\kerberos5,ccname to 
-    "API:".I["Krb5CCName"]
+    /* 
+       Currently, setting the default identity simply sets the
+       "ccname" registry value at "Software\MIT\kerberos5".
     */
 
     if (uparam) {
         /* an identity is being made default */
         khm_handle def_ident = (khm_handle) vparam;
-        wchar_t env_ccname[KRB5_MAXCCH_CCNAME];
         wchar_t id_ccname[KRB5_MAXCCH_CCNAME];
         khm_size cb;
         DWORD dw;
         LONG l;
+        HKEY hk_ccname;
+        DWORD dwType;
+        DWORD dwSize;
+        wchar_t reg_ccname[KRB5_MAXCCH_CCNAME];
+
+        assert(FALSE);
 
 #ifdef DEBUG
         assert(def_ident != NULL);
 #endif
+
+        {
+            wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
+            khm_size cb;
+
+            cb = sizeof(idname);
+            kcdb_identity_get_name(def_ident, idname, &cb);
+
+            _begin_task(0);
+            _report_cs1(KHERR_DEBUG_1, L"Setting default identity [%1!s!]", _cstr(idname));
+            _describe();
+        }
 
         cb = sizeof(id_ccname);
         if (KHM_FAILED(kcdb_identity_get_attr(def_ident,
                                               attr_id_krb5_ccname,
                                               NULL,
                                               id_ccname,
-                                              &cb)))
-            return KHM_ERROR_UNKNOWN;
+                                              &cb))) {
+            _reportf(L"The specified identity does not have the Krb5CCName property");
+            _end_task();
+            return KHM_ERROR_NOT_FOUND;
+        }
 
         khm_krb5_canon_cc_name(id_ccname, sizeof(id_ccname));
+
+        _reportf(L"Found Krb5CCName property : %s", id_ccname);
 
         StringCbLength(id_ccname, sizeof(id_ccname), &cb);
         cb += sizeof(wchar_t);
 
-        dw = GetEnvironmentVariable(L"KRB5CCNAME",
-                                    env_ccname,
-                                    ARRAYLENGTH(env_ccname));
+        _reportf(L"Setting default CC name in the registry");
 
-        if (dw == 0 &&
-            GetLastError() == ERROR_ENVVAR_NOT_FOUND) {
-            /* KRB5CCNAME not set */
-            HKEY hk_ccname;
-            DWORD dwType;
-            DWORD dwSize;
-            wchar_t reg_ccname[KRB5_MAXCCH_CCNAME];
+        l = RegOpenKeyEx(HKEY_CURRENT_USER,
+                         L"Software\\MIT\\kerberos5",
+                         0,
+                         KEY_READ | KEY_WRITE,
+                         &hk_ccname);
 
-            l = RegOpenKeyEx(HKEY_CURRENT_USER,
-                             L"Software\\MIT\\kerberos5",
-                             0,
-                             KEY_READ | KEY_WRITE,
-                             &hk_ccname);
+        if (l != ERROR_SUCCESS)
+            l = RegCreateKeyEx(HKEY_CURRENT_USER,
+                               L"Software\\MIT\\kerberos5",
+                               0,
+                               NULL,
+                               REG_OPTION_NON_VOLATILE,
+                               KEY_READ | KEY_WRITE,
+                               NULL,
+                               &hk_ccname,
+                               &dw);
 
-            if (l != ERROR_SUCCESS)
-                l = RegCreateKeyEx(HKEY_CURRENT_USER,
-                                   L"Software\\MIT\\kerberos5",
-                                   0,
-                                   NULL,
-                                   REG_OPTION_NON_VOLATILE,
-                                   KEY_READ | KEY_WRITE,
-                                   NULL,
-                                   &hk_ccname,
-                                   &dw);
-
-            if (l != ERROR_SUCCESS)
-                return KHM_ERROR_UNKNOWN;
-
-            dwSize = sizeof(reg_ccname);
-
-            l = RegQueryValueEx(hk_ccname,
-                                L"ccname",
-                                NULL,
-                                &dwType,
-                                (LPBYTE) reg_ccname,
-                                &dwSize);
-
-            if (l != ERROR_SUCCESS ||
-                dwType != REG_SZ ||
-                khm_krb5_cc_name_cmp(reg_ccname, id_ccname)) {
-
-                /* we have to write the new value in */
-
-                l = RegSetValueEx(hk_ccname,
-                                  L"ccname",
-                                  0,
-                                  REG_SZ,
-                                  (BYTE *) id_ccname,
-                                  (DWORD) cb);
-            }
-
-            RegCloseKey(hk_ccname);
-
-            if (l == ERROR_SUCCESS) {
-                k5_update_last_default_identity(def_ident);
-                return KHM_ERROR_SUCCESS;
-            } else
-                return KHM_ERROR_UNKNOWN;
-
-        } else if (dw > ARRAYLENGTH(env_ccname)) {
-            /* buffer was not enough */
-#ifdef DEBUG
-            assert(FALSE);
-#else
+        if (l != ERROR_SUCCESS) {
+            _reportf(L"Can't create registry key : %d", l);
+            _end_task();
             return KHM_ERROR_UNKNOWN;
-#endif
-        } else {
-            /* KRB5CCNAME is set */
-            long code;
-            krb5_context ctx;
-
-            /* if the %KRB5CCNAME is the same as the identity
-               ccache, then it is already the default. */
-            if (!khm_krb5_cc_name_cmp(id_ccname, env_ccname)) {
-                k5_update_last_default_identity(def_ident);
-                return KHM_ERROR_SUCCESS;
-            }
-
-            /* if not, we have to copy the contents of id_ccname
-               to env_ccname */
-            code = pkrb5_init_context(&ctx);
-            if (code)
-                return KHM_ERROR_UNKNOWN;
-
-            code = khm_krb5_copy_ccache_by_name(ctx, 
-                                                env_ccname, 
-                                                id_ccname);
-
-            if (code == 0) {
-                k5_update_last_default_identity(def_ident);
-                khm_krb5_list_tickets(&ctx);
-            }
-
-            if (ctx)
-                pkrb5_free_context(ctx);
-
-            return (code == 0)?KHM_ERROR_SUCCESS:KHM_ERROR_UNKNOWN;
         }
+
+        dwSize = sizeof(reg_ccname);
+
+        l = RegQueryValueEx(hk_ccname,
+                            L"ccname",
+                            NULL,
+                            &dwType,
+                            (LPBYTE) reg_ccname,
+                            &dwSize);
+
+        if (l != ERROR_SUCCESS ||
+            dwType != REG_SZ ||
+            khm_krb5_cc_name_cmp(reg_ccname, id_ccname)) {
+
+            /* we have to write the new value in */
+            
+            l = RegSetValueEx(hk_ccname,
+                              L"ccname",
+                              0,
+                              REG_SZ,
+                              (BYTE *) id_ccname,
+                              (DWORD) cb);
+        }
+
+        RegCloseKey(hk_ccname);
+
+        if (l == ERROR_SUCCESS) {
+            _reportf(L"Successfully set the default ccache");
+            k5_update_last_default_identity(def_ident);
+            _end_task();
+            return KHM_ERROR_SUCCESS;
+        } else {
+            _reportf(L"Can't set the registry value : %d", l);
+            _end_task();
+            return KHM_ERROR_UNKNOWN;
+        }
+
     } else {
         /* the default identity is being forgotten */
 
@@ -949,29 +1022,45 @@ k5_ident_notify_create(khm_int32 msg_type,
     return KHM_ERROR_SUCCESS;
 }
 
+struct k5_ident_update_data {
+    khm_handle identity;
+
+    FILETIME   ft_expire;      /* expiration */
+    FILETIME   ft_issue;       /* issue */
+    FILETIME   ft_rexpire;     /* renew expiration */
+    wchar_t    ccname[KRB5_MAXCCH_CCNAME];
+    khm_int32  k5_flags;
+};
+
+/* The logic here has to reflect the logic in khm_krb5_list_tickets().
+   We use this to handle an identity update request because some other
+   plug-in or maybe NetIDMgr itself is about to do something
+   important(tm) with the identity and needs to make sure that the
+   properties of the identity are up-to-date. */
 static khm_int32 KHMAPI
 k5_ident_update_apply_proc(khm_handle cred,
                            void * rock) {
-    wchar_t ccname[KRB5_MAXCCH_CCNAME];
-    khm_handle tident = (khm_handle) rock;
+    struct k5_ident_update_data * d = (struct k5_ident_update_data *) rock;
     khm_handle ident = NULL;
     khm_int32 t;
     khm_int32 flags;
-    __int64 t_expire;
-	__int64 t_cexpire;
-    __int64 t_rexpire;
+    FILETIME t_cexpire;
+    FILETIME t_rexpire;
     khm_size cb;
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
     if (KHM_FAILED(kcdb_cred_get_type(cred, &t)) ||
         t != credtype_id_krb5 ||
         KHM_FAILED(kcdb_cred_get_identity(cred, &ident)))
+
         return KHM_ERROR_SUCCESS;
 
-    if (!kcdb_identity_is_equal(ident,tident))
+    if (!kcdb_identity_is_equal(ident,d->identity))
+
         goto _cleanup;
 
     if (KHM_FAILED(kcdb_cred_get_flags(cred, &flags)))
+
         flags = 0;
 
     if (flags & KCDB_CRED_FLAG_INITIAL) {
@@ -980,67 +1069,48 @@ k5_ident_update_apply_proc(khm_handle cred,
                                              KCDB_ATTR_EXPIRE,
                                              NULL,
                                              &t_cexpire,
-                                             &cb))) {										 
-                t_expire = 0;
-                cb = sizeof(t_expire);
-                if (KHM_FAILED(kcdb_identity_get_attr(tident,
-                                                      KCDB_ATTR_EXPIRE,
-                                                      NULL,
-                                                      &t_expire,
-                                                      &cb)) ||
-                    (t_cexpire > t_expire))
-                    kcdb_identity_set_attr(tident, KCDB_ATTR_EXPIRE,
-                                           &t_cexpire, sizeof(t_cexpire));
-        } else {
-            kcdb_identity_set_attr(tident, KCDB_ATTR_EXPIRE, NULL, 0);
+                                             &cb))) {
+            if ((d->ft_expire.dwLowDateTime == 0 &&
+                 d->ft_expire.dwHighDateTime == 0) ||
+                CompareFileTime(&t_cexpire, &d->ft_expire) > 0) {
+                goto update_identity;
+            }
         }
-    } else {
-        goto _cleanup;
     }
 
-    cb = sizeof(ccname);
-    if (KHM_SUCCEEDED(kcdb_cred_get_attr(cred, KCDB_ATTR_LOCATION,
+    goto _cleanup;
+
+ update_identity:
+
+    d->ft_expire = t_cexpire;
+
+    cb = sizeof(d->ccname);
+    if (KHM_FAILED(kcdb_cred_get_attr(cred, KCDB_ATTR_LOCATION, NULL, d->ccname, &cb))) {
+        d->ccname[0] = L'\0';
+    }
+
+    cb = sizeof(d->k5_flags);
+    if (KHM_FAILED(kcdb_cred_get_attr(cred, attr_id_krb5_flags, NULL,
+                                         &d->k5_flags, &cb))) {
+        d->k5_flags = 0;
+    }
+
+    cb = sizeof(d->ft_issue);
+    if (KHM_FAILED(kcdb_cred_get_attr(cred, KCDB_ATTR_ISSUE, NULL, &d->ft_issue, &cb))) {
+        ZeroMemory(&d->ft_issue, sizeof(d->ft_issue));
+    }
+
+    cb = sizeof(t_rexpire);
+    if ((d->k5_flags & TKT_FLG_RENEWABLE) &&
+        KHM_SUCCEEDED(kcdb_cred_get_attr(cred,
+                                         KCDB_ATTR_RENEW_EXPIRE,
                                          NULL,
-                                         ccname,
+                                         &t_rexpire,
                                          &cb))) {
-        kcdb_identity_set_attr(tident, attr_id_krb5_ccname,
-                               ccname, cb);
+        d->ft_rexpire = t_rexpire;
     } else {
-        kcdb_identity_set_attr(tident, attr_id_krb5_ccname,
-                               NULL, 0);
+        ZeroMemory(&d->ft_rexpire, sizeof(d->ft_rexpire));
     }
-                
-    cb = sizeof(t);
-    if (KHM_SUCCEEDED(kcdb_cred_get_attr(cred,
-                                         attr_id_krb5_flags,
-                                         NULL,
-                                         &t,
-                                         &cb))) {
-
-        kcdb_identity_set_attr(tident, attr_id_krb5_flags, 
-                               &t, sizeof(t));
-
-        cb = sizeof(t_rexpire);
-        if (!(t & TKT_FLG_RENEWABLE) ||
-            KHM_FAILED(kcdb_cred_get_attr(cred,
-                                          KCDB_ATTR_RENEW_EXPIRE,
-                                          NULL,
-                                          &t_rexpire,
-                                          &cb))) {
-            kcdb_identity_set_attr(tident, KCDB_ATTR_RENEW_EXPIRE,
-                                   NULL, 0);
-        } else {
-            kcdb_identity_set_attr(tident, KCDB_ATTR_RENEW_EXPIRE,
-                                   &t_rexpire, sizeof(t_rexpire));
-        }
-    } else {
-        kcdb_identity_set_attr(tident, attr_id_krb5_flags,
-                               NULL, 0);
-        kcdb_identity_set_attr(tident, KCDB_ATTR_RENEW_EXPIRE,
-                               NULL, 0);
-    }
-
-    rv = KHM_ERROR_EXIT;
 
  _cleanup:
     if (ident)
@@ -1055,6 +1125,9 @@ k5_ident_update(khm_int32 msg_type,
                 khm_ui_4 uparam,
                 void * vparam) {
 
+#if 0
+    struct k5_ident_update_data d;
+#endif
     khm_handle ident;
     khm_handle tident;
     krb5_ccache cc = NULL;
@@ -1068,9 +1141,60 @@ k5_ident_update(khm_int32 msg_type,
     if (ident == NULL)
         return KHM_ERROR_SUCCESS;
 
+#if 0
+    /* we are going to skip doing this here since
+       khm_krb5_list_tickets() performs this function for us each time
+       we enumerate tickets.  Since it also gets run each time our
+       list of tickets changes and since we are basing this operation
+       on existing tickets, we are unlikely to find anything new
+       here.  */
+    ZeroMemory(&d, sizeof(d));
+    d.identity = ident;
+
     kcdb_credset_apply(NULL,
                        k5_ident_update_apply_proc,
-                       (void *) ident);
+                       (void *) &d);
+
+    if (d.ft_expire.dwLowDateTime != 0 ||
+        d.ft_expire.dwHighDateTime != 0) {
+
+        /* we found a TGT */
+
+        kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE,
+                               &d.ft_expire, sizeof(d.ft_expire));
+        if (d.ft_issue.dwLowDateTime != 0 ||
+            d.ft_issue.dwHighDateTime != 0)
+            kcdb_identity_set_attr(ident, KCDB_ATTR_ISSUE,
+                                   &d.ft_issue, sizeof(d.ft_issue));
+        else
+            kcdb_identity_set_attr(ident, KCDB_ATTR_ISSUE, NULL, 0);
+
+        if (d.ft_rexpire.dwLowDateTime != 0 ||
+            d.ft_rexpire.dwHighDateTime != 0)
+            kcdb_identity_set_attr(ident, KCDB_ATTR_RENEW_EXPIRE,
+                                   &d.ft_rexpire, sizeof(d.ft_rexpire));
+        else
+            kcdb_identity_set_attr(ident, KCDB_ATTR_RENEW_EXPIRE, NULL, 0);
+
+        kcdb_identity_set_attr(ident, attr_id_krb5_flags,
+                               &d.k5_flags, sizeof(d.k5_flags));
+
+        if (d.ccname[0])
+            kcdb_identity_set_attr(ident, attr_id_krb5_ccname,
+                                   d.ccname, KCDB_CBSIZE_AUTO);
+        else
+            kcdb_identity_set_attr(ident, attr_id_krb5_ccname, NULL, 0);
+
+    } else {
+        /* Clear out the attributes.  We don't have any information
+           about this identity */
+        kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE, NULL, 0);
+        kcdb_identity_set_attr(ident, KCDB_ATTR_ISSUE, NULL, 0);
+        kcdb_identity_set_attr(ident, KCDB_ATTR_RENEW_EXPIRE, NULL, 0);
+        kcdb_identity_set_attr(ident, attr_id_krb5_flags, NULL, 0);
+        kcdb_identity_set_attr(ident, attr_id_krb5_ccname, NULL, 0);
+    }
+#endif
 
     if (KHM_SUCCEEDED(kcdb_identity_get_default(&tident))) {
         kcdb_identity_release(tident);
@@ -1101,7 +1225,7 @@ k5_ident_update(khm_int32 msg_type,
     khm_krb5_canon_cc_name(w_ccname, sizeof(w_ccname));
     khm_krb5_canon_cc_name(wid_ccname, sizeof(wid_ccname));
 
-    if (!wcsicmp(w_ccname, wid_ccname))
+    if (!_wcsicmp(w_ccname, wid_ccname))
         kcdb_identity_set_default_int(ident);
 
  _iu_cleanup:
@@ -1120,18 +1244,54 @@ k5_refresh_default_identity(krb5_context ctx) {
     krb5_principal princ = NULL;
     char * princ_nameA = NULL;
     wchar_t princ_nameW[KCDB_IDENT_MAXCCH_NAME];
+    char * ccname = NULL;
     khm_handle ident = NULL;
     khm_boolean found_default = FALSE;
 
     assert(ctx != NULL);
 
+    _begin_task(0);
+    _report_cs0(KHERR_DEBUG_1, L"Refreshing default identity");
+    _describe();
+
     code = pkrb5_cc_default(ctx, &cc);
-    if (code)
+    if (code) {
+        _reportf(L"Can't open default ccache. code=%d", code);
         goto _nc_cleanup;
+    }
     
     code = pkrb5_cc_get_principal(ctx, cc, &princ);
-    if (code)
+    if (code) {
+        /* try to determine the identity from the ccache name */
+        ccname = pkrb5_cc_get_name(ctx, cc);
+
+        if (ccname) {
+            char * namepart = strchr(ccname, ':');
+
+            _reportf(L"CC name is [%S]", ccname);
+
+            if (namepart == NULL)
+                namepart = ccname;
+            else
+                namepart++;
+
+            _reportf(L"Checking if [%S] is a valid identity name", namepart);
+
+            AnsiStrToUnicode(princ_nameW, sizeof(princ_nameW), namepart);
+            if (kcdb_identity_is_valid_name(princ_nameW)) {
+                kcdb_identity_create(princ_nameW, KCDB_IDENT_FLAG_CREATE, &ident);
+                if (ident) {
+                    _reportf(L"Setting [%S] as the default identity", namepart);
+                    kcdb_identity_set_default_int(ident);
+                    found_default = TRUE;
+                }
+            }
+        } else {
+            _reportf(L"Can't determine ccache name");
+        }
+
         goto _nc_cleanup;
+    }
 
     code = pkrb5_unparse_name(ctx, princ, &princ_nameA);
     if (code)
@@ -1139,14 +1299,22 @@ k5_refresh_default_identity(krb5_context ctx) {
 
     AnsiStrToUnicode(princ_nameW, sizeof(princ_nameW), princ_nameA);
 
-    if (KHM_FAILED(kcdb_identity_create(princ_nameW, 0, &ident)))
-        goto _nc_cleanup;
+    _reportf(L"Found principal [%s]", princ_nameW);
 
+    if (KHM_FAILED(kcdb_identity_create(princ_nameW, KCDB_IDENT_FLAG_CREATE, &ident))) {
+        _reportf(L"Failed to create identity");
+        goto _nc_cleanup;
+    }
+
+    _reportf(L"Setting default identity to [%s]", princ_nameW);
     kcdb_identity_set_default_int(ident);
 
     found_default = TRUE;
 
  _nc_cleanup:
+
+    _end_task();
+
     if (princ_nameA)
         pkrb5_free_unparsed_name(ctx, princ_nameA);
 
@@ -1204,6 +1372,28 @@ k5_ident_exit(khm_int32 msg_type,
     return KHM_ERROR_SUCCESS;
 }
 
+/* forward dcl */
+khm_int32 KHMAPI
+k5_ident_name_comp_func(const void * dl, khm_size cb_dl,
+                        const void * dr, khm_size cb_dr);
+
+static khm_int32
+k5_ident_compare_name(khm_int32 msg_type,
+                      khm_int32 msg_subtype,
+                      khm_ui_4 uparam,
+                      void * vparam) {
+    kcdb_ident_name_xfer *px;
+
+    px = (kcdb_ident_name_xfer *) vparam;
+
+    /* note that k5_ident_name_comp_func() ignores the size
+       specifiers.  So we can just pass in 0's. */
+    px->result = k5_ident_name_comp_func(px->name_src, 0,
+                                         px->name_alt, 0);
+
+    return KHM_ERROR_SUCCESS;
+}
+
 #if 0
 /* copy and paste template for ident provider messages */
 static khm_int32
@@ -1248,8 +1438,10 @@ k5_msg_ident(khm_int32 msg_type,
         break;
 
     case KMSG_IDENT_COMPARE_NAME:
-        /* TODO: handle KMSG_IDENT_COMPARE_NAME */
-        break;
+        return k5_ident_compare_name(msg_type,
+                                     msg_subtype,
+                                     uparam,
+                                     vparam);
 
     case KMSG_IDENT_SET_DEFAULT:
         return k5_ident_set_default(msg_type,
@@ -1291,6 +1483,12 @@ k5_msg_ident(khm_int32 msg_type,
     return KHM_ERROR_SUCCESS;
 }
 
+/* note that we are ignoring the size specifiers.  We can do that
+   because we are guaranteed that dl and dr point to NULL terminated
+   unicode strings when used with credential data buffers.  We also
+   use the fact that we are ignoring the size specifiers when we call
+   this function from k5_ident_compare_name() to avoid calculating the
+   length of the string. */
 khm_int32 KHMAPI
 k5_ident_name_comp_func(const void * dl, khm_size cb_dl,
                         const void * dr, khm_size cb_dr) {
@@ -1425,7 +1623,7 @@ DWORD WINAPI k5_ccname_monitor_thread(LPVOID lpParameter) {
                 new_ccname[0] = L'\0';
             }
 
-            if (wcsicmp(new_ccname, reg_ccname)) {
+            if (_wcsicmp(new_ccname, reg_ccname)) {
                 k5_refresh_default_identity(ctx);
                 StringCbCopy(reg_ccname, sizeof(reg_ccname), new_ccname);
             }

@@ -1547,7 +1547,8 @@ AuthenticateProc(
         *( (LPLSH_DLGINFO_EX far *)(&lpdi) ) = (LPLSH_DLGINFO_EX)(LPSTR)lParam;
 
 	if ((lpdi->size != LSH_DLGINFO_EX_V1_SZ && 
-	      lpdi->size < sizeof(LSH_DLGINFO_EX)) ||
+	     lpdi->size != LSH_DLGINFO_EX_V2_SZ &&
+	      lpdi->size < LSH_DLGINFO_EX_V3_SZ) ||
 	     lpdi->dlgtype != DLGTYPE_PASSWD) {
 
 	    MessageBox(hDialog, "An incorrect initialization data structure was provided.",
@@ -1556,19 +1557,30 @@ AuthenticateProc(
 	    return FALSE;
 	}
 
-        if ( lpdi->size >= sizeof(LSH_DLGINFO_EX) ) {
+        if ( lpdi->size >= LSH_DLGINFO_EX_V2_SZ ) {
             lpdi->out.username[0] = 0;
             lpdi->out.realm[0] = 0;
         }	
+        if ( lpdi->size >= LSH_DLGINFO_EX_V3_SZ ) {
+            lpdi->out.ccache[0] = 0;
+        }
 
-        SetWindowText(hDialog, lpdi->title);
+        if ( lpdi->size >= LSH_DLGINFO_EX_V3_SZ )
+	    SetWindowText(hDialog, lpdi->in.title);
+	else
+	    SetWindowText(hDialog, lpdi->title);
 
         SetProp(hDialog, "HANDLES_HELP", (HANDLE)1);
 
-        if (lpdi->username)
+        if ( lpdi->size >= LSH_DLGINFO_EX_V3_SZ )
+            lstrcpy(username, lpdi->in.username);
+        else if (lpdi->username)
             lstrcpy(username, lpdi->username);
-	if (lpdi->realm)
+        if ( lpdi->size >= LSH_DLGINFO_EX_V3_SZ )
+	    lstrcpy(realm, lpdi->in.realm);
+	else if (lpdi->realm)
 	    lstrcpy(realm, lpdi->realm);
+
 	if (lpdi->use_defaults) {
 	    lifetime = Leash_get_default_lifetime();
 	    if (lifetime <= 0)
@@ -1996,7 +2008,7 @@ AuthenticateProc(
                     Leash_set_default_noaddresses(noaddresses);
                 }
 
-                if ( lpdi->size >= sizeof(LSH_DLGINFO_EX) ) {
+                if ( lpdi->size >= LSH_DLGINFO_EX_V2_SZ ) {
                     strncpy(lpdi->out.username, username, LEASH_USERNAME_SZ);
                     lpdi->out.username[LEASH_USERNAME_SZ-1] = 0;
                     strncpy(lpdi->out.realm, realm, LEASH_REALM_SZ);
@@ -2057,8 +2069,9 @@ NewPasswordProc(
 
         *( (LPLSH_DLGINFO_EX far *)(&lpdi) ) = (LPLSH_DLGINFO_EX)(LPSTR)lParam;
 
-	if ((lpdi->size < sizeof(LSH_DLGINFO_EX) && 
-	      lpdi->size != LSH_DLGINFO_EX_V1_SZ) ||
+	if ((lpdi->size < LSH_DLGINFO_EX_V3_SZ && 
+	      lpdi->size != LSH_DLGINFO_EX_V1_SZ &&
+	      lpdi->size != LSH_DLGINFO_EX_V2_SZ) ||
 	     lpdi->dlgtype != DLGTYPE_CHPASSWD) {
 
 	    MessageBox(hDialog, "An incorrect initialization data structure was provided.",
@@ -2067,18 +2080,28 @@ NewPasswordProc(
 	    return FALSE;
 	}
 
-        if ( lpdi->size >= sizeof(LSH_DLGINFO_EX) ) {
+        if ( lpdi->size >= LSH_DLGINFO_EX_V2_SZ ) {
             lpdi->out.username[0] = 0;
             lpdi->out.realm[0] = 0;
         }
+        if ( lpdi->size >= LSH_DLGINFO_EX_V3_SZ ) {
+            lpdi->out.ccache[0] = 0;
+        }
 
-        SetWindowText(hDialog, lpdi->title);
+        if ( lpdi->size >= LSH_DLGINFO_EX_V3_SZ )
+	    SetWindowText(hDialog, lpdi->in.title);
+	else
+	    SetWindowText(hDialog, lpdi->title);
 
         SetProp(hDialog, "HANDLES_HELP", (HANDLE)1);
 
-        if (lpdi->username)
+        if ( lpdi->size >= LSH_DLGINFO_EX_V3_SZ )
+            lstrcpy(username, lpdi->in.username);
+        else if (lpdi->username)
             lstrcpy(username, lpdi->username);
-	if (lpdi->realm)
+        if ( lpdi->size >= LSH_DLGINFO_EX_V3_SZ )
+	    lstrcpy(realm, lpdi->in.realm);
+	else if (lpdi->realm)
 	    lstrcpy(realm, lpdi->realm);
 
         CSetDlgItemText(hDialog, IDC_EDIT_PRINCIPAL, username);
@@ -2351,7 +2374,7 @@ NewPasswordProc(
                     return TRUE;
 		}
 
-                if ( lpdi->size >= sizeof(LSH_DLGINFO_EX) ) {
+                if ( lpdi->size >= LSH_DLGINFO_EX_V2_SZ ) {
                     strncpy(lpdi->out.username, username, LEASH_USERNAME_SZ);
                     lpdi->out.username[LEASH_USERNAME_SZ-1] = 0;
                     strncpy(lpdi->out.realm, realm, LEASH_REALM_SZ);

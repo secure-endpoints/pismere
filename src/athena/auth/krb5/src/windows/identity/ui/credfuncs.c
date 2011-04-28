@@ -227,6 +227,9 @@ kmsg_cred_completion(kmq_message *m)
            if there's more */
         nc = (khui_new_creds *) m->vparam;
 
+        /* if we are done processing all the plug-ins, then check if
+           there were any errors reported.  Otherwise we dispatch
+           another set of messages. */
         if(!khm_cred_dispatch_process_level(nc)) {
 
             if(kherr_is_error()) {
@@ -238,39 +241,103 @@ kmsg_cred_completion(kmq_message *m)
                 wchar_t ws_title[ARRAYLENGTH(ws_tfmt) + KCDB_IDENT_MAXCCH_NAME];
                 khm_size cb;
 
+                /* For renewals, we suppress the error message for the
+                   following case:
+
+                   - The renewal was for an identity
+
+                   - There are no identity credentials for the
+                     identity (no credentials that have the same type
+                     as the identity provider). */
+
+                if (nc->subtype == KMSG_CRED_RENEW_CREDS &&
+                    nc->ctx.scope == KHUI_SCOPE_IDENT &&
+                    nc->ctx.identity != NULL) {
+                    khm_handle tcs = NULL; /* credential set */
+                    khm_size count = 0;
+                    khm_int32 id_ctype = KCDB_CREDTYPE_INVALID;
+                    khm_int32 delta = 0;
+
+                    kcdb_identity_get_type(&id_ctype);
+                    kcdb_credset_create(&tcs);
+                    kcdb_credset_collect(tcs, NULL,
+                                         nc->ctx.identity,
+                                         id_ctype,
+                                         &delta);
+                    kcdb_credset_get_size(tcs, &count);
+                    kcdb_credset_delete(tcs);
+
+                    if (count == 0) {
+                        goto done_with_op;
+                    }
+                }
+
                 ctx = kherr_peek_context();
                 evt = kherr_get_err_event(ctx);
                 kherr_evaluate_event(evt);
 
                 khui_alert_create_empty(&alert);
 
-                if (nc->subtype == KMSG_CRED_PASSWORD)
-                    LoadString(khm_hInstance, IDS_NC_PWD_FAILED_TITLE,
-                               ws_tfmt, ARRAYLENGTH(ws_tfmt));
-                else if (nc->subtype == KMSG_CRED_RENEW_CREDS)
-                    LoadString(khm_hInstance, IDS_NC_REN_FAILED_TITLE,
-                               ws_tfmt, ARRAYLENGTH(ws_tfmt));
-                else
-                    LoadString(khm_hInstance, IDS_NC_FAILED_TITLE,
-                               ws_tfmt, ARRAYLENGTH(ws_tfmt));
+                if (nc->subtype == KMSG_CRED_NEW_CREDS) {
 
-                if (nc->n_identities > 0) {
                     cb = sizeof(w_idname);
-                    if (KHM_FAILED(kcdb_identity_get_name(nc->identities[0], 
-                                                          w_idname, &cb)))
-                        StringCbCopy(w_idname, sizeof(w_idname), L"(?)");
-                } else {
-                    StringCbCopy(w_idname, sizeof(w_idname), L"(?)");
-                }
+                    if (nc->n_identities == 0 ||
+                        KHM_FAILED(kcdb_identity_get_name(nc->identities[0],
+                                                          w_idname, &cb))) {
+                        /* an identity could not be determined */
+                        LoadString(khm_hInstance, IDS_NC_FAILED_TITLE,
+                                   ws_title, ARRAYLENGTH(ws_title));
+                    } else {
+                        LoadString(khm_hInstance, IDS_NC_FAILED_TITLE_I,
+                                   ws_tfmt, ARRAYLENGTH(ws_tfmt));
+                        StringCbPrintf(ws_title, sizeof(ws_title),
+                                       ws_tfmt, w_idname);
+                    }
 
-                StringCbPrintf(ws_title, sizeof(ws_title), ws_tfmt, w_idname);
+                } else if (nc->subtype == KMSG_CRED_PASSWORD) {
+
+                    cb = sizeof(w_idname);
+                    if (nc->n_identities == 0 ||
+                        KHM_FAILED(kcdb_identity_get_name(nc->identities[0],
+                                                          w_idname, &cb))) {
+                        LoadString(khm_hInstance, IDS_NC_PWD_FAILED_TITLE,
+                                   ws_title, ARRAYLENGTH(ws_title));
+                    } else {
+                        LoadString(khm_hInstance, IDS_NC_PWD_FAILED_TITLE_I,
+                                   ws_tfmt, ARRAYLENGTH(ws_tfmt));
+                        StringCbPrintf(ws_title, sizeof(ws_title),
+                                       ws_tfmt, w_idname);
+                    }
+
+                } else if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
+
+                    cb = sizeof(w_idname);
+                    if (nc->ctx.identity == NULL ||
+                        KHM_FAILED(kcdb_identity_get_name(nc->ctx.identity,
+                                                          w_idname, &cb))) {
+                        LoadString(khm_hInstance, IDS_NC_REN_FAILED_TITLE,
+                                   ws_title, ARRAYLENGTH(ws_title));
+                    } else {
+                        LoadString(khm_hInstance, IDS_NC_REN_FAILED_TITLE_I,
+                                   ws_tfmt, ARRAYLENGTH(ws_tfmt));
+                        StringCbPrintf(ws_title, sizeof(ws_title),
+                                       ws_tfmt, w_idname);
+                    }
+
+                } else {
+#ifdef DEBUG
+                    assert(FALSE);
+#endif
+                }
 
                 khui_alert_set_title(alert, ws_title);
                 khui_alert_set_severity(alert, evt->severity);
+
                 if(!evt->long_desc)
                     khui_alert_set_message(alert, evt->short_desc);
                 else
                     khui_alert_set_message(alert, evt->long_desc);
+
                 if(evt->suggestion)
                     khui_alert_set_suggestion(alert, evt->suggestion);
 
@@ -281,6 +348,8 @@ kmsg_cred_completion(kmq_message *m)
 
                 kherr_clear_error();
             }
+
+        done_with_op:
 
             if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
                 kmq_post_message(KMSG_CRED, KMSG_CRED_END, 0, 
@@ -380,7 +449,7 @@ void khm_cred_set_default(void)
     khui_context_release(&ctx);
 }
 
-void khm_cred_destroy_creds(void)
+void khm_cred_destroy_creds(khm_boolean sync, khm_boolean quiet)
 {
     khui_action_context * pctx;
 
@@ -391,7 +460,7 @@ void khm_cred_destroy_creds(void)
 
     khui_context_get(pctx);
 
-    if(pctx->scope == KHUI_SCOPE_NONE) {
+    if(pctx->scope == KHUI_SCOPE_NONE && !quiet) {
         /* this really shouldn't be necessary once we start enabling
            and disbling actions based on context */
         wchar_t title[256];
@@ -413,18 +482,26 @@ void khm_cred_destroy_creds(void)
 
         khui_context_release(pctx);
         PFREE(pctx);
-    } else {
-        _begin_task(KHERR_CF_TRANSITIVE);
-        _report_sr0(KHERR_NONE, IDS_CTX_RENEW_CREDS);
-        _describe();
 
+        return;
+    }
+
+    _begin_task(KHERR_CF_TRANSITIVE);
+    _report_sr0(KHERR_NONE, IDS_CTX_DESTROY_CREDS);
+    _describe();
+
+    if (sync)
+        kmq_send_message(KMSG_CRED,
+                         KMSG_CRED_DESTROY_CREDS,
+                         0,
+                         (void *) pctx);
+    else
         kmq_post_message(KMSG_CRED,
                          KMSG_CRED_DESTROY_CREDS,
                          0,
                          (void *) pctx);
 
-        _end_task();
-    }
+    _end_task();
 }
 
 void khm_cred_renew_identity(khm_handle identity)
@@ -434,7 +511,7 @@ void khm_cred_renew_identity(khm_handle identity)
     khui_cw_create_cred_blob(&c);
 
     c->subtype = KMSG_CRED_RENEW_CREDS;
-    c->result = KHUI_NC_RESULT_GET_CREDS;
+    c->result = KHUI_NC_RESULT_PROCESS;
     khui_context_create(&c->ctx,
                         KHUI_SCOPE_IDENT,
                         identity,
@@ -457,7 +534,7 @@ void khm_cred_renew_cred(khm_handle cred)
     khui_cw_create_cred_blob(&c);
 
     c->subtype = KMSG_CRED_RENEW_CREDS;
-    c->result = KHUI_NC_RESULT_GET_CREDS;
+    c->result = KHUI_NC_RESULT_PROCESS;
     khui_context_create(&c->ctx,
                         KHUI_SCOPE_CRED,
                         NULL,
@@ -479,7 +556,7 @@ void khm_cred_renew_creds(void)
 
     khui_cw_create_cred_blob(&c);
     c->subtype = KMSG_CRED_RENEW_CREDS;
-    c->result = KHUI_NC_RESULT_GET_CREDS;
+    c->result = KHUI_NC_RESULT_PROCESS;
     khui_context_get(&c->ctx);
 
     _begin_task(KHERR_CF_TRANSITIVE);
@@ -797,7 +874,7 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
 }
 
 void
-khm_cred_process_commandline(void) {
+khm_cred_process_startup_actions(void) {
     khm_handle defident = NULL;
 
     if (!khm_startup.processing)
@@ -810,6 +887,11 @@ khm_cred_process_commandline(void) {
         kcdb_identity_get_default(&defident);
     }
 
+    /* For asynchronous actions, we trigger the action and then exit
+       the loop.  Once the action completes, the completion handler
+       will trigger a continuation message which will result in this
+       function getting called again.  Then we can proceed with the
+       rest of the startup actions. */
     do {
         if (khm_startup.init) {
             if (defident)
@@ -833,21 +915,75 @@ khm_cred_process_commandline(void) {
         }
 
         if (khm_startup.renew) {
-            if (defident)
-                khui_context_set(KHUI_SCOPE_IDENT,
-                                 defident,
-                                 KCDB_CREDTYPE_INVALID,
-                                 NULL, NULL, 0,
-                                 NULL);
-            else
-                khui_context_reset();
+            khm_size count;
+            wchar_t * ident_names = NULL;
+            wchar_t * this_ident;
 
-            khm_cred_renew_creds();
+            kcdb_credset_get_size(NULL, &count);
+
+            /* if there are no credentials, we just skip over the
+               renew action. */
+
             khm_startup.renew = FALSE;
-            break;
+
+            if (count != 0) {
+                khm_size cb = 0;
+                khm_size n_idents = 0;
+                khm_int32 rv;
+
+                ident_names = NULL;
+
+                while (TRUE) {
+                    if (ident_names) {
+                        PFREE(ident_names);
+                        ident_names = NULL;
+                    }
+
+                    cb = 0;
+                    rv = kcdb_identity_enum(KCDB_IDENT_FLAG_EMPTY, 0,
+                                            NULL,
+                                            &cb, &n_idents);
+
+                    if (n_idents == 0 || rv != KHM_ERROR_TOO_LONG ||
+                        cb == 0)
+                        break;
+
+                    ident_names = PMALLOC(cb);
+
+                    rv = kcdb_identity_enum(KCDB_IDENT_FLAG_EMPTY, 0,
+                                            ident_names,
+                                            &cb, &n_idents);
+
+                    if (KHM_SUCCEEDED(rv))
+                        break;
+                }
+
+                if (ident_names) {
+                    for (this_ident = ident_names;
+                         this_ident && *this_ident;
+                         this_ident = multi_string_next(this_ident)) {
+                        khm_handle ident;
+
+                        if (KHM_FAILED(kcdb_identity_create(this_ident, 0,
+                                                            &ident)))
+                            continue;
+
+                        khm_cred_renew_identity(ident);
+
+                        kcdb_identity_release(ident);
+                    }
+
+                    PFREE(ident_names);
+                    ident_names = NULL;
+                }
+                break;
+            }
         }
 
         if (khm_startup.destroy) {
+
+            khm_startup.destroy = FALSE;
+
             if (defident) {
                 khui_context_set(KHUI_SCOPE_IDENT,
                                  defident,
@@ -855,17 +991,29 @@ khm_cred_process_commandline(void) {
                                  NULL, NULL, 0,
                                  NULL);
 
-                khm_cred_destroy_creds();
+                khm_cred_destroy_creds(FALSE, FALSE);
+                break;
             }
-
-            khm_startup.destroy = FALSE;
-            break;
         }
 
         if (khm_startup.autoinit) {
-            khm_size count;
+            khm_size count = 0;
+            khm_handle credset = NULL;
+            khm_int32 ctype_ident = KCDB_CREDTYPE_INVALID;
+            khm_int32 delta = 0;
 
-            kcdb_credset_get_size(NULL, &count);
+            khm_startup.autoinit = FALSE;
+
+            kcdb_credset_create(&credset);
+            kcdb_identity_get_type(&ctype_ident);
+
+            kcdb_credset_collect(credset, NULL,
+                                 defident, ctype_ident,
+                                 &delta);
+
+            kcdb_credset_get_size(credset, &count);
+
+            kcdb_credset_delete(credset);
 
             if (count == 0) {
                 if (defident)
@@ -878,9 +1026,8 @@ khm_cred_process_commandline(void) {
                     khui_context_reset();
 
                 khm_cred_obtain_new_creds(NULL);
+                break;
             }
-            khm_startup.autoinit = FALSE;
-            break;
         }
 
         if (khm_startup.exit) {
@@ -891,6 +1038,8 @@ khm_cred_process_commandline(void) {
             break;
         }
 
+        /* when we get here, then we are all done with the command
+           line stuff */
         khm_startup.processing = FALSE;
     } while(FALSE);
 
@@ -899,7 +1048,7 @@ khm_cred_process_commandline(void) {
 }
 
 void
-khm_cred_begin_commandline(void) {
+khm_cred_begin_startup_actions(void) {
     khm_handle csp_cw;
 
     if (khm_startup.seen)
@@ -924,7 +1073,7 @@ khm_cred_begin_commandline(void) {
     khm_startup.seen = TRUE;
     khm_startup.processing = TRUE;
 
-    khm_cred_process_commandline();
+    khm_cred_process_startup_actions();
 }
 
 void

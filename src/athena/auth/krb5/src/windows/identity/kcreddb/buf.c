@@ -134,7 +134,7 @@ void kcdb_buf_alloc(kcdb_buf * buf, khm_size slot, khm_ui_2 id, khm_size cbsize)
         }
 
         if(buf->cb_used > f->offset + cbold) {
-            int i;
+            khm_size i;
 
             memmove(
                 ((BYTE *) buf->buffer) + (f->offset + cbnew),
@@ -298,7 +298,7 @@ KHMEXP khm_int32 KHMAPI kcdb_buf_get_attr(
 
 KHMEXP khm_int32 KHMAPI kcdb_buf_get_attrib(
     khm_handle  record,
-    wchar_t *   attr_name,
+    const wchar_t *   attr_name,
     khm_int32 * attr_type,
     void *      buffer,
     khm_size *  pcb_buf)
@@ -328,7 +328,7 @@ KHMEXP khm_int32 KHMAPI kcdb_buf_get_attr_string(
 
 KHMEXP khm_int32 KHMAPI kcdb_buf_get_attrib_string(
     khm_handle  record,
-    wchar_t *   attr_name,
+    const wchar_t *   attr_name,
     wchar_t *   buffer,
     khm_size *  pcbbuf,
     khm_int32   flags)
@@ -357,7 +357,7 @@ KHMEXP khm_int32 KHMAPI kcdb_buf_set_attr(
 
 KHMEXP khm_int32 KHMAPI kcdb_buf_set_attrib(
     khm_handle  record,
-    wchar_t *   attr_name,
+    const wchar_t *   attr_name,
     void *      buffer,
     khm_size    cbbuf)
 {

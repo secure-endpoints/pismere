@@ -55,9 +55,14 @@ hes_getmailhost(LPSTR user)
     if (cp == NULL) return(NULL);
     
     ret = (struct hes_postoffice*)(TlsGetValue(dwHesMailIndex));
-    
-    if (ret == NULL)
-        return NULL;
+    if (ret == NULL) {
+	LPVOID lpvData = (LPVOID) LocalAlloc(LPTR, sizeof(struct hes_postoffice)); 
+	if (lpvData != NULL) {
+	    TlsSetValue(dwHesMailIndex, lpvData);
+	    ret = (struct hes_postoffice*)lpvData;
+	} else
+	    return NULL;
+    }
     if (!ret->po_type)
         ret->po_type = LocalAlloc(LPTR, LINESIZE);
     if (!ret->po_host)        

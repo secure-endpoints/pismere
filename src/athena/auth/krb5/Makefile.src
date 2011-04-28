@@ -1,0 +1,136 @@
+TARGETTYPE=NONE
+
+PLACE= \
+	src\lib\$(O)\comerr32.dll \
+	src\lib\$(O)\krb5_32.dll \
+	src\lib\$(O)\gssapi32.dll \
+	src\lib\$(O)\xpprof32.dll \
+        src\clients\kvno\$(O)\kvno.exe \
+        src\clients\kpasswd\$(O)\kpasswd.exe \
+	src\windows\cns\$(O)\krb5.exe \
+	src\windows\gss\$(O)\gss.exe \
+        src\windows\ms2mit\$(O)\ms2mit.exe
+
+WIN64_PLACE= \
+	src\lib\$(O)\comerr64.dll \
+	src\lib\$(O)\krb5_64.dll \
+	src\lib\$(O)\gssapi64.dll \
+	src\lib\$(O)\xpprof64.dll \
+        src\clients\kvno\$(O)\kvno.exe \
+        src\clients\kpasswd\$(O)\kpasswd.exe \
+	src\windows\cns\$(O)\krb5.exe \
+#	src\windows\gss\$(O)\gss.exe \
+        src\windows\ms2mit\$(O)\ms2mit.exe
+
+WSHELPER_PATH=$(PISMERE)\athena\wshelper
+
+DNS_OPTIONS=\
+	KRB5_USE_DNS=1 KRB5_USE_DNS_KDC=1 \
+	DNS_LIB=$(WSHELPER_PATH)\wshload\$(O)\wshload.lib \
+	DNS_INC=$(WSHELPER_PATH)\include
+
+KRB4_PATH=$(PISMERE)\athena\auth\krb4
+
+#KRB4_OPTIONS=\
+#	USE_ALTERNATE_KRB4_INCLUDES=$(KRB4_PATH)\include \
+#	USE_ALTERNATE_KRB4_LIB=$(KRB4_PATH)\krbv4\krbdll\$(O)\krbv4w32.lib
+
+KRB4_INCDIR=krb4inc
+#KRB4_OPTIONS=\
+#	USE_ALTERNATE_KRB4_INCLUDES=$(MAKEDIR)\$(KRB4_INCDIR) \
+#	USE_ALTERNATE_KRB4_LIB=$(KRB4_PATH)\krbv4\krbdll\$(O)\krbv4w32.lib
+
+
+KFW_OPTIONS=\
+        KRB5_KFW_COMPILE=1 \
+	DEBUG_SYMBOL=1
+
+KRB5_OPTIONS=$(DNS_OPTIONS) $(KRB4_OPTIONS) $(KFW_OPTIONS)
+
+IDENTMGR_PATH=$(PISMERE)\athena\auth\krb5-1-4\src\windows\identity
+
+all:: src/Makefile get-krb4 all-src all-krb524
+
+clean:: src/Makefile clean-krb524 clean-src del-krb4
+
+get-krb4:
+	@if not exist $(KRB4_INCDIR) mkdir $(KRB4_INCDIR)
+	@copy $(KRB4_PATH)\include\*.h $(KRB4_INCDIR)\.
+	@del $(KRB4_INCDIR)\com_err.h
+
+del-krb4:
+	-@for %a in ($(KRB4_INCDIR)\*.h) do @del %a
+	-@rmdir $(KRB4_INCDIR)
+
+all-src:
+	cd src
+	$(MAKE) -$(MAKEFLAGS) /nologo all $(KRB5_OPTIONS)
+	cd ..
+
+clean-src:
+	cd src
+	$(MAKE) -$(MAKEFLAGS) /nologo clean $(KRB5_OPTIONS)
+	cd ..
+
+all-krb524:
+	cd src\krb524
+	if exist Makefile $(MAKE) -$(MAKEFLAGS) /nologo all $(KRB5_OPTIONS)
+	cd ..\..
+
+clean-krb524:
+	cd src\krb524
+	if exist Makefile $(MAKE) -$(MAKEFLAGS) /nologo clean $(KRB5_OPTIONS)
+	cd ..\..
+
+PLACE_OPTIONAL=\
+	src\lib\$(O)\k5sprt32.dll \
+        src\clients\kcpytkt\$(O)\kcpytkt.exe \
+        src\clients\kdeltkt\$(O)\kdeltkt.exe \
+        src\windows\ms2mit\$(O)\mit2ms.exe \
+	src\appl\gssftp\ftp\$(O)\ftp.exe \
+        src\appl\gss-sample\$(O)\gss-server.exe \
+        src\appl\gss-sample\$(O)\gss-client.exe \
+	src\krb524\$(O)\krb524.dll \
+	src\krb524\$(O)\k524init.exe \
+	src\windows\kfwlogon\$(O)\kfwlogon.dll \
+	src\windows\kfwlogon\$(O)\kfwcpcc.exe \
+        $(IDENTMGR_PATH)\$(O)\krb5cred.dll  \
+        $(IDENTMGR_PATH)\$(O)\krb5cred_en_us.dll  \
+        $(IDENTMGR_PATH)\$(O)\nidmgr32.dll \
+        $(IDENTMGR_PATH)\$(O)\netidmgr.exe \
+        $(IDENTMGR_PATH)\help\netidmgr.chm \
+	$(IDENTMGR_PATH)\$(O)\doc\netiddev.chm \
+        $(IDENTMGR_PATH)\$(O)\krb4cred.dll \
+        $(IDENTMGR_PATH)\$(O)\krb4cred_en_us.dll
+
+WIN64_PLACE_OPTIONAL=\
+	src\lib\$(O)\k5sprt64.dll \
+        src\clients\kcpytkt\$(O)\kcpytkt.exe \
+        src\clients\kdeltkt\$(O)\kdeltkt.exe \
+        src\windows\ms2mit\$(O)\mit2ms.exe \
+	src\appl\gssftp\ftp\$(O)\ftp.exe \
+        src\appl\gss-sample\$(O)\gss-server.exe \
+        src\appl\gss-sample\$(O)\gss-client.exe \
+	src\krb524\$(O)\krb524.dll \
+	src\krb524\$(O)\k524init.exe \
+	src\windows\kfwlogon\$(O)\kfwlogon.dll \
+	src\windows\kfwlogon\$(O)\kfwcpcc.exe \
+        $(IDENTMGR_PATH)\$(O)\krb5cred.dll  \
+        $(IDENTMGR_PATH)\$(O)\krb5cred_en_us.dll  \
+        $(IDENTMGR_PATH)\$(O)\nidmgr32.dll \
+        $(IDENTMGR_PATH)\$(O)\netidmgr.exe \
+        $(IDENTMGR_PATH)\help\netidmgr.chm \
+	$(IDENTMGR_PATH)\$(O)\doc\netiddev.chm \
+        $(IDENTMGR_PATH)\$(O)\krb4cred.dll \
+        $(IDENTMGR_PATH)\$(O)\krb4cred_en_us.dll
+
+src/Makefile: src/config/win-pre.in src/Makefile.in src/config/win-post.in
+	@echo Checking for existence of sed, awk, cat and rm...
+	@$(WHICH_CMD) sed
+	@$(WHICH_CMD) awk
+	@$(WHICH_CMD) cat
+	@$(WHICH_CMD) rm
+	@echo We found them!
+	cd src
+	$(MAKE) -$(MAKEFLAGS) /nologo -f Makefile.in prep-windows $(KRB5_OPTIONS)
+	cd ..

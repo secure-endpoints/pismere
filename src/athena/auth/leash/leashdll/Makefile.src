@@ -17,12 +17,12 @@ OBJS= \
 
 RES=$(O)\lsh_pwd.res
 
-LIBS=$(STD_LIBS) wsock32.lib version.lib loadfuncs.lib \
+LIBS=$(STD_LIBS) wsock32.lib version.lib loadfuncs.lib krbcc32.lib \
 !ifdef MIT_ONLY
 	afscompat.lib
 !endif
 
-LIB_PATHS=..\..\..\util\loadfuncs\$(O)
+LIB_PATHS=..\..\..\util\loadfuncs\$(O);..\..\krbcc\src\dll\$(O)
 !ifdef MIT_ONLY
 LIB_PATHS=$(LIB_PATHS);..\..\..\util\lib\afscompat\src\$(O)
 !endif

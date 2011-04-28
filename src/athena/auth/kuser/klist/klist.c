@@ -136,9 +136,9 @@ void usage()
 }
 
 int
-main(argc, argv)
-    int argc;
-    char **argv;
+main(
+    int argc,
+    char **argv)
 {
     int c;
     char *name;
@@ -289,8 +289,8 @@ main(argc, argv)
     return 0;
 }    
 
-void do_keytab(name)
-   char *name;
+void do_keytab(
+   char *name)
 {
      krb5_keytab kt;
      krb5_keytab_entry entry;
@@ -354,7 +354,7 @@ void do_keytab(name)
 	  if (show_keys) {
 	       printf(" (0x");
 	       {
-		    int i;
+		    unsigned int i;
 		    for (i = 0; i < entry.key.length; i++)
 			 printf("%02x", entry.key.contents[i]);
 	       }
@@ -374,7 +374,7 @@ void do_keytab(name)
      exit(0);
 }
 
-void do_all_ccache(void)
+void do_all_ccache()
 {
     krb5_error_code retval;
     apiCB * cc_ctx = 0;
@@ -405,6 +405,8 @@ void do_all_ccache(void)
 				do_v4_ccache(pNCi[i]->name);
             break;
         }
+#else
+		}
 #endif /* KRB5_KRB4_COMPAT */
 		printf("\n\n");
     }
@@ -416,8 +418,7 @@ void do_all_ccache(void)
     exit(exit_status);
 }
 
-void do_ccache(name)
-   char *name;
+void do_ccache(char* name)
 {
     krb5_ccache cache = NULL;
     krb5_cc_cursor cur;
@@ -537,8 +538,8 @@ void do_ccache(name)
 }
 
 char *
-etype_string(enctype)
-    krb5_enctype enctype;
+etype_string(
+    krb5_enctype enctype)
 {
     static char buf[100];
     krb5_error_code retval;
@@ -552,8 +553,8 @@ etype_string(enctype)
 }
 
 char *
-flags_string(cred)
-    register krb5_creds *cred;
+flags_string(
+    register krb5_creds *cred)
 {
     static char buf[32];
     int i = 0;
@@ -585,8 +586,8 @@ flags_string(cred)
 }
 
 void 
-printtime(tv)
-    time_t tv;
+printtime(
+    time_t tv)
 {
     char timestring[BUFSIZ];
     char fill;
@@ -601,10 +602,10 @@ printtime(tv)
 }
 
 void
-show_credential(progname, kcontext, cred)
-    char 		* progname;
-    krb5_context  	  kcontext;
-    register krb5_creds * cred;
+show_credential(
+    char 		* progname,
+    krb5_context  	  kcontext,
+    register krb5_creds * cred)
 {
     krb5_error_code retval;
     krb5_ticket *tkt;
@@ -710,8 +711,8 @@ show_credential(progname, kcontext, cred)
     krb5_free_unparsed_name(kcontext, sname);
 }
 
-void one_addr(a)
-    krb5_address *a;
+void one_addr(
+    krb5_address *a)
 {
     struct hostent *h;
 
@@ -763,10 +764,10 @@ void one_addr(a)
 }
 
 void
-fillit(f, num, c)
-    FILE	*f;
-    int		num;
-    int		c;
+fillit(
+    FILE	*f,
+    int		num,
+    int		c)
 {
     int i;
 
@@ -776,8 +777,8 @@ fillit(f, num, c)
 
 #ifdef KRB5_KRB4_COMPAT
 void
-do_v4_ccache(name)
-    char * name;
+do_v4_ccache(
+    char * name)
 {
     char    pname[ANAME_SZ];
     char    pinst[INST_SZ];

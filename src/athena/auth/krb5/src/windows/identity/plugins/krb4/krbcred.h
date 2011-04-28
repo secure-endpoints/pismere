@@ -29,7 +29,7 @@
 
 #include<windows.h>
 
-#define KHERR_FACILITY L"Kerberos4"
+#define KHERR_FACILITY L"Krb4Cred"
 #define KHERR_FACILITY_ID 65
 #define KHERR_HMODULE hResModule
 
@@ -41,6 +41,7 @@
 #include<dynimport.h>
 
 #include<langres.h>
+#include<krb4_msgs.h>
 
 #define TYPENAME_ENCTYPE        L"EncType"
 #define TYPENAME_ADDR_LIST      L"AddrList"

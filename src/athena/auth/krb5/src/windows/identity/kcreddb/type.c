@@ -212,7 +212,7 @@ khm_int32 KHMAPI kcdb_type_date_toString(
     GetLocalTime(&st_now);
     FileTimeToSystemTime(ft, &st_d);
     SystemTimeToTzSpecificLocalTime(NULL, &st_d, &st_dl);
-    if(st_now.wYear == st_dl.wYear &&
+    if (st_now.wYear == st_dl.wYear &&
         st_now.wMonth == st_dl.wMonth &&
         st_now.wDay == st_dl.wDay)
         today = 1;
@@ -227,7 +227,6 @@ khm_int32 KHMAPI kcdb_type_date_toString(
             NULL,
             NULL,
             0) * sizeof(wchar_t);
-        cbsize += sizeof(wchar_t);
     }
 
     cbsize += GetTimeFormat(
@@ -237,8 +236,6 @@ khm_int32 KHMAPI kcdb_type_date_toString(
         NULL,
         NULL,
         0) * sizeof(wchar_t);
-
-    cbsize += sizeof(wchar_t);
 
     if(!buffer || *cb_buf < cbsize) {
         *cb_buf = cbsize;
@@ -374,7 +371,11 @@ FtIntervalToString(LPFILETIME data, wchar_t * buffer, khm_size * cb_buf)
     d = s / (3600*24);
 
     if(ift == _I64_MAX) {
+#ifdef INDICATE_UNKNOWN_EXPIRY_TIMES
         LoadString(hinst_kcreddb, IDS_IVL_UNKNOWN, ibuf, sizeof(ibuf)/sizeof(wchar_t));
+#else
+        StringCbCopy(ibuf, sizeof(ibuf), L"");
+#endif
     } else if(s < 0) {
         LoadString(hinst_kcreddb, IDS_IVL_EXPIRED, ibuf, sizeof(ibuf)/sizeof(wchar_t));
     } else if(d > 0) {
@@ -390,9 +391,11 @@ FtIntervalToString(LPFILETIME data, wchar_t * buffer, khm_size * cb_buf)
             t = ibuf + wcslen(ibuf);
             if(h == 1)
             {
-                LoadString(hinst_kcreddb, IDS_IVL_1H, t, ARRAYLENGTH(ibuf) - wcslen(ibuf));
+                LoadString(hinst_kcreddb, IDS_IVL_1H, t,
+                           (int) (ARRAYLENGTH(ibuf) - wcslen(ibuf)));
             } else {
-                LoadString(hinst_kcreddb, IDS_IVL_H, fbuf, ARRAYLENGTH(fbuf));
+                LoadString(hinst_kcreddb, IDS_IVL_H, fbuf,
+                           (int) ARRAYLENGTH(fbuf));
                 StringCbPrintf(t, sizeof(ibuf) - wcslen(ibuf)*sizeof(wchar_t), fbuf, h);
             }
         }
@@ -414,9 +417,11 @@ FtIntervalToString(LPFILETIME data, wchar_t * buffer, khm_size * cb_buf)
             t = ibuf + wcslen(ibuf);
             if(m == 1)
             {
-                LoadString(hinst_kcreddb, IDS_IVL_1M, t, ARRAYLENGTH(ibuf) - wcslen(ibuf));
+                LoadString(hinst_kcreddb, IDS_IVL_1M, t,
+                           (int) (ARRAYLENGTH(ibuf) - wcslen(ibuf)));
             } else {
-                LoadString(hinst_kcreddb, IDS_IVL_M, fbuf, ARRAYLENGTH(fbuf));
+                LoadString(hinst_kcreddb, IDS_IVL_M, fbuf,
+                           (int) ARRAYLENGTH(fbuf));
                 StringCbPrintf(t, sizeof(ibuf) - wcslen(ibuf)*sizeof(wchar_t), fbuf, m);
             }
         }
@@ -433,9 +438,11 @@ FtIntervalToString(LPFILETIME data, wchar_t * buffer, khm_size * cb_buf)
             t = ibuf + wcslen(ibuf);
             if(s == 1)
             {
-                LoadString(hinst_kcreddb, IDS_IVL_1S, t, ARRAYLENGTH(ibuf) - wcslen(ibuf));
+                LoadString(hinst_kcreddb, IDS_IVL_1S, t,
+                           (int) (ARRAYLENGTH(ibuf) - wcslen(ibuf)));
             } else {
-                LoadString(hinst_kcreddb, IDS_IVL_S, fbuf, ARRAYLENGTH(fbuf));
+                LoadString(hinst_kcreddb, IDS_IVL_S, fbuf,
+                           (int) ARRAYLENGTH(fbuf));
                 StringCbPrintf(t, sizeof(ibuf) - wcslen(ibuf)*sizeof(wchar_t), fbuf, s);
             }
         }
@@ -672,8 +679,11 @@ khm_boolean KHMAPI kcdb_type_data_isValid(
     const void * d,
     khm_size cbd)
 {
-    /* data is always valid, even if d is NULL */
-    return TRUE;
+    /* data is always valid */
+    if (cbd != 0 && d == NULL)
+        return FALSE;
+    else
+        return TRUE;
 }
 
 khm_int32 KHMAPI kcdb_type_data_comp(
@@ -682,8 +692,21 @@ khm_int32 KHMAPI kcdb_type_data_comp(
     const void * d2,
     khm_size cbd2)
 {
-    /* datas can not be compared */
-    return 0;
+    khm_size pref;
+    khm_int32 rv = 0;
+
+    pref = min(cbd1, cbd2);
+
+    if (pref == 0)
+        return (cbd1 < cbd2)? -1 : ((cbd1 > cbd2)? 1 : 0);
+
+    rv = memcmp(d1, d2, pref);
+
+    if (rv == 0) {
+        return (cbd1 < cbd2)? -1 : ((cbd1 > cbd2)? 1 : 0);
+    } else {
+        return rv;
+    }
 }
 
 khm_int32 KHMAPI kcdb_type_data_dup(
@@ -692,14 +715,14 @@ khm_int32 KHMAPI kcdb_type_data_dup(
     void * d_dst,
     khm_size * cbd_dst)
 {
-    if(!cbd_dst)
+    if(!cbd_dst || cbd_src == KCDB_CBSIZE_AUTO)
         return KHM_ERROR_INVALID_PARAM;
 
-    *cbd_dst = cbd_src;
-
     if(!d_dst || *cbd_dst < cbd_src) {
+        *cbd_dst = cbd_src;
         return KHM_ERROR_TOO_LONG;
     } else {
+        *cbd_dst = cbd_src;
         memcpy(d_dst, d_src, cbd_src);
         return KHM_ERROR_SUCCESS;
     }
@@ -882,7 +905,7 @@ void kcdb_type_check_and_delete(khm_int32 id)
     LeaveCriticalSection(&cs_type);
 }
 
-KHMEXP khm_int32 KHMAPI kcdb_type_get_id(wchar_t *name, khm_int32 * id)
+KHMEXP khm_int32 KHMAPI kcdb_type_get_id(const wchar_t *name, khm_int32 * id)
 {
     kcdb_type_i * t;
     size_t cbsize;
@@ -961,7 +984,7 @@ KHMEXP khm_int32 KHMAPI kcdb_type_get_name(khm_int32 id, wchar_t * buffer, khm_s
     return KHM_ERROR_SUCCESS;
 }
 
-KHMEXP khm_int32 KHMAPI kcdb_type_register(kcdb_type * type, khm_int32 * new_id)
+KHMEXP khm_int32 KHMAPI kcdb_type_register(const kcdb_type * type, khm_int32 * new_id)
 {
     kcdb_type_i *t;
     size_t cbsize;
@@ -1274,7 +1297,7 @@ int _iv_is_in_spec(wchar_t *s, int n, wchar_t * spec)
         if(!e)
             e = b + wcslen(b);
     
-        if((e - b) == n  && !wcsnicmp(b, s, n)) {
+        if((e - b) == n  && !_wcsnicmp(b, s, n)) {
             return TRUE;
         }
 

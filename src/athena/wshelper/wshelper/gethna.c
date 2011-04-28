@@ -108,13 +108,21 @@ rgethostbyname(char *name)
     DNS_STATUS status; 
     const char *cp;
     char queryname[DNS_MAX_NAME_BUFFER_LENGTH ];
+#ifdef DEBUG
     char debstr[80];
+#endif
     char** domain;
     struct in_addr host_addr;
 
     host = (struct hostent*)(TlsGetValue(dwGhnIndex));
-    if (host == NULL)
-        return NULL;
+    if (host == NULL) {
+	LPVOID lpvData = (LPVOID) LocalAlloc(LPTR, sizeof(struct hostent)); 
+	if (lpvData != NULL) {
+	    TlsSetValue(dwGhnIndex, lpvData);
+	    host = (struct hostent*)lpvData;
+	} else 
+	    return NULL;
+    }
 
     if (host->h_name == NULL)
 	host->h_name = LocalAlloc(LPTR, DNS_MAX_LABEL_BUFFER_LENGTH);
@@ -148,7 +156,7 @@ rgethostbyname(char *name)
                 host->h_aliases[0] = NULL;
                 host->h_addrtype = AF_INET;
                 host->h_length = sizeof(u_long);
-                strcpy(host->h_addr_list[0], (const char*)&host_addr);
+                memcpy(host->h_addr_list[0], &host_addr, sizeof(host_addr));
 				host->h_addr_list[1] = NULL;
                 return (host);
             }
@@ -206,10 +214,13 @@ rgethostbyname(char *name)
 DNS_STATUS doquery(const char* queryname, struct hostent* host)
 {
     DNS_STATUS status;
-    PDNS_RECORD pDnsRecord; 
+    PDNS_RECORD pDnsRecord, pDnsIter; 
     DNS_FREE_TYPE freetype ;
     struct in_addr host_addr;
-    freetype =  DnsFreeRecordListDeep;
+	char querynamecp[DNS_MAX_NAME_BUFFER_LENGTH ];
+    
+	freetype =  DnsFreeRecordListDeep;
+	strcpy(querynamecp, queryname);
     status = DnsQuery_A(queryname,          //pointer to OwnerName 
 			DNS_TYPE_A,         //Type of the record to be queried
                         DNS_QUERY_STANDARD,
@@ -218,14 +229,26 @@ DNS_STATUS doquery(const char* queryname, struct hostent* host)
                         NULL);              //reserved for future use
     
     if (status)
-	return status;
-       
-    strcpy(host->h_name, pDnsRecord->pName);
+		return status;
+
+     for (pDnsIter = pDnsRecord; pDnsIter; pDnsIter=pDnsIter->pNext) {
+		/* if we get an A record, keep it */
+		if (pDnsIter->wType == DNS_TYPE_A && stricmp(querynamecp, pDnsIter->pName)==0) 
+			break;
+                        
+		/* if we get a CNAME, look for a corresponding A record */
+		if (pDnsIter->wType == DNS_TYPE_CNAME && stricmp(queryname, pDnsIter->pName)==0) {
+			strcpy(querynamecp, pDnsIter->Data.CNAME.pNameHost);
+		}
+	 }
+	if (pDnsIter == NULL)
+		return DNS_ERROR_RCODE_NAME_ERROR;
+    strcpy(host->h_name, pDnsIter->pName);
     host->h_addrtype = AF_INET;
     host->h_length = sizeof(u_long);
     host->h_aliases[0] = NULL;
-    host_addr.S_un.S_addr = (pDnsRecord->Data.A.IpAddress);
-    strcpy(host->h_addr_list[0], (char*)&host_addr);
+    host_addr.S_un.S_addr = (pDnsIter->Data.A.IpAddress);
+    memcpy(host->h_addr_list[0], (char*)&host_addr, sizeof(pDnsIter->Data.A.IpAddress));
     host->h_addr_list[1] = NULL;
     DnsRecordListFree(pDnsRecord, freetype);
 
@@ -255,7 +278,9 @@ rgethostbyaddr(const char *addr, int len, int type)
 {
     DNS_STATUS status; 
     struct hostent* host;
+#ifdef DEBUG
     char debstr[80];
+#endif
     
     PDNS_RECORD pDnsRecord; 
     DNS_FREE_TYPE freetype ;
@@ -294,8 +319,14 @@ rgethostbyaddr(const char *addr, int len, int type)
     }
        
     host = (struct hostent*)(TlsGetValue(dwGhaIndex));
-    if (host == NULL)
-        return NULL;
+    if (host == NULL) {
+	LPVOID lpvData = (LPVOID) LocalAlloc(LPTR, sizeof(struct hostent)); 
+	if (lpvData != NULL) {
+	    TlsSetValue(dwGhaIndex, lpvData);
+	    host = (struct hostent*)lpvData;
+	} else 
+	    return NULL;
+    }
 
     if (host->h_name == NULL)
 	host->h_name = LocalAlloc(LPTR, DNS_MAX_LABEL_BUFFER_LENGTH);
@@ -311,7 +342,7 @@ rgethostbyaddr(const char *addr, int len, int type)
     host->h_addrtype = type;
     host->h_length = len;
     host->h_aliases[0] = NULL;
-    strcpy(host->h_addr_list[0], addr);
+    memcpy(host->h_addr_list[0], addr, sizeof(unsigned long));
     host->h_addr_list[1] = NULL;
     DnsRecordListFree(pDnsRecord, freetype);
 

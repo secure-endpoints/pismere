@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2005 Massachusetts Institute of Technology
+ * Copyright (c) 2006 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -188,7 +189,8 @@ kmm_register_plugin(kmm_plugin_reg * plugin, khm_int32 config_flags)
 
     rv = khc_write_int32(csp_plugin, L"Type", plugin->type);
     CKRV;
-    rv = khc_write_int32(csp_plugin, L"Flags", plugin->flags);
+    rv = khc_write_int32(csp_plugin, L"Disabled",
+                         !!(plugin->flags & KMM_PLUGIN_FLAG_DISABLED));
     CKRV;
 
     {
@@ -197,8 +199,20 @@ kmm_register_plugin(kmm_plugin_reg * plugin, khm_int32 config_flags)
         size_t scb = 0;
 
         rv = khc_read_multi_string(csp_module, L"PluginList", NULL, &cb);
-        if(rv != KHM_ERROR_TOO_LONG)
-            goto _exit;
+        if(rv != KHM_ERROR_TOO_LONG) {
+            if (rv == KHM_ERROR_NOT_FOUND) {
+
+                scb = cb = cch * sizeof(wchar_t);
+                pl = PMALLOC(cb);
+                multi_string_init(pl, cb);
+                rv = KHM_ERROR_SUCCESS;
+
+                goto add_plugin_to_list;
+
+            } else {
+                goto _exit;
+            }
+        }
 
         cb += cch * sizeof(wchar_t);
         scb = cb;
@@ -211,6 +225,8 @@ kmm_register_plugin(kmm_plugin_reg * plugin, khm_int32 config_flags)
                 PFREE(pl);
             goto _exit;
         }
+
+    add_plugin_to_list:
 
         if(!multi_string_find(pl, plugin->name, 0)) {
             multi_string_append(pl, &scb, plugin->name);
@@ -259,7 +275,7 @@ kmm_register_module(kmm_module_reg * module, khm_int32 config_flags)
     rv = khc_write_string(csp_module, L"ImagePath", module->path);
     CKRV;
 
-    rv = khc_write_int32(csp_module, L"Flags", 0);
+    rv = khc_write_int32(csp_module, L"Disabled", 0);
     CKRV;
 
     /* FileVersion and ProductVersion will be set when the module
@@ -281,13 +297,40 @@ _exit:
 KHMEXP khm_int32   KHMAPI 
 kmm_unregister_plugin(wchar_t * plugin, khm_int32 config_flags)
 {
-    /*TODO: implement this */
-    return KHM_ERROR_NOT_IMPLEMENTED;
+    khm_handle csp_plugin = NULL;
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    rv = kmm_get_plugin_config(plugin, config_flags, &csp_plugin);
+
+    if (KHM_FAILED(rv))
+        goto _cleanup;
+
+    rv = khc_remove_space(csp_plugin);
+
+ _cleanup:
+
+    if (csp_plugin)
+        khc_close_space(csp_plugin);
+
+    return rv;
 }
 
 KHMEXP khm_int32   KHMAPI 
 kmm_unregister_module(wchar_t * module, khm_int32 config_flags)
 {
-    /*TODO: implement this */
-    return KHM_ERROR_NOT_IMPLEMENTED;
+    khm_handle csp_module = NULL;
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    rv = kmm_get_module_config(module, config_flags, &csp_module);
+
+    if (KHM_FAILED(rv))
+        goto _cleanup;
+
+    rv = khc_remove_space(csp_module);
+
+ _cleanup:
+    if (csp_module)
+        khc_close_space(csp_module);
+
+    return rv;
 }

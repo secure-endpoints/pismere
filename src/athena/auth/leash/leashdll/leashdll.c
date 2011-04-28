@@ -176,8 +176,8 @@ FUNC_INFO k4_fi[] = {
     MAKE_FUNC_INFO(lsh_LoadKrb4LeashErrorTables), // XXX
     MAKE_FUNC_INFO(krb_in_tkt),
     MAKE_FUNC_INFO(krb_save_credentials),
-	MAKE_FUNC_INFO(krb_get_krbconf2),
-	MAKE_FUNC_INFO(krb_get_krbrealm2),
+    MAKE_FUNC_INFO(krb_get_krbconf2),
+    MAKE_FUNC_INFO(krb_get_krbrealm2),
     MAKE_FUNC_INFO(krb_life_to_time),
     END_FUNC_INFO
 };

@@ -35,13 +35,7 @@
 #define KHERR_FACILITY k5_facility
 #define KHERR_FACILITY_ID 64
 
-#include<khdefs.h>
-#include<kcreddb.h>
-#include<kmm.h>
-#include<kconfig.h>
-#include<khuidefs.h>
-#include<kherr.h>
-#include<utils.h>
+#include<netidmgr.h>
 
 #include<krb5funcs.h>
 #include<krb5common.h>
@@ -62,12 +56,20 @@ typedef enum tag_k5_lsa_import {
 #define TYPENAME_ADDR_LIST      L"AddrList"
 #define TYPENAME_KRB5_FLAGS     L"Krb5Flags"
 #define TYPENAME_KRB5_PRINC     L"Krb5Principal"
+#define TYPENAME_KVNO           L"Kvno"
 
 #define ATTRNAME_KEY_ENCTYPE    L"KeyEncType"
 #define ATTRNAME_TKT_ENCTYPE    L"TktEncType"
 #define ATTRNAME_ADDR_LIST      L"AddrList"
 #define ATTRNAME_KRB5_FLAGS     L"Krb5Flags"
 #define ATTRNAME_KRB5_CCNAME    L"Krb5CCName"
+#define ATTRNAME_KVNO           L"Kvno"
+#define ATTRNAME_KRB5_IDFLAGS   L"Krb5IDFlags"
+
+/* Flag bits for Krb5IDFlags property */
+
+/* identity was imported from MSLSA: */
+#define K5IDFLAG_IMPORTED       0x00000001
 
 void init_krb();
 void exit_krb();
@@ -84,6 +86,7 @@ extern khm_int32 type_id_enctype;
 extern khm_int32 type_id_addr_list;
 extern khm_int32 type_id_krb5_flags;
 extern khm_int32 type_id_krb5_princ;
+extern khm_int32 type_id_kvno;
 
 extern BOOL      type_regd_krb5_princ;
 
@@ -92,6 +95,8 @@ extern khm_int32 attr_id_tkt_enctype;
 extern khm_int32 attr_id_addr_list;
 extern khm_int32 attr_id_krb5_flags;
 extern khm_int32 attr_id_krb5_ccname;
+extern khm_int32 attr_id_kvno;
+extern khm_int32 attr_id_krb5_idflags;
 
 extern khm_ui_4  k5_commctl_version;
 
@@ -101,6 +106,7 @@ extern khm_ui_4  k5_commctl_version;
 #define CSNAME_KRB5CRED      L"Krb5Cred"
 #define CSNAME_PARAMS        L"Parameters"
 #define CSNAME_PROMPTCACHE   L"PromptCache"
+#define CSNAME_REALMS        L"Realms"
 
 /* plugin constants */
 #define KRB5_PLUGIN_NAME    L"Krb5Cred"
@@ -169,6 +175,7 @@ typedef struct _fiber_job_t {
     int     prompt_set;
 
     BOOL    null_password;
+    BOOL    valid_principal;
 } fiber_job;
 
 extern fiber_job g_fjob;   /* global fiber job object */
@@ -179,6 +186,8 @@ extern fiber_job g_fjob;   /* global fiber job object */
 
 #define FIBER_STATE_NONE    0
 #define FIBER_STATE_KINIT   1
+
+#define K5_SET_CRED_MSG     WMNC_USER
 
 void 
 k5_pp_begin(khui_property_sheet * s);
@@ -197,6 +206,9 @@ k5_msg_ident(khm_int32 msg_type,
                khm_int32 msg_subtype, 
                khm_ui_4 uparam, 
                void * vparam);
+
+khm_int32
+k5_remove_from_LRU(khm_handle identity);
 
 int 
 k5_get_realm_from_nc(khui_new_creds * nc, 

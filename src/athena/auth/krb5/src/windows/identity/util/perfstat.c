@@ -41,6 +41,9 @@ typedef struct tag_allocation {
     int    line;
     size_t size;
     void * ptr;
+#ifdef _WIN32
+    DWORD  thread;
+#endif
 
     LDCL(struct tag_allocation);
 } allocation;
@@ -165,6 +168,9 @@ perf_malloc(char * file, int line, size_t s) {
     a->line = line;
     a->size = s;
     a->ptr = ptr;
+#ifdef _WIN32
+    a->thread = GetCurrentThreadId();
+#endif
 
     h = HASHPTR(ptr);
 
@@ -241,16 +247,22 @@ perf_dump(char * file) {
     perf_once();
 
     EnterCriticalSection(&cs_alloc);
+#if _MSC_VER >= 1400
+    if (fopen_s(&f, file, "w"))
+        return;
+#else
     f = fopen(file, "w");
     if (!f)
         return;
+#endif
 
     fprintf(f, "Leaked allocations list ....\n");
-    fprintf(f, "File\tLine\tSize\n");
+    fprintf(f, "File\tLine\tThread\tSize\n");
 
     for (i=0; i < HASHSIZE; i++) {
         for (a = ht[i]; a; a = LNEXT(a)) {
-            fprintf(f, "%s\t%6d\t%6d\n", a->file, a->line, a->size);
+            fprintf(f, "%s\t%6d\t%6d\t%6d\n", a->file, a->line,
+		    a->thread, a->size);
             total += a->size;
         }
     }

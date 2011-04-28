@@ -197,7 +197,14 @@ sub parse_dirs_lines
 	    my @list = split(' ', $info->{$key});
 	    $info->{$key} = {};
 	    map { $info->{$key}->{$_} = 1; } @list;
-	} else {
+	} elsif ($key eq 'WIN64DIRS')
+	{
+		if  ($ENV{CPU} eq 'AMD64' || $ENV{CPU} eq 'IA64' || $ENV{CPU} eq 'ALPHA64' )
+		{
+			$info->{'DIRS'} = [ split(' ', $info->{$key}) ];
+		}
+	}
+	else {
 	    print "ERROR: Invalid key found: $key = $info->{$key}\n";
 	    return 0;
 	}

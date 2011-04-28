@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
 
-  Copyright (C) 2004 by the Massachusetts Institute of Technology.
+  Copyright (C) 2004, 2005, 2006 by the Massachusetts Institute of Technology.
   All rights reserved.
  
   Export of this software from the United States of America may
@@ -58,7 +58,6 @@
             <ComponentRef Id="cmf_leash32_exe" />
             <ComponentRef Id="csc_leash32_exe" />
 
-            <ComponentRef Id="cmf_aklog_exe" />
             <ComponentRef Id="cmf_comerr32_dll" />
             <ComponentRef Id="cmf_gss_exe" />
             <ComponentRef Id="cmf_gss_client_exe" />
@@ -81,11 +80,13 @@
             <ComponentRef Id="cmf_krbv4w32_dll" />
             
             <ComponentRef Id="cmf_nidmgr32_dll" />
+            <ComponentRef Id="cmf_nidmgr32_dll_w2k" />
             <ComponentRef Id="cmf_krb5cred_dll" />
             <ComponentRef Id="cmf_krb5cred_en_us_dll" />
             <ComponentRef Id="cmf_krb4cred_dll" />
             <ComponentRef Id="cmf_krb4cred_en_us_dll" />
             <ComponentRef Id="cmf_netidmgr_exe" />
+            <ComponentRef Id="cmf_netidmgr_exe_w2k" />
 
 	    <ComponentRef Id="cmf_kfwlogon_DLL" />
             <ComponentRef Id="cmf_kfwcpcc_EXE" />
@@ -253,6 +254,9 @@
             <ComponentRef Id="cmp_dirinstall_wix_lang" />
             <ComponentRef Id="cmp_dirinstall_wix_Binary" />
             <ComponentRef Id="cmp_dirinstall_wix_custom" />
+            <ComponentRef Id="cmp_credprov_files" />
+            <ComponentRef Id="cmp_credprov_images_files" />
+            <ComponentRef Id="cmp_credprov_en_us_files" />
             <ComponentRef Id="rcm_common" />
             <ComponentRef Id="rcm_sdk" />
         </Feature> <!-- /feaKfwSDK -->

@@ -11,9 +11,9 @@ OBJS= \
 DEP_LIBS=..\..\util\et\$(O)\mrcomerr.lib ..\..\lib\$(O)\libmoira.lib
 
 USE_DEFAULTLIB=1
-LIBS=$(DEP_LIBS) krbv4w32.lib wshelp32.lib ws2_32.lib shlwapi.lib getopt.lib
+LIBS=$(DEP_LIBS) krbv4w32.lib wshelp32.lib ws2_32.lib shlwapi.lib getopt.lib krb5_32.lib
 
-LIB_PATHS=$(PISMERE)\athena\auth\krb4\krbv4\krbdll\$(O);$(PISMERE)\athena\wshelper\wshelper\$(O);$(PISMERE)\athena\util\lib\getopt\$(O)
+LIB_PATHS=$(PISMERE)\athena\auth\krb5\src\lib\$(O);$(PISMERE)\athena\auth\krb4\krbv4\krbdll\$(O);$(PISMERE)\athena\wshelper\wshelper\$(O);$(PISMERE)\athena\util\lib\getopt\$(O)
 INCLUDES=..\..\include;..\..\util\et;$(PISMERE)\athena\util\lib\getopt
 
 USE_LIBC_DLL=1

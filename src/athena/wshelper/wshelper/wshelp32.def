@@ -1,8 +1,6 @@
 LIBRARY 	WSHELP32
 
-DESCRIPTION     'WINSOCK DNS/Hesiod Resolver Library for Win32'
 HEAPSIZE        1024
-SEGMENTS        _TEXT PRELOAD
 EXPORTS
 ;		WEP                     @1 RESIDENTNAME
 		res_init                @2

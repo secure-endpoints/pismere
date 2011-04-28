@@ -46,8 +46,11 @@ about_dlg_proc(HWND hwnd,
 
             SetDlgItemText(hwnd, IDC_PRODUCT,
                            TEXT(KH_VERSTR_PRODUCT_1033));
+            /* retain the original copyright strings */
+#ifdef OVERRIDE_COPYRIGHT
             SetDlgItemText(hwnd, IDC_COPYRIGHT,
                            TEXT(KH_VERSTR_COPYRIGHT_1033));
+#endif
             SetDlgItemText(hwnd, IDC_BUILDINFO,
                            TEXT(KH_VERSTR_BUILDINFO_1033));
 
@@ -118,13 +121,14 @@ about_dlg_proc(HWND hwnd,
         return FALSE;
 
     case WM_DESTROY:
-        khm_leave_modal();
         khm_del_dialog(hwnd);
         return TRUE;
 
     case WM_COMMAND:
-        if (wParam == MAKEWPARAM(IDOK, BN_CLICKED))
+        if (wParam == MAKEWPARAM(IDOK, BN_CLICKED)) {
+            khm_leave_modal();
             DestroyWindow(hwnd);
+        }
         return TRUE;
     }
 

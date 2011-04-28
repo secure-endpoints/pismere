@@ -30,29 +30,35 @@
 kmm_module h_khModule; /* KMM's handle to this module */
 HINSTANCE hInstance;
 HMODULE hResModule;    /* HMODULE to the resource library */
-const wchar_t * k5_facility = L"Krb5";
+const wchar_t * k5_facility = L"Krb5Cred";
 
 khm_int32 type_id_enctype       = -1;
 khm_int32 type_id_addr_list     = -1;
 khm_int32 type_id_krb5_flags    = -1;
 khm_int32 type_id_krb5_princ    = -1;
+khm_int32 type_id_kvno          = -1;
 
 BOOL type_regd_enctype      = FALSE;
 BOOL type_regd_addr_list    = FALSE;
 BOOL type_regd_krb5_flags   = FALSE;
 BOOL type_regd_krb5_princ   = FALSE;
+BOOL type_regd_kvno         = FALSE;
 
 khm_int32 attr_id_key_enctype   = -1;
 khm_int32 attr_id_tkt_enctype   = -1;
 khm_int32 attr_id_addr_list     = -1;
 khm_int32 attr_id_krb5_flags    = -1;
 khm_int32 attr_id_krb5_ccname   = -1;
+khm_int32 attr_id_kvno          = -1;
+khm_int32 attr_id_krb5_idflags  = -1;
 
 BOOL attr_regd_key_enctype  = FALSE;
 BOOL attr_regd_tkt_enctype  = FALSE;
 BOOL attr_regd_addr_list    = FALSE;
 BOOL attr_regd_krb5_flags   = FALSE;
 BOOL attr_regd_krb5_ccname  = FALSE;
+BOOL attr_regd_kvno         = FALSE;
+BOOL attr_regd_krb5_idflags = FALSE;
 
 khm_handle csp_plugins      = NULL;
 khm_handle csp_krbcred   = NULL;
@@ -94,10 +100,12 @@ KHMEXP khm_int32 KHMAPI init_module(kmm_module h_module) {
     ZeroMemory(&pi, sizeof(pi));
     pi.name = KRB5_PLUGIN_NAME;
     pi.type = KHM_PITYPE_CRED;
-    pi.icon = NULL; /*TODO: Assign icon */
+    pi.icon = LoadImage(hResModule, MAKEINTRESOURCE(IDI_PLUGIN),
+                        IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR | LR_DEFAULTSIZE);
     pi.flags = 0;
     pi.msg_proc = k5_msg_callback;
     pi.description = buf;
+    pi.dependencies = NULL;
     LoadString(hResModule, IDS_PLUGIN_DESC,
                buf, ARRAYLENGTH(buf));
     kmm_provide_plugin(h_module, &pi);
@@ -105,7 +113,8 @@ KHMEXP khm_int32 KHMAPI init_module(kmm_module h_module) {
     ZeroMemory(&pi, sizeof(pi));
     pi.name = KRB5_IDENTPRO_NAME;
     pi.type = KHM_PITYPE_IDENT;
-    pi.icon = NULL;             /* ignored */
+    pi.icon = LoadImage(hResModule, MAKEINTRESOURCE(IDI_PLUGIN),
+                        IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR | LR_DEFAULTSIZE);
     pi.flags = 0;
     pi.msg_proc = k5_ident_callback;
     pi.description = buf;
@@ -157,7 +166,7 @@ KHMEXP khm_int32 KHMAPI init_module(kmm_module h_module) {
         type.cb_min = 0;
         type.cb_max = 0;
         type.isValid = tdata->isValid;
-        type.comp = tdata->comp;
+        type.comp = addr_list_comp;
         type.dup = tdata->dup;
         type.toString = addr_list_toString;
 
@@ -193,6 +202,31 @@ KHMEXP khm_int32 KHMAPI init_module(kmm_module h_module) {
         type_regd_krb5_flags = TRUE;
     }
 
+    if (KHM_FAILED(kcdb_type_get_id(TYPENAME_KVNO, &type_id_kvno))) {
+        kcdb_type type;
+        kcdb_type *t32;
+
+        kcdb_type_get_info(KCDB_TYPE_INT32, &t32);
+
+        type.id = KCDB_TYPE_INVALID;
+        type.name = TYPENAME_KVNO;
+        type.flags = KCDB_TYPE_FLAG_CB_FIXED;
+        type.cb_max = t32->cb_max;
+        type.cb_min = t32->cb_min;
+        type.isValid = t32->isValid;
+        type.comp = t32->comp;
+        type.dup = t32->dup;
+        type.toString = kvno_toString;
+
+        rv = kcdb_type_register(&type, &type_id_kvno);
+        kcdb_type_release_info(t32);
+
+        if (KHM_FAILED(rv))
+            goto _exit;
+
+        type_regd_kvno = TRUE;
+    }
+
     /* Register common attributes */
     if(KHM_FAILED(kcdb_attrib_get_id(ATTRNAME_KEY_ENCTYPE, &attr_id_key_enctype))) {
         kcdb_attrib attrib;
@@ -206,7 +240,7 @@ KHMEXP khm_int32 KHMAPI init_module(kmm_module h_module) {
         attrib.name = ATTRNAME_KEY_ENCTYPE;
         attrib.id = KCDB_ATTR_INVALID;
         attrib.type = type_id_enctype;
-        attrib.flags = 0;
+        attrib.flags = KCDB_ATTR_FLAG_TRANSIENT;
         LoadString(hResModule, IDS_KEY_ENCTYPE_SHORT_DESC, sbuf, ARRAYLENGTH(sbuf));
         LoadString(hResModule, IDS_KEY_ENCTYPE_LONG_DESC, lbuf, ARRAYLENGTH(lbuf));
         attrib.short_desc = sbuf;
@@ -232,7 +266,7 @@ KHMEXP khm_int32 KHMAPI init_module(kmm_module h_module) {
         attrib.name = ATTRNAME_TKT_ENCTYPE;
         attrib.id = KCDB_ATTR_INVALID;
         attrib.type = type_id_enctype;
-        attrib.flags = 0;
+        attrib.flags = KCDB_ATTR_FLAG_TRANSIENT;
         LoadString(hResModule, IDS_TKT_ENCTYPE_SHORT_DESC, sbuf, ARRAYLENGTH(sbuf));
         LoadString(hResModule, IDS_TKT_ENCTYPE_LONG_DESC, lbuf, ARRAYLENGTH(lbuf));
         attrib.short_desc = sbuf;
@@ -258,7 +292,7 @@ KHMEXP khm_int32 KHMAPI init_module(kmm_module h_module) {
         attrib.name = ATTRNAME_ADDR_LIST;
         attrib.id = KCDB_ATTR_INVALID;
         attrib.type = type_id_addr_list;
-        attrib.flags = 0;
+        attrib.flags = KCDB_ATTR_FLAG_TRANSIENT;
         LoadString(hResModule, IDS_ADDR_LIST_SHORT_DESC, sbuf, ARRAYLENGTH(sbuf));
         LoadString(hResModule, IDS_ADDR_LIST_LONG_DESC, lbuf, ARRAYLENGTH(lbuf));
         attrib.short_desc = sbuf;
@@ -284,7 +318,7 @@ KHMEXP khm_int32 KHMAPI init_module(kmm_module h_module) {
         attrib.name = ATTRNAME_KRB5_FLAGS;
         attrib.id = KCDB_ATTR_INVALID;
         attrib.type = type_id_krb5_flags;
-        attrib.flags = 0;
+        attrib.flags = KCDB_ATTR_FLAG_TRANSIENT;
         LoadString(hResModule, IDS_KRB5_FLAGS_SHORT_DESC, sbuf, ARRAYLENGTH(sbuf));
         attrib.short_desc = sbuf;
         attrib.long_desc = NULL;
@@ -309,7 +343,9 @@ KHMEXP khm_int32 KHMAPI init_module(kmm_module h_module) {
         attrib.name = ATTRNAME_KRB5_CCNAME;
         attrib.id = KCDB_ATTR_INVALID;
         attrib.type = KCDB_TYPE_STRING;
-        attrib.flags = KCDB_ATTR_FLAG_PROPERTY;
+        attrib.flags =
+	  KCDB_ATTR_FLAG_PROPERTY |
+	  KCDB_ATTR_FLAG_TRANSIENT;
         LoadString(hResModule, IDS_KRB5_CCNAME_SHORT_DESC, sbuf, ARRAYLENGTH(sbuf));
         LoadString(hResModule, IDS_KRB5_CCNAME_LONG_DESC, lbuf, ARRAYLENGTH(lbuf));
         attrib.short_desc = sbuf;
@@ -321,6 +357,56 @@ KHMEXP khm_int32 KHMAPI init_module(kmm_module h_module) {
             goto _exit;
 
         attr_regd_krb5_ccname = TRUE;
+    }
+
+    if (KHM_FAILED(kcdb_attrib_get_id(ATTRNAME_KVNO, &attr_id_kvno))) {
+        kcdb_attrib attrib;
+        wchar_t sbuf[KCDB_MAXCCH_SHORT_DESC];
+        wchar_t lbuf[KCDB_MAXCCH_LONG_DESC];
+        /* although we are loading a long description, it still fits
+           in the short description buffer */
+
+        ZeroMemory(&attrib, sizeof(attrib));
+
+        attrib.name = ATTRNAME_KVNO;
+        attrib.id = KCDB_ATTR_INVALID;
+        attrib.type = type_id_kvno;
+        attrib.flags = KCDB_ATTR_FLAG_TRANSIENT;
+        LoadString(hResModule, IDS_KVNO_SHORT_DESC, sbuf, ARRAYLENGTH(sbuf));
+        LoadString(hResModule, IDS_KVNO_LONG_DESC, lbuf, ARRAYLENGTH(lbuf));
+        attrib.short_desc = sbuf;
+        attrib.long_desc = lbuf;
+
+        rv = kcdb_attrib_register(&attrib, &attr_id_kvno);
+
+        if (KHM_FAILED(rv))
+            goto _exit;
+
+        attr_regd_kvno = TRUE;
+    }
+
+    if (KHM_FAILED(kcdb_attrib_get_id(ATTRNAME_KRB5_IDFLAGS, &attr_id_krb5_idflags))) {
+        kcdb_attrib attrib;
+
+        ZeroMemory(&attrib, sizeof(attrib));
+
+        attrib.name = ATTRNAME_KRB5_IDFLAGS;
+        attrib.id = KCDB_ATTR_INVALID;
+        attrib.type = KCDB_TYPE_INT32;
+        attrib.flags = KCDB_ATTR_FLAG_PROPERTY |
+            KCDB_ATTR_FLAG_HIDDEN;
+        /* we don't bother localizing these strings since the
+           attribute is hidden.  The user will not see these
+           descriptions anyway. */
+        attrib.short_desc = L"Krb5 ID flags";
+        attrib.long_desc = L"Kerberos 5 Identity Flags";
+
+        rv = kcdb_attrib_register(&attrib, &attr_id_krb5_idflags);
+
+        if (KHM_FAILED(rv))
+            goto _exit;
+
+        attr_regd_krb5_idflags = TRUE;
     }
 
     rv = kmm_get_plugins_config(0, &csp_plugins);
@@ -354,6 +440,10 @@ KHMEXP khm_int32 KHMAPI exit_module(kmm_module h_module) {
         kcdb_attrib_unregister(attr_id_krb5_flags);
     if(attr_regd_krb5_ccname)
         kcdb_attrib_unregister(attr_id_krb5_ccname);
+    if(attr_regd_kvno)
+        kcdb_attrib_unregister(attr_id_kvno);
+    if(attr_regd_krb5_idflags)
+        kcdb_attrib_unregister(attr_id_krb5_idflags);
 
     if(type_regd_enctype)
         kcdb_type_unregister(type_id_enctype);
@@ -361,6 +451,8 @@ KHMEXP khm_int32 KHMAPI exit_module(kmm_module h_module) {
         kcdb_type_unregister(type_id_addr_list);
     if(type_regd_krb5_flags)
         kcdb_type_unregister(type_id_krb5_flags);
+    if(type_regd_kvno)
+        kcdb_type_unregister(type_id_kvno);
 
     if(csp_params) {
         khc_close_space(csp_params);

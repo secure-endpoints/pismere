@@ -141,6 +141,34 @@ STD_LIBS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.li
 
 !include .\Makefile.src
 
+!IF "$(CPU)" == "IA64" || "$(CPU)" == "AMD64" || "$(CPU)" == "ALPHA64"
+!IF defined(WIN64NAME)
+NAME=$(WIN64NAME)
+!ENDIF
+!IF defined(WIN64LIBS)
+LIBS=$(WIN64LIBS)
+!ENDIF
+!IF defined(WIN64_DEF_FILE)
+DEF_FILE=$(WIN64_DEF_FILE)
+!ENDIF
+!IF defined(WIN64_PLACE)
+PLACE=$(WIN64_PLACE)
+!ENDIF
+!IF defined(WIN64_PLACE_OPTIONAL)
+PLACE_OPTIONAL=$(WIN64_PLACE_OPTIONAL)
+!ENDIF
+!IF defined(WIN64_DELAY_DLLS)
+DELAY_DLLS=$(WIN64_DELAY_DLLS)
+!ENDIF
+!IF defined(WIN64_DEP_LIBS)
+DEP_LIBS=$(WIN64_DEP_LIBS)
+!ENDIF
+!IF defined(WIN64_C_DEFINE)
+C_DEFINE=$(WIN64_C_DEFINE)
+!ENDIF
+!ENDIF
+
+
 !IFDEF NODEBUG
 !IFDEF DEBUG_SYMBOL
 ldebug = /DEBUG
@@ -285,7 +313,7 @@ C_FLAGS=$(C_FLAGS) -Wp64
 !endif
 
 !ifdef USE_CPP_EH
-C_FLAGS=$(C_FLAGS) -GX
+C_FLAGS=$(C_FLAGS) -EHsc
 !endif
 
 !ifndef GEN_BSC
@@ -382,6 +410,7 @@ LDEF=-def:$(DEF_FILE)
 LMAP=-map
 !endif
 
+_VC_MANIFEST_EMBED=
 !if ("$(TARGETTYPE)"=="DLL") || ("$(TARGETTYPE)"=="CPL")
 !ifndef NO_LIBC
 LTAR_XTRA=-entry:_DllMainCRTStartup$(DLLENTRY)
@@ -393,12 +422,24 @@ LTAR=-dll $(LTAR_XTRA) -implib:$(O)\$(NAME).lib
 OUTFILE=$(O)\$(NAME).cpl
 !else
 OUTFILE=$(O)\$(NAME).dll
+!if exists("$(VCINSTALLDIR)\..\..\MICROSOFT VISUAL STUDIO 8")
+_VC_MANIFEST_EMBED_DLL = if exist $@.manifest mt.exe -manifest $@.manifest -outputresource:$@;2
+_VC_MANIFEST_EMBED = $(_VC_MANIFEST_EMBED_DLL)
+!else
+_VC_MANIFEST_EMBED_DLL =
+!endif
 !endif
 VER_TARGET=VFT_DLL
 !endif
 
 !if "$(TARGETTYPE)"=="EXE"
 OUTFILE=$(O)\$(NAME).exe
+!if exists("$(VCINSTALLDIR)\..\..\MICROSOFT VISUAL STUDIO 8")
+_VC_MANIFEST_EMBED_EXE = if exist $@.manifest mt.exe -manifest $@.manifest -outputresource:$@;1
+_VC_MANIFEST_EMBED = $(_VC_MANIFEST_EMBED_EXE)
+!else
+_VC_MANIFEST_EMBED_EXE =
+!endif
 VER_TARGET=VFT_APP
 !if "$(TARGETSS)"=="windows" && defined(UNICODE) && !defined(NO_LIBC) 
 LTAR=-entry:wWinMainCRTStartup
@@ -510,6 +551,7 @@ LIB_LINE=-nologo -out:$@ $(LIBFLAGS) $(OBJS) $(LIBS) $(LNDL)
 !if ("$(TARGETTYPE)"=="DLL") || ("$(TARGETTYPE)"=="EXE") || ("$(TARGETTYPE)"=="CPL") || ("$(TARGETTYPE)"=="SCR")
 $(OUTFILE): $(OBJS) $(RES) $(DEF_FILE) $(DEP_LIBS)
 	$(link) $(LINK_LINE)
+	$(_VC_MANIFEST_EMBED)
 #	@echo $(link) $(LINK_LINE)
 #	$(link) @<<
 #$(LINK_LINE)
@@ -592,7 +634,7 @@ super_clean_files:
 
 default_clean: clean_files clean_outdir
 
-CLEAN_FILES=$(OBJS) $(RES) $(O)\*.idb $(O)\*.pdb $(O)\$(NAME).lib $(SBRS) $(OUTFILE) $(BSCFILE) $(O)\$(NAME).ilk $(O)\$(NAME).exp $(O)\$(NAME).pch
+CLEAN_FILES=$(OBJS) $(RES) $(O)\*.idb $(O)\*.pdb $(O)\$(NAME).lib $(SBRS) $(OUTFILE) $(BSCFILE) $(O)\$(NAME).ilk $(O)\$(NAME).exp $(O)\$(NAME).pch $(O)\*.manifest
 
 clean_files:
 	@for /f %a in ( << ) do @if exist %a (echo Deleting %a & del %a)

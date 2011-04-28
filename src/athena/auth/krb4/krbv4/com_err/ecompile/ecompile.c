@@ -448,7 +448,7 @@ declare_str(end);
 			}
 		      break;
 		    case S_ERRORCODESTRING:
-		      if (quotestate = FALSE)
+		      if (quotestate == FALSE)
 			{
 			  fprintf(stderr, "invalid string on line %d.\n", line);
 			  exit(1);

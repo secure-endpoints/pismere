@@ -95,7 +95,7 @@ char * get_name_from_os()
 #endif /* _WIN32 */
 #endif /* HAVE_PWD_H */
 
-static char *progname;
+char *progname;
 
 static char* progname_v5 = 0;
 #ifdef KRB5_KRB4_COMPAT
@@ -272,10 +272,10 @@ fprintf(stderr, USAGE_OPT_FMT, indent, col1, col2)
 }
 
 char *
-parse_options(argc, argv, opts)
-    int argc;
-    char **argv;
-    struct k_opts* opts;
+parse_options(
+    int argc,
+    char **argv,
+    struct k_opts* opts)
 {
     krb5_error_code code;
     int errflg = 0;
@@ -484,10 +484,10 @@ parse_options(argc, argv, opts)
 }
 
 int
-k5_begin(opts, k5, k4)
-    struct k_opts* opts;
-struct k5_data* k5;
-struct k4_data* k4;
+k5_begin(
+    struct k_opts* opts,
+struct k5_data* k5,
+struct k4_data* k4)
 {
     char* progname = progname_v5;
     krb5_error_code code = 0;
@@ -588,8 +588,8 @@ struct k4_data* k4;
 }
 
 void
-k5_end(k5)
-    struct k5_data* k5;
+k5_end(
+    struct k5_data* k5)
 {
     if (k5->name)
 	krb5_free_unparsed_name(k5->ctx, k5->name);
@@ -603,9 +603,9 @@ k5_end(k5)
 }
 
 int
-k4_begin(opts, k4)
-    struct k_opts* opts;
-    struct k4_data* k4;
+k4_begin(
+    struct k_opts* opts,
+    struct k4_data* k4)
 {
 #ifdef KRB5_KRB4_COMPAT
     char* progname = progname_v4;
@@ -691,8 +691,8 @@ k4_begin(opts, k4)
 }
 
 void
-k4_end(k4)
-    struct k4_data* k4;
+k4_end(
+    struct k4_data* k4)
 {
     memset(k4, 0, sizeof(*k4));
 }
@@ -732,9 +732,9 @@ kinit_prompter(
 }
 
 int
-k5_kinit(opts, k5)
-    struct k_opts* opts;
-    struct k5_data* k5;
+k5_kinit(
+    struct k_opts* opts,
+    struct k5_data* k5)
 {
     char* progname = progname_v5;
     int notix = 1;
@@ -874,10 +874,10 @@ k5_kinit(opts, k5)
 }
 
 int
-k4_kinit(opts, k4, ctx)
-    struct k_opts* opts;
-    struct k4_data* k4;
-    krb5_context ctx;
+k4_kinit(
+    struct k_opts* opts,
+    struct k4_data* k4,
+    krb5_context ctx)
 {
 #ifdef KRB5_KRB4_COMPAT
     char* progname = progname_v4;
@@ -906,7 +906,7 @@ k4_kinit(opts, k4, ctx)
     {
     case INIT_PW:
 	if (!got_password) {
-	    int pwsize = sizeof(stash_password);
+	    unsigned int pwsize = sizeof(stash_password);
 	    krb5_error_code code;
 	    char prompt[1024];
 
@@ -955,10 +955,10 @@ k4_kinit(opts, k4, ctx)
 }
 
 char*
-getvprogname(v)
-    char *v;
+getvprogname(
+    char *v)
 {
-    int len = strlen(progname) + 2 + strlen(v) + 2;
+    size_t len = strlen(progname) + 2 + strlen(v) + 2;
     char *ret = malloc(len);
     if (ret)
 	sprintf(ret, "%s(v%s)", progname, v);
@@ -969,8 +969,8 @@ getvprogname(v)
 
 #ifdef HAVE_KRB524
 /* Convert krb5 tickets to krb4. */
-int try_convert524(k5)
-    struct k5_data* k5;
+int try_convert524(
+    struct k5_data* k5)
 {
     char * progname = progname_v524;
     krb5_error_code code = 0;
@@ -1059,9 +1059,9 @@ int try_convert524(k5)
 #endif /* HAVE_KRB524 */
 
 int
-main(argc, argv)
-    int argc;
-    char **argv;
+main(
+    int argc,
+    char **argv)
 {
     struct k_opts opts;
     struct k5_data k5;

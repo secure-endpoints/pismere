@@ -27,7 +27,7 @@ OBJS= \
 	$(O)\ureg_err.obj
 
 USE_DEFAULTLIB=1
-INCLUDES=..\util\et;..\include;$(PISMERE)\athena\auth\krb4\include;$(PISMERE)\athena\wshelper\include
+INCLUDES=..\util\et;..\include;$(PISMERE)\athena\auth\krb4\include;$(PISMERE)\athena\auth\krb5\src\include;$(PISMERE)\athena\wshelper\include
 
 USE_LIBC_DLL=1
 

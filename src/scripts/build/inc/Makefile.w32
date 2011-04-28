@@ -7,7 +7,7 @@
 #  !include <win32.mak>
 # -------------------------------------------------------------------------
 #
-# Define APPVER = [ 4.0 | 5.0 | 5.01 ] prior to including win32.mak to get
+# Define APPVER = [ 4.0 | 5.0 | 5.01 |5.02] prior to including win32.mak to get
 #  build time checking for version dependencies and to mark the executable
 #  with version information.
 #
@@ -19,7 +19,7 @@
 #  applications to run on Far-East Windows. (This is an optional parameter.
 #  The system locale is the default.)
 #
-# Define _WIN32_IE = [ 0x0300 | 0x0400 ] prior to including win32.mak to
+# Define _WIN32_IE = [ 0x0300 | 0x0400 | 0x0500 | 0x0600] prior to including win32.mak to
 #  get compile and link flags for building applications and components to
 #  run on Internet Explorer. (This is an optional parameter.  IE 4.0 is
 #  the default.)
@@ -77,12 +77,15 @@ CPU = i386
 
 !IF "$(CPU)" != "i386"
 !IF "$(CPU)" != "ALPHA"
+!IF "$(CPU)" != "ALPHA64"
 !IF "$(CPU)" != "IA64"
+!IF "$(CPU)" != "AMD64"
 !ERROR  Must specify CPU environment variable ( CPU=i386, CPU=ALPHA)
 !ENDIF
 !ENDIF
 !ENDIF
-
+!ENDIF
+!ENDIF
 
 # -------------------------------------------------------------------------
 # Get Target Operating System - Default to WINNT
@@ -105,6 +108,7 @@ TARGETOS = WINNT
 APPVER = 4.0
 !ENDIF
 
+!IF "$(APPVER)" != "5.02"
 !IF "$(APPVER)" != "5.01"
 !IF "$(APPVER)" != "5.0"
 !IF "$(APPVER)" != "4.0"
@@ -112,11 +116,17 @@ APPVER = 4.0
 !ENDIF
 !ENDIF
 !ENDIF
+!ENDIF
 
+!IF "$(APPVER)" =="5.02"
+!IFNDEF _WIN32_IE
+_WIN32_IE = 0x0600
+!ENDIF # _WIN32_IE
+!ENDIF # APPVER == 5.02
 
 !IF "$(APPVER)" =="5.01"
 !IFNDEF _WIN32_IE
-_WIN32_IE = 0x0501
+_WIN32_IE = 0x0600
 !ENDIF # _WIN32_IE
 !ENDIF # APPVER == 5.01
 
@@ -169,7 +179,7 @@ cvtres = REM !!! CVTRES is no longer necessary - please remove !!!
 # -------------------------------------------------------------------------
 
 # declarations common to all compiler options
-ccommon = -c -W3 -DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -nologo
+ccommon = -c  -DCRTAPI1=_cdecl -DCRTAPI2=_cdecl -nologo
 
 # for compatibility with old source code, map {try, except, leave, finally}
 # to their proper names (i.e. prefaced by "__")
@@ -189,40 +199,39 @@ ccommon = $(ccommon) -DDBCS -DFE_IME
 ccommon = $(ccommon) -DDBCS -DFE_IME
 !ENDIF
 
-
-
-!IF "$(CPU)" == "i386" || "$(CPU)" == "IA64"
-cflags = $(ccommon) -D_X86_=1
+!IF "$(CPU)" == "i386"
+cflags = $(ccommon) -D_X86_=1  -DWIN32 -D_WIN32 -W3
 scall  = -Gz
-!ELSE
-!IF "$(CPU)" == "ALPHA"
-cflags = $(ccommon) -D_ALPHA_=1
+
+!ELSEIF "$(CPU)" == "ALPHA"
+cflags = $(ccommon) -D_ALPHA_=1  -DWIN32 -D_WIN32 -W3
 scall  =
-!ENDIF
+
+!ELSEIF "$(CPU)" == "IA64"
+cflags = $(ccommon) -D_IA64_=1 -DWIN64 -D_WIN64  -DWIN32 -D_WIN32 /FIPRE64PRA.H
+cflags = $(cflags) -Wp64 -W4
+scall  =
+
+!ELSEIF "$(CPU)" == "AMD64"
+cflags = $(ccommon) -D_AMD64_=1 -DWIN64 -D_WIN64  -DWIN32 -D_WIN32 /FIPRE64PRA.H
+cflags = $(cflags) -Wp64 -W4
+scall  =
+
+!ELSEIF "$(CPU)" == "ALPHA64"
+cflags = $(ccommon) -D_AXP64_=1 -D_ALPHA64_=1 -DALPHA=1 -DWIN64 -D_WIN64 -DWIN32 -D_WIN32
+cflags = $(cflags) -Wp64 -W4 -Ap64
+scall  =
 !ENDIF
 
 
 !IF "$(APPVER)" == "4.0"
-
 NMAKE_WINVER = 0x0400
-! IFNDEF _WIN32_IE
-_WIN32_IE = 0x0300
-! ENDIF
-
 !ELSEIF "$(APPVER)" == "5.0"
-
 NMAKE_WINVER = 0x0500
-! IFNDEF _WIN32_IE
-_WIN32_IE = 0x0400
-! ENDIF
-
 !ELSEIF "$(APPVER)" == "5.01"
-
 NMAKE_WINVER = 0x0501
-! IFNDEF _WIN32_IE
-_WIN32_IE = 0x0501
-! ENDIF
-
+!ELSEIF "$(APPVER)" == "5.02"
+NMAKE_WINVER = 0x0502
 !ENDIF
 
 
@@ -308,14 +317,15 @@ DCRT=d
 !endif
 
 # for Windows applications that use the C Run-Time libraries
-!IF "$(CPU)" == "IA64"
-cvars	   = -DWIN64 $(noansi) -D_WIN64
+!IFDEF NODEBUG
+cvars      = $(noansi) -ML
+cvarsmt    = $(noansi) -D_MT -MT
+cvarsdll   = $(noansi) -D_MT -D_DLL -MD
 !ELSE
-cvars      = -DWIN32 $(noansi) -D_WIN32
+cvars      = $(noansi) -MLd
+cvarsmt    = $(noansi) -D_MT -MTd
+cvarsdll   = $(noansi) -D_MT -D_DLL -MDd
 !ENDIF
-cvarsstd   = $(cvars) -ML$(DCRT)
-cvarsmt    = $(cvars) -D_MT -MT$(DCRT)
-cvarsdll   = $(cvars) -D_MT -D_DLL -MD$(DCRT)
 
 # for compatibility with older-style makefiles
 cvarsmtdll   = $(cvarsmt) -D_DLL
@@ -326,7 +336,7 @@ psxvars    = -D_POSIX_
 # resource compiler
 rcflags = /r
 
-!IF "$(CPU)" == "IA64"
+!IF "$(CPU)" == "IA64" || "$(CPU)" == "AMD64" || "$(CPU)" == "ALPHA64"
 rcvars = -DWIN64 -D_WIN64 -DWINVER=$(NMAKE_WINVER) $(noansi)
 !ELSE
 rcvars = -DWIN32 -D_WIN32 -DWINVER=$(NMAKE_WINVER) $(noansi)
@@ -365,6 +375,11 @@ rcvars = $(rcvars) -DDBCS -DFE_IME
 # declarations common to all linker options
 lflags  = /NODEFAULTLIB /INCREMENTAL:NO /PDB:NONE /RELEASE /NOLOGO
 
+#if the compiler is vstudio 8, generate manifest
+!if exists("$(VCINSTALLDIR)\..\..\MICROSOFT VISUAL STUDIO 8")
+lflags = $(lflags) /MANIFEST
+!endif 
+
 # declarations for use on Intel i386, i486, and Pentium systems
 !IF "$(CPU)" == "i386"
 DLLENTRY = @12
@@ -372,6 +387,21 @@ DLLENTRY = @12
 
 # declarations for use on self hosted Digital Alpha AXP systems
 !IF "$(CPU)" == "ALPHA"
+DLLENTRY =
+!ENDIF
+
+# declarations for use on Intel Architecture 64-bit systems
+!IF "$(CPU)" == "IA64"
+DLLENTRY =
+!ENDIF
+
+# declarations for use on AMD64 systems
+!IF "$(CPU)" == "AMD64"
+DLLENTRY =
+!ENDIF
+
+# declarations for use on Compaq 64-bit Alpha AXP systems
+!IF "$(CPU)" == "ALPHA64"
 DLLENTRY =
 !ENDIF
 
@@ -394,7 +424,11 @@ ldebug = -debug:mapped,partial -debugtype:coff
 !IFDEF TUNE
 ldebug = -debug:mapped,partial -debugtype:coff
 !ELSE
+!IF "$(CPU)" == "IA64" || "$(CPU)" == "AMD64" || "$(CPU)" == "ALPHA64"
+ldebug = -debug -debugtype:cv
+!ELSE
 ldebug = -debug:full -debugtype:cv
+!ENDIF
 !ENDIF
 !ENDIF
 !ENDIF

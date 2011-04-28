@@ -788,7 +788,7 @@ Leash_renew(void)
     return 0;
 }
 
-static BOOL
+BOOL
 GetSecurityLogonSessionData(PSECURITY_LOGON_SESSION_DATA * ppSessionData)
 {
     NTSTATUS Status = 0;
@@ -797,7 +797,7 @@ GetSecurityLogonSessionData(PSECURITY_LOGON_SESSION_DATA * ppSessionData)
     DWORD   ReqLen;
     BOOL    Success;
 
-    if (!ppSessionData || !pLsaGetLogonSessionData)
+    if (!ppSessionData)
         return FALSE;
     *ppSessionData = NULL;
 
@@ -825,7 +825,7 @@ GetSecurityLogonSessionData(PSECURITY_LOGON_SESSION_DATA * ppSessionData)
 // and will use it to retrieve new TGTs if the cache is empty and tickets
 // are requested.
 
-static BOOL
+BOOL
 IsKerberosLogon(VOID)
 {
     PSECURITY_LOGON_SESSION_DATA pSessionData = NULL;
@@ -842,9 +842,9 @@ IsKerberosLogon(VOID)
             usLength = (pSessionData->AuthenticationPackage).Length;
             if (usLength < 256)
             {
-                lstrcpyn (buffer, usBuffer, usLength);
-                lstrcat (buffer,L"");
-                if ( !lstrcmp(L"Kerberos",buffer) )
+                lstrcpynW (buffer, usBuffer, usLength);
+                lstrcatW (buffer,L"");
+                if ( !lstrcmpW(L"Kerberos",buffer) )
                     Success = TRUE;
             }
         }
@@ -3261,7 +3261,12 @@ acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
     krb5_context        ctx;
     DWORD 		dwMsLsaImport = Leash_get_default_mslsa_import();
     char ccachename[272]="";
-	
+    char loginenv[16];
+    BOOL prompt;
+
+    GetEnvironmentVariable("KERBEROSLOGIN_NEVER_PROMPT", loginenv, sizeof(loginenv));
+    prompt = (GetLastError() == ERROR_ENVVAR_NOT_FOUND);
+
     ctx = context;
 
     GetEnvironmentVariable("KRB5CCNAME", ccachename, sizeof(ccachename));    
@@ -3323,9 +3328,106 @@ acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
         }
     }
 
-    if ( ticketinfo.btickets != GOOD_TICKETS ) 
+    if ( prompt && ticketinfo.btickets != GOOD_TICKETS ) 
 	acquire_tkt_send_msg(ctx, NULL, ccachename, NULL, ccname, cclen);
 
+    if ( !ccachename[0] && context )
+        SetEnvironmentVariable("KRB5CCNAME",NULL);
+    else if ( ccname && strcmp(ccachename,ccname) )
+	SetEnvironmentVariable("KRB5CCNAME",ccname);
+
+    if ( !context )
+        pkrb5_free_context(ctx);
+}
+
+
+static void 
+acquire_tkt_for_princ(krb5_context context, krb5_principal desiredPrincipal, 
+		      char * ccname, int cclen)
+{
+    TicketList 		*list = NULL;
+    TICKETINFO   	ticketinfo;
+    krb5_context        ctx;
+    DWORD 		dwMsLsaImport = Leash_get_default_mslsa_import();
+    char ccachename[272]="";
+    char loginenv[16];
+    BOOL prompt;
+
+    GetEnvironmentVariable("KERBEROSLOGIN_NEVER_PROMPT", loginenv, sizeof(loginenv));
+    prompt = (GetLastError() == ERROR_ENVVAR_NOT_FOUND);
+
+    ctx = context;
+
+    GetEnvironmentVariable("KRB5CCNAME", ccachename, sizeof(ccachename));    
+    if ( (GetLastError() == ERROR_ENVVAR_NOT_FOUND) && context ) {
+	SetEnvironmentVariable("KRB5CCNAME", pkrb5_cc_default_name(ctx));
+    }
+
+    not_an_API_LeashKRB5GetTickets(&ticketinfo,&list,&ctx);
+    not_an_API_LeashFreeTicketList(&list);
+
+    if ( ticketinfo.btickets != GOOD_TICKETS && 
+         Leash_get_default_mslsa_import() && Leash_importable() ) {
+        // We have the option of importing tickets from the MSLSA
+        // but should we?  Do the tickets in the MSLSA cache belong 
+        // to the default realm used by Leash?  If so, import.  
+        int import = 0;
+
+        if ( dwMsLsaImport == 1 ) {             /* always import */
+            import = 1;
+        } else if ( dwMsLsaImport == 2 ) {      /* import when realms match */
+            krb5_error_code code;
+            krb5_ccache mslsa_ccache=0;
+            krb5_principal princ = 0;
+            char ms_realm[128] = "", *def_realm = 0, *r;
+            int i;
+
+            if (code = pkrb5_cc_resolve(ctx, "MSLSA:", &mslsa_ccache))
+                goto cleanup;
+
+            if (code = pkrb5_cc_get_principal(ctx, mslsa_ccache, &princ))
+                goto cleanup;
+
+            for ( r=ms_realm, i=0; i<krb5_princ_realm(ctx, princ)->length; r++, i++ ) {
+                *r = krb5_princ_realm(ctx, princ)->data[i];
+            }
+            *r = '\0';
+
+            if (code = pkrb5_get_default_realm(ctx, &def_realm))
+                goto cleanup;
+
+            import = !strcmp(def_realm, ms_realm);
+
+          cleanup:
+            if (def_realm)
+                pkrb5_free_default_realm(ctx, def_realm);
+
+            if (princ)
+                pkrb5_free_principal(ctx, princ);
+
+            if (mslsa_ccache)
+                pkrb5_cc_close(ctx, mslsa_ccache);
+        }
+
+        if ( import ) {
+            Leash_import();
+
+            not_an_API_LeashKRB5GetTickets(&ticketinfo,&list,&ctx);
+            not_an_API_LeashFreeTicketList(&list);
+        }
+    }
+
+    if (prompt) {
+	char * name = NULL;
+
+	pkrb5_unparse_name(ctx, desiredPrincipal, &name);
+	
+	if (ticketinfo.btickets != GOOD_TICKETS || strcmp(name,ticketinfo.principal))
+	    acquire_tkt_send_msg(ctx, NULL, ccachename, desiredPrincipal, ccname, cclen);
+
+	if (name)
+	    pkrb5_free_unparsed_name(ctx, name);
+    }
     if ( !ccachename[0] && context )
         SetEnvironmentVariable("KRB5CCNAME",NULL);
     else if ( ccname && strcmp(ccachename,ccname) )
@@ -3432,15 +3534,16 @@ leash_int_find_ccache_for_princ(krb5_context ctx, krb5_principal princ,
     krb5_timestamp      expiration = 0;
     krb5_timestamp      best_match_expiration = 0;
     char                best_match_ccname[256] = "";
+    DWORD 		dwMsLsaImport = Leash_get_default_mslsa_import();
 
     if (!buffer || !pcbbuf)
 	return -1;
 
-    code = pcc_initialize(&cc_ctx, CC_API_VER_2, NULL, NULL);
+    code = cc_initialize(&cc_ctx, CC_API_VER_2, NULL, NULL);
     if (code)
         goto _exit;
 
-    code = pcc_get_NC_info(cc_ctx, &pNCi);
+    code = cc_get_NC_info(cc_ctx, &pNCi);
     if (code) 
         goto _exit;
 
@@ -3481,14 +3584,16 @@ leash_int_find_ccache_for_princ(krb5_context ctx, krb5_principal princ,
         cache = 0;
     }
 
-    code = pkrb5_cc_resolve(ctx, "MSLSA:", &cache);
-    if (code == 0 && cache) {
-	if (!leash_int_get_princ_expiration_time(ctx, cache, princ,
-						 &expiration)) {
-	    if ( expiration > best_match_expiration ) {
-		best_match_expiration = expiration;
-		strcpy(best_match_ccname, "MSLSA:");
-		expiration = 0;
+    if (dwMsLsaImport) {
+	code = pkrb5_cc_resolve(ctx, "MSLSA:", &cache);
+	if (code == 0 && cache) {
+	    if (!leash_int_get_princ_expiration_time(ctx, cache, princ,
+						      &expiration)) {
+		if ( expiration > best_match_expiration ) {
+		    best_match_expiration = expiration;
+		    strcpy(best_match_ccname, "MSLSA:");
+		    expiration = 0;
+		}
 	    }
 	}
     }
@@ -3500,10 +3605,10 @@ leash_int_find_ccache_for_princ(krb5_context ctx, krb5_principal princ,
 
  _exit:
     if (pNCi)
-        pcc_free_NC_info(cc_ctx, &pNCi);
+        cc_free_NC_info(cc_ctx, &pNCi);
 
     if (cc_ctx)
-        pcc_shutdown(&cc_ctx);
+        cc_shutdown(&cc_ctx);
 
     if (best_match_ccname[0]) {
 	strncpy(buffer, best_match_ccname, *pcbbuf);
@@ -3524,22 +3629,13 @@ not_an_API_Leash_AcquireInitialTicketsIfNeeded(krb5_context context,
     char		*desiredName = 0;
     char                *desiredRealm = 0;
     TicketList 		*list = NULL;
-    DWORD 		dwMsLsaImport = Leash_get_default_mslsa_import();
-    char loginenv[16];
     char ccachename[272]="";
-    BOOL prompt;
-
-    GetEnvironmentVariable("KERBEROSLOGIN_NEVER_PROMPT", loginenv, sizeof(loginenv));
-    prompt = (GetLastError() == ERROR_ENVVAR_NOT_FOUND);
-
-    if (!prompt)
-        return;
 
     if (!desiredKrb5Principal) {
 	acquire_tkt_no_princ(context, ccname, cclen);
     } else {
 	if (leash_int_find_ccache_for_princ(context, desiredKrb5Principal, ccname, &cclen))
-	    acquire_tkt_no_princ(context, ccname, cclen);
+	    acquire_tkt_for_princ(context, desiredKrb5Principal, ccname, cclen);
     }
     return;
 }

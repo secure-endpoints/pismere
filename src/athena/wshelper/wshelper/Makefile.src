@@ -3,6 +3,7 @@
 #
 
 NAME=wshelp32
+WIN64NAME=wshelp64
 TARGETTYPE=DLL
 TARGETSS=console
 
@@ -22,12 +23,13 @@ OBJS = \
 RES=$(O)\resource.res
 
 DEF_FILE=wshelp32.def
+WIN64_DEF_FILE=wshelp64.def
 
 USE_DEFAULTLIB=1
 #USE_PCH=1
 
 INCLUDES=..\include
-#LIBS=wsock32.lib dnsapi.lib bufferoverflowu.lib $(STD_LIBS)
+WIN64LIBS=wsock32.lib dnsapi.lib bufferoverflowu.lib $(STD_LIBS)
 LIBS=wsock32.lib dnsapi.lib  $(STD_LIBS)
 
-C_FLAGS=-DWINDOWS -DWIN32 -D_WINDOWS
+C_DEFINE=-DWINDOWS -D_WINDOWS

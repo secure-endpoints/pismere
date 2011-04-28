@@ -49,6 +49,9 @@ krb4_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
     switch(msg_subtype) {
     case KMSG_SYSTEM_INIT:
         {
+#ifdef _WIN64
+            return KHM_ERROR_NOT_IMPLEMENTED;
+#else
             kcdb_credtype ct;
             wchar_t buf[KCDB_MAXCCH_SHORT_DESC];
             size_t cbsize;
@@ -159,9 +162,6 @@ krb4_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
 
                 khui_cfg_release(idents);
 
-                krb4_initialized = TRUE;
-
-                khm_krb4_list_tickets();
             }
 
             /* Lookup common data types */
@@ -201,10 +201,21 @@ krb4_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
                 rv = KHM_ERROR_UNKNOWN;
             }
 
+            krb4_initialized = TRUE;
+
+            khm_krb4_set_def_tkt_string();
+
+            khm_krb4_list_tickets();
+#endif
         }
         break;
 
     case KMSG_SYSTEM_EXIT:
+#ifdef _WIN64
+        /* See above.  On 64-bit platforms, we don't support Krb4 at
+           all. */
+        return 0;
+#else
         if(credtype_id_krb4 >= 0)
             {
                 /* basically just unregister the credential type */
@@ -213,6 +224,7 @@ krb4_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
                 kcdb_credset_delete(krb4_credset);
             }
         break;
+#endif
     }
 
     return rv;

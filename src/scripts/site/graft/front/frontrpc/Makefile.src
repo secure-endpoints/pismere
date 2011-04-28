@@ -14,4 +14,4 @@ all::
 clean::
 	$(MAKECMD) clean
 
-PLACE=src\librpc\obj\$(VCDBG)\oncrpc.dll src\portmap\obj\$(VCDBG)\portmap.exe
+PLACE=src\librpc\obj\$(CPU)\$(VCDBG)\oncrpc.dll src\portmap\obj\$(CPU)\$(VCDBG)\portmap.exe

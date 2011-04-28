@@ -1,6 +1,8 @@
 DIRS=\
 	lib	\
 	locker	\
+	poputils	\
+	eduSchemaExtension	\
 	logonbefore \
 	athdir	\
 	athinfo	\
@@ -27,10 +29,42 @@ DIRS=\
 	tzcpl	\
 	kmp	\
  	spacl	\
-	sendbug
+	sendbug \
+	AfsStressTest
+WIN64DIRS=\
+	lib	\
+	locker	\
+	poputils	\
+	eduSchemaExtension	\
+	logonbefore \
+	athdir	\
+	athinfo	\
+	cview	\
+	wincview \
+	dos2unix	\
+	expn	\
+	imtest  \
+	hes	\
+	hesinfo	\
+	instloop \
+	lastlog	\
+	machtype	\
+	motd	\
+	plop	\
+	rexplore \
+	unix2dos	\
+	screensaver	\
+	whois	\
+	snetcfgex \
+	tzcpl	\
+ 	spacl	\
+	sendbug 
+
 OPTDIRS=\
 	lib	\
 	locker	\
+	poputils	\
+	eduSchemaExtension	\
 	logonbefore \
 	athdir	\
 	athinfo	\
@@ -58,5 +92,6 @@ OPTDIRS=\
 	guiwrap \
 	kmp	\
  	spacl	\
-	sendbug
+	sendbug \
+	AfsStressTest
 

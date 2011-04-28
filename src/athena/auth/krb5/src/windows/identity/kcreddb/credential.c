@@ -60,7 +60,7 @@ void kcdb_cred_exit(void)
     places with a read lock on l_creds.  New credentials must be creatable while
     holding either lock. */
 KHMEXP khm_int32 KHMAPI 
-kcdb_cred_create(wchar_t *   name, 
+kcdb_cred_create(const wchar_t *   name, 
                  khm_handle  identity,
                  khm_int32   cred_type,
                  khm_handle * result) 
@@ -156,10 +156,23 @@ KHMEXP khm_int32 KHMAPI kcdb_cred_update(khm_handle vdest,
             kcdb_buf_set_value(&dest->buf, i, i, srcbuf, cbsrcbuf);
             rv = KHM_ERROR_SUCCESS;
 
-_skip_copy:
+	_skip_copy:
             kcdb_attrib_release_info(a);
             kcdb_type_release_info(t);
-        }
+        } else {
+	    if (KHM_FAILED(kcdb_attrib_get_info(i, &a)))
+		continue;
+
+	    if (!(a->flags & KCDB_ATTR_FLAG_COMPUTED) &&
+		(a->flags & KCDB_ATTR_FLAG_TRANSIENT) &&
+		kcdb_cred_val_exist(dest, i)) {
+		kcdb_buf_set_value(&dest->buf, i, i, NULL, 0);
+
+		rv = KHM_ERROR_SUCCESS;
+	    }
+
+	    kcdb_attrib_release_info(a);
+	}
     }
 
     if (dest->flags != src->flags) {
@@ -174,7 +187,7 @@ _skip_copy:
             rv = KHM_ERROR_SUCCESS;
     }
 
-_exit:
+ _exit:
     kcdb_cred_unlock_write();
     return rv;
 }
@@ -305,7 +318,7 @@ KHMEXP khm_int32 KHMAPI kcdb_cred_get_type(
 
 KHMEXP khm_int32 KHMAPI kcdb_cred_set_attrib(
     khm_handle cred, 
-    wchar_t * name, 
+    const wchar_t * name, 
     void * buffer, 
     khm_size cbbuf)
 {
@@ -408,7 +421,7 @@ _exit:
 
 KHMEXP khm_int32 KHMAPI kcdb_cred_get_attrib(
     khm_handle cred, 
-    wchar_t * name, 
+    const wchar_t * name, 
     khm_int32 * attr_type,
     void * buffer, 
     khm_size * cbbuf) 
@@ -428,7 +441,7 @@ KHMEXP khm_int32 KHMAPI kcdb_cred_get_attrib(
 
 KHMEXP khm_int32 KHMAPI kcdb_cred_get_attrib_string(
     khm_handle cred, 
-    wchar_t * name, 
+    const wchar_t * name, 
     wchar_t * buffer, 
     khm_size * cbbuf,
     khm_int32 flags) 
@@ -799,7 +812,7 @@ _exit:
 KHMEXP khm_int32 KHMAPI 
 kcdb_creds_comp_attrib(khm_handle cred1, 
                        khm_handle cred2, 
-                       wchar_t * name)
+                       const wchar_t * name)
 {
     khm_int32 attr_id;
 
@@ -930,12 +943,18 @@ kcdb_creds_is_equal(khm_handle vcred1,
 
     kcdb_cred_lock_read();
     if(!kcdb_cred_is_active_cred(vcred1) ||
-       !kcdb_cred_is_active_cred(vcred2))
+       !kcdb_cred_is_active_cred(vcred2)) {
+
+        code = FALSE;
         goto _exit;
 
+    }
+
     if(vcred1 == vcred2) {
+
         code = TRUE;
         goto _exit;
+
     }
 
     cred1 = vcred1;

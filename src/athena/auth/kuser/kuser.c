@@ -108,10 +108,10 @@ static const int deltat_table_nents = sizeof(deltat_table)/
 				      sizeof(deltat_table[0]);
 
 static char *
-strptime(buf, format, tm)
-    char *buf;
-    const char *format;
-    struct tm *tm;
+strptime(
+    char *buf,
+    const char *format,
+    struct tm *tm)
 {
     int year, month, day, hour, minute, second;
     char *bp;
@@ -234,9 +234,9 @@ strptime(buf, format, tm)
 }
 
 krb5_error_code KRB5_CALLCONV
-k_string_to_deltat(string, deltatp)
-    char	FAR * string;
-    krb5_deltat	FAR * deltatp;
+k_string_to_deltat(
+    char	FAR * string,
+    krb5_deltat	FAR * deltatp)
 {
     int i;
     int found;
@@ -276,9 +276,9 @@ k_string_to_deltat(string, deltatp)
 }
 
 krb5_error_code KRB5_CALLCONV
-k_string_to_timestamp(string, timestampp)
-    char		FAR * string;
-    krb5_timestamp	FAR * timestampp;
+k_string_to_timestamp(
+    char		FAR * string,
+    krb5_timestamp	FAR * timestampp)
 {
     int i;
     struct tm timebuf;
@@ -307,10 +307,10 @@ k_string_to_timestamp(string, timestampp)
 }
 
 krb5_error_code KRB5_CALLCONV
-k_timestamp_to_string(timestamp, buffer, buflen)
-    krb5_timestamp	timestamp;
-    char		FAR * buffer;
-    size_t		buflen;
+k_timestamp_to_string(
+    krb5_timestamp	timestamp,
+    char		FAR * buffer,
+    size_t		buflen)
 {
     char *cp;
     time_t t = timestamp;
@@ -325,11 +325,11 @@ k_timestamp_to_string(timestamp, buffer, buflen)
 }
 
 krb5_error_code KRB5_CALLCONV
-k_timestamp_to_sfstring(timestamp, buffer, buflen, pad)
-    krb5_timestamp	timestamp;
-    char		FAR * buffer;
-    size_t		buflen;
-    char		FAR * pad;
+k_timestamp_to_sfstring(
+    krb5_timestamp	timestamp,
+    char		FAR * buffer,
+    size_t		buflen,
+    char		FAR * pad)
 {
     struct tm	*tmp;
     size_t i;
@@ -496,7 +496,11 @@ dynamic_load(
     else
     {
 	got_com_err = DelayLoadDllsLoadedDllAll(hDlls, COMERR_DLL, NULL);
+#ifdef _WIN64
+	got_k4=0;
+#else
 	got_k4 = DelayLoadDllsLoadedDllAll(hDlls, KRB4_DLL, NULL);
+#endif	
 	got_k5 = DelayLoadDllsLoadedDllAll(hDlls, KRB5_DLL, NULL);
     got_cc = DelayLoadDllsLoadedDllAll(hDlls, CCAPI_DLL, NULL);
     }

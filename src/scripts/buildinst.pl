@@ -56,7 +56,7 @@ my $DIR_TOP = $DIR_INSTALLERS;
 # This variable gets fixed up later on...
 my $DIR_TOP_PISMERE = File::Spec->catfile($FindBin::Bin, '..');
 
-my @VALID_CPUS = ( 'i386', 'alpha' );
+my @VALID_CPUS = ( 'i386', 'alpha', 'ia64', 'alpha64', 'amd64');
 my $CPU;
 my $TARGET_DIR;
 my $DIR_PISMERE_MSI_TARGET;

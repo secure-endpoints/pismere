@@ -14,7 +14,7 @@ OBJS= \
 	$(O)\mail.obj
 
 USE_DEFAULTLIB=1
-INCLUDES=..\..\include;..\..\util\et;$(PISMERE)\athena\auth\krb4\include
+INCLUDES=..\..\include;..\..\util\et;$(PISMERE)\athena\auth\krb4\include;$(PISMERE)\athena\auth\krb5\src\include
 
 USE_LIBC_DLL=1
 

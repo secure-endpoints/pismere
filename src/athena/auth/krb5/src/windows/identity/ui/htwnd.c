@@ -121,6 +121,8 @@ typedef struct khui_htwnd_data_t {
     wchar_t * text;
     int scroll_left;
     int scroll_top;
+    int ext_width;
+    int ext_height;
     COLORREF bk_color;
     HCURSOR hc_hand;
     int l_pixel_y;
@@ -143,7 +145,7 @@ static LONG table_lookup(struct tx_tbl_t * tbl, int n, wchar_t * v, int len)
     int i;
 
     for(i=0; i<n; i++) {
-        if(!wcsnicmp(tbl[i].string, v, len))
+        if(!_wcsnicmp(tbl[i].string, v, len))
             return tbl[i].value;
     }
 
@@ -313,17 +315,19 @@ We currently support the following tags:
 <a [id="string"] [param="paramstring"]>link text</a>
 <b>foo</b>
 <u>foo</u>
+<i>foo</i>
+
+<font [color="(color)"] [size="normal|large|huge|(point size)"]>foo</font>
+   (color)=black|white|red|green|blue|grey
+<large>foo</large>
+<huge>foo</huge>
 
 <center>foo</center>
 <left>foo</left>
 <right>foo</right>
 
-<font [color="color"] [size="normal|large|huge"]>foo</font>
-<large>foo</large>
-<huge>foo</huge>
-
 <p [align="left|center|right"]>foo</p>
-<settab pos="">
+<settab pos="(pos)">
 <tab>
 */
 
@@ -344,7 +348,7 @@ static int htw_parse_tag(
     /* start initially points to the starting '<' */
     c = token_end(++start);
 
-    if(!wcsnicmp(start,L"a",c-start)) {
+    if(!_wcsnicmp(start,L"a",c-start)) {
         /* start of an 'a' tag */
         wchar_t * id_start = NULL;
         int id_len = 0;
@@ -368,9 +372,9 @@ static int htw_parse_tag(
             if(c==e)
                 break;
 
-            if(!wcsnicmp(c,L"id",e-c)) {
+            if(!_wcsnicmp(c,L"id",e-c)) {
                 c = read_attr(e, &id_start, &id_len);
-            } else if(!wcsnicmp(c,L"param",e-c)) {
+            } else if(!_wcsnicmp(c,L"param",e-c)) {
                 c = read_attr(e, &param_start, &param_len);
             }
         }
@@ -421,7 +425,7 @@ static int htw_parse_tag(
             d->n_links++;
         }
 
-    } else if(!wcsnicmp(start, L"/a", c - start)) {
+    } else if(!_wcsnicmp(start, L"/a", c - start)) {
         khui_htwnd_link * l;
 
         c = wcschr(c,L'>');
@@ -435,15 +439,15 @@ static int htw_parse_tag(
             l->r.right = p_abs->x;
             l->r.bottom = p_abs->y + lh;
         }
-    } else if(!wcsnicmp(start, L"p", c - start)) {
+    } else if(!_wcsnicmp(start, L"p", c - start)) {
         wchar_t * e;
         wchar_t * align_s = NULL;
-        int align_len;
+        int align_len = 0;
 
         c = skip_ws(c);
         e = token_end(c);
 
-        if(c != e && !wcsnicmp(c,L"align",e-c)) {
+        if(c != e && !_wcsnicmp(c,L"align",e-c)) {
             c = read_attr(e, &align_s, &align_len);
         }
 
@@ -458,57 +462,60 @@ static int htw_parse_tag(
             *align = ALIGN_LEFT;
 
         n = 1;
-    } else if(!wcsnicmp(start, L"b", c - start)) {
+    } else if(!_wcsnicmp(start, L"b", c - start)) {
         format_push(s,d, HTW_DEFAULT, FV_BOLD, HTW_DEFAULT);
-    } else if(!wcsnicmp(start, L"/b", c - start)) {
+    } else if(!_wcsnicmp(start, L"/b", c - start)) {
         format_pop(s);
-    } else if(!wcsnicmp(start, L"u", c - start)) {
+    } else if(!_wcsnicmp(start, L"u", c - start)) {
         format_push(s,d, HTW_DEFAULT, FV_UNDERLINE, HTW_DEFAULT);
-    } else if(!wcsnicmp(start, L"/u", c - start)) {
+    } else if(!_wcsnicmp(start, L"/u", c - start)) {
         format_pop(s);
-    } else if(!wcsnicmp(start, L"large", c - start)) {
+    } else if(!_wcsnicmp(start, L"i", c - start)) {
+        format_push(s,d, HTW_DEFAULT, FV_ITALIC, HTW_DEFAULT);
+    } else if(!_wcsnicmp(start, L"/i", c - start)) {
+        format_pop(s);
+    } else if(!_wcsnicmp(start, L"large", c - start)) {
         format_push(s,d,-MulDiv(HTW_LARGE_SIZE, d->l_pixel_y, 72), HTW_DEFAULT, HTW_DEFAULT);
-    } else if(!wcsnicmp(start, L"/large", c - start)) {
+    } else if(!_wcsnicmp(start, L"/large", c - start)) {
         format_pop(s);
-    } else if(!wcsnicmp(start, L"huge", c - start)) {
+    } else if(!_wcsnicmp(start, L"huge", c - start)) {
         format_push(s,d,-MulDiv(HTW_HUGE_SIZE, d->l_pixel_y, 72), HTW_DEFAULT, HTW_DEFAULT);
-    } else if(!wcsnicmp(start, L"/huge", c - start)) {
+    } else if(!_wcsnicmp(start, L"/huge", c - start)) {
         format_pop(s);
-    } else if(!wcsnicmp(start, L"center", c - start)) {
+    } else if(!_wcsnicmp(start, L"center", c - start)) {
         c = wcschr(c, L'>');
         if(!c)
             c = c + wcslen(c);
         *align = ALIGN_CENTER;
         n = 1;
-    } else if(!wcsnicmp(start, L"left", c - start) ||
-        !wcsnicmp(start, L"p", c - start)) 
+    } else if(!_wcsnicmp(start, L"left", c - start) ||
+        !_wcsnicmp(start, L"p", c - start)) 
     {
         c = wcschr(c, L'>');
         if(!c)
             c = c + wcslen(c);
         *align = ALIGN_LEFT;
         n = 1;
-    } else if(!wcsnicmp(start, L"right", c - start)) {
+    } else if(!_wcsnicmp(start, L"right", c - start)) {
         c = wcschr(c, L'>');
         if(!c)
             c = c + wcslen(c);
         *align = ALIGN_RIGHT;
         n = 1;
-    } else if(!wcsnicmp(start, L"/center", c - start) ||
-        !wcsnicmp(start, L"/left", c - start) ||
-        !wcsnicmp(start, L"/right", c - start) ||
-        !wcsnicmp(start, L"/p", c - start))
-    {
+    } else if(!_wcsnicmp(start, L"/center", c - start) ||
+              !_wcsnicmp(start, L"/left", c - start) ||
+              !_wcsnicmp(start, L"/right", c - start) ||
+              !_wcsnicmp(start, L"/p", c - start)) {
         c = wcschr(c, L'>');
         if(!c)
             c = c + wcslen(c);
         *align = ALIGN_LEFT;
         n = 1;
-    } else if(!wcsnicmp(start, L"font", c - start)) {
+    } else if(!_wcsnicmp(start, L"font", c - start)) {
         wchar_t * color_s = NULL;
-        int color_len;
+        int color_len = 0;
         wchar_t * size_s = NULL;
-        int size_len;
+        int size_len = 0;
         LONG color = HTW_DEFAULT;
         LONG h = HTW_DEFAULT;
 
@@ -521,9 +528,9 @@ static int htw_parse_tag(
             if(c==e)
                 break;
 
-            if(!wcsnicmp(c,L"color",e-c)) {
+            if(!_wcsnicmp(c,L"color",e-c)) {
                 c = read_attr(e, &color_s, &color_len);
-            } else if(!wcsnicmp(c,L"size",e-c)) {
+            } else if(!_wcsnicmp(c,L"size",e-c)) {
                 c = read_attr(e, &size_s, &size_len);
             }
         }
@@ -539,9 +546,9 @@ static int htw_parse_tag(
         }
 
         format_push(s,d,h,HTW_DEFAULT,color);
-    } else if(!wcsnicmp(start, L"/font", c - start)) {
+    } else if(!_wcsnicmp(start, L"/font", c - start)) {
         format_pop(s);
-    } else if(!wcsnicmp(start, L"settab", c - start)) {
+    } else if(!_wcsnicmp(start, L"settab", c - start)) {
         wchar_t * e;
         wchar_t * pos_s = NULL;
         int pos_len;
@@ -549,7 +556,7 @@ static int htw_parse_tag(
         c = skip_ws(c);
         e = token_end(c);
 
-        if(c != e && !wcsnicmp(c,L"pos",e-c)) {
+        if(c != e && !_wcsnicmp(c,L"pos",e-c)) {
             c = read_attr(e, &pos_s, &pos_len);
         }
 
@@ -570,7 +577,7 @@ static int htw_parse_tag(
 
             d->tabs[d->n_tabs++] = MulDiv(dx, bx, 4);
         }
-    } else if(!wcsnicmp(start, L"tab", c - start)) {
+    } else if(!_wcsnicmp(start, L"tab", c - start)) {
         int i;
 
         if(!dry_run) {
@@ -631,6 +638,8 @@ static LRESULT htw_paint(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     int align;
     int y;
     wchar_t * par_start;
+    int ext_width = 0;
+    int ext_height = 0;
 
     d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
 
@@ -646,8 +655,11 @@ static LRESULT htw_paint(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
     GetClientRect(hwnd, &r);
 
+#ifdef DRAW_HTWND_CLIENT_EDGE
+    /* for the moment, we are skipping on the client edge. */
     if(d->flags & KHUI_HTWND_CLIENTEDGE)
         DrawEdge(hdc, &r, EDGE_SUNKEN, BF_ADJUST | BF_RECT | BF_FLAT);
+#endif
 
     hbk = CreateSolidBrush(RGB(255,255,255));
     FillRect(hdc, &r, hbk);
@@ -729,8 +741,6 @@ static LRESULT htw_paint(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         p = par_start;
         format_unwind(&s_stack, s_start); /* unwind format stack */
 
-        //MoveToEx(hdc, x, y + l_height, NULL);
-
         p_width = 0;
 
         while(*p) {
@@ -767,13 +777,14 @@ static LRESULT htw_paint(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 SetTextColor(hdc, format_color(&s_stack));
 
                 GetTextExtentPoint32(hdc, p, (int)(c - p), &s);
-                rd.left = x + p_width;
-                rd.top = y;
-                rd.right = x + p_width + s.cx;
-                rd.bottom = y + l_height;
+                rd.left = x + p_width - d->scroll_left;
+                rd.top = y - d->scroll_top;
+                rd.right = x + p_width + s.cx - d->scroll_left;
+                rd.bottom = y + l_height - d->scroll_top;
 
                 if(IntersectRect(&rt, &rd, &r)) {
-                    DrawText(hdc, p, (int)(c - p), &rt, DT_BOTTOM | DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
+                    DrawText(hdc, p, (int)(c - p), &rd,
+                             DT_BOTTOM | DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
                 }
 
                 p_width += s.cx;
@@ -783,11 +794,86 @@ static LRESULT htw_paint(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
         }
 
+        if (p_width > ext_width)
+            ext_width = p_width;
+
         y += l_height;
         par_start = p;
     }
 
+    if (y > ext_height)
+        ext_height = y;
+
     EndPaint(hwnd, &ps);
+
+    if (d->ext_width < ext_width ||
+        d->ext_height < ext_height) {
+        SCROLLINFO si;
+        LONG l;
+
+        /* the extents need to be adjusted.  But first check if we
+           have exactly the right scroll bars we need. */
+        if ((ext_width > (r.right - r.left) &&
+             !(d->flags & KHUI_HTWND_HSCROLL)) ||
+            (ext_height > (r.bottom - r.top) &&
+             !(d->flags & KHUI_HTWND_VSCROLL)) ||
+
+            (ext_width <= (r.right - r.left) &&
+             (d->flags & KHUI_HTWND_HSCROLL)) ||
+            (ext_height <= (r.bottom - r.top) &&
+             (d->flags & KHUI_HTWND_VSCROLL))) {
+
+            /* need to add scroll bars */
+            if (ext_width > (r.right - r.left))
+                d->flags |= KHUI_HTWND_HSCROLL;
+            else
+                d->flags &= ~KHUI_HTWND_HSCROLL;
+
+            if (ext_height > (r.bottom - r.top))
+                d->flags |= KHUI_HTWND_VSCROLL;
+            else
+                d->flags &= ~KHUI_HTWND_VSCROLL;
+
+            l = GetWindowLongPtr(hwnd, GWL_STYLE);
+            l &= ~(WS_HSCROLL | WS_VSCROLL);
+
+            l |= ((d->flags & KHUI_HTWND_HSCROLL) ? WS_HSCROLL : 0) |
+                ((d->flags & KHUI_HTWND_VSCROLL) ? WS_VSCROLL : 0);
+
+            SetWindowLongPtr(hwnd, GWL_STYLE, l);
+
+            InvalidateRect(hwnd, NULL, FALSE);
+            /* since the client area changed, we do another redraw
+               before updating the scroll bar positions. */
+        } else {
+            d->ext_width = ext_width;
+            d->ext_height = ext_height;
+
+            if (d->flags & KHUI_HTWND_HSCROLL) {
+                ZeroMemory(&si, sizeof(si));
+                si.cbSize = sizeof(si);
+                si.fMask = SIF_ALL | SIF_DISABLENOSCROLL;
+                si.nMin = 0;
+                si.nMax = ext_width;
+                si.nPage = r.right - r.left;
+                si.nPos = d->scroll_left;
+
+                SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
+            }
+
+            if (d->flags & KHUI_HTWND_VSCROLL) {
+                ZeroMemory(&si, sizeof(si));
+                si.cbSize = sizeof(si);
+                si.fMask = SIF_ALL | SIF_DISABLENOSCROLL;
+                si.nMin = 0;
+                si.nMax = ext_height;
+                si.nPage = r.bottom - r.top;
+                si.nPos = d->scroll_top;
+
+                SetScrollInfo(hwnd, SB_VERT, &si, TRUE);
+            }
+        }
+    }
 
     return 0;
 }
@@ -799,231 +885,328 @@ LRESULT CALLBACK khui_htwnd_proc(HWND hwnd,
                                  )
 {
     switch(uMsg) {
-        case WM_CREATE:
-            {
-                CREATESTRUCT * cs;
-                khui_htwnd_data * d;
-                size_t cbsize;
+    case WM_CREATE:
+        {
+            CREATESTRUCT * cs;
+            khui_htwnd_data * d;
+            size_t cbsize;
 
-                cs = (CREATESTRUCT *) lParam;
+            cs = (CREATESTRUCT *) lParam;
 
-                d = PMALLOC(sizeof(*d));
-                ZeroMemory(d, sizeof(*d));
+            d = PMALLOC(sizeof(*d));
+            ZeroMemory(d, sizeof(*d));
 
-                if(cs->dwExStyle & WS_EX_TRANSPARENT) {
-                    d->flags |= KHUI_HTWND_TRANSPARENT;
-                }
-                if(cs->dwExStyle & WS_EX_CLIENTEDGE) {
-                    d->flags |= KHUI_HTWND_CLIENTEDGE;
-                }
-                d->id = (int)(INT_PTR) cs->hMenu;
+            if(cs->dwExStyle & WS_EX_TRANSPARENT) {
+                d->flags |= KHUI_HTWND_TRANSPARENT;
+            }
+            if(cs->dwExStyle & WS_EX_CLIENTEDGE) {
+                d->flags |= KHUI_HTWND_CLIENTEDGE;
+            }
+            if(cs->style & WS_HSCROLL) {
+                d->flags |= KHUI_HTWND_HSCROLL;
+            }
+            if(cs->style & WS_VSCROLL) {
+                d->flags |= KHUI_HTWND_VSCROLL;
+            }
+            d->id = (int)(INT_PTR) cs->hMenu;
 
-                d->active_link = -1;
-                d->bk_color = RGB(255,255,255);
-                d->hc_hand = LoadCursor(NULL, IDC_HAND);
+            d->active_link = -1;
+            d->bk_color = RGB(255,255,255);
+            d->hc_hand = LoadCursor(NULL, IDC_HAND);
 
-                if(SUCCEEDED(StringCbLength(cs->lpszName, KHUI_HTWND_MAXCB_TEXT, &cbsize))) {
-                    cbsize += sizeof(wchar_t);
-                    d->text = PMALLOC(cbsize);
-                    StringCbCopy(d->text, cbsize, cs->lpszName);
-                }
+            if(SUCCEEDED(StringCbLength(cs->lpszName, KHUI_HTWND_MAXCB_TEXT, &cbsize))) {
+                cbsize += sizeof(wchar_t);
+                d->text = PMALLOC(cbsize);
+                StringCbCopy(d->text, cbsize, cs->lpszName);
+            }
+
+            /* this is just a flag to the WM_PAINT handler that the
+               extents haven't been set yet. */
+            d->ext_width = -1;
 
 #pragma warning(push)
 #pragma warning(disable: 4244)
-                SetWindowLongPtr(hwnd, 0, (LONG_PTR) d);
+            SetWindowLongPtr(hwnd, 0, (LONG_PTR) d);
 #pragma warning(pop)
 
-                return 0;
+            return 0;
+        }
+        break;
+
+    case WM_SETTEXT:
+        {
+            wchar_t * newtext;
+            size_t cbsize;
+            khui_htwnd_data * d;
+            BOOL rv;
+
+            d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+            newtext = (wchar_t *) lParam;
+
+            if(d->text) {
+                PFREE(d->text);
+                d->text = NULL;
             }
-            break;
 
-        case WM_SETTEXT:
-            {
-                wchar_t * newtext;
-                size_t cbsize;
-                khui_htwnd_data * d;
-                BOOL rv;
+            if(SUCCEEDED(StringCbLength(newtext, KHUI_HTWND_MAXCB_TEXT, &cbsize))) {
+                cbsize += sizeof(wchar_t);
+                d->text = PMALLOC(cbsize);
+                StringCbCopy(d->text, cbsize, newtext);
+                rv = TRUE;
+            } else
+                rv = FALSE;
 
-                d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
-                newtext = (wchar_t *) lParam;
+            clear_styles(d);
 
-                if(d->text) {
-                    PFREE(d->text);
-                    d->text = NULL;
+            d->ext_width = -1;
+            d->scroll_left = 0;
+            d->scroll_top = 0;
+
+            InvalidateRect(hwnd, NULL, TRUE);
+
+            return rv;
+        }
+        break;
+
+    case WM_DESTROY:
+        {
+            khui_htwnd_data * d;
+            int i;
+
+            d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+            if(d->text)
+                PFREE(d->text);
+            d->text = 0;
+
+            if(d->links) {
+                for(i=0;i<d->max_links;i++) {
+                    if(d->links[i])
+                        PFREE(d->links[i]);
                 }
-
-                if(SUCCEEDED(StringCbLength(newtext, KHUI_HTWND_MAXCB_TEXT, &cbsize))) {
-                    cbsize += sizeof(wchar_t);
-                    d->text = PMALLOC(cbsize);
-                    StringCbCopy(d->text, cbsize, newtext);
-                    rv = TRUE;
-                } else
-                    rv = FALSE;
-
-                clear_styles(d);
-
-                InvalidateRect(hwnd, NULL, TRUE);
-
-                return rv;
-            }
-            break;
-
-        case WM_DESTROY:
-            {
-                khui_htwnd_data * d;
-                int i;
-
-                d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
-                if(d->text)
-                    PFREE(d->text);
-                d->text = 0;
-
-                if(d->links) {
-                    for(i=0;i<d->max_links;i++) {
-                        if(d->links[i])
-                            PFREE(d->links[i]);
-                    }
-                    PFREE(d->links);
-                }
-
-                clear_styles(d);
-
-                PFREE(d);
-            }
-            break;
-
-        case WM_ERASEBKGND:
-            {
-                khui_htwnd_data * d;
-                d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
-
-                if(d->flags & KHUI_HTWND_TRANSPARENT)
-                    return TRUE;
-
-                return FALSE;
+                PFREE(d->links);
             }
 
-        case WM_PAINT:
-            htw_paint(hwnd, uMsg, wParam, lParam);
-            break;
+            clear_styles(d);
 
-        case WM_SETCURSOR:
-            {
-                khui_htwnd_data * d;
+            PFREE(d);
+        }
+        break;
 
-                if(hwnd != (HWND)wParam)
-                    break;
+    case WM_ERASEBKGND:
+        {
+            khui_htwnd_data * d;
+            d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
 
-                d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+            if(d->flags & KHUI_HTWND_TRANSPARENT)
+                return TRUE;
 
-                if(d->active_link >= 0) {
-                    SetCursor(d->hc_hand);
-                    return TRUE;
-                }
-            }
-            break;
+            return FALSE;
+        }
 
-        case WM_SETFOCUS:
-            {
-                khui_htwnd_data * d;
+    case WM_PAINT:
+        htw_paint(hwnd, uMsg, wParam, lParam);
+        break;
 
-                d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+    case WM_SETCURSOR:
+        {
+            khui_htwnd_data * d;
 
-                d->flags |= KHUI_HTWND_FOCUS;
-
-                InvalidateRect(hwnd, NULL, TRUE);
-            }
-            break;
-
-        case WM_KILLFOCUS:
-            {
-                khui_htwnd_data * d;
-
-                d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
-
-                d->flags &= ~KHUI_HTWND_FOCUS;
-
-                InvalidateRect(hwnd, NULL, TRUE);
-            }
-            break;
-
-        case WM_LBUTTONDOWN:
-            {
-                khui_htwnd_data * d;
-
-                d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
-
-                d->md_link = d->active_link;
-
-                SetCapture(hwnd);
-            }
-            break;
-
-        case WM_LBUTTONUP:
-            {
-                khui_htwnd_data * d;
-
-                d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
-
-                if(d->md_link == d->active_link && d->md_link >= 0) {
-                    /* clicked */
-                    SendMessage(GetParent(hwnd), WM_COMMAND, MAKEWPARAM(d->id, BN_CLICKED), (LPARAM) d->links[d->md_link]);
-                }
-
-                ReleaseCapture();
-            }
-            break;
-
-        case WM_MOUSEMOVE:
-            {
-                khui_htwnd_data * d;
-                int i;
-                POINT p;
-                int nl;
-
-                p.x = GET_X_LPARAM(lParam);
-                p.y = GET_Y_LPARAM(lParam);
-                d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+            if(hwnd != (HWND)wParam)
+                break;
                 
-                for(i=0; i<d->n_links; i++) {
-                    if(d->links && d->links[i] && PtInRect(&(d->links[i]->r), p))
-                        break;
+            d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+
+            if(d->active_link >= 0) {
+                SetCursor(d->hc_hand);
+                return TRUE;
+            }
+        }
+        break;
+
+    case WM_SETFOCUS:
+        {
+            khui_htwnd_data * d;
+
+            d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+
+            d->flags |= KHUI_HTWND_FOCUS;
+
+            InvalidateRect(hwnd, NULL, TRUE);
+        }
+        break;
+
+    case WM_KILLFOCUS:
+        {
+            khui_htwnd_data * d;
+
+            d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+
+            d->flags &= ~KHUI_HTWND_FOCUS;
+
+            InvalidateRect(hwnd, NULL, TRUE);
+        }
+        break;
+
+    case WM_LBUTTONDOWN:
+        {
+            khui_htwnd_data * d;
+
+            d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+
+            d->md_link = d->active_link;
+
+            SetCapture(hwnd);
+        }
+        break;
+
+    case WM_LBUTTONUP:
+        {
+            khui_htwnd_data * d;
+
+            d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+
+            if(d->md_link == d->active_link && d->md_link >= 0) {
+                /* clicked */
+                SendMessage(GetParent(hwnd), WM_COMMAND, MAKEWPARAM(d->id, BN_CLICKED), (LPARAM) d->links[d->md_link]);
+            }
+
+            ReleaseCapture();
+        }
+        break;
+
+    case WM_HSCROLL:
+        {
+            khui_htwnd_data * d;
+            int old_pos;
+            int new_pos;
+            int ext;
+            SCROLLINFO si;
+            RECT r;
+
+            d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+
+            old_pos = new_pos = d->scroll_left;
+            ext = d->ext_width;
+
+            switch(HIWORD(wParam)) {
+            case SB_THUMBTRACK:
+            case SB_THUMBPOSITION:
+                ZeroMemory(&si, sizeof(si));
+                si.cbSize = sizeof(si);
+                si.fMask = SIF_TRACKPOS;
+                GetScrollInfo(hwnd, SB_HORZ, &si);
+                new_pos = si.nTrackPos;
+                break;
+
+            case SB_LINELEFT:
+                new_pos -= ext / 12; /* arbitrary unit */
+                break;
+
+            case SB_LINERIGHT:
+                new_pos += ext / 12; /* arbitrary unit */
+                break;
+
+            case SB_PAGELEFT:
+                GetClientRect(hwnd, &r);
+                new_pos -= r.right - r.left;
+                break;
+
+            case SB_PAGERIGHT:
+                GetClientRect(hwnd, &r);
+                new_pos += r.right - r.left;
+                break;
+            }
+
+            if (new_pos == old_pos)
+                break;
+
+            GetClientRect(hwnd, &r);
+
+#if 0
+            if (new_pos > ext - (r.right - r.left))
+                new_pos = ext - (r.right - r.left);
+#endif
+            if (new_pos > ext)
+                new_pos = ext;
+
+            if (new_pos < 0)
+                new_pos = 0;
+
+            if (new_pos == old_pos)
+                break;
+
+            ZeroMemory(&si, sizeof(si));
+            si.cbSize = sizeof(si);
+            si.fMask = SIF_POS;
+            si.nPos = new_pos;
+            SetScrollInfo(hwnd, SB_HORZ, &si, TRUE);
+            /* note that Windows sometimes adjusts the position after
+               setting it with SetScrollInfo.  We have to look it up
+               again to see what value it ended up at. */
+            GetScrollInfo(hwnd, SB_HORZ, &si);
+            new_pos = si.nPos;
+
+            if (new_pos == old_pos)
+                break;
+
+            d->scroll_left = new_pos;
+
+            ScrollWindow(hwnd, old_pos - new_pos, 0, NULL, NULL);
+
+            return 0;
+        }
+        break;
+
+    case WM_MOUSEMOVE:
+        {
+            khui_htwnd_data * d;
+            int i;
+            POINT p;
+            int nl;
+
+            d = (khui_htwnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+            p.x = GET_X_LPARAM(lParam) + d->scroll_left;
+            p.y = GET_Y_LPARAM(lParam) + d->scroll_top;
+                
+            for(i=0; i<d->n_links; i++) {
+                if(d->links && d->links[i] && PtInRect(&(d->links[i]->r), p))
+                    break;
+            }
+
+            if(i == d->n_links)
+                nl = -1;
+            else
+                nl = i;
+
+            if(d->active_link != nl) {
+                if(d->active_link >= 0) {
+                    if(d->flags & KHUI_HTWND_TRANSPARENT)
+                        {
+                            HWND parent = GetParent(hwnd);
+                            if(parent) {
+                                InvalidateRect(parent, NULL, TRUE);
+                            }
+                        }
+                    /* although we are invalidating the rect before setting active_link,
+                       WM_PAINT will not be issued until wndproc returns */
+                    InvalidateRect(hwnd, &(d->links[d->active_link]->r), TRUE);
                 }
-
-                if(i == d->n_links)
-                    nl = -1;
-                else
-                    nl = i;
-
-                if(d->active_link != nl) {
-                    if(d->active_link >= 0) {
-                        if(d->flags & KHUI_HTWND_TRANSPARENT)
+                d->active_link = nl;
+                if(d->active_link >= 0) {
+                    /* although we are invalidating the rect before setting active_link,
+                       WM_PAINT will not be issued until wndproc returns */
+                    if(d->flags & KHUI_HTWND_TRANSPARENT)
                         {
                             HWND parent = GetParent(hwnd);
                             if(parent) {
                                 InvalidateRect(parent, NULL, TRUE);
                             }
                         }
-                        /* although we are invalidating the rect before setting active_link,
-                           WM_PAINT will not be issued until wndproc returns */
-                        InvalidateRect(hwnd, &(d->links[d->active_link]->r), TRUE);
-                    }
-                    d->active_link = nl;
-                    if(d->active_link >= 0) {
-                        /* although we are invalidating the rect before setting active_link,
-                           WM_PAINT will not be issued until wndproc returns */
-                        if(d->flags & KHUI_HTWND_TRANSPARENT)
-                        {
-                            HWND parent = GetParent(hwnd);
-                            if(parent) {
-                                InvalidateRect(parent, NULL, TRUE);
-                            }
-                        }
-                        InvalidateRect(hwnd, &(d->links[d->active_link]->r), TRUE);
-                    }
+                    InvalidateRect(hwnd, &(d->links[d->active_link]->r), TRUE);
                 }
             }
-            break;
+        }
+        break;
     }
 
     return DefWindowProc(hwnd, uMsg,wParam,lParam);
@@ -1051,7 +1234,7 @@ void khm_register_htwnd_class(void)
 
 void khm_unregister_htwnd_class(void)
 {
-    UnregisterClass((LPWSTR) khui_htwnd_cls, khm_hInstance);
+    UnregisterClass(MAKEINTATOM(khui_htwnd_cls), khm_hInstance);
 }
 
 HWND khm_create_htwnd(HWND parent, LPWSTR text, int x, int y, int width, int height, DWORD ex_style, DWORD style)
@@ -1059,7 +1242,7 @@ HWND khm_create_htwnd(HWND parent, LPWSTR text, int x, int y, int width, int hei
 
     return CreateWindowEx(
         ex_style,
-        (LPWSTR) khui_htwnd_cls,
+        MAKEINTATOM(khui_htwnd_cls),
         text,
         style | WS_CHILD,
         x,y,width,height,

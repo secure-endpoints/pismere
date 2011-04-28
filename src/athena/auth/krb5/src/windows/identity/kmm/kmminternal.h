@@ -85,21 +85,24 @@ typedef struct kmm_module_i_t {
 #define kmm_handle_from_module(m) ((kmm_module) m)
 
 /* LoadLibrary succeeded for module */
-#define KMM_MODULE_FLAG_LOADED      1
+#define KMM_MODULE_FLAG_LOADED      0x00000001
 
 /* init_module entry called */
-#define KMM_MODULE_FLAG_INITP       2
+#define KMM_MODULE_FLAG_INITP       0x00000002
 
 /* the resources have been loaded */
-#define KMM_MODULE_FLAG_RES_LOADED  8
+#define KMM_MODULE_FLAG_RES_LOADED  0x00000008
 
 /* the signature has been verified */
-#define KMM_MODULE_FLAG_SIG         16
+#define KMM_MODULE_FLAG_SIG         0x00000010
 
 /* the module is disabled by the user
-   (option specifed in configuration) */
-#define KMM_MODULE_FLAG_DISABLED    1024
+   (option specified in configuration) */
+#define KMM_MODULE_FLAG_DISABLED    0x00000400
 
+/* the module should not be unloaded
+   (option specified in configuration)*/
+#define KMM_MODULE_FLAG_NOUNLOAD    0x00000800
 
 typedef struct kmm_plugin_i_t {
     kmm_plugin_reg p;
@@ -131,19 +134,23 @@ typedef struct kmm_plugin_i_t {
 #define kmm_plugin_from_handle(ph) ((kmm_plugin_i *) ph)
 
 /* the plugin has already been marked for unload */
-#define KMM_PLUGIN_FLAG_UNLOAD      1
+#define KMM_PLUGIN_FLAG_UNLOAD      0x00000001
+
+/* the plugin is in the kmm_listed_plugins list */
+#define KMM_PLUGIN_FLAG_IN_LIST     0x00000002
+
+/* the plugin is in the module's plugin list */
+#define KMM_PLUGIN_FLAG_IN_MODLIST  0x00000004
+
+#define KMM_PLUGIN_FLAG_IN_QUEUE    0x00000010
 
 /* the plugin is disabled by the user
     (option specified in configuration) */
-#define KMM_PLUGIN_FLAG_DISABLED    1024
+/* (this is defined in kmm.h)
 
-/* the plugin is in the kmm_listed_plugins list */
-#define KMM_PLUGIN_FLAG_IN_LIST     2
+ #define KMM_PLUGIN_FLAG_DISABLED    0x0400
 
-/* the plugin is in the module's plugin list */
-#define KMM_PLUGIN_FLAG_IN_MODLIST  4
-
-#define KMM_PLUGIN_FLAG_IN_QUEUE    0x10
+*/
 
 enum kmm_registrar_uparam_t {
     KMM_REG_INIT_MODULE,
@@ -153,6 +160,7 @@ enum kmm_registrar_uparam_t {
 };
 
 extern kmm_module_i * kmm_all_modules;
+extern khm_size kmm_active_modules;
 extern kmm_plugin_i * kmm_listed_plugins;
 extern HANDLE ht_registrar;
 extern DWORD tid_registrar;
@@ -174,19 +182,19 @@ extern kconf_schema schema_kmmconfig[];
 /* Registrar */
 
 khm_boolean KHMAPI 
-kmm_reg_cb(khm_int32 msg_type, 
-           khm_int32 msg_sub_type, 
-           khm_ui_4 uparam,
-           void *vparam);
+kmmint_reg_cb(khm_int32 msg_type, 
+              khm_int32 msg_sub_type, 
+              khm_ui_4 uparam,
+              void *vparam);
 
-DWORD WINAPI kmm_registrar(LPVOID lpParameter);
+DWORD WINAPI kmmint_registrar(LPVOID lpParameter);
 
-DWORD WINAPI kmm_plugin_broker(LPVOID lpParameter);
+DWORD WINAPI kmmint_plugin_broker(LPVOID lpParameter);
 
-void kmm_init_plugin(kmm_plugin_i * p);
-void kmm_exit_plugin(kmm_plugin_i * p);
-void kmm_init_module(kmm_module_i * m);
-void kmm_exit_module(kmm_module_i * m);
+void kmmint_init_plugin(kmm_plugin_i * p);
+void kmmint_exit_plugin(kmm_plugin_i * p);
+void kmmint_init_module(kmm_module_i * m);
+void kmmint_exit_module(kmm_module_i * m);
 
 /* Modules */
 kmm_module_i * 

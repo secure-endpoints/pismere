@@ -402,13 +402,16 @@ static void
 cfgui_apply_settings(khui_config_node node) {
     HWND hwnd;
     khui_config_node c;
+    khm_int32 flags;
 
     hwnd = khui_cfg_get_hwnd(node);
+    flags = khui_cfg_get_flags(node);
 
-    if (hwnd)
+    if (hwnd && (flags & KHUI_CNFLAG_MODIFIED)) {
         SendMessage(hwnd, KHUI_WM_CFG_NOTIFY,
                     MAKEWPARAM(0, WMCFG_APPLY),
                     (LPARAM) node);
+    }
 
     if (KHM_FAILED(khui_cfg_get_first_child(node, &c)))
         return;
@@ -417,6 +420,209 @@ cfgui_apply_settings(khui_config_node node) {
         cfgui_apply_settings(c);
         khui_cfg_get_next_release(&c);
     }
+}
+
+static void
+cfgui_remove_item(HWND hwtv,
+                  HTREEITEM hItem) {
+    khui_config_node node;
+    HTREEITEM hChild;
+    TVITEMEX itemex;
+
+    for (hChild = TreeView_GetChild(hwtv, hItem);
+         hChild;
+         hChild = TreeView_GetChild(hwtv, hItem)) {
+
+        cfgui_remove_item(hwtv, hChild);
+
+    }
+
+    ZeroMemory(&itemex, sizeof(itemex));
+
+    itemex.mask = TVIF_PARAM;
+    itemex.hItem = hItem;
+
+    TreeView_GetChild(hwtv, &itemex);
+
+    node = (khui_config_node) itemex.lParam;
+
+    if (node) {
+        HWND hw;
+        hw = khui_cfg_get_hwnd(node);
+
+        if (hw)
+            DestroyWindow(hw);
+
+        khui_cfg_release(node);
+    }
+
+    TreeView_DeleteItem(hwtv, hItem);
+}
+
+struct cfgui_child_info {
+    HTREEITEM hItem;
+    khui_config_node node;
+    BOOL checked;
+};
+
+#define CI_ALLOC_INCR 8
+
+static void
+cfgui_sync_node(cfgui_wnd_data * d,
+                HWND hwtv,
+                khui_config_node c,
+                HTREEITEM hItem) {
+    khui_config_node child;
+    HTREEITEM hChild;
+    struct cfgui_child_info * childinfo = NULL;
+    khm_size n_childinfo = 0;
+    khm_size nc_childinfo = 0;
+    khm_size i;
+
+    /* first, get the list of children from the treeview control */
+    for (hChild = TreeView_GetChild(hwtv, hItem);
+         hChild;
+         hChild = TreeView_GetNextSibling(hwtv, hChild)) {
+
+        if (n_childinfo >= nc_childinfo) {
+            nc_childinfo = UBOUNDSS(n_childinfo + 1,
+                                    CI_ALLOC_INCR, CI_ALLOC_INCR);
+#ifdef DEBUG
+            assert(nc_childinfo > n_childinfo);
+#endif
+            childinfo = PREALLOC(childinfo,
+                                 sizeof(*childinfo) * nc_childinfo);
+#ifdef DEBUG
+            assert(childinfo);
+#endif
+        }
+
+        ZeroMemory(&childinfo[n_childinfo],
+                   sizeof(childinfo[n_childinfo]));
+
+        childinfo[n_childinfo].hItem = hChild;
+        childinfo[n_childinfo].checked = FALSE;
+        n_childinfo++;
+    }
+
+    /* now, go through the list of actual nodes and make sure they
+       match up */
+    child = NULL;
+    for (khui_cfg_get_first_child(c, &child);
+         child;
+         khui_cfg_get_next_release(&child)) {
+
+        hChild = (HTREEITEM) khui_cfg_get_param(child);
+
+        for (i=0; i < n_childinfo; i++) {
+            if (childinfo[i].hItem == hChild)
+                break;
+        }
+
+        if (i < n_childinfo) {
+            childinfo[i].checked = TRUE;
+        } else {
+            /* add it to the list, so we can create the node in the
+               tree view control later. */
+            if (n_childinfo >= nc_childinfo) {
+                nc_childinfo = UBOUNDSS(n_childinfo + 1,
+                                        CI_ALLOC_INCR, CI_ALLOC_INCR);
+#ifdef DEBUG
+                assert(nc_childinfo > n_childinfo);
+#endif
+                childinfo = PREALLOC(childinfo,
+                                     sizeof(*childinfo) * nc_childinfo);
+#ifdef DEBUG
+                assert(childinfo);
+#endif
+            }
+
+            ZeroMemory(&childinfo[n_childinfo],
+                       sizeof(childinfo[n_childinfo]));
+
+            childinfo[n_childinfo].node = child;
+            khui_cfg_hold(child);
+            n_childinfo++;
+        }
+    }
+
+    /* by this point, the childinfo list contains items of the
+       following forms:
+
+       1. childinfo[i].hItem != NULL && childinfo[i].checked == TRUE
+
+          Corresponds to a tree view item that has a matching
+          configuration node.  Nothing to do here.
+
+       2. childinfo[i].hItem != NULL && childinfo[i].checked == FALSE
+
+          Corresponds to a tree view item that has no matching
+          configuration node.  These should be removed.
+
+       3. childinfo[i].hItem == NULL && childinfo[i].node != NULL
+
+          Corresponds to a configuration node that has no matching
+          tree view item.  These nodes should be added.
+    */
+
+    /* first do the removals */
+    for (i=0; i < n_childinfo; i++) {
+        if (childinfo[i].hItem == NULL)
+            break;              /* nothing more to see from this point
+                                   on */
+        if (!childinfo[i].checked) {
+            /* remove! */
+            cfgui_remove_item(hwtv, childinfo[i].hItem);
+        }
+    }
+
+    /* continue from where the previous loop left off */
+    for (; i < n_childinfo; i++) {
+#ifdef DEBUG
+        assert(childinfo[i].hItem == NULL);
+        assert(childinfo[i].node != NULL);
+#endif
+
+        cfgui_add_node(d, hwtv, childinfo[i].node, c, FALSE);
+
+        khui_cfg_release(childinfo[i].node);
+        childinfo[i].node = NULL;
+    }
+
+    if (childinfo)
+        PFREE(childinfo);
+
+    /* finally recurse through to the next level */
+    for (hChild = TreeView_GetChild(hwtv, hItem);
+         hChild;
+         hChild = TreeView_GetNextSibling(hwtv, hChild)) {
+
+        TVITEMEX itemex;
+
+        ZeroMemory(&itemex, sizeof(itemex));
+
+        itemex.mask = TVIF_PARAM;
+        itemex.hItem = hChild;
+
+        TreeView_GetItem(hwtv, &itemex);
+
+        if (itemex.lParam) {
+            child = (khui_config_node) itemex.lParam;
+
+            cfgui_sync_node(d, hwtv, child, hChild);
+        }
+    }
+}
+
+static void
+cfgui_sync_node_list(cfgui_wnd_data * d, HWND hwnd) {
+    HWND hwtv;
+    HTREEITEM hItem;
+
+    hwtv = GetDlgItem(hwnd, IDC_CFG_NODELIST);
+    hItem = TreeView_GetRoot(hwtv);
+
+    cfgui_sync_node(d, hwtv, NULL, hItem);
 }
 
 static void
@@ -450,10 +656,8 @@ cfgui_update_state(HWND hwnd,
     TreeView_SetItem(hwtv, &itx);
 
     if(cfgui_check_mod_state(NULL)) {
-        EnableWindow(GetDlgItem(hwnd, IDC_CFG_SUMMARY), TRUE);
         EnableWindow(GetDlgItem(hwnd, IDAPPLY), TRUE);
     } else {
-        EnableWindow(GetDlgItem(hwnd, IDC_CFG_SUMMARY), FALSE);
         EnableWindow(GetDlgItem(hwnd, IDAPPLY), FALSE);
     }
 }
@@ -512,7 +716,7 @@ cfgui_dlgproc_generic(HWND hwnd,
             r_fill.bottom = r_logo.top;
             FillRect(hdc, &r_fill, d->hbr_white);
 
-            SetWindowLong(hwnd, DWL_MSGRESULT, (LONG) TRUE);
+            SetWindowLongPtr(hwnd, DWLP_MSGRESULT, (LONG) TRUE);
         }
         return TRUE;
     }
@@ -580,7 +784,6 @@ cfgui_dlgproc(HWND hwnd,
         khui_delete_bitmap(&d->kbmp_logo);
         DeleteObject(d->hbr_white);
 
-        khm_leave_modal();
         khm_del_dialog(hwnd);
 
         SetForegroundWindow(khm_hwnd_main);
@@ -591,6 +794,8 @@ cfgui_dlgproc(HWND hwnd,
         {
             LPNMHDR lpnm;
             LPNMTREEVIEW lptv;
+            LPNMTVGETINFOTIP lpgi;
+            khui_config_node node;
 
             lpnm = (LPNMHDR) lParam;
 
@@ -600,6 +805,31 @@ cfgui_dlgproc(HWND hwnd,
                 cfgui_activate_node(hwnd,
                                     (khui_config_node) 
                                     lptv->itemNew.lParam);
+                return TRUE;
+
+            case TVN_GETINFOTIP:
+                lpgi = (LPNMTVGETINFOTIP) lParam;
+                node = (khui_config_node) lpgi->lParam;
+
+                if (node) {
+                    khm_int32 flags = 0;
+
+                    flags = khui_cfg_get_flags(node);
+
+                    if (flags & KHUI_CNFLAG_MODIFIED) {
+                        LoadString(khm_hInstance, IDS_CFG_IT_MOD,
+                                   lpgi->pszText, lpgi->cchTextMax);
+                    } else if (flags & KHUI_CNFLAG_APPLIED) {
+                        LoadString(khm_hInstance, IDS_CFG_IT_APP,
+                                   lpgi->pszText, lpgi->cchTextMax);
+                    } else {
+                        LoadString(khm_hInstance, IDS_CFG_IT_NONE,
+                                   lpgi->pszText, lpgi->cchTextMax);
+                    }
+                } else {
+                    StringCchCopy(lpgi->pszText, lpgi->cchTextMax, L"");
+                }
+
                 return TRUE;
             }
         }
@@ -615,6 +845,7 @@ cfgui_dlgproc(HWND hwnd,
     case WM_COMMAND:
         switch(wParam) {
         case MAKEWPARAM(IDCANCEL, BN_CLICKED):
+            khm_leave_modal();
             DestroyWindow(hwnd);
             break;
 
@@ -624,6 +855,7 @@ cfgui_dlgproc(HWND hwnd,
 
         case MAKEWPARAM(IDOK, BN_CLICKED):
             cfgui_apply_settings(NULL);
+            khm_leave_modal();
             DestroyWindow(hwnd);
             break;
         }
@@ -639,7 +871,13 @@ cfgui_dlgproc(HWND hwnd,
             cfgui_update_state(hwnd, LOWORD(wParam), 
                                (khui_config_node) lParam);
             break;
+
+        case WMCFG_SYNC_NODE_LIST:
+            d = cfgui_get_wnd_data(hwnd);
+            cfgui_sync_node_list(d, hwnd);
+            break;
         }
+
         return TRUE;
     }
 
@@ -691,6 +929,10 @@ void khm_refresh_config(void) {
     khm_int32 rv;
     int n_tries = 0;
     khui_config_node cfg_ids = NULL;
+    khui_config_node cfg_r = NULL;
+    khui_config_node cfg_iter = NULL;
+    khui_menu_def * omenu;
+    khm_boolean refresh_menu = FALSE;
 
     do {
         rv = kcdb_identity_enum(KCDB_IDENT_FLAG_CONFIG,
@@ -766,9 +1008,106 @@ void khm_refresh_config(void) {
         }
     }
 
+    for (khui_cfg_get_first_child(cfg_ids, &cfg_iter);
+         cfg_iter;
+         khui_cfg_get_next_release(&cfg_iter)) {
+
+        wchar_t cfgname[KCDB_IDENT_MAXCCH_NAME];
+        khm_size cb;
+        khm_handle tident = NULL;
+        khm_int32 tflags = 0;
+
+        cb = sizeof(cfgname);
+        khui_cfg_get_name(cfg_iter, cfgname, &cb);
+
+        if (KHM_FAILED(kcdb_identity_create(cfgname, 0, &tident)) ||
+            KHM_FAILED(kcdb_identity_get_flags(tident, &tflags)) ||
+            !(tflags & KCDB_IDENT_FLAG_ACTIVE) ||
+            !(tflags & KCDB_IDENT_FLAG_CONFIG)) {
+
+            /* this configuration node needs to be removed */
+
+            khui_cfg_remove(cfg_iter);
+        }
+
+        if (tident)
+            kcdb_identity_release(tident);
+    }
+
+    /* Now iterate through the root level configuration nodes and make
+       sure we have a menu item for each of them. */
+    if (KHM_FAILED(khui_cfg_get_first_child(NULL, &cfg_r)))
+        goto _cleanup;
+
+    omenu = khui_find_menu(KHUI_MENU_OPTIONS);
+    if (omenu == NULL)
+        goto _cleanup;
+
+    do {
+        khm_int32 action;
+        khm_int32 flags;
+        khui_action * paction;
+        wchar_t cname[KHUI_MAXCCH_NAME];
+        wchar_t wshort[KHUI_MAXCCH_SHORT_DESC];
+        khm_size cb;
+        khm_handle sub;
+        khui_config_node_reg reg;
+
+        flags = khui_cfg_get_flags(cfg_r);
+        if (flags & KHUI_CNFLAG_SYSTEM)
+            goto _next_cfg;
+
+        cb = sizeof(cname);
+        if (KHM_FAILED(khui_cfg_get_name(cfg_r, cname, &cb))) {
+#ifdef DEBUG
+            assert(FALSE);
+#endif
+            goto _next_cfg;
+        }
+
+        paction = khui_find_named_action(cname);
+
+        if (!paction) {
+            khui_cfg_get_reg(cfg_r, &reg);
+
+            kmq_create_hwnd_subscription(khm_hwnd_main, &sub);
+
+            StringCbCopy(wshort, sizeof(wshort), reg.short_desc);
+            StringCbCat(wshort, sizeof(wshort), L" ...");
+
+            action = khui_action_create(cname,
+                                        wshort,
+                                        reg.long_desc,
+                                        (void *) CFGACTION_MAGIC,
+                                        KHUI_ACTIONTYPE_TRIGGER,
+                                        sub);
+
+            if (action == 0) {
+#ifdef DEBUG
+                assert(FALSE);
+#endif
+                goto _next_cfg;
+            }
+
+            khui_menu_insert_action(omenu, -1, action, 0);
+
+            refresh_menu = TRUE;
+        }
+
+    _next_cfg:
+        if (KHM_FAILED(khui_cfg_get_next_release(&cfg_r)))
+            break;
+    } while(cfg_r);
+
+    if (refresh_menu)
+        khm_menu_refresh_items();
+
  _cleanup:
     if (cfg_ids)
         khui_cfg_release(cfg_ids);
+
+    if (cfg_r)
+        khui_cfg_release(cfg_r);
 
     if (idents)
         PFREE(idents);
@@ -783,7 +1122,7 @@ void khm_init_config(void) {
     reg.short_desc = wshort;
     reg.long_desc = wlong;
     reg.h_module = khm_hInstance;
-    reg.flags = 0;
+    reg.flags = KHUI_CNFLAG_SYSTEM;
 
     reg.name = L"KhmGeneral";
     reg.dlg_template = MAKEINTRESOURCE(IDD_CFG_GENERAL);
@@ -791,6 +1130,16 @@ void khm_init_config(void) {
     LoadString(khm_hInstance, IDS_CFG_GENERAL_SHORT,
                wshort, ARRAYLENGTH(wshort));
     LoadString(khm_hInstance, IDS_CFG_GENERAL_LONG,
+               wlong, ARRAYLENGTH(wlong));
+
+    khui_cfg_register(NULL, &reg);
+
+    reg.name = L"KhmAppear";
+    reg.dlg_template = MAKEINTRESOURCE(IDD_CFG_APPEAR);
+    reg.dlg_proc = khm_cfg_appearance_proc;
+    LoadString(khm_hInstance, IDS_CFG_APPEAR_SHORT,
+               wshort, ARRAYLENGTH(wshort));
+    LoadString(khm_hInstance, IDS_CFG_APPEAR_LONG,
                wlong, ARRAYLENGTH(wlong));
 
     khui_cfg_register(NULL, &reg);
@@ -818,7 +1167,7 @@ void khm_init_config(void) {
                wshort, ARRAYLENGTH(wshort));
     LoadString(khm_hInstance, IDS_CFG_IDS_TAB_LONG,
                wlong, ARRAYLENGTH(wlong));
-    reg.flags = KHUI_CNFLAG_SUBPANEL;
+    reg.flags = KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_SYSTEM;
 
     khui_cfg_register(node, &reg);
 
@@ -829,11 +1178,11 @@ void khm_init_config(void) {
                wshort, ARRAYLENGTH(wshort));
     LoadString(khm_hInstance, IDS_CFG_ID_TAB_LONG,
                wlong, ARRAYLENGTH(wlong));
-    reg.flags = KHUI_CNFLAG_PLURAL | KHUI_CNFLAG_SUBPANEL;
+    reg.flags = KHUI_CNFLAG_PLURAL | KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_SYSTEM;
 
     khui_cfg_register(node, &reg);
 
-    reg.flags = 0;
+    reg.flags = KHUI_CNFLAG_SYSTEM;
     khui_cfg_release(node);
 
     reg.name = L"KhmNotifications";

@@ -10,6 +10,7 @@ OBJS= \
 	$(O)\kinit.obj
 
 DELAY_DLLS=comerr32.dll,krb5_32.dll,krbv4w32.dll
+WIN64_DELAY_DLLS=comerr64.dll,krb5_64.dll
 
 DEP_LIBS=..\$(O)\kuser.lib \
 	$(PISMERE)\target\lib\$(T)\getopt.lib \
@@ -17,7 +18,14 @@ DEP_LIBS=..\$(O)\kuser.lib \
 	$(PISMERE)\target\lib\$(T)\krbv4w32.lib \
 	$(PISMERE)\target\lib\$(T)\comerr32.lib
 
+WIN64_DEP_LIBS=..\$(O)\kuser.lib \
+	$(PISMERE)\target\lib\$(T)\getopt.lib \
+	$(PISMERE)\target\lib\$(T)\krb5_64.lib \
+	$(PISMERE)\target\lib\$(T)\comerr64.lib
+
 LIBS=advapi32.lib $(DEP_LIBS)
+
+WIN64LIBS=advapi32.lib $(WIN64_DEP_LIBS)
 
 INCLUDES=..;..\..\krb5\src\include;..\..\krb4\include;\
 	$(PISMERE)\athena\util\loadfuncs;$(PISMERE)\athena\util\lib\getopt;\
@@ -27,6 +35,7 @@ USE_DEFAULTLIB=1
 RES=$(O)\kinit.res
 
 C_DEFINE=-DKRB5_KRB4_COMPAT -DGETOPT_LONG
+WIN64_C_DEFINE=-DGETOPT_LONG
 
 
 DEBUG_SYMBOL=1

@@ -173,13 +173,22 @@ kcdb_attr_sys_cb(khm_handle vcred,
                 *((FILETIME *) buf) = IntToFt(_I64_MAX);
             } else {
                 FILETIME ftc;
+                khm_int64 i_re;
+                khm_int64 i_ct;
 
                 GetSystemTimeAsFileTime(&ftc);
 
-                *((FILETIME *) buf) =
-                    IntToFt(FtToInt(((FILETIME *)
-                                     kcdb_cred_buf_get(c,KCDB_ATTR_RENEW_EXPIRE))
-                                    - FtToInt(&ftc)));
+                i_re = FtToInt(((FILETIME *)
+                                kcdb_cred_buf_get(c, KCDB_ATTR_RENEW_EXPIRE)));
+                i_ct = FtToInt(&ftc);
+
+                if (i_re > i_ct)
+                    *((FILETIME *) buf) =
+                        IntToFt(i_re - i_ct);
+                else
+                    *((FILETIME *) buf) =
+                        IntToFt(0);
+
                 *pcb_buf = sizeof(FILETIME);
             }
 
@@ -329,7 +338,7 @@ kcdb_attrib_init(void)
     LoadString(hinst_kcreddb, IDS_PARENT, sbuf, ARRAYLENGTH(sbuf));
     attrib.short_desc = sbuf;
     attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM;
+    attrib.flags = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_HIDDEN;
     attrib.compute_cb = NULL;
     attrib.compute_min_cbsize = 0;
     attrib.compute_max_cbsize = 0;
@@ -392,8 +401,8 @@ kcdb_attrib_init(void)
         KCDB_ATTR_FLAG_ALTVIEW |
         KCDB_ATTR_FLAG_VOLATILE;
     attrib.compute_cb = kcdb_attr_sys_cb;
-    attrib.compute_min_cbsize = sizeof(__int64);
-    attrib.compute_max_cbsize = sizeof(__int64);
+    attrib.compute_min_cbsize = sizeof(FILETIME);
+    attrib.compute_max_cbsize = sizeof(FILETIME);
 
     kcdb_attrib_register(&attrib, NULL);
 
@@ -411,8 +420,8 @@ kcdb_attrib_init(void)
         KCDB_ATTR_FLAG_ALTVIEW |
         KCDB_ATTR_FLAG_VOLATILE;
     attrib.compute_cb = kcdb_attr_sys_cb;
-    attrib.compute_min_cbsize = sizeof(__int64);
-    attrib.compute_max_cbsize = sizeof(__int64);
+    attrib.compute_min_cbsize = sizeof(FILETIME);
+    attrib.compute_max_cbsize = sizeof(FILETIME);
 
     kcdb_attrib_register(&attrib, NULL);
 
@@ -491,7 +500,7 @@ kcdb_attrib_exit(void)
 }
 
 KHMEXP khm_int32 KHMAPI 
-kcdb_attrib_get_id(wchar_t *name, khm_int32 * id)
+kcdb_attrib_get_id(const wchar_t *name, khm_int32 * id)
 {
     kcdb_attrib_i * ai;
 
@@ -512,7 +521,7 @@ kcdb_attrib_get_id(wchar_t *name, khm_int32 * id)
 }
 
 KHMEXP khm_int32 KHMAPI 
-kcdb_attrib_register(kcdb_attrib * attrib, khm_int32 * new_id)
+kcdb_attrib_register(const kcdb_attrib * attrib, khm_int32 * new_id)
 {
     kcdb_attrib_i * ai;
     size_t cb_name;

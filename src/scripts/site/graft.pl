@@ -25,6 +25,32 @@ my $TOP = File::Spec->catfile($FindBin::Bin, '..', '..');
 my $FIND_OK = 0;
 my $NO_RMTREE_CLEANUP = 0;
 
+
+sub svn_try
+{
+    my $k = shift;
+    my $rev = shift;
+    my $svnroot = $M->{$k}->{svn};
+
+    return 0 if !$svnroot; 
+
+    my $cmd = "svn checkout $svnroot/$rev $k";
+    print "Trying: $cmd\n";
+    my $error = 0;
+    if (system($cmd) / 256) {
+	$error = 1;
+    }
+	
+    if ($error && !$NO_RMTREE_CLEANUP) {
+	print "Error detected!  Removing $k\n";
+	rmtree($k);
+	#die "Could not successfully get $k\n";
+    }
+    return !$error;
+
+}
+
+
 sub cvs_try
 {
     my $k = shift;
@@ -146,17 +172,22 @@ sub graft
 			}
 		}
 	}
-			
-
-    if (!$noorig) {
+	
+    if ($M->{$k}->{svn})
+    {	
 	$DONE->{$k} =
-	  cvs_try($k, $rev, 'original', 0) ||
-	    cvs_try($k, $rev, 'original', 1);
-    }
-    $DONE->{$k} = $DONE->{$k} ||
-      cvs_try($k, $rev, 'cvs', 0) ||
-	cvs_try($k, $rev, 'cvs', 1);
-
+		svn_try($k, $rev);
+    }	
+    else{
+    	if (!$noorig) {
+		$DONE->{$k} =
+	  	cvs_try($k, $rev, 'original', 0) ||
+	    	cvs_try($k, $rev, 'original', 1);
+    	}
+    	$DONE->{$k} = $DONE->{$k} ||
+      		cvs_try($k, $rev, 'cvs', 0) ||
+		cvs_try($k, $rev, 'cvs', 1);
+   }
     if ($DONE->{$k}) {
 	$DONE->{$k} = update($k, 0);
 	rmtree($k) if !$DONE->{$k} && !$NO_RMTREE_CLEANUP;
@@ -216,6 +247,18 @@ sub update
     return 1;
 }
 
+sub svn_try_update
+{
+    my $k = shift;
+    
+    my $cmd =  "svn update ";
+    print "Trying: $cmd\n";
+    my $error = system($cmd) / 256;
+    
+    return !$error;
+}
+
+
 sub cvs_try_update
 {
     my $k = shift;
@@ -242,9 +285,21 @@ sub cvs_try_update
     if (!(-d $CVS)) {
 	die "Could not find CVS state\n";
     }
+	my $old_Env;
+
+   if ($M->{$k}->{passfile}) {
+		$old_Env = $ENV{'CVS_PASSFILE'};
+		$ENV{'CVS_PASSFILE'} = $TOP.'/'.$M->{$k}->{passfile};
+	}
+
     my $cmd = "cvs $u_gopt$n_gopt$q_gopt up -".$d_lopt."P";
     print "Trying: $cmd\n";
     my $error = system($cmd) / 256;
+
+	if ($M->{$k}->{passfile} && $old_Env) {
+		$ENV{'CVS_PASSFILE'} = $old_Env;
+	}
+
     if ($moved) {
 	move($CVS, $_CVS) || die "$0: Could not rename $CVS to $_CVS\n";
     }
@@ -263,7 +318,15 @@ sub cvs_update
 				  $M->{$k}->{in}, $k);
     print "In dir: $dir\n";
     chdir($dir) || die;
-    cvs_try_update($k, 0, $n , $q) || cvs_try_update($k, 1, $n, $q);
+    if ($M->{$k}->{svn})
+    {
+	svn_try_update($k);
+    }
+    else
+    {
+    	cvs_try_update($k, 0, $n , $q) || cvs_try_update($k, 1, $n, $q);
+    }
+	
     chdir($cwd) || die;
 }
 

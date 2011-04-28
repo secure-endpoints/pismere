@@ -970,7 +970,7 @@ cci_compat_credentials_equal (
 
 		// I am not sure this is right! The correct thing to do is is krb5_parse and krb5_compare
 		if ((strcmp (oldCredsV5 -> client, newCredsV5 -> client) == 0) &&
-		    (strcmp (oldCredsV5 -> server, oldCredsV5 -> server) == 0) &&
+		    (strcmp (oldCredsV5 -> server, newCredsV5 -> server) == 0) &&
 		    (oldCredsV5 -> starttime == newCredsV5 -> starttime))
 			return cc_true;
 		else

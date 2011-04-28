@@ -86,9 +86,9 @@ void usage()
 }
 
 int
-main(argc, argv)
-    int argc;
-    char **argv;
+main(
+    int argc,
+    char **argv)
 {
     krb5_context kcontext;
     krb5_error_code retval;

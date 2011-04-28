@@ -99,15 +99,15 @@ void AllocateThreadLocalMemory()
     if (lpvData != NULL) 
         TlsSetValue(dwHesPwNamIndex, lpvData);
 
-	lpvData = (LPVOID) LocalAlloc(LPTR, sizeof(struct passwd)); 
+    lpvData = (LPVOID) LocalAlloc(LPTR, sizeof(struct passwd)); 
     if (lpvData != NULL) 
         TlsSetValue(dwHesPwUidIndex, lpvData);
 
-	lpvData = (LPVOID) LocalAlloc(LPTR, sizeof(struct hostent)); 
+    lpvData = (LPVOID) LocalAlloc(LPTR, sizeof(struct hostent)); 
     if (lpvData != NULL) 
         TlsSetValue(dwGhnIndex, lpvData);
 
-	lpvData = (LPVOID) LocalAlloc(LPTR, sizeof(struct hostent)); 
+    lpvData = (LPVOID) LocalAlloc(LPTR, sizeof(struct hostent)); 
     if (lpvData != NULL) 
         TlsSetValue(dwGhaIndex, lpvData);
 

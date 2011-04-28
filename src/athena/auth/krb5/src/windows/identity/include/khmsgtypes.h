@@ -85,7 +85,8 @@
 
 /*! \brief Action list messages
 
-    Notifications of changes in action state.
+    Notifications of changes in action state and firing of custom
+    actions.
 
     \see \ref kmq_msg_act
  */
@@ -138,6 +139,7 @@
     \see \ref pi_pt_cred_init
  */
 #define KMSG_SYSTEM_INIT    1
+
 /*! \brief Generic uninitialization message
 
     Used by specific components to signal that the recipient should
@@ -187,7 +189,7 @@
     khui_enable_actions() or khui_enable_action() and indicates that
     one or more actions have changed their state.
  */
-#define KMSG_ACT_ENABLE 1
+#define KMSG_ACT_ENABLE     1
 
 /*! \brief One or more actions changed check state
 
@@ -195,17 +197,48 @@
     khui_check_action() and indicates that one or more actions have
     either been checked or unchecked.
  */
-#define KMSG_ACT_CHECK 2
+#define KMSG_ACT_CHECK      2
 
 /*! \brief Refresh action states
 
     Sent after a batch of modifications were made to action states.
  */
-#define KMSG_ACT_REFRESH 3
+#define KMSG_ACT_REFRESH    3
 
+/*! \brief A new action was created
+
+    Sent when a new custom action was created.  The \a uparam
+    parameter of the message contains the identifier of the newly
+    created action.
+*/
+#define KMSG_ACT_NEW        4
+
+/*! \brief A custom action was deleted
+
+    Sent after a custom action is deleted.  The \a uparam parameter of
+    the message contains the identifier of the deleted action.
+ */
+#define KMSG_ACT_DELETE     5
+
+/*! \brief A custom action has been activated
+
+    When a custom action is activated, then the listener of that
+    custom action receives this message.  Note that only the listener
+    for that custom action will receive this notification.
+
+    \a uparam of the message is set to the identifier of the custom
+    action.
+ */
+#define KMSG_ACT_ACTIVATE   6
+
+/*! \brief Internal */
 #define KMSG_ACT_BEGIN_CMDLINE 128
 
+/*! \brief Internal */
 #define KMSG_ACT_CONTINUE_CMDLINE 129
+
+/*! \brief Internal */
+#define KMSG_ACT_SYNC_CFG 130
 
 /*@}*/
 
@@ -228,7 +261,7 @@
     respective credentials.
 
     \note May be sent to individual credential subscriptions.
-*/
+ */
 #define KMSG_CRED_REFRESH   2
 
 /*! \brief Change the password
@@ -236,21 +269,38 @@
     This message notifies credentials providers that a password change
     request has been received.
 
+    A plug-in handling this message that wishes to participate in the
+    password change operation is expected to add a
+    ::khui_new_creds_by_type to the list of participants in the
+    ::khui_new_creds structure by calling khui_cw_add_type().
+
+    The password change operation requires user interaction.  Any
+    plug-ins that are participating in the operation need to provide a
+    user-interface.
+
     Message parameters:
     - \b vparam : pointer to a ::khui_new_creds structure
+
+    \see khui_cw_add_type(), ::khui_new_creds, ::khui_new_creds_by_type
  */
 #define KMSG_CRED_PASSWORD  16
 
 /*! \brief Initiate the process of obtaining new credentials
 
     The UI sends this message to start the process of obtaining new
-    credentials.  See \ref cred_acq for more information about handling this
-    message.
+    credentials.  See \ref cred_acq for more information about
+    handling this message.
+
+    A plug-in handling this message that wishes to participate in the
+    new credentials acquisition operation is expected to add a
+    ::khui_new_creds_by_type to hte list of participants in the
+    ::khui_new_creds structure by calling khui_cw_add_type().
 
     Message parameters:
     - \b vparam : pointer to a ::khui_new_creds structure
 
-    \see \ref cred_acq
+    \see \ref cred_acq, khui_cw_add_type(), ::khui_new_creds,
+    ::khui_new_creds_by_type
  */
 #define KMSG_CRED_NEW_CREDS 17
 
@@ -259,21 +309,29 @@
     This is a notification sent to individual credentials providers
     that a specified identity's credentials should be renewed.
 
+    A plug-in handling this message that wishes to participate in the
+    renew credentials operation is expected to add a
+    ::khui_new_creds_by_type to the list of participants in the
+    ::khui_new_creds structure by calling khui_cw_add_type().
+
     Message parameters:
     - \b vparam : Pointer to a khui_new_creds object
+
+    \see khui_cw_add_type(), ::khui_new_creds,
+    ::khui_new_creds_by_type
  */
 #define KMSG_CRED_RENEW_CREDS       18
 
 /*! \brief Dialog setup
 
-    Once KMSG_CRED_NEW_CREDS has been responded to by all the
+    Once ::KMSG_CRED_NEW_CREDS has been responded to by all the
     credential types, the UI creates the dialog windows using the data
     supplied in the ::khui_new_creds_by_type structures and issues
     this message.  Each credentials provider is expected to respond by
     finalizing dialog creation operations.
 
     Message parameters:
-    - \b vparam : poitner to a ::khui_new_creds structure
+    - \b vparam : pointer to a ::khui_new_creds structure
 
     \note May be sent to individual credential subscriptions.
  */
@@ -282,7 +340,7 @@
 /*! \brief Dialog pre-start
 
     Sent after all the credentials providers have responded to
-    KMSG_CRED_DIALOG_SETUP and all the initialization has been
+    ::KMSG_CRED_DIALOG_SETUP and all the initialization has been
     completed.  Credentials providers are expected to respond to this
     message by loading any default data into the dialog controls for
     each credential type.
@@ -348,8 +406,8 @@
     processing.
 
     If the \a result field in the structure is set to
-    KHUI_NC_RESULT_GET_CREDS, then new credentials should be obtained
-    using the given data.
+    ::KHUI_NC_RESULT_PROCESS, then new credentials should be
+    obtained using the given data.
 
     Set the \a response field in the structure to indicate how the UI
     should proceed from here.
@@ -414,6 +472,10 @@
 
 /*! \brief A property page is being launced
 
+    Handlers of this message should determine whether or not they
+    should participate in the property sheet and if so, add a
+    ::khui_property_page structure to the property sheet.
+
     Message parameters:
     - \b vparam : pointer to a ::khui_property_sheet structure
  */
@@ -432,6 +494,9 @@
 
 /*! \brief A property page has finished processing
 
+    Handlers of this message should remove any ::khui_property_page
+    structures they added when processing ::KMSG_CRED_PP_BEGIN.
+
     Message parameters:
     - \b vparam : pointer to a ::khui_property_sheet structure
  */
@@ -441,6 +506,13 @@
 
     Message parameters:
     - \b vparam : pointer to a ::khui_property_sheet structure
+
+    \note This is a notification that the property sheet processing
+        has been completed and that the property sheet data structures
+        should be freed.  Any property page data structures should
+        have already been freed while processing KMSG_CRED_PP_END.
+        The validity of the ::khui_property_sheet structure should not
+        be relied upon while processing this message.
  */
 #define KMSG_CRED_PP_DESTROY        131
 
@@ -460,7 +532,6 @@
     dialog completion.
 
     Currently, the dialog messages are:
-    - ::KMSG_CRED_INITIAL_CREDS
     - ::KMSG_CRED_NEW_CREDS
     - ::KMSG_CRED_RENEW_CREDS
     - ::KMSG_CRED_DIALOG_SETUP
@@ -515,6 +586,16 @@
     There are no message parameters
  */
 #define KMSG_ALERT_CHECK_QUEUE 4
+
+/*! \brief Show a modal alert
+
+    Message parameters:
+    - \b vparam : held pointer to a ::khui_alert object.
+
+    \note the ::khui_alert object will be released when the queued
+        messages are displayed.
+ */
+#define KMSG_ALERT_SHOW_MODAL 5
 
 /*@}*/
 

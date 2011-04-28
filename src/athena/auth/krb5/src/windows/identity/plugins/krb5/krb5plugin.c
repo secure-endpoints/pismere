@@ -111,9 +111,6 @@ k5_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
 
                 krb5_initialized = TRUE;
 
-                if(ctx != NULL)
-                    pkrb5_free_context(ctx);
-
                 /* now convert this thread to a fiber and create a
                    separate fiber to do kinit stuff */
                 k5_main_fiber = ConvertThreadToFiber(NULL);
@@ -126,6 +123,9 @@ k5_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
                 k5_register_config_panels();
 
                 khm_krb5_list_tickets(&ctx);
+
+                if(ctx != NULL)
+                    pkrb5_free_context(ctx);
             }
         }
         break;
@@ -134,23 +134,21 @@ k5_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
 
         k5_unregister_config_panels();
 
-        if(credtype_id_krb5 >= 0)
-            {
-                /* basically just unregister the credential type */
-                kcdb_credtype_unregister(credtype_id_krb5);
+        if(credtype_id_krb5 >= 0) {
+            /* basically just unregister the credential type */
+            kcdb_credtype_unregister(credtype_id_krb5);
 
-                /* kcdb knows how to deal with bad handles */
-                kcdb_credset_delete(krb5_credset);
-                krb5_credset = NULL;
-            }
+            /* kcdb knows how to deal with bad handles */
+            kcdb_credset_delete(krb5_credset);
+            krb5_credset = NULL;
+        }
 
         if(k5_main_fiber != NULL) {
-
             if (k5_kinit_fiber) {
 #ifdef DEBUG
                 assert(k5_kinit_fiber != GetCurrentFiber());
 #endif
-#if CLEANUP_FIBERS_ON_EXIT
+#ifdef CLEANUP_FIBERS_ON_EXIT
                 DeleteFiber(k5_kinit_fiber);
                 CloseHandle(k5_kinit_fiber);
 #endif
@@ -158,7 +156,6 @@ k5_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
             }
 
             k5_main_fiber = NULL;
-
         }
 
         if(k5_sub != NULL) {
@@ -166,6 +163,23 @@ k5_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
             k5_sub = NULL;
         }
 
+        break;
+    }
+
+    return rv;
+}
+
+khm_int32 KHMAPI
+k5_msg_kcdb(khm_int32 msg_type, khm_int32 msg_subtype,
+            khm_ui_4 uparam, void * vparam)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    switch(msg_subtype) {
+    case KMSG_KCDB_IDENT:
+        if (uparam == KCDB_OP_DELCONFIG) {
+            k5_remove_from_LRU((khm_handle) vparam);
+        }
         break;
     }
 
@@ -200,9 +214,16 @@ k5_msg_cred(khm_int32 msg_type, khm_int32 msg_subtype,
             khui_action_context * ctx;
 
             ctx = (khui_action_context *) vparam;
-                
-            if (ctx->credset)
+
+            if (ctx->credset) {
+                _begin_task(0);
+                _report_mr0(KHERR_INFO, MSG_ERR_CTX_DESTROY_CREDS);
+                _describe();
+
                 khm_krb5_destroy_by_credset(ctx->credset);
+
+                _end_task();
+            }
         }
         break;
 
@@ -237,6 +258,8 @@ k5_msg_callback(khm_int32 msg_type, khm_int32 msg_subtype,
         return k5_msg_system(msg_type, msg_subtype, uparam, vparam);
     case KMSG_CRED:
         return k5_msg_cred(msg_type, msg_subtype, uparam, vparam);
+    case KMSG_KCDB:
+        return k5_msg_kcdb(msg_type, msg_subtype, uparam, vparam);
     }
     return KHM_ERROR_SUCCESS;
 }

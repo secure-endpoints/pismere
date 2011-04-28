@@ -75,8 +75,14 @@ hes_getpwuid(int uid)
         return(NULL);
 
     pw = (struct passwd*)(TlsGetValue(dwHesPwUidIndex));
-    if (pw == NULL)
-        return NULL;
+    if (pw == NULL) {
+	LPVOID lpvData = (LPVOID) LocalAlloc(LPTR, sizeof(struct passwd)); 
+	if (lpvData != NULL) {
+	    TlsSetValue(dwHesPwUidIndex, lpvData);
+	    pw = (struct passwd*)lpvData;
+	} else
+	    return NULL;
+    }
 
     strcpy(buf, pp[0]);
     hes_free(pp);
@@ -113,8 +119,14 @@ hes_getpwnam(char *nam)
         return(NULL);
 
     pw = (struct passwd*)(TlsGetValue(dwHesPwNamIndex));
-    if (pw == NULL)
-        return NULL;
+    if (pw == NULL) {
+	LPVOID lpvData = (LPVOID) LocalAlloc(LPTR, sizeof(struct passwd)); 
+	if (lpvData != NULL) {
+	    TlsSetValue(dwHesPwNamIndex, lpvData);
+	    pw = (struct passwd*)lpvData;
+	} else
+	    return NULL;
+    }
 
     strcpy(buf, pp[0]);
     hes_free(pp);
