@@ -1,0 +1,11 @@
+#define VER_PROD_MAJOR 2
+#define VER_PROD_MINOR 0
+#define VER_PROD_REV   0
+
+#define VER_PROD_MAJOR_STR  "2"
+#define VER_PROD_MINOR_STR  "0"
+#define VER_PROD_REV_STR    "0"
+
+#define VER_PRODUCTNAME_STR "MIT Kerberos for Win32"
+
+#include <export.ver>

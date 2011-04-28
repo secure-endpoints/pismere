@@ -1,0 +1,17 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=cerrw32
+TARGETTYPE=LIB
+TARGETSS=console
+
+OBJS= \
+	$(O)\com_err.obj \
+	$(O)\errmsg.obj \
+	$(O)\et_name.obj
+
+USE_DEFAULTLIB=1
+NO_PLACE=1
+
+C_FLAGS=-DPC -DPLATFORM=win32 -DWINDOWS

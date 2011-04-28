@@ -1,0 +1,488 @@
+# Microsoft Developer Studio Generated Dependency File, included by leash32.mak
+
+.\CLeashDragListBox.cpp : \
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\k5-int.h"\
+	"..\..\krb5\src\include\krb5.h"\
+	"..\..\krb5\src\include\krb5\autoconf.h"\
+	"..\..\krb5\src\include\krb5\kdb.h"\
+	"..\..\krb5\src\include\krb5\osconf.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\CLeashDragListBox.h"\
+	".\Leash.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\Krb4AddToDomainRealmList.cpp : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\Krb4AddToDomainRealmList.h"\
+	".\Leash.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\Krb4AddToRealmHostList.cpp : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\krb4addtorealmhostlist.h"\
+	".\Leash.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\Krb4DomainRealmMaintenance.cpp : \
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\k5-int.h"\
+	"..\..\krb5\src\include\krb5.h"\
+	"..\..\krb5\src\include\krb5\autoconf.h"\
+	"..\..\krb5\src\include\krb5\kdb.h"\
+	"..\..\krb5\src\include\krb5\osconf.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\CLeashDragListBox.h"\
+	".\Krb4AddToDomainRealmList.h"\
+	".\Krb4DomainRealmMaintenance.h"\
+	".\Krb4EditDomainRealmList.h"\
+	".\Krb4Properties.h"\
+	".\krb4realmhostmaintenance.h"\
+	".\KrbConfigOptions.h"\
+	".\KrbDomainRealmMaintenance.h"\
+	".\KrbProperties.h"\
+	".\KrbRealmHostMaintenance.h"\
+	".\Leash.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\Krb4EditDomainRealmList.cpp : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\Krb4EditDomainRealmList.h"\
+	".\Krb4Properties.h"\
+	".\Leash.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\Krb4EditRealmHostList.cpp : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\krb4editrealmhostlist.h"\
+	".\Krb4Properties.h"\
+	".\Leash.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\Krb4Properties.cpp : \
+	"..\..\..\wshelper\include\arpa\nameser.h"\
+	"..\..\..\wshelper\include\hesiod.h"\
+	"..\..\..\wshelper\include\mitwhich.h"\
+	"..\..\..\wshelper\include\resolv.h"\
+	"..\..\..\wshelper\include\wshelper.h"\
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb4\include\decldll.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\Krb4Properties.h"\
+	".\Leash.h"\
+	".\LeashFileDialog.h"\
+	".\LeashMessageBox.h"\
+	".\lglobals.h"\
+	".\reminder.h"\
+	".\StdAfx.h"\
+	
+
+.\Krb4RealmHostMaintenance.cpp : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\CLeashDragListBox.h"\
+	".\krb4addtorealmhostlist.h"\
+	".\Krb4DomainRealmMaintenance.h"\
+	".\krb4editrealmhostlist.h"\
+	".\Krb4Properties.h"\
+	".\krb4realmhostmaintenance.h"\
+	".\KrbConfigOptions.h"\
+	".\KrbDomainRealmMaintenance.h"\
+	".\KrbProperties.h"\
+	".\KrbRealmHostMaintenance.h"\
+	".\Leash.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\Krb5Properties.cpp : \
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\k5-int.h"\
+	"..\..\krb5\src\include\krb5.h"\
+	"..\..\krb5\src\include\krb5\autoconf.h"\
+	"..\..\krb5\src\include\krb5\kdb.h"\
+	"..\..\krb5\src\include\krb5\osconf.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\Krb5Properties.h"\
+	".\Leash.h"\
+	".\LeashFileDialog.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\KrbAddHostServer.cpp : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\KrbAddHostServer.h"\
+	".\Leash.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\KrbAddRealm.cpp : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\KrbAddRealm.h"\
+	".\Leash.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\KrbConfigOptions.cpp : \
+	"..\..\..\wshelper\include\arpa\nameser.h"\
+	"..\..\..\wshelper\include\hesiod.h"\
+	"..\..\..\wshelper\include\mitwhich.h"\
+	"..\..\..\wshelper\include\resolv.h"\
+	"..\..\..\wshelper\include\wshelper.h"\
+	"..\..\krb4\include\decldll.h"\
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\k5-int.h"\
+	"..\..\krb5\src\include\krb5.h"\
+	"..\..\krb5\src\include\krb5\autoconf.h"\
+	"..\..\krb5\src\include\krb5\kdb.h"\
+	"..\..\krb5\src\include\krb5\osconf.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\CLeashDragListBox.h"\
+	".\Krb4DomainRealmMaintenance.h"\
+	".\krb4realmhostmaintenance.h"\
+	".\KrbConfigOptions.h"\
+	".\KrbDomainRealmMaintenance.h"\
+	".\KrbProperties.h"\
+	".\KrbRealmHostMaintenance.h"\
+	".\Leash.h"\
+	".\LeashFileDialog.h"\
+	".\LeashMessageBox.h"\
+	".\lglobals.h"\
+	".\reminder.h"\
+	".\StdAfx.h"\
+	
+
+.\KrbDomainRealmMaintenance.cpp : \
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\k5-int.h"\
+	"..\..\krb5\src\include\krb5.h"\
+	"..\..\krb5\src\include\krb5\autoconf.h"\
+	"..\..\krb5\src\include\krb5\kdb.h"\
+	"..\..\krb5\src\include\krb5\osconf.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\CLeashDragListBox.h"\
+	".\Krb4AddToDomainRealmList.h"\
+	".\Krb4DomainRealmMaintenance.h"\
+	".\Krb4EditDomainRealmList.h"\
+	".\krb4realmhostmaintenance.h"\
+	".\KrbConfigOptions.h"\
+	".\KrbDomainRealmMaintenance.h"\
+	".\KrbProperties.h"\
+	".\KrbRealmHostMaintenance.h"\
+	".\Leash.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\KrbEditHostServer.cpp : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\Krb4Properties.h"\
+	".\KrbEditHostServer.h"\
+	".\Leash.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\KrbEditRealm.cpp : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\Krb4Properties.h"\
+	".\KrbEditRealm.h"\
+	".\Leash.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\KrbProperties.cpp : \
+	"..\..\..\wshelper\include\arpa\nameser.h"\
+	"..\..\..\wshelper\include\hesiod.h"\
+	"..\..\..\wshelper\include\mitwhich.h"\
+	"..\..\..\wshelper\include\resolv.h"\
+	"..\..\..\wshelper\include\wshelper.h"\
+	"..\..\krb4\include\decldll.h"\
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\k5-int.h"\
+	"..\..\krb5\src\include\krb5.h"\
+	"..\..\krb5\src\include\krb5\autoconf.h"\
+	"..\..\krb5\src\include\krb5\kdb.h"\
+	"..\..\krb5\src\include\krb5\osconf.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\CLeashDragListBox.h"\
+	".\Krb4DomainRealmMaintenance.h"\
+	".\Krb4Properties.h"\
+	".\krb4realmhostmaintenance.h"\
+	".\KrbConfigOptions.h"\
+	".\KrbDomainRealmMaintenance.h"\
+	".\KrbProperties.h"\
+	".\KrbRealmHostMaintenance.h"\
+	".\Leash.h"\
+	".\lglobals.h"\
+	".\reminder.h"\
+	".\StdAfx.h"\
+	".\KrbMiscConfigOpt.h"\
+	
+
+.\KrbRealmHostMaintenance.cpp : \
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\k5-int.h"\
+	"..\..\krb5\src\include\krb5.h"\
+	"..\..\krb5\src\include\krb5\autoconf.h"\
+	"..\..\krb5\src\include\krb5\kdb.h"\
+	"..\..\krb5\src\include\krb5\osconf.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\CLeashDragListBox.h"\
+	".\Krb4DomainRealmMaintenance.h"\
+	".\Krb4Properties.h"\
+	".\krb4realmhostmaintenance.h"\
+	".\KrbAddHostServer.h"\
+	".\KrbAddRealm.h"\
+	".\KrbConfigOptions.h"\
+	".\KrbDomainRealmMaintenance.h"\
+	".\KrbEditHostServer.h"\
+	".\KrbEditRealm.h"\
+	".\KrbProperties.h"\
+	".\KrbRealmHostMaintenance.h"\
+	".\Leash.h"\
+	".\LeashFrame.h"\
+	".\lglobals.h"\
+	".\MainFrm.h"\
+	".\StdAfx.h"\
+	
+
+.\Leash.cpp : \
+	"..\..\..\wshelper\include\mitwhich.h"\
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\Leash.h"\
+	".\LeashAboutBox.h"\
+	".\LeashDoc.h"\
+	".\LeashFrame.h"\
+	".\LeashView.h"\
+	".\lglobals.h"\
+	".\MainFrm.h"\
+	".\reminder.h"\
+	".\StdAfx.h"\
+	
+
+.\Leash.rc : \
+	".\res\clock00.ico"\
+	".\res\clockexp.ico"\
+	".\res\clocktkt.ico"\
+	".\res\clocktkt3.ico"\
+	".\res\clocktky.ico"\
+	".\res\Leash.ico"\
+	".\res\Leash.rc2"\
+	".\res\Leash2.ico"\
+	".\res\LeashDoc.ico"\
+	".\res\tktgray.ico"\
+	".\res\toolbar1.bmp"\
+	
+
+.\LeashAboutBox.cpp : \
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	"..\ext-inc\psapi.h"\
+	".\Leash.h"\
+	".\LeashAboutBox.h"\
+	".\lglobals.h"\
+	".\reminder.h"\
+	".\StdAfx.h"\
+	
+
+.\LeashDebugWindow.cpp : \
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\Leash.h"\
+	".\LeashDebugWindow.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\LeashDoc.cpp : \
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\Leash.h"\
+	".\LeashDoc.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\LeashFileDialog.cpp : \
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\Leash.h"\
+	".\LeashFileDialog.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\LeashFrame.cpp : \
+	"..\ext-inc\htmlhelp.h"\
+	".\LeashFrame.h"\
+	".\StdAfx.h"\
+	
+
+.\LeashMessageBox.cpp : \
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\Leash.h"\
+	".\LeashMessageBox.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\LeashProperties.cpp : \
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	"..\include\leashinfo.h"\
+	".\Leash.h"\
+	".\LeashMessageBox.h"\
+	".\LeashProperties.h"\
+	".\lglobals.h"\
+	".\reminder.h"\
+	".\StdAfx.h"\
+	
+
+.\LeashView.cpp : \
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\CLeashDragListBox.h"\
+	".\Krb4DomainRealmMaintenance.h"\
+	".\Krb4Properties.h"\
+	".\krb4realmhostmaintenance.h"\
+	".\Krb5Properties.h"\
+	".\KrbConfigOptions.h"\
+	".\KrbDomainRealmMaintenance.h"\
+	".\KrbProperties.h"\
+	".\KrbRealmHostMaintenance.h"\
+	".\Leash.h"\
+	".\LeashAboutBox.h"\
+	".\LeashDebugWindow.h"\
+	".\LeashDoc.h"\
+	".\LeashFrame.h"\
+	".\LeashMessageBox.h"\
+	".\LeashProperties.h"\
+	".\LeashView.h"\
+	".\lglobals.h"\
+	".\MainFrm.h"\
+	".\reminder.h"\
+	".\StdAfx.h"\
+	
+
+.\lglobals.cpp : \
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\Leash.h"\
+	".\lglobals.h"\
+	".\StdAfx.h"\
+	
+
+.\MainFrm.cpp : \
+	"..\..\krb5\src\include\com_err.h"\
+	"..\..\krb5\src\include\profile.h"\
+	"..\..\krb5\src\include\win-mac.h"\
+	"..\ext-inc\htmlhelp.h"\
+	".\Leash.h"\
+	".\LeashFrame.h"\
+	".\lglobals.h"\
+	".\MainFrm.h"\
+	".\StdAfx.h"\
+	
+
+.\StdAfx.cpp : \
+	"..\ext-inc\htmlhelp.h"\
+	".\StdAfx.h"\
+	
+
+!ifdef MIT_ONLY
+.\VSroutines.c : \
+	"..\..\..\vs\include\v.h"\
+	"..\..\..\vs\include\vs.h"\
+	"..\..\..\vs\include\vs_nt.h"\
+	
+!endif
+.\KrbMiscConfigOpt.cpp : \
+	"..\ext-inc\htmlhelp.h"\
+	".\KrbMiscConfigOpt.h"\
+	".\KrbProperties.h"\
+	".\Leash.h"\
+	".\LeashFileDialog.h"\
+	".\LeashMessageBox.h"\
+	".\lglobals.h"\
+	".\reminder.h"\
+	".\StdAfx.h"\
+	

@@ -1,0 +1,24 @@
+# Microsoft Developer Studio Generated Dependency File, included by fleavius.mak
+
+.\fleadlg.cpp : \
+	"..\include\cacheapi.h"\
+	".\fleadlg.h"\
+	".\fleavius.h"\
+	".\stdafx.h"\
+	
+
+.\fleavius.cpp : \
+	"..\include\cacheapi.h"\
+	".\fleadlg.h"\
+	".\fleavius.h"\
+	".\stdafx.h"\
+	
+
+.\fleavius.rc : \
+	".\res\fleavius.ico"\
+	".\res\fleavius.rc2"\
+	
+
+.\stdafx.cpp : \
+	".\stdafx.h"\
+	

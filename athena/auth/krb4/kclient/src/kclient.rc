@@ -1,0 +1,401 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#define APSTUDIO_HIDDEN_SYMBOLS
+#include "windows.h"
+#undef APSTUDIO_HIDDEN_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "#include ""windows.h""\r\n"
+    "#undef APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""ver.rc2""\r\n"
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ENTERPASS DIALOG DISCARDABLE  0, 0, 222, 116
+STYLE DS_SYSMODAL | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | 
+    WS_SYSMENU
+CAPTION "Password"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_EDIT1,66,32,130,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT2,66,52,76,12,ES_PASSWORD | ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,50,92,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,121,92,50,14
+    LTEXT           "Please enter your Network ID and password.",IDD_TEXT1,
+                    40,12,155,11
+    RTEXT           "Network ID",IDC_STATIC,10,36,45,7
+    RTEXT           "Password:",IDC_STATIC,21,56,35,7
+    ICON            IDI_BROKENKEY,IDC_STATIC,10,4,18,20
+    CONTROL         "Automatically Uppercase Realm",IDC_REALM_CHECK,"Button",
+                    BS_AUTOCHECKBOX,66,72,114,10
+END
+
+IDD_CHANGEPASS DIALOG DISCARDABLE  0, 0, 201, 92
+STYLE DS_SYSMODAL | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | 
+    WS_SYSMENU
+CAPTION "Change Password"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_EDIT1,100,12,89,12,ES_PASSWORD | ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT2,100,36,89,12,ES_PASSWORD | ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,40,68,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,115,68,50,14
+    RTEXT           "New password:  ",IDC_STATIC,40,16,54,9
+    RTEXT           "Confirm new password:  ",IDC_STATIC,15,39,80,9
+    ICON            IDI_BROKENKEY,IDC_STATIC,5,8,18,20
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_BROKENKEY           ICON    DISCARDABLE     "KCLIENT.ICO"
+IDI_DOGGIE              ICON    DISCARDABLE     "LEASH.ICO"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_PASSNOTCONFIRMED    "You'll need to confirm your password."
+    IDS_PASSNOMATCH         "The new and confirmed passwords do not match.  Try specifying and confirming your new password again."
+    IDS_PASSTOOSHORT        "Your new password must be at least 6 characters long."
+    IDS_PASSNODIGIT         "Your new password must contain at least 1 digit."
+    IDS_PASSNOTCHANGED      "Your password was not changed."
+    IDS_PASSNOLETTER        "Your new password must contain at least 1 letter."
+    IDS_PASSDOMAIN          "Kerberos allows you to change your password only from a computer that has a registered Internet domain name.  Either use a computer on a different network connection, or contact a network administrator at your site to register a name for your connection."
+    IDS_FORCE_UCREALM       "Yes"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    900                     "Do Not LoadBitmap"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    3001                    "Cannot fetch local realm"
+    3002                    "Unable to fetch credentials"
+    3003                    "Bad key supplied"
+    3004                    "Can't encrypt data"
+    3005                    "Cannot encode/decode authentication info"
+    3006                    "Principal attemping change is in wrong realm"
+    3007                    "Packet is too large"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    3008                    "Version number is incorrect"
+    3009                    "Checksum does not match"
+    3010                    "Unsealing private data failed"
+    3011                    "Unsupported operation"
+    3012                    "Could not find administrating host"
+    3013                    "Administrating host name is unknown"
+    3014                    "Could not find service name in services database"
+    3015                    "Could not create socket"
+    3016                    "Could not connect to server"
+    3017                    "Could not fetch local socket address"
+    3018                    "Could not fetch master key"
+    3019                    "Could not verify master key"
+    3020                    "Entry already exists in database"
+    3021                    "Database store error"
+    3022                    "Database read error"
+    3023                    "Insufficient access to perform requested operation"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    3024                    "Data is available for return to client"
+    3025                    "No such entry in the database"
+    3026                    "Memory exhausted"
+    3027                    "Could not fetch system hostname"
+    3028                    "Could not bind port"
+    3029                    "Length mismatch problem"
+    3030                    "Illegal use of wildcard"
+    3031                    "Database locked or in use"
+    3032                    "Insecure password rejected"
+    3033                    "Cleartext password and DES key did not match"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    3300                    "Only one instance of Leash can be run at a time."
+    3301                    "Principal invalid."
+    3302                    "Realm failed."
+    3303                    "Instance invalid."
+    3304                    "Realm invalid."
+    3305                    "Unexpected end of Kerberos memory storage."
+    3306                    "Warning! Your Kerberos tickets expire soon."
+    3307                    "You did not type the same new password."
+    3308                    "You can only use printable characters in a password."
+    3309                    "Fatal error; cannot run this program."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    4000                    "OK"
+    4001                    "Principal expired (kerberos)"
+    4002                    "Service expired (kerberos)"
+    4003                    "Authentication expired (kerberos)"
+    4004                    "Unknown protocol version number (kerberos)"
+    4005                    "Principal: Incorrect master key version (kerberos)"
+    4006                    "Service: Incorrect master key version (kerberos)"
+    4007                    "Bad byte order (kerberos)"
+    4008                    "Principal unknown (kerberos)"
+    4009                    "Principal not unique (kerberos)"
+    4010                    "Principal has null key (kerberos)"
+    4011                    "Reserved error message 11 (kerberos)"
+    4012                    "Reserved error message 12 (kerberos)"
+    4013                    "Reserved error message 13 (kerberos)"
+    4014                    "Reserved error message 14 (kerberos)"
+    4015                    "Reserved error message 15 (kerberos)"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    4016                    "Reserved error message 16 (kerberos)"
+    4017                    "Reserved error message 17 (kerberos)"
+    4018                    "Reserved error message 18 (kerberos)"
+    4019                    "Reserved error message 19 (kerberos)"
+    4020                    "Permission Denied (kerberos)"
+    4021                    "Can't read ticket file (krb_get_cred)"
+    4022                    "Can't find ticket (krb_get_cred)"
+    4023                    "Reserved error message 23 (krb_get_cred)"
+    4024                    "Reserved error message 24 (krb_get_cred)"
+    4025                    "Reserved error message 25 (krb_get_cred)"
+    4026                    "Ticket granting ticket expired (krb_mk_req)"
+    4027                    "Reserved error message 27 (krb_mk_req)"
+    4028                    "Reserved error message 28 (krb_mk_req)"
+    4029                    "Reserved error message 29 (krb_mk_req)"
+    4030                    "Reserved error message 30 (krb_mk_req)"
+    4031                    "Can't decode authenticator (krb_rd_req)"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    4032                    "Ticket expired (krb_rd_req)"
+    4033                    "Ticket issue date too far in the future (krb_rd_req)"
+    4034                    "Repeat request (krb_rd_req)"
+    4035                    "Ticket for wrong server (krb_rd_req)"
+    4036                    "Request inconsistent (krb_rd_req)"
+    4037                    "Time is out of bounds (krb_rd_req)"
+    4038                    "Incorrect network address (krb_rd_req)"
+    4039                    "Protocol version mismatch (krb_rd_req)"
+    4040                    "Illegal message type (krb_rd_req)"
+    4041                    "Message integrity error (krb_rd_req)"
+    4042                    "Message duplicate or out of order (krb_rd_req)"
+    4043                    "Unauthorized request (krb_rd_req)"
+    4044                    "Reserved error message 44 (krb_rd_req)"
+    4045                    "Reserved error message 45 (krb_rd_req)"
+    4046                    "Reserved error message 46 (krb_rd_req)"
+    4047                    "Reserved error message 47 (krb_rd_req)"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    4048                    "Reserved error message 48 (krb_rd_req)"
+    4049                    "Reserved error message 49 (krb_rd_req)"
+    4050                    "Reserved error message 50 (krb_rd_req)"
+    4051                    "Current password is NULL (get_pw_tkt)"
+    4052                    "Current password incorrect (get_pw_tkt)"
+    4053                    "Protocol error (gt_pw_tkt)"
+    4054                    "Error returned by KDC (gt_pw_tkt)"
+    4055                    "Null ticket returned by KDC (gt_pw_tkt)"
+    4056                    "Retry count exceeded (send_to_kdc)"
+    4057                    "Can't send request (send_to_kdc)"
+    4058                    "Reserved error message 58 (send_to_kdc)"
+    4059                    "Reserved error message 59 (send_to_kdc)"
+    4060                    "Reserved error message 60 (send_to_kdc)"
+    4061                    "Warning: Not ALL tickets returned"
+    4062                    "Password incorrect"
+    4063                    "Protocol error (get_intkt)"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    4064                    "Reserved error message 64 (get_in_tkt)"
+    4065                    "Reserved error message 65 (get_in_tkt)"
+    4066                    "Reserved error message 66 (get_in_tkt)"
+    4067                    "Reserved error message 67 (get_in_tkt)"
+    4068                    "Reserved error message 68 (get_in_tkt)"
+    4069                    "Reserved error message 69 (get_in_tkt)"
+    4070                    "Generic error (get_intkt)"
+    4071                    "Don't have ticket granting ticket (get_ad_tkt)"
+    4072                    "Reserved error message 72 (get_ad_tkt)"
+    4073                    "Reserved error message 73 (get_ad_tkt)"
+    4074                    "Reserved error message 74 (get_ad_tkt)"
+    4075                    "Reserved error message 75 (get_ad_tkt)"
+    4076                    "No ticket file (tf_util)"
+    4077                    "Can't access ticket file (tf_util)"
+    4078                    "Can't lock ticket file; try later (tf_util)"
+    4079                    "Bad ticket file format (tf_util)"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    4080                    "Read ticket file before tf_init (tf_util)"
+    4081                    "Bad Kerberos name format (kname_parse)"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    4255                    "Generic kerberos error (kfailure)"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    10004                   "A Windows or DOS system call has been interrupted."
+    10009                   "Attempt to open an invalid file number."
+    10013                   "Permission to access a disk file has been denied."
+    10014                   "Attempt to access an invalid disk address."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    10022                   "An invalid argument has been passed to a Windows Sockets function."
+    10024                   "Too many open files."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    10035                   "A particular network connection being used by this application is supposed to be ""non-blocking"" but an operation is being attempted on it that would ""block""."
+    10036                   "Attempt to start a Windows Sockets function when a ""blocking"" function is already in progress."
+    10037                   "Attempt to start the same Windows Sockets operation more than once."
+    10038                   "Attempt to use a network socket which is not really a socket."
+    10039                   "Attempt to perform a Windows Sockets operation without giving a destination address."
+    10040                   "A message parameter for a Windows Sockets operation is too long."
+    10041                   "Attempt to use the wrong kind of network protocol for a certain socket connection."
+    10042                   "The network protocol this application wishes to use is not available on this workstation."
+    10043                   "The network protocol this application wishes to use is not supported by Windows Sockets."
+    10044                   "The kind of socket this application wishes to use is not supported by Windows Sockets."
+    10045                   "The network operation this application wishes to perform is not supported on the socket connection the application has chosen."
+    10046                   "The protocol family this application wishes to use is completely unsupported by Windows Sockets."
+    10047                   "The ""address family"" this application wishes to use is not supported by the ""protocol family"" the application has chosen."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    10048                   "Attempt to appropriate a network address that is already in use."
+    10049                   "Attempt to appropriate a network address that cannot be assigned."
+    10050                   "The network appears to be down."
+    10051                   "The network cannot be reached."
+    10052                   "When this application reset the network connection, the network dropped the connection."
+    10053                   "Some network operation attempted by this application has caused the connection to abort."
+    10054                   "The network connection has been reset from the other end."
+    10055                   "No space is available for network buffers."
+    10056                   "Attempt to connect a network socket that is already connected."
+    10057                   "Attempt to use a network socket that is not connected to anything."
+    10058                   "Attempt to send via a network socket that has already been shut down."
+    10059                   "Too many references to a particular network socket; another reference cannot be added."
+    10060                   "After a prolonged period of inactivity, the connection timed out."
+    10061                   "The other computer this application was trying to contact refused the connection."
+    10062                   "There are too many levels of symbolic filename links for Windows Sockets to understand."
+    10063                   "File name is too long."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    10064                   "The other computer this application is trying to contact is down."
+    10065                   "Cannot find a network route to the other computer this application is trying to contact."
+    10066                   "The directory cannot be deleted because it is not empty."
+    10067                   "There are so many program tasks (""processes"") running at once that the operating system cannot manage any more."
+    10068                   "There are too many users on this workstation."
+    10069                   "Disk space is full."
+    10070                   "The association between a certain file, stored using the ""NFS"" network file system, and your workstation, is so old that the other end no longer trusts the association to be safe (""stale file handle"")."
+    10071                   "The association of a certain file, stored using the ""NFS"" network file system, bounces through too many intermediate machines."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    10091                   "The network subsystem is unusable."
+    10092                   "The version of Windows Sockets in use is not new enough to support this application."
+    10093                   "This application ""forgot"" to initialize Windows Sockets."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    11001                   "The other computer this application is trying to access could not be found."
+    11002                   "Try the operation again."
+    11003                   "Windows Sockets tried to recover from an error, but was unable to do so."
+    11004                   "A computer (either yours or the other computer yours is trying to contact) is required to have a registered Internet domain name but does not have one."
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    TABLE_NAME_BASE         "Windows Sockets"
+    3601                    "Kerberos supplemental"
+    3602                    "Kerberos"
+    3603                    "Kerberos leash"
+    IDS_UNKNOWN             "Unknown (table base "
+    IDS_SAYERROR            " error "
+    IDS_NOMESSAGE           "which is so erroneous it has not yet been assigned a meaning."
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#include "ver.rc2"
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

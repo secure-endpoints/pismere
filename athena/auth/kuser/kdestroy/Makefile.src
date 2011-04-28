@@ -1,0 +1,17 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=kdestroy
+TARGETTYPE=EXE
+TARGETSS=console
+
+OBJS= \
+	$(O)\kdestroy.obj
+
+LIBS=..\$(O)\kuser.lib advapi32.lib
+INCLUDES=..;..\..\krb5\src\include;..\..\krb4\include;\
+	$(PISMERE)\athena\util\loadfuncs
+
+USE_DEFAULTLIB=1
+RES=$(O)\kdestroy.res

@@ -1,0 +1,34 @@
+#include <windows.h>
+#include <winkrbid.h>
+#include "krbv4win.dlg"
+
+/* #define WINSOCK */
+/* #define LWP */
+/* #define DEBUG */
+/* #define DES */
+#include "krbv4win.ver"
+
+STRINGTABLE
+    BEGIN
+        #ifdef DES
+            IDS_DES     "DES Functions Exported"
+        #else
+            IDS_DES     "DES Functions not Exported"
+        #endif
+        #ifdef DEBUG
+            IDS_DEBUG   "DEBUG Information"
+        #else
+            IDS_DEBUG   "no DEBUG Information"
+        #endif
+        #ifdef WINSOCK
+            IDS_TCP     "WINSOCK"
+        #else
+            IDS_TCP     "LWP"
+        #endif
+	IDS_TZ		"TZ=EST5EDT"
+	IDS_KRB_CONF	"krb.con"
+	IDS_KRB_RLM_TRANS "krbrealm.con"
+    END
+
+
+/* #include "lsh_pwd.rc" */

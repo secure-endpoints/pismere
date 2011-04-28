@@ -1,0 +1,123 @@
+;-----------------------------
+;   KRBDLL.DEF - module definition file
+;-----------------------------
+
+LIBRARY   KRBV4W32
+
+DESCRIPTION 'DLL for Kerberos support, with DES export'
+
+; CODE      MOVEABLE DISCARDABLE
+; DATA      MOVEABLE SINGLE
+
+HEAPSIZE  4096
+
+EXPORTS
+		DllMain                         @1
+		hQKrbInst                       @2
+		Lsh_Enter_Password_Dialog       @3
+		Lsh_Change_Password_Dialog      @4
+		initialize_kadm_error_table     @5
+		dest_tkt                        @6
+		get_krb_err_txt                 @7
+		get_krb_err_txt_entry           @8
+		k_isinst                        @9
+		k_isname                        @10
+		k_isrealm                       @11
+		kname_parse                     @12
+		krb_get_lrealm                  @13
+		krb_get_pw_in_tkt               @14
+		krb_get_tf_realm                @15
+		krb_sendauth                    @16
+		krb_realmofhost                 @17
+;               printf                          @18       ; crs 8-7-95
+		set_krb_debug                   @19
+		set_krb_ap_req_debug            @20
+		tf_close                        @21
+		tf_get_cred                     @22
+		tf_get_pinst                    @23
+		tf_get_pname                    @24
+		tf_init                         @25
+;               _kadm_copy_tickets              @26       ; pbh 8-19-93
+;               _kadm_copy_back_tickets         @27       ; pbh 8-19-93
+		krb_mk_req                      @28
+		krb_mk_priv                     @29
+;               PasswordCB                      @30       ; crs 8-5-95
+		gettimeofday                    @31
+		des_read_pw_string              @32       ; pbh 7-13-93
+		des_string_to_key               @33
+		des_key_sched                   @34
+		des_cbc_encrypt                 @35
+		des_quad_cksum                  @36
+		krb_sendauth_udpchk             @37
+		krb_sendauth_udp                @38
+		krb_get_cred                    @39
+		krb_get_phost                   @40
+;               _tkt_ptr                        @41
+;		lock_tkt                        @42
+;		unlock_tkt                      @43
+		krb_rd_priv                     @44
+		krb_net_read                    @45
+		krb_net_write                   @46
+		krb_get_admhst                  @47
+		lsh_kinit                       @48
+		lsh_kdestroy                    @49
+		lsh_klist                       @50
+		lsh_checkpwd                    @51
+		lsh_changepwd                   @52
+		GetKRBDLLVersionFlags           @53
+;               _tf_gets                        @54	; internal
+;               _tf_read                        @55	; internal
+		tkt_string                      @56
+		hGetTimeZone                    @57
+		krb_check_serv                  @58
+		afs_string_to_key		@60
+		lsh_get_lsh_errno               @61
+		des_ecb_encrypt 		@62
+		des_init_random_number_generator	@63
+		des_new_random_key		@64
+		des_check_key_parity		@65
+		des_set_random_generator_seed	@66
+		krb_rd_req			@67
+		k_gethostname                   @68     ; shabby 7-12-95
+		kadm_change_your_password       @69     ; shabby 9-8-95
+		initialize_krb_error_func       @70     ; shabby 9-10-95
+
+;		 com_err_export 	       @71
+;		 error_message_export	       @72
+;		 error_table_name_export       @73
+
+		krb_set_tkt_string	       @74
+		krb_get_in_tkt		       @75
+		des_pcbc_encrypt	       @76
+		LocalHostAddr		       @77
+		k_decomp_ticket 	       @78
+		get_cred		       @79
+		krb_get_krbhst		       @80
+		krb_get_tf_fullname	       @81
+		krb_set_lifetime	       @82
+
+		; Looks like CMU used up some stuff starting at 83.
+		; We'll skip 83-98 to avoid problems.
+
+                krb_get_svc_in_tkt             @83
+                des_set_sequence_number        @84
+                des_generate_random_block      @85
+                unix_time_gmt_unixsec          @86
+                krb_mk_safe                    @87
+                krb_life_to_time               @88
+                krb_time_to_life               @89
+                krb_life_to_atime              @90
+                krb_atime_to_life              @91
+                krb_rd_safe                    @92
+                krb_get_krbconf                @93  ; len 11-4-98
+                ; end of CMU additions
+
+		lsh_LoadKrb4LeashErrorTables	@99 ; temporary...groan...
+
+		krb_get_pw_in_tkt_preauth	@100
+
+		; krb_mk_safe			@101 ; use the CMU location
+		; krb_rd_safe			@102 ; use the CMU location
+
+		krb_get_krbconf2		@103
+		krb_get_krbrealm2		@104

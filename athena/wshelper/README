@@ -1,0 +1,55 @@
+Winsock Helper API Version 2.0 (release 2.0.0.5)
+Released on 11/24/98
+
+Compiling:
+---------
+Using MSVC++ 1.52c or greater, just type nmake in this directory and
+it will give you further instructions.
+
+To select between a debug versus release build, use DEBUG=0 or DEBUG=1
+at the name command-line.
+
+Example: nmake win32 DEBUG=1
+
+
+Editing the 16-bit project:
+--------------------------
+If you edit the MSVC++ 1.52c projects, run them through the fixmak15.pl
+Perl script.
+
+For example:
+perl ..\fixmak15.pl < wshelper.mak > w.mak
+(and then copy w.mak over wshelper.mak once you verify w.mak is ok.)
+
+
+Dependencies for the 16-bit project:
+-----------------------------------
+The fixmak15.pl-processed makefile does not have header file and other
+indirect dependencies.  So you may find yourself doing a nmake /a win16
+to rebuid Win16 targets in cases where you change header files.
+
+
+Large DNS packet size hack:
+--------------------------
+
+There is a hack in the code to handle illegally large (>512 bytes) DNS
+replies.  It lives in wshelper/resolve.c and is controlled by:
+
+#define USE_PACKETSZ_HACK
+
+If you do not wish to support illegally large DNS replies, just undefine
+the symbol above.
+
+
+History:
+-------
+2.0.0.5 (11/24/98)
+- Restructured header files for publication
+- Added wsh_get*name to header file
+- Added distribtution target
+
+2.0.0.4 (11/23/98)
+- gets TCP/IP info on NT5/Win2k & Win98
+- TCP DNS requests now work
+- cycles through DNS replies properly under NT4
+- handles illegally large DNS replies

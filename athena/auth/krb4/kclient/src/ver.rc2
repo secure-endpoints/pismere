@@ -1,0 +1,4 @@
+#define VER_FILEDESCRIPTION_STR "Kerberos Client (kclient) API DLL"
+
+#include <kclient.ver>
+#include <ver.inc>

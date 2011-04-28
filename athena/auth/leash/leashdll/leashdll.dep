@@ -1,0 +1,145 @@
+# Microsoft Developer Studio Generated Dependency File, included by leashdll.mak
+
+.\AFSroutines.c : \
+!ifndef NO_AFS
+	"..\..\afsauth\include\afs_tokens.h"\
+	"..\..\afsauth\include\rxkad.h"\
+!endif
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb4\include\conf-pc.h"\
+	"..\..\krb4\include\conf.h"\
+	"..\..\krb4\include\decldll.h"\
+	"..\..\krb4\include\des.h"\
+	"..\..\krb4\include\krb.h"\
+	"..\..\krb4\include\mit_copy.h"\
+	"..\..\krb4\include\osconf.h"\
+	"..\include\leasherr.h"\
+	".\leashdll.h"\
+	
+
+.\krb5routines.c : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb4\include\conf-pc.h"\
+	"..\..\krb4\include\conf.h"\
+	"..\..\krb4\include\decldll.h"\
+	"..\..\krb4\include\des.h"\
+	"..\..\krb4\include\kadm_err.h"\
+	"..\..\krb4\include\krb.h"\
+	"..\..\krb4\include\krberr.h"\
+	"..\..\krb4\include\mit_copy.h"\
+	"..\..\krb4\include\osconf.h"\
+	"..\include\leashwin.h"\
+	".\leashdll.h"\
+	
+
+.\leashdll.c : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb4\include\conf-pc.h"\
+	"..\..\krb4\include\conf.h"\
+	"..\..\krb4\include\decldll.h"\
+	"..\..\krb4\include\des.h"\
+	"..\..\krb4\include\kadm_err.h"\
+	"..\..\krb4\include\krb.h"\
+	"..\..\krb4\include\krberr.h"\
+	"..\..\krb4\include\mit_copy.h"\
+	"..\..\krb4\include\osconf.h"\
+	"..\include\leashwin.h"\
+	".\leashdll.h"\
+	".\lsh_pwd.h"\
+	
+
+.\leasherr.c : \
+	"..\..\krb4\include\kadm_err.h"\
+	"..\..\krb4\include\krberr.h"\
+	
+
+.\lsh_pwd.c : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb4\include\conf-pc.h"\
+	"..\..\krb4\include\conf.h"\
+	"..\..\krb4\include\decldll.h"\
+	"..\..\krb4\include\des.h"\
+	"..\..\krb4\include\kadm_err.h"\
+	"..\..\krb4\include\krb.h"\
+	"..\..\krb4\include\krberr.h"\
+	"..\..\krb4\include\mit_copy.h"\
+	"..\..\krb4\include\osconf.h"\
+	"..\include\leasherr.h"\
+	"..\include\leashwin.h"\
+	".\leashdll.h"\
+	".\leashids.h"\
+	".\lsh_pwd.h"\
+	
+
+.\lsh_pwd.rc : \
+	".\leashids.h"\
+	".\res\islogo.bmp"\
+	".\res\leash.ico"\
+	
+
+.\lshcallb.c : \
+	"..\..\krb4\include\conf-pc.h"\
+	"..\..\krb4\include\conf.h"\
+	"..\..\krb4\include\decldll.h"\
+	"..\..\krb4\include\des.h"\
+	"..\..\krb4\include\krb.h"\
+	"..\..\krb4\include\mit_copy.h"\
+	"..\..\krb4\include\osconf.h"\
+	
+
+.\lshfunc.c : \
+	"..\..\..\wshelper\include\mitwhich.h"\
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb4\include\conf-pc.h"\
+	"..\..\krb4\include\conf.h"\
+	"..\..\krb4\include\decldll.h"\
+	"..\..\krb4\include\des.h"\
+	"..\..\krb4\include\kadm_err.h"\
+	"..\..\krb4\include\krb.h"\
+	"..\..\krb4\include\krberr.h"\
+	"..\..\krb4\include\mit_copy.h"\
+	"..\..\krb4\include\osconf.h"\
+	"..\..\krb4\include\prot.h"\
+	"..\..\krb4\include\winkrbid.h"\
+	"..\include\leasherr.h"\
+	"..\include\leashwin.h"\
+	".\leashdll.h"\
+	".\lsh_pwd.h"\
+	
+
+.\timesync.c : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb4\include\decldll.h"\
+	"..\..\krb4\include\winkrbid.h"\
+	"..\include\leasherr.h"\
+	".\leashdll.h"\
+	".\leashids.h"\
+	
+
+.\winerr.c : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb4\include\conf-pc.h"\
+	"..\..\krb4\include\conf.h"\
+	"..\..\krb4\include\decldll.h"\
+	"..\..\krb4\include\des.h"\
+	"..\..\krb4\include\kadm_err.h"\
+	"..\..\krb4\include\krb.h"\
+	"..\..\krb4\include\krberr.h"\
+	"..\..\krb4\include\mit_copy.h"\
+	"..\..\krb4\include\osconf.h"\
+	"..\include\leashwin.h"\
+	
+
+.\winutil.c : \
+	"..\..\krb4\include\com_err.h"\
+	"..\..\krb4\include\conf-pc.h"\
+	"..\..\krb4\include\conf.h"\
+	"..\..\krb4\include\decldll.h"\
+	"..\..\krb4\include\des.h"\
+	"..\..\krb4\include\kadm_err.h"\
+	"..\..\krb4\include\krb.h"\
+	"..\..\krb4\include\krberr.h"\
+	"..\..\krb4\include\mit_copy.h"\
+	"..\..\krb4\include\osconf.h"\
+	"..\include\leashwin.h"\
+	

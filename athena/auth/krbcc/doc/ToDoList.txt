@@ -1,0 +1,76 @@
+ToDoList.txt  
+Last Change: 970725
+
+To Do list for kerberos common cache dll project
+
+--- New Items, unordered ---
+
+--- Before alpha Release ---
+x COPYRIGHT COPYRIGHT COPYRIGHT
+x write seq_fetch_NC
+x revise cc_get_cache_names() - rename it
+x write SeqFetchNCs in CCtx
+x write GetName in NC
+x write cc_free_infoNC
+x write cc_get_name
+x write cc_free_name
+x remove cc_get_cache_names?
+x write Validate 
+x Uncomment and fill with _ASSERTs
+o create with existing name returns badname, should clobber, 
+  maybe add boolean bClobber?
+x implement SeqFetchNC
+x implement get_NC_name
+x find & use more like _CrtIsValidPointer (if not debug only)
+x add new RCs.
+x remove all references to "handle"s, change to ccache_pointer or some such
+x change all ints to cc_int32, leave nothing ambiguous
+x no void*s, use typedefs
+x implement write locking so only one process at a time can change cache
+x verified locks exclude other tasks
+x unload errant task unlocks mutex!! yeah
+x write V4 ticket API V4Tkt.{c|h} and send to Jenny
+x write fleavius
+x start fleavius from krbcc32.dll
+x find fleavius location via registry
+x tested with MYAPPHASFLEAS defined and NOT defined
+x added static global so Fleavius will only be started once per thread
+x working on making cachetest use a listbox on cc_open ... Open button not working.
+  ... potential problem, fleavius will be restarted on EVERY open & create
+  so if user "lets go" it may reappear ... need an "only once" mechanism?
+  maybe only at init : too early and fleavius calls init, too complicated
+  shutdown : the point of letting go is so final shutdown will unload the cache
+  find a mechanism that will trigger ONCE per DLL load (i.e. at startup)
+x I figured out a way (static global boolean) that will only start fleavius once per DLL Load
+x implemented cc_set_principal() as per request from MIT
+x revised (v4 now) html proposal as per requests from MIT (caught up with code in most cases)
+
+o collect all the //TODO comments in the source
+o will all the enum ADDR_SZ type stuff I stole from krb.h cause problems for 
+  folks that include krb.h and CacheAPI.h?
+o write DUMP routines to dump entire cache (on screen, on disk)
+
+--- Before beta Release ---
+X Need to keep DLL loaded 
+	start aux prog
+	bump use count ... but then how could it ever get unloaded?
+* reach consensus on V4 ticket dsect
+X write get/set routines for all V4 ticket fields
+* reach consensus with Ted about api or rehash with group about diverging?
+* SecurityAttributes .. research, use?, currently created with all fields NULL
+o write programmer documentation
+o write caller documentation
+	include explanation of each parm
+	include all possible RCs
+o make initial dsect sizes editable string resources for local tuning
+  For example #NamedCaches in cache, #Tickets per NamedCache, & initial cache size
+
+--- Before final Release ---
+
+o let counts grow and shrink as necessary, make it dynamic!!!
+  we're consuming a LOT of memory right now
+x figure out a scheme for discontiguous tickets within our
+  fixed (memory mapped) dsect
+x figure out a scheme for NamedCaches within our 
+  fixed (memory mapped) dsect
+

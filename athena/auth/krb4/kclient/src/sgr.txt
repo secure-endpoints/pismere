@@ -1,0 +1,9 @@
+{
+	_fstrupr(szUserRealm);
+	// Replace realm with UCRealm in szNetID (if present) so change password works too
+	// this also has the side effect of changing what's in kview.ini.
+	// Change case of realm only if present, otherwise, don't tamper
+	if (_fstrlen(szNetID) >= (_fstrlen(szUserName) + _fstrlen(szUserRealm) + 1)
+			&& 0 == stricmp(strchr(szNetID,'@')+1, szUserRealm))
+		_fstrcpy(szNetID+(_fstrlen(szNetID)-_fstrlen(szUserRealm)), szUserRealm);
+}

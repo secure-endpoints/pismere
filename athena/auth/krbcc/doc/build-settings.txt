@@ -1,0 +1,6 @@
+You can build this with the standard vstudio DLL settings, plus:
+define: _AFXDLL
+libs: wsock32.lib
+
+Note: The following things get defined by the header files, but it may be
+good to know about them: MYAPPHASFLEAS and JENNYEXT

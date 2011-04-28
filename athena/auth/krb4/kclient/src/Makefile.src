@@ -1,0 +1,26 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=kclnt32
+TARGETTYPE=DLL
+TARGETSS=console
+
+DEF_FILE=kclnt32.def
+
+OBJS = \
+	$(O)\kclient.obj \
+	$(O)\newstuff.obj
+
+USE_DEFAULTLIB=1
+
+INCLUDES=..\include;..\..\include;..\..\..\leash\include;..\..\..\..\util\loadfuncs
+LIBS=$(STD_LIBS) wsock32.lib ..\..\krbv4\krbdll\$(O)\krbv4w32.lib ..\..\..\..\util\loadfuncs\$(O)\loadfuncs.lib
+
+# GEN_MAP=1
+
+RES=$(O)\kclient.res
+
+C_FLAGS=-DPC -DPLATFORM=win32 -DBSDSOCK -DWINSOCK
+
+kclient.rc: ver.rc2

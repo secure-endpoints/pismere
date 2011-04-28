@@ -1,0 +1,18 @@
+LIBRARY   KCLNT32
+DESCRIPTION 'KClient emulator DLL'
+
+EXPORTS
+    GetTicketForService       @3
+    GetTicketGrantingTicket   @4
+    DeleteAllSessions         @5
+    SetUserName               @6
+    KCGetUserName             @7
+    ListTickets	              @8
+    SetTicketLifeTime         @9
+    SetKrbdllMode             @10
+    TgtExist                  @11
+    ChangePassword            @12
+    SendTicketForService      @19
+    KClientErrno              @301
+    KClientKerberosErrno      @302
+    _KCGetNumInUse            @500

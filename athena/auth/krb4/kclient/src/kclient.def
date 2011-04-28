@@ -1,0 +1,29 @@
+LIBRARY	KCLIENT  
+
+DESCRIPTION  'KClient emulator DLL'  
+
+;EXETYPE      WINDOWS
+CODE  MOVEABLE DISCARDABLE
+DATA  MOVEABLE SINGLE
+HEAPSIZE     4096
+
+EXPORTS 
+;		DllMain		@1      
+;		WEP @1 RESIDENTNAME
+		GetTicketForService        @3
+		GetTicketGrantingTicket    @4
+		DeleteAllSessions          @5
+		SetUserName                @6
+		GetUserName		   @7
+		ListTickets                @8
+		SetKrbdllMode              @9
+		SetTicketLifeTime          @10
+		TgtExist                   @11
+		UserInfo                   @12
+		ChangePassword             @14
+		ChangePasswordDialog       @16
+		KClientKerberosErrno       @17
+		KClientErrno		   @18
+		SendTicketForService	   @19
+	    ;Leash_klist					@21 
+	    ;Leash_changepwd			@22

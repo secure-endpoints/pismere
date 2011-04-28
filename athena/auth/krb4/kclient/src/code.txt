@@ -1,0 +1,67 @@
+
+BOOL CALLBACK __export
+SendTicketForService(LPSTR service, LPSTR version, int fd) {
+	BOOL res;
+	char *realm;
+	AuthParm params;
+	
+	realm = strchr(service, '@');
+	if (realm)
+		++realm;
+	memset(&params, 0, sizeof(params));
+	params.service = service;
+	params.username = username;
+	params.realm = realm;
+	params.hwndOwner = GetActiveWindow();
+	params.usernameLen = strlen(username);
+	params.usernameSize = sizeof(username);
+	params.flags = AUTH_FIXEDTYPE;
+	res = (PCIkrbGetAuth(&params) == 0);
+	authvers = params.authType;
+	if (!res)
+		goto leave;
+	res = FALSE;
+	switch (authvers)
+	{
+		case AUTH_AFSKRB4:
+		{
+			char srv[ANAME_SZ], inst[INST_SZ], rlm[REALM_SZ];
+			KTEXT ticket;
+			
+			srv[0] = '\0'; inst[0] = '\0'; rlm[0] = '\0';
+			ticket = calloc(1, sizeof(KTEXT_ST));
+			if (!ticket)
+				goto leave;
+			if (kname_parse(srv, inst, rlm, service))
+			{
+				free(ticket);
+				goto leave;
+			}
+			ticket->length = params.krbParm.ticketLen;
+			memcpy(ticket->dat, params.krbParm.ticket, ticket->length);
+			res = (krb_sendauth(KOPT_DONT_CANON|KOPT_DONT_MK_REQ, fd, ticket, srv, inst, rlm,
+				0L, NULL, NULL, NULL, NULL, NULL, version) == 0);
+			free(ticket);
+			break;
+		}
+		case AUTH_DCEKRB5:
+		{
+			krb5_principal server;
+			krb5_auth_context *authc = NULL;
+			if (!k5_context)
+			{
+				krb5_init_context(&k5_context);
+				krb5_init_ets(k5_context);
+				krb5_cc_default(k5_context, &k5_ccache);
+			}
+			krb5_parse_name(k5_context, service, &server);
+			res = (krb5_sendauth(k5_context, &authc, (krb5_pointer *)&fd, version, NULL, server, 0, NULL,
+				NULL, k5_ccache, NULL, NULL, NULL) == 0);
+			krb5_free_principal(k5_context, server);
+			break;
+		}
+	}
+leave:
+	PCIkrbFreeKrb(&params);
+	return (res);      
+}

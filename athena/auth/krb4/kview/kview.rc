@@ -1,0 +1,209 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "reskview.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUT DIALOG DISCARDABLE  0, 0, 143, 87
+STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "About KView"
+FONT 10, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,45,68,50,14
+    CTEXT           "KView version 1.8",IDC_STATIC,35,12,75,9
+    CTEXT           "Project Mandarin - Cornell University.",IDC_STATIC,10,
+                    28,125,8
+    ICON            IDI_KVICON,IDC_STATIC,5,4,18,20
+    CTEXT           "©1997 Project Mandarin, Inc. All rights reserved.",
+                    IDC_STATIC,14,44,120,19
+END
+
+IDD_PREFERENCES DIALOG DISCARDABLE  0, 0, 185, 126
+STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "Preferences"
+FONT 8, "MS Sans Serif"
+BEGIN
+    EDITTEXT        IDC_EDIT1,80,16,90,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT3,80,36,90,13,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT2,120,56,20,12,ES_AUTOHSCROLL
+    CONTROL         "Auto-start KView when using KClient",IDC_CHECK1,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,25,80,140,10
+    DEFPUSHBUTTON   "OK",IDOK,30,104,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,100,104,50,14
+    RTEXT           "Time Server:",IDC_STATIC,30,40,45,10
+    RTEXT           "Ticket lifetime (in hours): ",IDC_STATIC,30,60,85,12
+    ICON            IDI_KVICON,IDC_STATIC,5,4,18,20
+    RTEXT           "Your NetID:",IDC_STATIC,30,20,45,9
+END
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "reskview.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include \"ver.rc\"\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ZKEY                ICON    DISCARDABLE     "KVIEW.ICO"
+IDI_KVICON              ICON    DISCARDABLE     "KEY.ICO"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_KVMENU MENU DISCARDABLE 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&Clear Tickets ('Network Logout')", IDM_DEST_TKTS
+        MENUITEM "&List Tickets",               ID_FILE_LISTTICKETS
+        MENUITEM SEPARATOR
+        MENUITEM "&Synchronize Time",           IDM_TIMESYNC
+        MENUITEM "Change &Password...",         IDM_CHANGEPASSWORD
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       IDM_FILE_EXIT
+    END
+    POPUP "&Options"
+    BEGIN
+        MENUITEM "&Preferences...",             IDM_PREFERENCES
+        MENUITEM "&Test...",                    IDM_LSH_KINIT
+        MENUITEM "&Debug mode",                 IDM_KRBDLL_DEBUG
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About...",                   ID_HELP_ABOUT
+    END
+END
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+#if 0
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,8,0,0
+ PRODUCTVERSION 1,8,0,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "Comments", "Analogous to ""Leash"" for MIT Kerberos\0"
+            VALUE "CompanyName", "Project Mandarin, Inc.\0"
+            VALUE "FileDescription", "User interface for P.M.'s KCLIENT.DLL\0"
+            VALUE "FileVersion", "1.8\0"
+            VALUE "InternalName", "kview32\0"
+            VALUE "LegalCopyright", "Copyright © 1997  Project Mandarin, Inc.  All rights reserved.\0"
+            VALUE "OriginalFilename", "kview32.exe\0"
+            VALUE "ProductName", "Project Mandarin Kerberos Viewer\0"
+            VALUE "ProductVersion", "1.8\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+#endif // 0
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_BADPARAM            "KView not starting because of invalid parameter: "
+    IDS_ASKSYNC1            "In order to verify your identity, your computer's time setting must be close to that on the Kerberos server you are using. "
+    IDS_ASKSYNC2            "Do you want to synchronize the time setting with the server?"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDS_TGTQUERY_TIMER      "7000"
+END
+
+STRINGTABLE DISCARDABLE 
+BEGIN
+    IDM_DEST_TKTS           "Network &Logout"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#include "ver.rc"
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

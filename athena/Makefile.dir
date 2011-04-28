@@ -1,0 +1,7 @@
+DIRS=util\loadfuncs
+
+!ifdef MIT_ONLY
+DIRS=$(DIRS) vs
+!endif
+
+DIRS=$(DIRS) wshelper auth

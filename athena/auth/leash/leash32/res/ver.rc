@@ -1,0 +1,4 @@
+#define VER_FILEDESCRIPTION_STR 	"Leash32 Kerberos Ticket Manager"
+
+#include <kerberos.ver>
+#include <ver.inc>

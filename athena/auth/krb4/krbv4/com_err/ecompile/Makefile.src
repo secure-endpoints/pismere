@@ -1,0 +1,13 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=ecompile
+TARGETTYPE=EXE
+TARGETSS=console
+
+OBJS= \
+	$(O)\ecompile.obj
+
+USE_DEFAULTLIB=1
+NO_PLACE=1

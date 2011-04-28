@@ -1,0 +1,16 @@
+#ifdef APSTUDIO_INVOKED
+#error this file is not editable by App Studio
+#endif // APSTUDIO_INVOKED
+
+#define VER_FILEDESCRIPTION_STR "Winsock Helper (wshelper) API Test MFC Application"
+
+#define VER_FILE_MAJOR 1
+#define VER_FILE_MINOR 0
+#define VER_FILE_REV   1
+
+#define VER_FILE_MAJOR_STR  "1"
+#define VER_FILE_MINOR_STR  "0"
+#define VER_FILE_REV_STR    "1"
+
+#include <wshelper.ver>
+#include <ver.inc>

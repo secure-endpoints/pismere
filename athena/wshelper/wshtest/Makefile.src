@@ -1,0 +1,27 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=wshtest32
+TARGETTYPE=EXE
+TARGETSS=windows
+
+OBJS = \
+	$(O)\hesdlg.obj \
+	$(O)\hespdlg.obj \
+	$(O)\mainfrm.obj \
+	$(O)\querydlg.obj \
+	$(O)\respdlg.obj \
+	$(O)\stdafx.obj \
+	$(O)\wshtedoc.obj \
+	$(O)\wshtest.obj \
+	$(O)\wshtevw.obj
+
+RES=$(O)\wshtest.res
+
+USE_MFC=1
+
+INCLUDES=..\include
+LIBS=$(STD_LIBS) wsock32.lib ..\wshelper\$(O)\wshelp32.lib
+
+C_FLAGS=-DWINDOWS -DWIN32

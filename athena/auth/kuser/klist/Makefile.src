@@ -1,0 +1,17 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=klist
+TARGETTYPE=EXE
+TARGETSS=console
+
+OBJS= \
+	$(O)\klist.obj
+
+LIBS=..\$(O)\kuser.lib advapi32.lib wsock32.lib
+INCLUDES=..;..\..\krb5\src\include;..\..\krb4\include;\
+	$(PISMERE)\athena\util\loadfuncs
+
+USE_DEFAULTLIB=1
+RES=$(O)\klist.res

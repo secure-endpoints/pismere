@@ -1,0 +1,16 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=wshload
+TARGETTYPE=LIB
+TARGETSS=console
+
+OBJS = \
+	$(O)\wshload.obj
+
+USE_DEFAULTLIB=1
+
+INCLUDES=..\include
+
+C_FLAGS=-DWINDOWS -DWIN32 -D_WINDOWS

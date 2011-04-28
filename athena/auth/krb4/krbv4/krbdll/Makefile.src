@@ -1,0 +1,107 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=krbv4w32
+TARGETTYPE=DLL
+TARGETSS=console
+
+OBJS = \
+	$(O)\kntoln.obj \
+	$(O)\crauthre.obj \
+	$(O)\cr_death.obj \
+	$(O)\crerrep.obj \
+	$(O)\cr_ciph.obj \
+	$(O)\crticket.obj \
+	$(O)\debug.obj \
+	$(O)\decomtkt.obj \
+	$(O)\dest_tkt.obj \
+	$(O)\fgetst.obj \
+	$(O)\getrealm.obj \
+	$(O)\gettfrlm.obj \
+	$(O)\gettfnam.obj \
+	$(O)\getadmhs.obj \
+	$(O)\getadtkt.obj \
+	$(O)\get_cred.obj \
+	$(O)\rd_req.obj \
+	$(O)\getkrbhs.obj \
+	$(O)\g_krbrlm.obj \
+	$(O)\getphost.obj \
+	$(O)\getpwtkt.obj \
+	$(O)\get_req.obj \
+	$(O)\g_svctkt.obj \
+	$(O)\getst.obj \
+	$(O)\in_tkt.obj \
+	$(O)\kchktkt.obj \
+	$(O)\k_gethst.obj \
+	$(O)\klog.obj \
+	$(O)\knm_pars.obj \
+	$(O)\kparse.obj \
+	$(O)\k_errtxt.obj \
+	$(O)\k_gettkt.obj \
+	$(O)\krbconf.obj \
+	$(O)\mk_err.obj \
+	$(O)\mk_req.obj \
+	$(O)\mk_safe.obj \
+	$(O)\mth_snam.obj \
+	$(O)\netread.obj \
+	$(O)\netwrite.obj \
+	$(O)\one.obj \
+	$(O)\pkt_ciph.obj \
+	$(O)\pkt_clen.obj \
+	$(O)\rd_err.obj \
+	$(O)\rd_priv.obj \
+	$(O)\rd_safe.obj \
+	$(O)\rdservky.obj \
+	$(O)\recvauth.obj \
+	$(O)\savecred.obj \
+	$(O)\send_kdc.obj \
+	$(O)\sendauth.obj \
+	$(O)\tf_util.obj \
+	$(O)\tkt_strg.obj \
+	$(O)\util.obj \
+	$(O)\timeoday.obj \
+	$(O)\kadm.obj \
+	$(O)\kadmsupp.obj \
+	$(O)\kadmc2.obj \
+	$(O)\kadmstr.obj \
+	$(O)\kadm_err.obj \
+	$(O)\krb_udp.obj \
+	$(O)\krberr.obj \
+	$(O)\lifetime.obj \
+	$(O)\mk_priv.obj \
+	$(O)\getintkt.obj \
+	$(O)\mk_preau.obj \
+	$(O)\krblayer.obj \
+	$(O)\leasherr.obj \
+	$(O)\winutil.obj \
+	$(O)\lshcmpat.obj \
+	$(O)\krbv4win.obj
+
+RES=$(O)\krbv4win.res
+
+DEF_FILE=w32des.def
+
+USE_DEFAULTLIB=1
+
+!ifdef NODEBUG
+RC_DEBUG_DEF=
+!else
+RC_DEBUG_DEF=-DDEBUG
+!endif
+
+!ifdef KRB4_USE_DNS
+DNS_FLAGS=-DWSHELPER -DUSE_DNS
+WSHELPER_LIB=..\..\..\..\wshelper\wshelper\$(O)\wshelp32.lib
+WSHELPER_INC=..\..\..\..\wshelper\include
+!else
+DNS_FLAGS=
+WSHELPER_LIB=
+WSHELPER_INC=.
+!endif
+
+INCLUDES=..\include;..\..\include;..\..\..\leash\include;..\..\..\krbcc\include;$(WSHELPER_INC)
+LIBS=..\cnsdes\$(O)\desw32.lib ..\com_err\$(O)\cerrw32.lib $(STD_LIBS) wsock32.lib version.lib ..\..\..\krbcc\krbcc32\$(O)\krbcc32.lib $(WSHELPER_LIB)
+
+C_FLAGS=-DAFS -DPC -DPLATFORM=win32 -DBSDSOCK -DWINSOCK -DNOLEASHCOMPAT -DWINDOWS -DGUIONLY -DMM_CACHE -DCRED_TYPE_IN_UNION $(DNS_FLAGS)
+RC_FLAGS= -Dwin32 -DWINSOCK -DDES $(RC_DEBUG_DEF)

@@ -1,0 +1,79 @@
+<HTML>
+<HEAD>
+<META NAME="GENERATOR" Content="Microsoft Developer Studio">
+<META HTTP-EQUIV="Content-Type" content="text/html; charset=iso-8859-1">
+<TITLE>Common Credentials Cache API Issues/Questions</TITLE>
+Last Update:  14:02 17 Jul 1997
+</HEAD>
+<BODY>
+<H1>Common Credentials Cache API </H1>
+<H2>Issues/Questions</H2>
+<UL>
+
+<LI>The values for "type" are to be "as defined in the Kerberos V5 protocol".
+I can't find what those numbers are.
+<pre>
+enum cc_data_type { 
+	type_ticket = 0,		// 0 for ticket, second_ticket
+	/* Ted's draft spec says these are to be 
+	   "as defined in the Kerberos V5 protocol"
+	   all I can find are typdefs, 
+	   can't find an enumerated type or #define
+	*/
+	type_address, /* =  <"as defined in the Kerberos V5 protocol"> */
+	type_authdata, /* = <"as defined in the Kerberos V5 protocol"> */
+	type_encryption, /* = <"as defined in the Kerberos V5 protocol"> */
+	cc_data_type_max }; // for validation
+</pre>
+
+</LI>
+
+<LI>Should we allow zero length names of Named Caches?  I'd vote NO.
+</LI>
+
+<LI>Cache Names
+	<UL>
+	<LI>What does the name of a cache look like (sgr, sgr@umich.edu, ???)
+	</LI>
+	<LI>How do other vendors know what cache name to pass to cc_open()/cc_create()? 
+		<UL>
+		<LI>a priori knowledge ... we'd better document [enforce syntax?]</LI>
+		<LI>call cc_get_cache_names() to get a list of names, but then how to pick from list?</LI>
+		</UL>
+	</LI>
+	</UL>
+</LI>
+
+<LI>Storing both V4 & V5 credentials
+	<UL>
+	<LI>Caller needs to specify version on cc_create() &amp cc_open() via cc_flags.
+	</LI>
+	<LI>Caller needs to be able to recover version
+		<UL>
+		<LI>add new return parm to cc_get_cache_names? (getting ugly)</LI>
+		<LI>go back to cc_seq_fetch_named_cache() and add (cc_get_version() and/or cc_get_flags())</LI>
+		</UL>
+	</LI>
+	</UL>
+</LI>
+<LI>Should cache DLL know as little as possible about creds, or as much as possible
+	<UL>
+	<LI>As little as possible
+		<UL>
+		<LI>Caller can modify dsect without requiring a NEW cache DLL, just a bag-o-bits</LI>
+		<LI>No verification of dsects</LI>
+		</UL>
+	</LI>
+	<LI>As much as possible
+		<UL>
+		<LI>DLL can verify the heck out of the dsect, at least in debug mode</LI>
+		<LI>DLL will have to change every time a ticket format changes and maintain backward compatibility</LI>
+		</UL>
+	</LI>
+	</UL>
+</LI>
+</UL>
+
+
+</BODY>
+</HTML>

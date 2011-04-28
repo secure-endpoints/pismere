@@ -1,0 +1,110 @@
+# Microsoft Developer Studio Generated Dependency File, included by wshelp32.mak
+
+.\gethna.c : \
+	"..\include\arpa\nameser.h"\
+	"..\include\decldll.h"\
+	"..\include\resolv.h"\
+	".\nt-patch.h"\
+	".\u-compat.h"\
+	
+
+.\hesiod.c : \
+	"..\include\arpa\nameser.h"\
+	"..\include\decldll.h"\
+	"..\include\hesiod.h"\
+	"..\include\resolv.h"\
+	".\nt-patch.h"\
+	".\resscan.h"\
+	".\u-compat.h"\
+	
+
+.\hesmailh.c : \
+	"..\include\decldll.h"\
+	"..\include\hesiod.h"\
+	".\nt-patch.h"\
+	".\u-compat.h"\
+	
+
+.\hespwnam.c : \
+	"..\include\decldll.h"\
+	".\nt-patch.h"\
+	".\pwd.h"\
+	".\u-compat.h"\
+	
+
+.\hesservb.c : \
+	"..\include\decldll.h"\
+	"..\include\hesiod.h"\
+	".\nt-patch.h"\
+	".\u-compat.h"\
+	
+
+.\inetaton.c : \
+	"..\include\decldll.h"\
+	
+
+.\res_comp.c : \
+	"..\include\arpa\nameser.h"\
+	"..\include\decldll.h"\
+	"..\include\resolv.h"\
+	".\nt-patch.h"\
+	".\u-compat.h"\
+	
+
+.\res_debu.c : \
+	"..\include\arpa\nameser.h"\
+	"..\include\decldll.h"\
+	"..\include\resolv.h"\
+	".\nt-patch.h"\
+	".\u-compat.h"\
+	
+
+.\res_init.c : \
+	"..\include\arpa\nameser.h"\
+	"..\include\decldll.h"\
+	"..\include\mitwhich.h"\
+	"..\include\resolv.h"\
+	".\nt-patch.h"\
+	".\u-compat.h"\
+	
+
+.\res_mkqu.c : \
+	"..\include\arpa\nameser.h"\
+	"..\include\decldll.h"\
+	"..\include\resolv.h"\
+	".\nt-patch.h"\
+	".\u-compat.h"\
+	
+
+.\res_quer.c : \
+	"..\include\arpa\nameser.h"\
+	"..\include\decldll.h"\
+	"..\include\resolv.h"\
+	".\nt-patch.h"\
+	".\u-compat.h"\
+	
+
+.\res_send.c : \
+	"..\include\arpa\nameser.h"\
+	"..\include\decldll.h"\
+	"..\include\resolv.h"\
+	".\nt-patch.h"\
+	".\u-compat.h"\
+	
+
+.\resolve.c : \
+	"..\include\arpa\nameser.h"\
+	"..\include\decldll.h"\
+	"..\include\resolv.h"\
+	".\nt-patch.h"\
+	".\resscan.h"\
+	".\u-compat.h"\
+	
+
+.\resource.rc : \
+	"..\include\decldll.h"\
+	"..\include\hesiod.h"\
+	"..\include\mitwhich.h"\
+	".\string.rc"\
+	".\version.rc"\
+	

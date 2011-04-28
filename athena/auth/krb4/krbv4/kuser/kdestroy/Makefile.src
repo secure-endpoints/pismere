@@ -1,0 +1,16 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=kdestroy
+TARGETTYPE=EXE
+TARGETSS=console
+
+OBJS= \
+	$(O)\kdestroy.obj
+
+LIBS=..\..\krbdll\$(O)\krbv4w32.lib
+INCLUDES=..;..\..\..\include
+
+USE_DEFAULTLIB=1
+NO_PLACE=1

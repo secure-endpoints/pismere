@@ -1,0 +1,13 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=loadfuncs
+TARGETTYPE=LIB
+TARGETSS=console
+
+OBJS= \
+	$(O)\loadfuncs.obj
+
+USE_DEFAULTLIB=1
+NO_BSC=1

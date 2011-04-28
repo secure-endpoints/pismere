@@ -1,0 +1,4 @@
+com_err.c: com_err.h internal.h errtbl.h
+errmsg.c: com_err.h internal.h errtbl.h
+et_name.c: com_err.h
+winexp.c: com_err.h

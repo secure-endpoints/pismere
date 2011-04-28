@@ -1,0 +1,35 @@
+NAME=leashw32
+TARGETTYPE=DLL
+TARGETSS=console
+
+OBJS= \
+	$(O)\AFSroutines.obj \
+	$(O)\krb5routines.obj \
+	$(O)\leashdll.obj \
+	$(O)\leasherr.obj \
+	$(O)\lsh_pwd.obj \
+	$(O)\lshcallb.obj \
+	$(O)\lshfunc.obj \
+	$(O)\timesync.obj \
+	$(O)\winerr.obj \
+	$(O)\winutil.obj
+
+RES=$(O)\lsh_pwd.res
+
+LIBS=$(STD_LIBS) wsock32.lib \
+	$(PISMERE)\athena\util\loadfuncs\$(O)\loadfuncs.lib
+
+INCLUDES="..\include";..\..\krb5\src\include;..\..\krb4\include;"..\..\afsauth\include";"..\..\..\wshelper\include";..\..\..\util\loadfuncs
+
+C_FLAGS= \
+!ifndef MIT_ONLY
+	-DNO_AFS \
+!endif
+	-DWINSOCK \
+	-DWIN32   \
+	-DWINDOWS \
+	-GX       # C++ EH
+
+USE_LIBC_DLL=1
+
+DEF_FILE=leashw32.def

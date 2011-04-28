@@ -1,0 +1,60 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=desw32
+TARGETTYPE=LIB
+TARGETSS=console
+
+PRIVATE_DES_TIME_OBJS=\
+	$(O)\win_time.obj
+
+# Server DES
+#    These routines are only used in server & Unix envrionments, 
+#    not PC clients.
+PRIVATE_DES_SERVER_OBJS=\
+	$(O)\newrndky.obj \
+	$(O)\rand_key.obj \
+	$(O)\rdpasswd.obj
+
+# XXX - Alpha used not to like the f_cksum name, should check...
+PRIVATE_DES_FERG_OBJS= \
+	$(O)\f_cbc.obj \
+	$(O)\f_cksum.obj \
+	$(O)\f_pcbc.obj \
+	$(O)\f_sched.obj \
+	$(O)\f_ecb.obj \
+	$(O)\f_parity.obj \
+	$(O)\f_tables.obj \
+
+OBJS = \
+	$(PRIVATE_DES_FERG_OBJS) \
+	$(O)\keysched.obj \
+	$(O)\debug.obj \
+	$(O)\qd_cksum.obj \
+	$(O)\strtokey.obj \
+	$(O)\weak_key.obj \
+	$(O)\util.obj \
+	$(O)\crypt.obj \
+	$(O)\unixtime.obj \
+	$(PRIVATE_DES_TIME_OBJS) \
+	$(PRIVATE_DES_SERVER_OBJS)
+
+USE_DEFAULTLIB=1
+NO_PLACE=1
+
+INCLUDES=..\include;..\..\include
+C_FLAGS=-DAFS -DPC -DPLATFORM=win32 -DWINDOWS -DBSDSOCK -DWINSOCK
+
+## verify that the library correctly implements the DES standard.  
+## Run this after any change to the source.
+#
+#verify: verify.$(OBJEXT) $(LIBNAME)
+#	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.$(OBJEXT) $(LIBNAME) $(BSDLIB)
+#
+#key_test: key_test.$(OBJEXT) $(LIBNAME)
+#	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.$(OBJEXT) $(LIBNAME) $(BSDLIB)
+#
+#testit: testit.$(OBJEXT) $(LIBNAME) random_key.$(OBJEXT)
+#	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $@.$(OBJEXT) random_key.$(OBJEXT) \
+#					      $(LIBNAME) $(BSDLIB)

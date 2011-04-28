@@ -1,0 +1,12 @@
+#define VER_PROD_MAJOR 1
+#define VER_PROD_MINOR 8
+#define VER_PROD_REV   0
+
+#define VER_PROD_MAJOR_STR  "1"
+#define VER_PROD_MINOR_STR  "8"
+#define VER_PROD_REV_STR    "0"
+
+#define VER_PRODUCTNAME_STR         "Kerberos Client (kclient) API"
+#define VER_COMPANYNAME_STR         "?Cornell?, portions " VER_MIT
+#define VER_LEGALCOPYRIGHT_YEARS    "1997-1999"
+#define VER_LEGALCOPYRIGHT_STR      "Copyright (C) " VER_LEGALCOPYRIGHT_YEARS " by ?Cornell?, portions by the " VER_MIT

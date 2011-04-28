@@ -1,0 +1,55 @@
+#	$Source: /cvs/pismere/pismere/athena/auth/krb4/krbv4/krbdll/kadm_err.et,v $
+#	$Author: dalmeida $
+#	$Header: /cvs/pismere/pismere/athena/auth/krb4/krbv4/krbdll/kadm_err.et,v 1.1 1999/03/12 23:05:49 dalmeida Exp $
+# Copyright 1988 by the Massachusetts Institute of Technology.
+#
+# For copying and distribution information, please see the file
+# <mit-copyright.h>.
+#
+# Kerberos administration server error table
+#
+error_table	kadm
+
+# KADM_SUCCESS, as all success codes should be, is zero
+
+error_code KADM_RCSID,		"$Header: /cvs/pismere/pismere/athena/auth/krb4/krbv4/krbdll/kadm_err.et,v 1.1 1999/03/12 23:05:49 dalmeida Exp $"
+# /* Building and unbuilding the packet errors */
+error_code KADM_NO_REALM,	"Cannot fetch local realm"
+error_code KADM_NO_CRED,	"Unable to fetch credentials"
+error_code KADM_BAD_KEY,	"Bad key supplied"
+error_code KADM_NO_ENCRYPT,	"Can't encrypt data"
+error_code KADM_NO_AUTH,	"Cannot encode/decode authentication info"
+error_code KADM_WRONG_REALM,	"Principal attemping change is in wrong realm"
+error_code KADM_NO_ROOM,	"Packet is too large"
+error_code KADM_BAD_VER,	"Version number is incorrect"
+error_code KADM_BAD_CHK,	"Checksum does not match"
+error_code KADM_NO_READ,	"Unsealing private data failed"
+error_code KADM_NO_OPCODE,	"Unsupported operation"
+error_code KADM_NO_HOST,	"Could not find administrating host"
+error_code KADM_UNK_HOST,	"Administrating host name is unknown"
+error_code KADM_NO_SERV,	"Could not find service name in services database"
+error_code KADM_NO_SOCK,	"Could not create socket"
+error_code KADM_NO_CONN,	"Could not connect to server"
+error_code KADM_NO_HERE,	"Could not fetch local socket address"
+error_code KADM_NO_MAST,	"Could not fetch master key"
+error_code KADM_NO_VERI,	"Could not verify master key"
+
+# /* From the server side routines */
+error_code KADM_INUSE,		"Entry already exists in database"
+error_code KADM_UK_SERROR,	"Database store error"
+error_code KADM_UK_RERROR,	"Database read error"
+error_code KADM_UNAUTH,		"Insufficient access to perform requested operation"
+# KADM_DATA isn't really an error, but...
+error_code KADM_DATA,		"Data is available for return to client"
+error_code KADM_NOENTRY,	"No such entry in the database"
+
+error_code KADM_NOMEM,		"Memory exhausted"
+error_code KADM_NO_HOSTNAME,	"Could not fetch system hostname"
+error_code KADM_NO_BIND,	"Could not bind port"
+error_code KADM_LENGTH_ERROR,	"Length mismatch problem"
+error_code KADM_ILL_WILDCARD,	"Illegal use of wildcard"
+
+error_code KADM_DB_INUSE,	"Database locked or in use"
+error_code KADM_INSECURE_PW,	"Insecure password rejected"
+error_code KADM_PW_MISMATCH,	"Cleartext password and DES key did not match"
+end

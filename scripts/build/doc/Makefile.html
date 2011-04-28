@@ -1,0 +1,292 @@
+<html>
+<head>
+<title>Pismere Build Documentation</title>
+</head>
+
+<body>
+
+<center>
+<h1>Pismere Build Documentation</h1>
+</center>
+
+<h2>The Build Script</h2>
+
+<p>
+The tree uses the Pismere build script, <code>build.pl</code>.  This
+script is known to work with ActivePerl build 517 (<a
+href="http://www.activestate.com/"</a>www.activestate.com</a>).  Older
+builds of ActivePerl had subtle incompatibility problems.  Newer
+builds probably work...try them at your own risk.
+</p>
+
+<p>
+The build works under Windows NT.  It should work under Windows 95,
+but we do not test it regularly under that OS.  You should use the
+default command-line shell for those OSes, or something fairly
+compatible.
+</p>
+
+
+<a name="running">
+<h2>Running the Build</h2>
+</a>
+
+<p>
+Go to the directory you want to build and invoke the build script.
+The invocation will vary depending on how your system is set up.  Here
+are the most common ways to build:
+</p>
+
+<ul>
+
+<li><code>build.pl -?</code> - show usage information.
+
+<li><code>build.pl</code> (or <code>build.pl all</code>)- builds debug target.
+
+<li><code>build.pl NODEBUG=1</code> (or <code>build.pl all NODEBUG=1</code>)
+- builds release target.
+
+<li><code>build.pl clean</code> - cleans debug target.
+
+<li><code>build.pl clean NODEBUG=1</code> - cleans release target.
+
+</ul>
+
+<p>
+You may need to put <code>perl</code> at the start of each of the
+above commands, depending on whether your shell knows how to execute a
+<code>.pl</code> file.
+</p>
+
+<p>
+
+
+<h2>Using the Build Script to Build Your Code</h2>
+
+<p>
+The build script works by entering a directory, and looking for a
+<code>Makefile.src</code> and a <code>Makefile.dir</code> file.
+
+<p>
+If the <code>Makefile.src</code> is present, the script will try to
+create the target defined by this file.  Therefore, only one target
+can be created per directory.  The target cannot consist of source
+files from other directories.  If this is necessary, you should first
+build the other directory, creating a library, and then include that
+library as part of the target you're trying to build.  If you need to
+create multiple targets from a set of source files, you can simply
+create additional directories that link in the object or library files
+created by the sources.
+
+<p>
+If the <code>Makefile.dir</code> is present, the script will try to
+build the directories indicated in this file.  The directories can be
+build before and/or after the current directory.
+
+
+<h3>Adding a component to the build</h3>
+
+<p>First, go to the directory where the component is located.  Then,
+create a <code>Makefile</code> file, with the contents:
+
+<pre>
+!include &lt;Makefile.inc&gt;
+</pre>
+
+<p>Then, create a <code>Makefile.src</code> as described <a
+href="#Makefile.src">below</a>.
+
+<p>
+You will then be able to run <code>build.pl</code> in a variety of
+ways to get the most common types of builds.  See <a
+href="#running">Running the Build</a> above for information on how to
+run <code>build.pl</code>.
+</p>
+
+<h3>Adding a subdirectory to the build</h3>
+
+<p>
+If you need to build subdirectories, create a
+<code>Makefile.dir</code> in the directory with the line:
+
+<pre>
+DIRS=dir_1 dir_2
+</pre>
+
+Where <code>dir_n</code> is the name of the subdirectory you want to
+build.  The build will first build the current directory then the
+subdirectories.
+
+
+<h2>Build Options Reference</h2>
+
+<p>
+Below are the options that control the build.  These are in addition
+to any flags shown when you do a <code>build.pl -?</code>.
+
+<h3>Common Global Build environment options</h3>
+
+<p>
+These are some of the common options you may want to use in building.
+You can set any option at the <code>build.pl</code> command-line.  The
+default build is a debug build with browse information.  It is
+important to realize that building browse information slows down the
+build quite a bit, so you may want to disable that at the
+command-line.
+</p>
+
+<dl>
+
+<dt>NODEBUG <dd> set to 1 to build an optimized version of your app
+with no debug info (i.e., a release build).
+
+<dt>VENDORMOD <dd> set to the organization making a modification to
+the sources.  This helps figure out who made this modified build.
+
+<dt>NO_BSC <dd> define to skip SBR/BSC creation for a debug build
+(this is the default for a release build unless FORCE_BSC is defined)
+
+<dt>FORCE_BSC <dd> define to force SBR/BSC creation for a release
+build (this is the default for a debug build unless NO_BSC is defined)
+
+</dl>
+
+<h3>Uncommon Global Build environment options</h3>
+
+<p>
+You should not have to play with the settings in this section.  They
+are here for completeness.
+</p>
+
+
+<dl>
+
+<dt>APPVER <dd>[ 4.0 | 5.0 ] - for build time checking for OS version
+dependencies and to mark the executable with OS version information.
+(Default is 4.0.) [<i>not much reason to use this</i>]
+
+<dt>TARGETOS <dd>[ WIN95 | WINNT | BOTH ] - for some build time
+checking for platform dependencies.  (Default is WINNT.)  [<i>not much
+reason to use this</i>]
+
+<dt>TARGETLANG <dd> [ LANG_JAPANESE | LANG_CHINESE | LANG_KOREAN ] -
+for compile & link flags for building applications to run on Far-East
+Windows. (This is an optional parameter.  The system locale is the
+default.)  [<i>not much reason to use this</i>]
+
+<dt>_WIN32_IE <dd> [ 0x0300 | 0x0400 ] - for compile and link flags
+for building applications and components to run on Internet
+Explorer. (This is an optional parameter.  IE 4.0 is the default.)
+[<i>not much reason to use this</i>]
+
+<dt>NO_DEBUG_CRT <dd> set to 1 to <b>not</b> use the debug version of
+the CRT when building a debug application.
+
+<dt>NODEBUG <dd> set to 1 to build an optimized version of your app
+with no debug info (i.e., a release build).
+
+<dt>TUNE <dd> set to 1 to get working set tuner info.
+
+<dt>PROFILE <dd> set to 1 to get call attributed profiling info.
+
+<p>Note: NODEBUG, TUNE, and PROFILE are mutually exclusive.
+
+</dl>
+
+<a name="Makefile.src">
+<h3>Makefile.src options</h3>
+</a>
+
+<p>
+At this point, $(O) is the output directory.  NODEBUG will indicate
+whether you're doing a release or debug build.  STD_LIBS consists of
+standard Win32 libraries.
+</p>
+
+<h4>Required</h4>
+
+<dl>
+<dt>NAME <dd> base name of target (no extension)
+<dt>TARGETTYPE <dd> [ EXE | DLL | LIB ] - type of target
+<dt>TARGETSS <dd> [ console | windows ] - target subsystem
+<dt>OBJS <dd> list of object files (i.e., $(O)\foo.obj )
+</dl>
+
+<h4>Optional</h4>
+
+<dl>
+
+<dt>DEF_FILE <dd> .def file, if any
+<dt>RES <dd>resource file, if any (i.e., $(O)\foo.res )
+
+<p>
+
+<dt>NO_PLACE <dd>if defined, will not try to place output files
+
+<dt>NO_OUT <dd>if defined, will not create an output directory (avoid this)
+
+<dt>NO_EXTERNAL_DEPS <dd> if defined, will not use $(NAME).dep as a
+dependency file
+
+<dt>USE_EXTERNAL_DEPS <dd> if defined, will give warning if $(NAME).dep is
+not present
+
+<p>
+
+<dt>INCLUDES <dd>list of include dirs, ;-delimtited (e.g.,
+<code>INCLUDES=..\include;..\foo\inc;"..\annoying path with space\inc"</code> )
+
+<dt>LIB_PATHS <dd> list of lib dirs, ;-delimited (e.g.,
+<code>LIB_PATHS=..\lib;..\foo\lib</code> )
+
+<dt>LIBS <dd>libraries to use (e.g., <code>LIBS=foo.lib bar.lib
+..\baz\$(O)\baz.lib</code> or <code>LIBS=$(STD_LIBS)</code> )
+
+<dt>USE_DEFAULTLIB <dd>if defined, will use default libraries (the
+default is to only use the libraries specified in LIBS)
+
+<p>
+
+<dt>USE_MFC <dd> use MFC (DLL by default)
+
+<dt>USE_MFC_STATIC <dd> use static MFC
+
+<p>
+
+<dt>USE_LIBC_STD <dd> use static libc (not thread-safe)
+
+<dt>USE_LIBC_MT <dd> use thread-safe satic libc
+
+<dt>USE_LIBC_DLL <dd> use thread-safe libc DLL (default)
+
+<dt>NO_LIBC <dd> do not use any libc
+
+<p>
+
+<dt>USE_CPP_EH <dd> define to get C++ exception handling (-GX)
+
+<dt>PCH_FILE <dd> set to header file to use for pre-compiled header
+
+<dt>NO_BSC <dd> define to skip SBR/BSC creation for a debug build
+(this is the default for a release build unless FORCE_BSC is defined)
+
+<dt>FORCE_BSC <dd> define to force SBR/BSC creation for a release
+build (this is the default for a debug build unless NO_BSC is defined)
+
+<dt>KEEP_SBRS <dd> define to not truncate SBR files when building a
+BSC file
+
+<p>
+
+<dt>GEN_MAP <dd> generates a .map file in the build
+
+<p>
+
+<dt>C_FLAGS <dd> define any additional flags to pass to the C/C++ compiler
+
+<dt>RC_FLAGS <dd> define any additional flags to pass to the resource compiler
+
+</dl>
+
+</body>
+</html>

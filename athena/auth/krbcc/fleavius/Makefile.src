@@ -1,0 +1,29 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=fleavius
+TARGETTYPE=EXE
+TARGETSS=windows
+
+OBJS= \
+	$(O)\fleavius.obj \
+	$(O)\fleadlg.obj \
+	$(O)\stdafx.obj
+
+RES=$(O)\fleavius.res
+
+USE_DEFAULTLIB=1
+LIBS=krbcc32.lib
+LIB_PATHS=..\krbcc32\$(O)
+
+INCLUDES=..\include
+
+USE_LIBC_DLL=1
+USE_MFC=1           # gives us _AFXDLL!
+USE_CPP_EH=1        # gives us GX
+PCH_FILE=stdafx.h   # uses a PCH file
+
+C_FLAGS=-DWIN32 -DWINDOWS
+
+fleavius.rc: res/ver.rc

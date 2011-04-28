@@ -1,0 +1,17 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=kuser
+TARGETTYPE=LIB
+TARGETSS=console
+
+OBJS= \
+	$(O)\getopt.obj \
+	$(O)\kuser.obj
+
+INCLUDES=..\krb5\src\include;..\krb4\include;$(PISMERE)\athena\util\loadfuncs
+LIBS=$(PISMERE)\athena\util\loadfuncs\$(O)\loadfuncs.lib
+
+USE_DEFAULTLIB=1
+NO_PLACE=1

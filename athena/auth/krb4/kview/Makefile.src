@@ -1,0 +1,27 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=kview32
+TARGETTYPE=EXE
+TARGETSS=windows
+
+DEF_FILE=kview.def
+
+OBJS = \
+	$(O)\kview.obj \
+	$(O)\timesync.obj
+
+USE_DEFAULTLIB=1
+
+INCLUDES=..\include;..\kclient\include
+LIBS=$(STD_LIBS) wsock32.lib ..\kclient\src\$(O)\kclnt32.lib
+
+GEN_MAP=1
+
+RES=$(O)\kview.res
+
+C_FLAGS=-DPC -DPLATFORM=win32 -DVERSERV=0
+RC_FLAGS=-DVERSION_RESOURCES -DWINSOCK
+
+kview.rc: ver.rc

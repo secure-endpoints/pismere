@@ -1,0 +1,780 @@
+<!doctype html public "-//IETF//DTD HTML//EN">
+<HTML>
+
+<HEAD>
+
+<TITLE>
+Kerberos v4 for Win32 Release Notes for Software Developers
+</TITLE>
+
+</HEAD>
+
+<BODY>
+
+
+<h1>Kerberos v4 for Win32 Release Notes for Software Developers</h1>
+
+<P>
+Thanks to: shabby, Paul Hill, Jenny Khuon, Michael Oltz, Steve
+Rothwell, Gregory M Diskin, Howard Chu, Pierre Goyette, Danilo
+Almeida, Jeff Beckley, David Tanner, and Art Leather.
+
+
+<P>
+<b>Draft</b> <i>Last modified:</i> 03/04/99, dalmeida@mit.edu
+
+<h3>Table of Contents</h3>
+
+<ul type=disc>
+<li><a href="http://web.mit.edu/kerberos/www/">What is Kerberos?</a>
+<li><a href="#whatsnew">What's New</a>
+<li><a href="#support">Supported Platforms</a>
+<li><a href="#config">Installation and Configuration</a>
+<li><a href="#command_line">Command Line Options to Leash and Kview</a>
+<li><a href="#tree">Browsing the Source Tree</a>
+<li><a href="#build">Building the Source Tree</a>
+<li><a href="#todo">To Do</a>
+<li>API notes - API?  What API?
+</ul>
+
+<!-- ---------------------------------------------------------------------- -->
+<hr>
+<a name="whatsnew"></a>
+<h2>What's New</h2>
+
+
+<h3>03/04/98</h3>
+
+<ol>
+
+<p>
+<li>
+Only Win32 support.  Yay!  This has been tested on i386.  Alpha has
+not been reccently tested, but it should work.
+
+<p>
+<li>
+Easier make procedure using MSVC++ 4.x (well, 6.0 works for
+sure...)
+
+<p>
+<li>
+Leash does not live here right now.
+
+</ol>
+
+<h3>Previously</h3>
+
+<ol>
+
+<p>
+<li>
+integration of Kclient into the source release. Cornell provided this
+work. We made a small modification ot IsCredExpired (see
+below). Cornell has wrapped the krbv4w32 functions with MUTEXES so the
+code should be thread safe.
+
+<p>
+<li>
+32-bit support, (tested i386, Alpha so far) Can anybody compile
+this for MIPS and PowerPC and provide us with binaries or necessary
+source patches?
+
+<p>
+<li>
+Modification of the credential cache:
+<P>
+We encountered a problem at MIT that we felt needed to be addressed
+even though it broke some backwards compatibility. We found that if
+someone used a Kerberized application spanning multiple PPP sessions a
+Kerberos error would be generated and few applications would catch
+this error and try to get new tickets instead.  E.g. Suppose a user
+starts a PPP connection and then starts Eudora, fetching mail. The
+user then decides to close down the PPP connection while they read
+their mail and compose responses. Next they initiate a new PPP
+connection and incorporate mail again. Note that the user never exited
+Eudora. Instead of prompting the user for their name and password
+Eudora will generate and error message. The only way for the user to
+recover the functionality would be to use Leash, Kview, or kdestroy to
+destroy their old tickets so that Eudora would get new tickets.
+<P>
+This happened because many ISPs hand out a new IP address to a user
+each time that user reconnects to the system. Also a Kerberos ticket
+includes the machines local IP address in an encrypted form this is
+used by most severs to insure that the ticket has not been copied to
+another users machine.
+<P>
+Since the local IP address is stored in the ticket it seems that it
+should be easy to compare this data to the machine's local IP address
+at the same time that an application is checking to see if the ticket
+has expired. Unfortunately the IP address in the ticket is encrypted
+in the server's session key and so is inaccessible to the local
+machine.
+<P>
+Instead we borrowed an idea from Kerberos version 5 and decided to
+store the local IP address, unencrypted, in the credential which is
+cached in the local cache. Within the Kclient function IsCredExpired
+or the krbv4wxx function kchktkt we verify that the ticket has not
+expired and that the local IP address matches the IP address stored in
+the ticket.
+<P>
+This implies that machines with multiple copies of kclnt32.dll or
+krbv4w32.dll, of different versions, may encounter unexpected errors
+when using Kerberized applications. The normal error message generated
+will be BAD_TKT_FILE_FORMAT or NO_TKT_FILE.
+<P>
+Users of applications that use other vendors Kerberos implementations
+may also be affected. E.g. some software from FTP, Inc.
+
+<p>
+<li>
+Add a new function to Kclient DLL. This function is
+SendTicketsForService(). It is basically a send_auth type
+function. Before everyone complains please read the following
+explanation.
+<P>
+Qualcomm has been working with Platinum on a 32-bit Kclient which
+would supports both Kerberos v4 and v5. From what I have heard this is
+a commercial implementation. It ignores GSS or other abstraction
+layers above the Kerberos layer that application developers should
+write to. It keeps its ticket cache in the DLL, as such it will not
+share the ticket cache with other Kerberos implementations that may
+reside on the user's system.
+<P>
+Platinum and Qualcomm decide to add a new API call to the Kclient
+interface. Eudora uses this new function if it finds a KCLNT32.DLL. In
+this case it does not use the thunking application KERB16.
+<P>
+We have duplicated this function in our release of KCLNT32 so that
+Eudora will not GPF. Please DO NOT WRITE APPLICATIONS TO THIS
+FUNCTION.
+
+<p>
+<li>
+We stole an idea from Cornell. If the clock is out of synch when we
+are trying to obtain a ticket we resynch the clock and try again. We
+inform the user if this occured.
+
+<p>
+<li>
+Fixed up some problems relating to DLL initialization. WSAStartup
+will be called if necessary by a few functions. This was needed to
+handle some differences in DLL initialization under Win32 when
+multiple applications were using the DLL at the same time. Also fixed
+up some initialization of the com_err functions due to similar issues.
+
+<p>
+<li>
+Added two new functions to leashw32.dll,
+Leash_set_help_file(char*szHelpFile) which allows an application
+developer to specify which help file to use from the Dialogbox
+presented when using the Leash_kinit function. If the argument is NULL
+the function will check the environment variable KERB_HELP. If this is
+not set the hard coded value of kerberos.hlp will be used.
+<P>
+The other function is Leash_get_help_file which allows an application
+developer to determine what the name of the help file being used is.
+<P>
+These are defined in lshfunc.c
+
+<p>
+<li>
+Broke the OS/2 support. Does anyone care?
+
+<p>
+<li>
+The krbconf.c file was extensively modified. This is one of the
+places we broke OS/2 support. The libaries still rely on the krb.con
+and krbrealm.con files however the location is now much more
+flexible. Here is the order of searching where $(foo) is the value of
+the environment variable:
+
+<ul>
+<li>$(NDIR)\kerb\
+<li>The current directory
+<li>The Windows directory
+<li>The Windows system directory
+<li>The directory containing the executable file for the current task
+<li>The directories in the path
+<li>The list of directories mapped in a network
+<li>$(NDIR)\
+<li>$(ETC)\
+</ul>
+
+<p>
+<li>
+The 32-bit libraries are linked with libcmt instead of libc.
+
+<p>
+<li>
+Added to the export section of the def files:
+
+<ul>
+<li>krb_set_tkt_string
+<li>krb_get_in_tkt
+<li>des_pcbc_encrypt
+<li>LocalHostAddr
+<li>krb_get_krbhst
+<li>krb_get_tf_fullname
+</ul>
+
+<p>
+<li>
+The optimization flags for the NODEBUG build have been
+changed. /Ox broke things. We took a more conervative approach. No
+problems noticed so far.
+
+<p>
+<li>
+Modified Kclient to NOT use x_htons. Kclient now requires
+winsock. This allows us to build kclient for the Alpha, and
+theoretically other NT hardware platforms.
+
+<p>
+<li>
+Fix the send_auth so that we do not fail on a null realm. Also
+detects when an invalid socket descriptor has been passed (special
+thanks to Eudora 3.0 for providing a test case.)
+
+</ol>
+
+<!-- ---------------------------------------------------------------------- -->
+<hr>
+<a name="support"></a>
+<h2>Supported Platforms</h2>
+
+<P>
+This release of Kerberos v4 is for Win32 platforms only.  These
+include Windows NT and Windows 9x.  We have only built is on x86, but
+it should work on other CPUs as well.
+
+<P>
+The libraries provided for Win32 support are:
+<P>
+krbv4w32.dll, kclnt32.dll - (win32) (tested on x86 only)
+
+<P>
+The applications provided are:
+<P>
+kview32.exe, kinit.exe, kdestroy.exe, klist.exe, kexpire.exe
+
+<P>
+Leash is no longer included in this distribution.  It has been pulled
+out as a separate component while it is being rewritten.  This new
+version will enable users to obtain version 4 and version 5 tickets
+through a single username/password dialog.
+
+<P>
+
+<!-- ---------------------------------------------------------------------- -->
+<hr>
+<a name="config"></a>
+<h2>Installation/Configuration</h2>
+
+<h4>Table of Contents</h4>
+
+<ul>
+<li><a href="#config_bin">Binaries</a>
+<li><a href="#config_services">Services File</a>
+<li><a href="#config_conf">Kerberos Configuration Files (krb.con/krbrealm.con)</a>
+<li><a href="#config_conf_mod">Modifying Kerberos Configuration Files (krb.con/krbrealm.con)</a>
+<li><a href="#config_cache">Ticket Cache</a>
+<li><a href="#config_time">Date and Time Issues</a>
+</ul>
+
+<P>
+
+<!-- ---------------------------------------------------------------------- -->
+<hr>
+<a name="config_bin"></a>
+<h3>Binaries</h3>
+
+<P>
+The DLLs <code>krbv4w32.dll</code> and <code>kclnt32.dll</code> should
+be in your path.
+<P>
+At MIT we normally recommend to users that they have a directory
+<code>c:\net\mit</code> on their path and that the files reside in
+this directory. Many other sites recommend that users place these
+files in their Windows system directory or the Windows directory. MIT
+prefers to avoid this for a few reasons.
+<P>
+For MIT users we prefer using <code>\net\mit</code> for a few
+reasons. First this directory historically exists on most of our
+users' systems. It is also where we normally recommend installing
+locally developed applications. By using this setup we are able to
+support users that insist on running multiple operating systems or
+multiple versions of an operating system on their machine. It is much
+easier to track down a single copy of a DLL and determine its version
+number. Also the number of files in this directory is much smaller
+than in the OS directory so it is much easier for users to locate and
+determine the version number if this becomes necessary. Finally, very
+few third party installers will attempt to modify the
+<code>\net\mit</code> directory so we don't worry about what another
+application will do to our binaries.
+<P>
+The disadvantages to seperating the DLLs from the OS are that users
+must add yet another directory to their path. And when they do this
+manually they may make a typing mistake. Sometimes the typing mistakes
+can be subtle and difficult to resolve. E.g <code>c:\net\mit</code> is
+not the same as <code>c\net\mit</code>.
+<P>
+If users like to invoke the applications from a command line instead
+of just the GUI the applications should also be on the path. Again at
+MIT we normally install <code>kview32.exe</code>,
+<code>kinit.exe</code>, <code>kdestroy.exe</code>, and
+<code>klist.exe</code> in <code>\net\mit</code>.
+<P>
+
+<!-- ---------------------------------------------------------------------- -->
+<hr>
+<a name="config_services"></a>
+<h3>Services File</h3>
+
+<P>
+The Kerberos DLLs need to know what port to talk to the Kerberos
+server on. They obtain this information from the local services
+file. In many cases you may to add a line to the services file
+especially if the vendor did not provide this in the default services
+file.
+<P>
+If the information is absent from the local services file you will
+normally get a "Can't send request (send to kdc)" error.
+<P>
+Usually the line that will need adding is:
+<P>
+<pre>
+kerberos 750/udp kdc #kerberos UDP
+</pre>
+<P>
+In the case of Microsoft NT the default services file normally
+contains this already. This file is usually located in
+<code>\winnt\system32\drivers\etc</code>.
+<P>
+For other stacks you should consult the vendor documentation or just
+search your local hard disk for a file named services.
+
+<p>
+Note: It seems that the "kerberos-master 751/tcp" line in the
+services file is obsolete and not required.
+
+
+<!-- ---------------------------------------------------------------------- -->
+<hr>
+<a name="config_conf"></a>
+<h3>Kerberos Configuration Files (krb.con/krbrealm.con)</h3>
+
+<P>
+The Kerberos DLLs normally need two configuration files to function
+properly. These are krb.con and krbrealm.con. Older releases had
+overly restrictive locations for these files. Previously the files had
+to be located in <code>c:\net\kerb</code> or <code>%NDIR%\kerb</code>
+where <code>%NDIR%</code> was an environment variable e.g. <code>set
+NDIR=d:\etc</code> and the files should be located in
+<code>d:\etc\kerb\</code>
+<P>
+At the suggestion of several sites we relaxed this restriction. The
+DLLs will now search for the <code>krb.con</code> and
+<code>krbrealm.con</code> in the following locations and search oder:
+
+<ol>
+<li> %NDIR%\kerb\
+<li> The current directory
+<li> The Windows directory
+<li> The Windows system directory
+<li> The directory containing the executable file for the current task
+<li> The directories in the path
+<li> The list of directories mapped in a network
+<li>%NDIR%\
+<li>%ETC%\
+</ol>
+<P>
+Note: <code>%NDIR%</code> and <code>%ETC%</code> indicate the
+expansion of the environment variables named <code>NDIR</code> and
+<code>ETC</code>, if present.
+<P>
+It is up the local system administrator or end user to configure the
+machine for reasonable performance.
+
+<!-- ---------------------------------------------------------------------- -->
+<hr>
+<a name="config_conf_mod"></a>
+<h3>Modifying Kerberos Configuration Files (krb.con/krbrealm.con)</h3>
+
+<P>
+It is anticipated that most sites using Kerberos version 4 on Windows
+will also have an existing UNIX Kerberos infrastrucutre. For that
+reason we kept the format of the <code>krb.con</code> indetical to the
+UNIX <code>krb.conf</code>and the format of <code>krbrealm.con</code>
+identical to the UNIX <code>krb.realms</code>. For many users the
+easiest way to configure these files for use at their local site will
+be to simply ftp the corresponding files from a local UNIX machine
+that is already properly configured.
+
+<P>
+The <code>krb.con</code> file contain configuration information describing
+the Kerberos realm and the Kerberos key distribution center (KDC)
+servers for known realms.
+
+<P>
+<code>krb.con</code> contains the name of the local realm in the first
+line, followed by lines indicating realm/host entries. The first token
+is a realm name, and the second is a hostname of a host running a KDC
+for that realm. The words "admin server" following the hostname
+indicate that the host also provides an administrative database server
+which is contacted when changing a user's password. For example:
+
+<PRE>
+ATHENA.MIT.EDU
+ATHENA.MIT.EDU kerberos.mit.edu admin server
+ATHENA.MIT.EDU kerberos-1.mit.edu
+ATHENA.MIT.EDU kerberos-2.mit.edu
+LCS.MIT.EDU kerberos.lcs.mit.edu admin server
+</PRE>
+
+<P>
+If this was your <code>krb.con</code> file and you wanted to change
+the default local realm to <code>CIT.CORNELL.EDU</code> you would edit
+it to look like:
+
+<PRE>
+CIT.CORNELL.EDU
+CIT.CORNELL.EDU kerberos.cit.cornell.edu admin server
+ATHENA.MIT.EDU kerberos.mit.edu admin server
+ATHENA.MIT.EDU kerberos-1.mit.edu
+ATHENA.MIT.EDU kerberos-2.mit.edu
+LCS.MIT.EDU kerberos.lcs.mit.edu admin server
+</PRE>
+
+<P>
+The <code>krbrealm.con</code> file is the host to Kerberos realm
+translation file. This provides a translation from a local hostname to
+the Kerberos realmname for the services provided by that host.
+<P>
+Each line of the translation file is in one the following forms
+(domain_name should be of the form <code>.XXX.YYY</code>,
+e.g. <code>.LCS.MIT.EDU</code>):
+
+<PRE>
+	host_name kerberos_realm
+	domain_name kerberos_realm
+</PRE>
+
+<P>
+If a hostname exactly matches the host_name field in a line of the
+first form, the corresponding realm is the realm of the host. If a
+hostname does not match any host_name in the file, but its domain
+exactly matches the domain_name field in a line of the second form,
+the corresponding realm is the realm of the host.
+<P>
+If no translation entry applies, the host's realm is considered to be
+the hostname's domain portion converted to uppercase.
+
+<!-- ---------------------------------------------------------------------- -->
+<hr>
+<a name="config_cache"></a>
+<h3>Ticket Cache</h3>
+
+<P>
+At this time users must store their tickets on the disk. We hope to
+change this in the near future.
+
+<P>
+If you are an NT user concerned about security use the NTFS file
+system and store the tickets in a directory that is writeable and
+readable by you but no one else. This directory should not be
+shareable. <i>Nor should it be on a remote machine.</i>
+
+<P>
+You can specify the name of the ticket file and the directory in which
+it is stored via the environment variable <code>KRBTKFILE</code>. For
+example, to store your tickets in a file called <code>tkt-joe.krb</code> in
+the directory <code>c:\users\joe-user</code>, use the follwing statement:
+
+<pre>
+set KRBTKFILE=c:\users\joe-user\tkt-joe.krb
+</pre>
+
+If the environment variable <code>KRBTKFILE</code> is not used, the
+default value <code>%TEMP%\ticket.krb</code> will be used.  That is,
+tickets will be stored in the file <code>ticket.krb</code> in
+<code>%TEMP%</code>. If you do not have an environment variable named
+<code>TEMP</code> the environment variables <code>TMP</code> and
+<code>HOME</code> will also be checked and used if present.  As a last
+resort the hard coded path <code>c:\tmp\ticket.ktb</code> will be
+used. Whichever method is used you'll have to <b>make sure the
+directory exists</b>, or Windows Kerberos will report an error.
+
+<P>
+[<i>note: which applications produce what error mesage under this
+condition?</i>]
+
+<!-- ---------------------------------------------------------------------- -->
+<hr>
+<a name="config_time"></a>
+<h3>Date and Time issues</h3>
+
+<P>
+<i>Why Kerberos cares what time it is...</i>
+
+<P>Kerberos authentication uses time stamps as part of its
+protocol. When the clocks of the Kerberos server and your computer are
+too far out of synchronization, you cannot authenticate properly. Both
+the Kerberos server and the Kerberos client depend on having clocks
+that are synchronized within a certain margin. This margin is normally
+5 minutes.
+<P>
+The Date and Time on the machine running Microsoft Windows will need
+to be &quot;accurately&quot; set.  If the date or time is off
+&quot;too far&quot;, Kerberos authentication will not work.
+<P>
+In this release if a clock skew error is detected the libraries will
+attempt to resynchronze the clock to the network time automatically
+one time. The user will be warned that this has occured. If this fails
+or if a clock skew is detected again later the user will have to
+manually resynchronize the machine time to the Kerberos server's
+time. The Leash application provides a buton which will attempt to
+resynchronize the clock.
+<P>
+By default the server that the libraries will contact when
+synchronizing the time is "TIME". The domain name has been left off on
+purpose. If local system administrators create a machine with a CNAME
+of time within the local domain the clients will contact this machine
+by default.
+<P>
+If you local system administrators are opposed to doing this for some
+reason people can edit the resource <code>LSH_TIME_HOST</code> in the
+<code>leashw32.dll</code> to the name appropriate for their local
+site. You can also edit the header files from the source distribution
+and recompile for your local site. However, this is not recommended.
+<P>
+You can also avoid this problem by running a local, properly
+configured, NTP program on your machine.
+
+
+<!-- ---------------------------------------------------------------------- -->
+<hr>
+<a name="command_line"></a>
+<h2>Command Line Options to Leash and Kview</h2>
+
+<P>
+The command line options for <b>Leash</b> are:
+<PRE>
+	-v	skip version checking
+	-kinit	only perform a kinit and then exit Leash
+</PRE>
+
+<p>
+The command line options for <b>Kview</b> are:
+<PRE>
+	/clear	destroy all tickets for the user
+	/sync	synchronize the time with a server
+	/hide	remain invisible
+	/quit	exit Kview
+	/ask	ask before synchronizing the time with a server
+</PRE>
+
+<!-- ---------------------------------------------------------------------- -->
+<hr>
+<a name="tree"></a>
+<h2>Browsing the Source Tree</h2>
+
+<p>
+Here is the layout of the MIT Kerberos v4 for Win32 source tree.
+
+<PRE>
+
+krb4
++---bin			The libs, dlls, and exes generated by the build process
++---com_err		The com_err (common error) compiler and library
++---doc			The leash.rtf and kerberos.hpj files
++---include		Most of the header files required for the build and 
+|			those that may be required by third party
+|			applications using these libraries
++---kclient		Cornell's Kclient DLL source
+|   \---include		The Kclient headers
++---krb			The MIT portion of the tree
+|   +---include		More header files
+|   +---kuser		source for kinit, klist, kdestroy
+|   \---lib
+|       +---cnsdes	The Windows DES source code, from Cygnus
+|       +---krbdll	The Kerberos portion of krbv4wXX.dll
+\---kview		The source for Cornell's Kview.exe and Kview32.exe
+
+</PRE>
+
+<!-- ---------------------------------------------------------------------- -->
+<hr>
+<a name="build"></a>
+<h2>Building the Source Tree</h2>
+
+<p>
+We use Microsoft Visual C++ to build the source tree.  Your mileage
+with other compilers may vary.
+
+<ol>
+
+<li>Unzip the source distribution with the -d option so that the
+directory structure is preserved.
+
+<li>Optionally define the build environment
+
+<li>Type <code>nmake</code> (with the appropriate options if step 2 is
+skipped)
+
+</ol>
+
+<p>
+The toplevel make file requires a few environment variables to be
+defined.  These can be defined before invoking nmake or they can be
+specified as arguments to <code>nmake</code>.  If you invoke <i>nmake</i>
+without defining these varibles, you will get an error message
+describing what you need to define.
+
+<p>
+The variable below are the only ones that you should have to define:
+
+<PRE>
+NODEBUG=		#if undefined, will create debug binaries
+			#setting it will yield symbol free binaries
+KRBV4_PATH=c:\src\krb4	#the path where this makefile resides 
+VC32_DIR=c:\msdev	#the toplevel path of your 32-bit compiler 
+</PRE>
+
+<p>
+To set these variables at the <code>nmake</code> command-line.  Here
+are some examples:
+
+<PRE>
+<i>For a debug Win32 i386 build:</i>
+	nmake KRBV4_PATH=c:\src\krb4 VC32_DIR=c:\msdev 
+
+<i>For a symbol free (nodebug) Win32 i386 build: </i>
+	nmake KRBV4_PATH=c:\src\krb4 VC32_DIR=c:\msdev NODEBUG=1
+</PRE>
+
+<p>
+There are several flags that get set in the make files. By default we
+build with -DAFS so that the both MIT and Transarc AFS style string to
+key algorithms will be tried when authenticating.
+
+<p>
+We need to document other aspects of the make files, any volunteers?
+
+<p>
+The make files will create logs of the build in makwin32.log.  Look
+there if something fails.
+
+<!-- ---------------------------------------------------------------------- -->
+<hr>
+<a name="todo"></a>
+<h2>To Do</h2>
+
+<ol>
+
+<p>
+<li>
+In memory ticket cache on NT
+
+<p>
+<li>
+Installer
+
+<p>
+<li>
+com_err rewrite and well documented way for applications to control
+error reporting to the end user. Cornell went to a lot of effort to
+overcome out limitations.
+
+<p>
+<li>
+Re-implementation of displaying debug messages without using a message
+box. The intention is to provide similiar functionality to debugwin
+without having to distribute debugwin to end users.
+
+<p>
+<li>
+Rewrite of Leash to support v4 and v5 as well as having many
+improvements in the user interface.
+
+<p>
+<li>
+People have suggested that we use the registry more. 
+
+<p>
+<li>
+At this time I am delaying that. First I want to know how MS is going
+to use the resgistry for Kerberos v5 in NT 5.0. I am also in an
+environment where we are support win16 apps running on win32 and
+win16. Given the issues that this would involve us in I prefer to punt
+for now. I agree that Kerberos v5 needs to address this issue. I am
+not sure that v4 warrents this work at this late date.
+
+<p>
+<li>
+Other complaints:
+
+<ol type=a>
+
+<p>
+<li>
+Apps that require extra environment variables to be set
+<P>
+We no longer require environment variables but will use them to modify
+the behavior of searching for the krb.con and krbrealm.con files
+(NDIR). KRBTKFILE can be used to modify the location and name of the
+ticket cache when in memory tickets are not being used. KERB_HELP can
+be set to specify the name of the Kerberos help file.
+
+<p>
+<li>
+Apps that require additions to the PATH variable
+<P>
+Similar to the above explanation. Modifications to the path are not
+required but at MIT we prefer to put locally developed DLLs and EXEs
+in \net\mit and then add this to the path. This makes it easier to
+support users that run multiple versions of Windows on the same
+machine. It also allows us to survive OS re-installs. It is also
+helpful to users that like to start applications from the command
+line.
+
+<p>
+<li>
+Apps that require root level directories to be created
+<P>
+I am not aware that we ever required this. If someone thought we did
+it was probably due to poor documentation of the configuration
+options.
+
+<p>
+<li>
+Apps that install lots of stuff to the windows directory
+
+<P>
+We have always avoided this. I do not understand why this complaint
+was raised against the Kerberos implementation.
+
+<p>
+<li>
+Apps that don't query the user before overwriting files
+
+<P>
+Installer issue. We haven't yet released an installer.
+
+<p>
+<li>
+Apps that don't have a full uninstaller (which includes removing
+registry entries and removing the installation directory once its
+empty).
+
+<P>
+Our installer will address this. It is an unfair complaint when we
+haven't released the installer yet :)
+
+</ol>
+
+</ol>
+
+</BODY>
+
+</HTML>

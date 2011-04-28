@@ -1,0 +1,89 @@
+# Microsoft Developer Studio Generated Dependency File, included by wshtest32.mak
+
+.\hesdlg.cpp : \
+	".\hesdlg.h"\
+	".\stdafx.h"\
+	".\wshtest.h"\
+	
+
+.\hespdlg.cpp : \
+	"..\include\arpa\nameser.h"\
+	"..\include\decldll.h"\
+	"..\include\hesiod.h"\
+	"..\include\mitwhich.h"\
+	"..\include\resolv.h"\
+	"..\include\wshelper.h"\
+	".\hesdlg.h"\
+	".\hespdlg.h"\
+	".\stdafx.h"\
+	".\wshtest.h"\
+	
+
+.\mainfrm.cpp : \
+	".\mainfrm.h"\
+	".\stdafx.h"\
+	".\wshtest.h"\
+	
+
+.\querydlg.cpp : \
+	"..\include\arpa\nameser.h"\
+	"..\include\decldll.h"\
+	"..\include\hesiod.h"\
+	"..\include\mitwhich.h"\
+	"..\include\resolv.h"\
+	"..\include\wshelper.h"\
+	".\querydlg.h"\
+	".\stdafx.h"\
+	".\wshtest.h"\
+	
+
+.\respdlg.cpp : \
+	"..\include\arpa\nameser.h"\
+	"..\include\decldll.h"\
+	"..\include\hesiod.h"\
+	"..\include\mitwhich.h"\
+	"..\include\resolv.h"\
+	"..\include\wshelper.h"\
+	".\querydlg.h"\
+	".\respdlg.h"\
+	".\stdafx.h"\
+	".\wshtest.h"\
+	
+
+.\stdafx.cpp : \
+	".\stdafx.h"\
+	
+
+.\wshtedoc.cpp : \
+	".\stdafx.h"\
+	".\wshtedoc.h"\
+	".\wshtest.h"\
+	
+
+.\wshtest.cpp : \
+	".\mainfrm.h"\
+	".\stdafx.h"\
+	".\wshtedoc.h"\
+	".\wshtest.h"\
+	".\wshtevw.h"\
+	
+
+.\wshtevw.cpp : \
+	"..\include\arpa\nameser.h"\
+	"..\include\decldll.h"\
+	"..\include\hesiod.h"\
+	"..\include\mitwhich.h"\
+	"..\include\resolv.h"\
+	"..\include\wshelper.h"\
+	".\hespdlg.h"\
+	".\respdlg.h"\
+	".\stdafx.h"\
+	".\wshtedoc.h"\
+	".\wshtest.h"\
+	".\wshtevw.h"\
+	
+
+.\wshtest.rc : \
+	".\RES\WSHTEST.ICO"\
+	".\res\wshtest.rc2"\
+	
