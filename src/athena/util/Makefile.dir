@@ -1,0 +1,59 @@
+DIRS=\
+	lib	\
+	locker	\
+	athdir	\
+	athinfo	\
+	beep	\
+	cview	\
+	wincview \
+	dos2unix	\
+	expn	\
+	from	\
+	imtest  \
+	hes	\
+	hesinfo	\
+	instloop \
+	lastlog	\
+	machtype	\
+	motd	\
+	plop	\
+	pop	\
+	rexplore \
+	unix2dos	\
+	screensaver	\
+	whois	\
+	snetcfgex \
+	tzcpl	\
+	guiwrap \
+	kmp	\
+ 	spacl
+OPTDIRS=\
+	lib	\
+	locker	\
+	athdir	\
+	athinfo	\
+	beep	\
+	cview	\
+	wincview \
+	dos2unix	\
+	expn	\
+	from	\
+	imtest  \
+	hes	\
+	hesinfo	\
+	instloop \
+	lastlog	\
+	machtype	\
+	motd	\
+	plop	\
+	pop	\
+	rexplore \
+	unix2dos	\
+	screensaver	\
+	whois	\
+	snetcfgex \
+	tzcpl	\
+	guiwrap \
+	kmp	\
+ 	spacl
+

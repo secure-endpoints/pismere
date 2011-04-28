@@ -1,0 +1,92 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=leash32
+TARGETTYPE=EXE
+TARGETSS=windows
+
+OBJS= \
+	$(O)\CLeashDragListBox.obj \
+	$(O)\Krb4AddToDomainRealmList.obj \
+	$(O)\Krb4AddToRealmHostList.obj \
+	$(O)\Krb4DomainRealmMaintenance.obj \
+	$(O)\Krb4EditDomainRealmList.obj \
+	$(O)\Krb4EditRealmHostList.obj \
+	$(O)\Krb4Properties.obj \
+	$(O)\Krb4RealmHostMaintenance.obj \
+	$(O)\Krb5Properties.obj \
+	$(O)\KrbAddHostServer.obj \
+	$(O)\KrbAddRealm.obj \
+	$(O)\KrbConfigOptions.obj \
+	$(O)\KrbDomainRealmMaintenance.obj \
+	$(O)\KrbEditHostServer.obj \
+	$(O)\KrbEditRealm.obj \
+	$(O)\KrbProperties.obj \
+	$(O)\KrbRealmHostMaintenance.obj \
+	$(O)\Leash.obj \
+	$(O)\LeashAboutBox.obj \
+	$(O)\LeashDebugWindow.obj \
+	$(O)\LeashDoc.obj \
+	$(O)\LeashFileDialog.obj \
+	$(O)\LeashFrame.obj \
+	$(O)\LeashMessageBox.obj \
+	$(O)\LeashProperties.obj \
+	$(O)\LeashView.obj \
+	$(O)\lglobals.obj \
+	$(O)\MainFrm.obj \
+	$(O)\StdAfx.obj \
+	$(O)\AfsProperties.obj \
+	$(O)\VSroutines.obj \
+	$(O)\KrbMiscConfigOpt.obj
+
+RES=$(O)\Leash.res
+
+USE_DEFAULTLIB=1
+USE_LIBC_DLL=1
+USE_MFC=1           # gives us _AFXDLL!
+USE_CPP_EH=1        # gives us GX
+PCH_FILE=stdafx.h   # uses a PCH file
+
+LIBS=$(STD_LIBS) wshelp32.lib version.lib loadfuncs.lib \
+!ifdef MIT_ONLY
+	afscompat.lib
+!endif
+
+LIB_PATHS=..\..\..\util\loadfuncs\$(O);..\..\..\wshelper\wshelper\$(O)
+!ifdef MIT_ONLY
+LIB_PATHS=$(LIB_PATHS);..\..\..\util\lib\afscompat\src\$(O)
+!endif
+
+INCLUDES=..\include;..\..\krb5\src\include;..\..\krb4\include;..\..\..\wshelper\include;..\..\..\util\loadfuncs
+
+!ifdef MIT_ONLY
+INCLUDES=$(INCLUDES);..\..\..\util\lib\afscompat\inc
+!endif
+
+C_DEFINE=-D_WINDOWS -DWIN32 -DWINDOWS \
+!if defined(KRB5_USE_DNS) || defined(KRB5_USE_DNS_KDC) || defined(KRB5_USE_DNS_REALMS)
+    -DKRB5_DNS_LOOKUP=1 \
+!if defined(KRB5_USE_DNS_KDC)
+    -DKRB5_DNS_LOOKUP_KDC=1 \
+!endif
+!if defined(KRB5_USE_DNS_REALMS)
+    -DKRB5_DNS_LOOKUP_REALM=1 \
+!endif
+!endif
+!ifndef MIT_ONLY
+	-DNO_AFS
+!endif
+
+
+!if 0
+!ifdef MIT_ONLY
+INCLUDES=$(INCLUDES);..\..\..\vs\include
+LIBS=$(LIBS) vsnt.lib
+LIB_PATHS=$(LIB_PATHS);..\..\..\vs\src\lib\$(O)
+C_DEFINE=$(C_DEFINE) -DUSE_VS
+!endif
+!endif
+
+USE_MINIMAL=1
+USE_EXTERNAL_DEPS=1

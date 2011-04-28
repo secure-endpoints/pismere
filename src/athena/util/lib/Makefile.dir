@@ -1,0 +1,4 @@
+DIRS=uniansi getopt atcompat athdir gnuregex gftp libcyrus ss \
+	afsname about log curses
+OPTDIRS=uniansi atcompat athdir gnuregex gftp libcyrus ss \
+	afsname about log curses
