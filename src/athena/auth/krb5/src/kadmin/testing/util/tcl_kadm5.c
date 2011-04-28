@@ -8,7 +8,6 @@
 #define USE_KADM5_API_VERSION 2
 #include <kadm5/admin.h>
 #include <com_err.h>
-#include <k5-int.h>
 #include <errno.h>
 #include <stdlib.h>
 #include "tcl_kadm5.h"
@@ -410,6 +409,9 @@ static Tcl_DString *unparse_err(kadm5_ret_t code)
      case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN: code_string = "KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN"; break;
      case KRB5_CONFIG_BADFORMAT: code_string = "KRB5_CONFIG_BADFORMAT"; break;
 
+     case KRB5_CC_NOTFOUND: code_string = "KRB5_CC_NOTFOUND"; break;
+     case KRB5_FCC_NOFILE: code_string = "KRB5_FCC_NOFILE"; break;
+
      case EINVAL: code_string = "EINVAL"; break;
      case ENOENT: code_string = "ENOENT"; break;
 
@@ -570,7 +572,7 @@ static int parse_flags(Tcl_Interp *interp, Tcl_HashTable *table,
 	  *flags |= *(krb5_flags *) Tcl_GetHashValue(entry);
      }
   
-     free(argv);
+     Tcl_Free(argv);
      return(retcode);
 }
 
@@ -832,14 +834,15 @@ static int parse_keysalts(Tcl_Interp *interp, char *list,
 	  }
 	  (*keysalts)[i].ks_salttype = tmp;
 
-	  free(argv1);
+	  Tcl_Free(argv1);
 	  argv1 = NULL;
      }
 
 finished:
-     if (argv1)
-	  free(argv1);
-     free(argv);
+     if (argv1) {
+	  Tcl_Free(argv1);
+     }
+     Tcl_Free(argv);
      return retcode;
 }
 
@@ -878,7 +881,7 @@ static int parse_key_data(Tcl_Interp *interp, char *list,
      }
 
 finished:
-     free(argv);
+     Tcl_Free(argv);
      return retcode;
 }
 
@@ -955,7 +958,7 @@ static int parse_tl_data(Tcl_Interp *interp, char *list,
 	  tl->tl_data_contents = (krb5_octet *) malloc(tmp+1);
 	  strcpy((char *) tl->tl_data_contents, argv1[2]);
 
-	  free(argv1);
+	  Tcl_Free(argv1);
 	  argv1 = NULL;
 	  tl = tl->tl_data_next;
      }
@@ -967,9 +970,10 @@ static int parse_tl_data(Tcl_Interp *interp, char *list,
      *tlp = tl2;
 
 finished:
-     if (argv1)
-	  free(argv1);
-     free(argv);
+     if (argv1) {
+	  Tcl_Free(argv1);
+     }
+     Tcl_Free(argv);
      return retcode;
 }
 
@@ -1326,7 +1330,7 @@ static int parse_principal_ent(Tcl_Interp *interp, char *list,
      }
 
 finished:
-     free(argv);
+     Tcl_Free(argv);
      *out_princ = princ;
      return retcode;
 }
@@ -1475,7 +1479,7 @@ static int parse_policy_ent(Tcl_Interp *interp, char *list,
      policy->policy_refcnt = tmp;
 
 finished:
-     free(argv);
+     Tcl_Free(argv);
      *out_policy = policy;
      return retcode;
 }

@@ -32,7 +32,7 @@ VIAddVersionKey "CompanyName" "Massachusetts Institute of Technology"
 VIAddVersionKey "ProductVersion" ${VIProductVersion}
 VIAddVersionKey "FileVersion" ${VIProductVersion}
 VIAddVersionKey "FileDescription" "MIT Kerberos for Windows Installer"
-VIAddVersionKey "LegalCopyright" "(C)2004"
+VIAddVersionKey "LegalCopyright" "(C)2004,2005"
 !ifdef DEBUG
 VIAddVersionKey "PrivateBuild" "Checked/Debug"
 !endif               ; End DEBUG
@@ -118,6 +118,8 @@ VIAddVersionKey "PrivateBuild" "Checked/Debug"
 
   LangString DESC_secClient ${LANG_ENGLISH} "Client: Allows you to utilize MIT Kerberos from your Windows PC."
   
+  LangString DESC_secDebug ${LANG_ENGLISH} "Debug Symbols: Used for debugging problems with MIT Kerberos for Windows"
+  
   LangString DESC_secSDK ${LANG_ENGLISH} "SDK: Allows you to build MIT Kerberos aware applications."
   
   LangString DESC_secDocs ${LANG_ENGLISH} "Documentation: Release Notes and User Manuals."
@@ -171,6 +173,7 @@ Section "KfW Client" secClient
   ; Stop the running processes
   GetTempFileName $R0
   File /oname=$R0 "Killer.exe"
+  nsExec::Exec '$R0 netidmgr.exe'
   nsExec::Exec '$R0 leash32.exe'
   nsExec::Exec '$R0 krbcc32s.exe'
   nsExec::Exec '$R0 k95.exe'
@@ -183,7 +186,9 @@ Section "KfW Client" secClient
 
    ; Do client components
   SetOutPath "$INSTDIR\bin"
+!ifdef AKLOG
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\aklog.exe"           "$INSTDIR\bin\aklog.exe"         "$INSTDIR"
+!endif
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\comerr32.dll"        "$INSTDIR\bin\comerr32.dll"      "$INSTDIR"
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\gss.exe"             "$INSTDIR\bin\gss.exe"           "$INSTDIR"
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\gss-client.exe"      "$INSTDIR\bin\gss-client.exe"    "$INSTDIR"
@@ -197,53 +202,32 @@ Section "KfW Client" secClient
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\kpasswd.exe"         "$INSTDIR\bin\kpasswd.exe"       "$INSTDIR"
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\kvno.exe"            "$INSTDIR\bin\kvno.exe"          "$INSTDIR"
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\krb5_32.dll"         "$INSTDIR\bin\krb5_32.dll"       "$INSTDIR"
+  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\k5sprt32.dll"        "$INSTDIR\bin\k5sprt32.dll"      "$INSTDIR"
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\krb524.dll"          "$INSTDIR\bin\krb524.dll"        "$INSTDIR"
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\krbcc32.dll"         "$INSTDIR\bin\krbcc32.dll"       "$INSTDIR"
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\krbcc32s.exe"        "$INSTDIR\bin\krbcc32s.exe"      "$INSTDIR"
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\krbv4w32.dll"        "$INSTDIR\bin\krbv4w32.dll"      "$INSTDIR"
-  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\leash32.exe"         "$INSTDIR\bin\leash32.exe"       "$INSTDIR"
-!ifdef OLDHELP                                                                 
-  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\leash32.hlp"         "$INSTDIR\bin\leash32.hlp"       "$INSTDIR"
-!else                                                                          
-  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\leash32.chm"         "$INSTDIR\bin\leash32.chm"       "$INSTDIR"
-!endif                                                                         
+  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\netidmgr.exe"         "$INSTDIR\bin\netidmgr.exe"       "$INSTDIR"
+  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\netidmgr.exe.manifest" "$INSTDIR\bin\netidmgr.exe.manifest" "$INSTDIR"
+  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\netidmgr.chm"         "$INSTDIR\bin\netidmgr.chm"       "$INSTDIR"
+  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\nidmgr32.dll"         "$INSTDIR\bin\nidmgr32.dll"       "$INSTDIR"
+  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\krb4cred.dll"         "$INSTDIR\bin\krb4cred.dll"       "$INSTDIR"
+  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\krb5cred.dll"         "$INSTDIR\bin\krb5cred.dll"       "$INSTDIR"
+  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\krb4cred_en_us.dll"   "$INSTDIR\bin\krb4cred_en_us.dll"       "$INSTDIR"
+  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\krb5cred_en_us.dll"   "$INSTDIR\bin\krb5cred_en_us.dll"       "$INSTDIR"
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\leashw32.dll"        "$INSTDIR\bin\leashw32.dll"      "$INSTDIR"
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\ms2mit.exe"          "$INSTDIR\bin\ms2mit.exe"        "$INSTDIR"
+  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\mit2ms.exe"          "$INSTDIR\bin\mit2ms.exe"        "$INSTDIR"
+  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\kcpytkt.exe"          "$INSTDIR\bin\kcpytkt.exe"        "$INSTDIR"
+  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\kdeltkt.exe"          "$INSTDIR\bin\kdeltkt.exe"        "$INSTDIR"
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\wshelp32.dll"        "$INSTDIR\bin\wshelp32.dll"      "$INSTDIR"
   !insertmacro ReplaceDLL "${KFW_BIN_DIR}\xpprof32.dll"        "$INSTDIR\bin\xpprof32.dll"      "$INSTDIR"
   
 !ifdef DEBUG
-  File "${KFW_BIN_DIR}\aklog.pdb"
-  File "${KFW_BIN_DIR}\comerr32.pdb"
-  File "${KFW_BIN_DIR}\gss.pdb"
-  File "${KFW_BIN_DIR}\gss-client.pdb"
-  File "${KFW_BIN_DIR}\gss-server.pdb"
-  File "${KFW_BIN_DIR}\gssapi32.pdb"
-  File "${KFW_BIN_DIR}\k524init.pdb"
-  File "${KFW_BIN_DIR}\kclnt32.pdb"
-  File "${KFW_BIN_DIR}\kdestroy.pdb"
-  File "${KFW_BIN_DIR}\kinit.pdb"
-  File "${KFW_BIN_DIR}\klist.pdb"
-  File "${KFW_BIN_DIR}\kpasswd.pdb"
-  File "${KFW_BIN_DIR}\kvno.pdb"
-  File "${KFW_BIN_DIR}\krb5_32.pdb"
-  File "${KFW_BIN_DIR}\krb524.pdb"
-  File "${KFW_BIN_DIR}\krbcc32.pdb"
-  File "${KFW_BIN_DIR}\krbcc32s.pdb"
-  File "${KFW_BIN_DIR}\krbv4w32.pdb"
-  File "${KFW_BIN_DIR}\leashw32.pdb"
-  File "${KFW_BIN_DIR}\leash32.pdb"
-  File "${KFW_BIN_DIR}\ms2mit.pdb"
-  File "${KFW_BIN_DIR}\wshelp32.pdb"
-  File "${KFW_BIN_DIR}\xpprof32.pdb"
-
 !IFDEF CL_1400
   !insertmacro ReplaceDLL "${SYSTEMDIR}\msvcr80d.dll"    "$INSTDIR\bin\msvcr80d.dll"  "$INSTDIR"
-  File "${SYSTEMDIR}\msvcr80d.pdb"                                           
   !insertmacro ReplaceDLL "${SYSTEMDIR}\msvcp80d.dll"    "$INSTDIR\bin\msvcp80d.dll"  "$INSTDIR"
-  File "${SYSTEMDIR}\msvcp80d.pdb"                                           
   !insertmacro ReplaceDLL "${SYSTEMDIR}\mfc80d.dll"      "$INSTDIR\bin\mfc80d.dll"    "$INSTDIR"
-  File "${SYSTEMDIR}\mfc80d.pdb"                                             
   !insertmacro ReplaceDLL "${SYSTEMDIR}\MFC80CHS.DLL"    "$INSTDIR\bin\MFC80CHS.DLL"  "$INSTDIR"
   !insertmacro ReplaceDLL "${SYSTEMDIR}\MFC80CHT.DLL"    "$INSTDIR\bin\MFC80CHT.DLL"  "$INSTDIR"
   !insertmacro ReplaceDLL "${SYSTEMDIR}\MFC80DEU.DLL"    "$INSTDIR\bin\MFC80DEU.DLL"  "$INSTDIR"
@@ -256,11 +240,8 @@ Section "KfW Client" secClient
 !ELSE                                                                   
 !IFDEF CL_1310
   !insertmacro ReplaceDLL "${SYSTEMDIR}\msvcr71d.dll"    "$INSTDIR\bin\msvcr71d.dll"  "$INSTDIR"
-  File "${SYSTEMDIR}\msvcr71d.pdb"                                           
   !insertmacro ReplaceDLL "${SYSTEMDIR}\msvcp71d.dll"    "$INSTDIR\bin\msvcp71d.dll"  "$INSTDIR"
-  File "${SYSTEMDIR}\msvcp71d.pdb"                                           
   !insertmacro ReplaceDLL "${SYSTEMDIR}\mfc71d.dll"      "$INSTDIR\bin\mfc71d.dll"    "$INSTDIR"
-  File "${SYSTEMDIR}\mfc71d.pdb"                                             
   !insertmacro ReplaceDLL "${SYSTEMDIR}\MFC71CHS.DLL"    "$INSTDIR\bin\MFC71CHS.DLL"  "$INSTDIR"
   !insertmacro ReplaceDLL "${SYSTEMDIR}\MFC71CHT.DLL"    "$INSTDIR\bin\MFC71CHT.DLL"  "$INSTDIR"
   !insertmacro ReplaceDLL "${SYSTEMDIR}\MFC71DEU.DLL"    "$INSTDIR\bin\MFC71DEU.DLL"  "$INSTDIR"
@@ -273,11 +254,8 @@ Section "KfW Client" secClient
 !ELSE                                                                   
 !IFDEF CL_1300                                                          
   !insertmacro ReplaceDLL "${SYSTEMDIR}\msvcr70d.dll"    "$INSTDIR\bin\msvcr70d.dll"  "$INSTDIR"
-  File "${SYSTEMDIR}\msvcr70d.pdb"                                           
   !insertmacro ReplaceDLL "${SYSTEMDIR}\msvcp70d.dll"    "$INSTDIR\bin\msvcp70d.dll"  "$INSTDIR"
-  File "${SYSTEMDIR}\msvcp70d.pdb"                                           
   !insertmacro ReplaceDLL "${SYSTEMDIR}\mfc70d.dll"      "$INSTDIR\bin\mfc70d.dll"    "$INSTDIR"
-  File "${SYSTEMDIR}\mfc70d.pdb"                                             
   !insertmacro ReplaceDLL "${SYSTEMDIR}\MFC70CHS.DLL"    "$INSTDIR\bin\MFC70CHS.DLL"  "$INSTDIR"
   !insertmacro ReplaceDLL "${SYSTEMDIR}\MFC70CHT.DLL"    "$INSTDIR\bin\MFC70CHT.DLL"  "$INSTDIR"
   !insertmacro ReplaceDLL "${SYSTEMDIR}\MFC70DEU.DLL"    "$INSTDIR\bin\MFC70DEU.DLL"  "$INSTDIR"
@@ -289,11 +267,8 @@ Section "KfW Client" secClient
   !insertmacro ReplaceDLL "${SYSTEMDIR}\MFC70KOR.DLL"    "$INSTDIR\bin\MFC70KOR.DLL"  "$INSTDIR"
 !ELSE                                                                   
   !insertmacro ReplaceDLL "${SYSTEMDIR}\mfc42d.dll"      "$INSTDIR\bin\mfc42d.dll"    "$INSTDIR"
-  File "${SYSTEMDIR}\mfc42d.pdb"                                             
   !insertmacro ReplaceDLL "${SYSTEMDIR}\msvcp60d.dll"    "$INSTDIR\bin\msvcp60d.dll"  "$INSTDIR"
-  File "${SYSTEMDIR}\msvcp60d.pdb"                                           
   !insertmacro ReplaceDLL "${SYSTEMDIR}\msvcrtd.dll"     "$INSTDIR\bin\msvcrtd.dll"   "$INSTDIR"
-  File "${SYSTEMDIR}\msvcrtd.pdb"                                            
 !ENDIF                                                                  
 !ENDIF                                                                  
 !ENDIF
@@ -355,10 +330,10 @@ Section "KfW Client" secClient
 !endif
   
   ; Do Windows SYSDIR (Control panel)
-  ;SetOutPath "$SYSDIR"
-!ifdef DEBUG
-!endif
-  
+  SetOutPath "$SYSDIR"
+  !insertmacro ReplaceDLL "${KFW_BIN_DIR}\kfwlogon.dll" "$SYSDIR\kfwlogon.dll" "$INSTDIR"
+  File "${KFW_BIN_DIR}\kfwcpcc.exe"  
+
   ; Get Kerberos config files
   Call kfw.GetConfigFiles
 
@@ -384,33 +359,43 @@ Section "KfW Client" secClient
   WriteRegDWORD HKLM "${KFW_REGKEY_ROOT}\Client\${KFW_VERSION}" "MajorVersion" ${KFW_MAJORVERSION}
   WriteRegDWORD HKLM "${KFW_REGKEY_ROOT}\Client\${KFW_VERSION}" "MinorVersion" ${KFW_MINORVERSION}
   WriteRegDWORD HKLM "${KFW_REGKEY_ROOT}\Client\${KFW_VERSION}" "PatchLevel" ${KFW_PATCHLEVEL}
-  WriteRegDWORD HKLM "${KFW_REGKEY_ROOT}\Client\${KFW_VERSION}" "PatchLevel" ${KFW_PATCHLEVEL}
+
+  ; Daemon entries
+  WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\MIT Kerberos" "" ""
+  WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\MIT Kerberos\NetworkProvider" "ProviderPath" "$SYSDIR\kfwlogon.dll"
+  WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\MIT Kerberos\NetworkProvider" "AuthentProviderPath" "$SYSDIR\kfwlogon.dll"
+  WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Services\MIT Kerberos\NetworkProvider" "Class" 2
+  WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Services\MIT Kerberos\NetworkProvider" "VerboseLogging" 10
+
+  ; Must also add HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\NetworkProvider\HwOrder
+  ; and HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\NetworkProvider\Order
+  ; to also include the service name.
+  Call AddProvider
+  ReadINIStr $R0 $1 "Field 7" "State"
+  WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\MIT Kerberos\NetworkProvider" "Name" "MIT Kerberos"
   
+  ; WinLogon Event Notification
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\WinLogon\Notify\MIT_KFW" "Asynchronous" 0
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\WinLogon\Notify\MIT_KFW" "Impersonate"  0
+  WriteRegStr HKLM "Software\Microsoft\Windows NT\CurrentVersion\WinLogon\Notify\MIT_KFW" "DLLName" "kfwlogon.dll"
+  WriteRegStr HKLM "Software\Microsoft\Windows NT\CurrentVersion\WinLogon\Notify\MIT_KFW" "Logon" "KFW_Logon_Event"
+
   ;Write start menu entries
   CreateDirectory "$SMPROGRAMS\${PROGRAM_NAME}"
   SetOutPath "$INSTDIR\bin"
   CreateShortCut  "$SMPROGRAMS\${PROGRAM_NAME}\Uninstall ${PROGRAM_NAME}.lnk" "$INSTDIR\Uninstall.exe"
 
   ReadINIStr $R0 $1 "Field 2" "State"  ; startup
-  ReadINIStr $R1 $1 "Field 3" "State"  ; autoinit
 
-  StrCmp $R1 "0" noauto
-  CreateShortCut  "$SMPROGRAMS\${PROGRAM_NAME}\Leash Kerberos Ticket Manager.lnk" "$INSTDIR\bin\leash32.exe" "-autoinit" "$INSTDIR\bin\leash32.exe" 
-  goto startshort
-noauto:
-  CreateShortCut  "$SMPROGRAMS\${PROGRAM_NAME}\Leash Kerberos Ticket Manager.lnk" "$INSTDIR\bin\leash32.exe" "" "$INSTDIR\bin\leash32.exe" 
+  CreateShortCut  "$SMPROGRAMS\${PROGRAM_NAME}\Network Identity Manager.lnk" "$INSTDIR\bin\netidmgr.exe" "" "$INSTDIR\bin\netidmgr.exe" 
 
 startshort:
   StrCmp $R0 "0" nostart
-  StrCmp $R1 "0" nostartauto
-  CreateShortCut  "$SMSTARTUP\Leash Kerberos Ticket Manager.lnk" "$INSTDIR\bin\leash32.exe" "-autoinit" "$INSTDIR\bin\leash32.exe" 0 SW_SHOWMINIMIZED
-  goto checkconflicts
-nostartauto:  
-  CreateShortCut  "$SMSTARTUP\Leash Kerberos Ticket Manager.lnk" "$INSTDIR\bin\leash32.exe" "" "$INSTDIR\bin\leash32.exe" 0 SW_SHOWMINIMIZED
+  CreateShortCut  "$SMSTARTUP\Network Identity Manager.lnk" "$INSTDIR\bin\netidmgr.exe" "" "$INSTDIR\bin\netidmgr.exe" 0 SW_SHOWMINIMIZED
   goto checkconflicts
 
 nostart:
-  Delete  "$SMSTARTUP\Leash Kerberos Ticket Manager.lnk"
+  Delete  "$SMSTARTUP\Network Identity Manager.lnk"
 
 checkconflicts:
   Call GetSystemPath
@@ -448,11 +433,13 @@ skipAllowTgtKey:
 
   ; The following are keys added for Terminal Server compatibility
   ; http://support.microsoft.com/default.aspx?scid=kb;EN-US;186499
-  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\leash32" "Flags" 0x408
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" "Flags" 0x408
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kinit" "Flags" 0x408
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\klist" "Flags" 0x408
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kdestroy" "Flags" 0x408
+!ifdef AKLOG
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\aklog" "Flags" 0x408
+!endif
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\gss" "Flags" 0x408
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\gss-client" "Flags" 0x408
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\gss-server" "Flags" 0x408
@@ -461,10 +448,77 @@ skipAllowTgtKey:
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kvno" "Flags" 0x408
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\ms2mit" "Flags" 0x408
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\mit2ms" "Flags" 0x408
+  WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\mit2ms" "Flags" 0x408
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kcpytkt" "Flags" 0x408
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kdeltkt" "Flags" 0x408
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\k95" "Flags" 0x408
   WriteRegDWORD HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\k95g" "Flags" 0x408
+
+SectionEnd
+
+Section "Debug Symbols" secDebug
+
+  SetOutPath "$INSTDIR\bin"
+!ifdef AKLOG
+  File "${KFW_BIN_DIR}\aklog.pdb"
+!endif
+  File "${KFW_BIN_DIR}\comerr32.pdb"
+  File "${KFW_BIN_DIR}\gss.pdb"
+  File "${KFW_BIN_DIR}\gss-client.pdb"
+  File "${KFW_BIN_DIR}\gss-server.pdb"
+  File "${KFW_BIN_DIR}\gssapi32.pdb"
+  File "${KFW_BIN_DIR}\k524init.pdb"
+  File "${KFW_BIN_DIR}\kclnt32.pdb"
+  File "${KFW_BIN_DIR}\kdestroy.pdb"
+  File "${KFW_BIN_DIR}\kinit.pdb"
+  File "${KFW_BIN_DIR}\klist.pdb"
+  File "${KFW_BIN_DIR}\kpasswd.pdb"
+  File "${KFW_BIN_DIR}\kvno.pdb"
+  File "${KFW_BIN_DIR}\krb5_32.pdb"
+  File "${KFW_BIN_DIR}\k5sprt32.pdb"
+  File "${KFW_BIN_DIR}\krb524.pdb"
+  File "${KFW_BIN_DIR}\krbcc32.pdb"
+  File "${KFW_BIN_DIR}\krbcc32s.pdb"
+  File "${KFW_BIN_DIR}\krbv4w32.pdb"
+  File "${KFW_BIN_DIR}\leashw32.pdb"
+  File "${KFW_BIN_DIR}\netidmgr.pdb"
+  File "${KFW_BIN_DIR}\nidmgr32.pdb"
+  File "${KFW_BIN_DIR}\krb4cred.pdb"
+  File "${KFW_BIN_DIR}\krb5cred.pdb"
+  File "${KFW_BIN_DIR}\ms2mit.pdb"
+  File "${KFW_BIN_DIR}\mit2ms.pdb"
+  File "${KFW_BIN_DIR}\kcpytkt.pdb"
+  File "${KFW_BIN_DIR}\kdeltkt.pdb"
+  File "${KFW_BIN_DIR}\wshelp32.pdb"
+  File "${KFW_BIN_DIR}\xpprof32.pdb"
+
+!IFDEF DEBUG
+!IFDEF CL_1400
+  File "${SYSTEMDIR}\msvcr80d.pdb"                                           
+  File "${SYSTEMDIR}\msvcp80d.pdb"                                           
+  File "${SYSTEMDIR}\mfc80d.pdb"                                             
+!ELSE                                                                   
+!IFDEF CL_1310
+  File "${SYSTEMDIR}\msvcr71d.pdb"                                           
+  File "${SYSTEMDIR}\msvcp71d.pdb"                                           
+  File "${SYSTEMDIR}\mfc71d.pdb"                                             
+!ELSE                                                                   
+!IFDEF CL_1300                                                          
+  File "${SYSTEMDIR}\msvcr70d.pdb"                                           
+  File "${SYSTEMDIR}\msvcp70d.pdb"                                           
+  File "${SYSTEMDIR}\mfc70d.pdb"                                             
+!ELSE                                                                   
+  File "${SYSTEMDIR}\mfc42d.pdb"                                             
+  File "${SYSTEMDIR}\msvcp60d.pdb"                                           
+  File "${SYSTEMDIR}\msvcrtd.pdb"                                            
+!ENDIF                                                                  
+!ENDIF                                                                  
+!ENDIF
+!ENDIF
+
+  SetOutPath "$SYSDIR"
+  File "${KFW_BIN_DIR}\kfwlogon.pdb"
+  File "${KFW_BIN_DIR}\kfwcpcc.pdb"
 
 SectionEnd
 
@@ -475,6 +529,9 @@ Section "KfW SDK" secSDK
   RMDir /r "$INSTDIR\inc"
   RMDir /r "$INSTDIR\lib"
   RMDir /r "$INSTDIR\install"
+
+  SetOutPath "$INSTDIR\doc"
+  File /r "${KFW_DOC_DIR}\netiddev.chm"
 
   SetOutPath "$INSTDIR\inc\kclient"
   File /r "${KFW_INC_DIR}\kclient\*"  
@@ -494,6 +551,9 @@ Section "KfW SDK" secSDK
   SetOutPath "$INSTDIR\inc\loadfuncs"
   File /r "${KFW_INC_DIR}\loadfuncs\*"  
 
+  SetOutPath "$INSTDIR\inc\netidmgr"
+  File /r "${KFW_INC_DIR}\netidmgr\*"  
+
   SetOutPath "$INSTDIR\inc\wshelper"
   File /r "${KFW_INC_DIR}\wshelper\*"  
 
@@ -502,6 +562,8 @@ Section "KfW SDK" secSDK
 
   SetOutPath "$INSTDIR\install"
   File /r "${KFW_INSTALL_DIR}\*"
+
+  CreateShortCut  "$SMPROGRAMS\${PROGRAM_NAME}\Network Identity Developer Documentation.lnk" "$INSTDIR\bin\netiddev.chm" 
 
   Call KFWCommon.Install
   
@@ -537,7 +599,7 @@ Section "KfW Documentation" secDocs
 
   SetOutPath "$INSTDIR\doc"
   File "${KFW_DOC_DIR}\relnotes.html"
-  File "${KFW_DOC_DIR}\leash_userdoc.pdf"
+  File "${KFW_DOC_DIR}\netidmgr_userdoc.pdf"
    
   Call KFWCommon.Install
   
@@ -567,8 +629,8 @@ Section "KfW Documentation" secDocs
   CreateDirectory "$SMPROGRAMS\${PROGRAM_NAME}"
   SetOutPath "$INSTDIR\doc"
   CreateShortCut  "$SMPROGRAMS\${PROGRAM_NAME}\Release Notes.lnk" "$INSTDIR\doc\relnotes.html" 
-  CreateShortCut  "$SMPROGRAMS\${PROGRAM_NAME}\Leash User Documentation.lnk" "$INSTDIR\doc\leash_userdoc.pdf" 
-
+  CreateShortCut  "$SMPROGRAMS\${PROGRAM_NAME}\Network Identity Manager User Documentation.lnk" "$INSTDIR\doc\netidmgr_userdoc.pdf" 
+  CreateShortCut  "$SMPROGRAMS\${PROGRAM_NAME}\Network Identity Manager Documentation.lnk" "$INSTDIR\bin\netidmgr.chm" 
 SectionEnd
 
 ;Display the Finish header
@@ -596,10 +658,13 @@ checkVer:
    Call GetWindowsVersion
    Pop $R0
    StrCmp $R0 "95" wrongVersion
+   StrCmp $R0 "98" wrongVersion
+   StrCmp $R0 "ME" wrongVersion
+   StrCmp $R0 "NT 4.0" wrongVersion
    goto checkIPHLPAPI
 
 wrongVersion:
-   MessageBox MB_OK|MB_ICONSTOP|MB_TOPMOST "MIT ${PROGRAM_NAME} requires Microsoft Windows 98 or higher."
+   MessageBox MB_OK|MB_ICONSTOP|MB_TOPMOST "MIT ${PROGRAM_NAME} requires Microsoft Windows 2000 or higher."
    Abort
 
 checkIPHLPAPI:
@@ -806,6 +871,17 @@ DoNotRestart:
 no_remove_uninstaller:
 
 contInstall:
+   ; Never install debug symbols unless explicitly selected, except in DEBUG mode
+!IFNDEF DEBUG
+   SectionGetFlags ${secDebug} $0
+   IntOp $0 $0 & ${SECTION_OFF}
+   SectionSetFlags ${secDebug} $0
+!ELSE
+   SectionGetFlags ${secDebug} $0
+   IntOp $0 $0 | ${SF_SELECTED}
+   SectionSetFlags ${secDebug} $0
+!ENDIF
+
    ; Our logic should be like this.
    ;     1) If no KfW components are installed, we do a clean install with default options. (Client/Docs)
    ;     2) If existing modules are installed, we keep them selected
@@ -1019,6 +1095,7 @@ FunctionEnd
   !insertmacro MUI_DESCRIPTION_TEXT ${secClient} $(DESC_secClient)
   !insertmacro MUI_DESCRIPTION_TEXT ${secSDK} $(DESC_secSDK)
   !insertmacro MUI_DESCRIPTION_TEXT ${secDocs} $(DESC_secDocs)
+  !insertmacro MUI_DESCRIPTION_TEXT ${secDebug} $(DESC_secDebug)
   !insertmacro MUI_FUNCTION_DESCRIPTION_END
  
 ;--------------------------------
@@ -1036,7 +1113,7 @@ StartRemove:
   ; Stop the running processes
   GetTempFileName $R0
   File /oname=$R0 "Killer.exe"
-  nsExec::Exec '$R0 leash32.exe'
+  nsExec::Exec '$R0 netidmgr.exe'
   nsExec::Exec '$R0 krbcc32s.exe'
 
   Push "$INSTDIR\bin"
@@ -1044,9 +1121,12 @@ StartRemove:
   
   ; Delete documentation
   Delete "$INSTDIR\doc\relnotes.html"
-  Delete "$INSTDIR\doc\leash_userdoc.pdf"
-
+  Delete "$INSTDIR\doc\netidmgr_userdoc.pdf"
+  Delete "$INSTDIR\doc\netiddev.chm"
+ 
+!ifdef AKLOG
    Delete /REBOOTOK "$INSTDIR\bin\aklog.exe"
+!endif
    Delete /REBOOTOK "$INSTDIR\bin\comerr32.dll"
    Delete /REBOOTOK "$INSTDIR\bin\gss.exe"
    Delete /REBOOTOK "$INSTDIR\bin\gss-client.exe"
@@ -1060,23 +1140,31 @@ StartRemove:
    Delete /REBOOTOK "$INSTDIR\bin\kpasswd.exe"   
    Delete /REBOOTOK "$INSTDIR\bin\kvno.exe"   
    Delete /REBOOTOK "$INSTDIR\bin\krb5_32.dll" 
+   Delete /REBOOTOK "$INSTDIR\bin\k5sprt32.dll" 
    Delete /REBOOTOK "$INSTDIR\bin\krb524.dll"  
    Delete /REBOOTOK "$INSTDIR\bin\krbcc32.dll" 
    Delete /REBOOTOK "$INSTDIR\bin\krbcc32s.exe"
    Delete /REBOOTOK "$INSTDIR\bin\krbv4w32.dll"
-   Delete /REBOOTOK "$INSTDIR\bin\leash32.exe"
-!ifdef OLDHELP
-   Delete /REBOOTOK "$INSTDIR\bin\leash32.hlp"
-!else
-   Delete /REBOOTOK "$INSTDIR\bin\leash32.chm" 
-!endif
+   Delete /REBOOTOK "$INSTDIR\bin\netidmgr.exe"      
+   Delete /REBOOTOK "$INSTDIR\bin\netidmgr.chm"      
+   Delete /REBOOTOK "$INSTDIR\bin\nidmgr32.dll"      
+   Delete /REBOOTOK "$INSTDIR\bin\krb4cred.dll"      
+   Delete /REBOOTOK "$INSTDIR\bin\krb5cred.dll"      
+   Delete /REBOOTOK "$INSTDIR\bin\krb4cred_en_us.dll"
+   Delete /REBOOTOK "$INSTDIR\bin\krb5cred_en_us.dll"
    Delete /REBOOTOK "$INSTDIR\bin\leashw32.dll"
    Delete /REBOOTOK "$INSTDIR\bin\ms2mit.exe"  
+   Delete /REBOOTOK "$INSTDIR\bin\mit2ms.exe"  
+   Delete /REBOOTOK "$INSTDIR\bin\kcpytkt.exe"  
+   Delete /REBOOTOK "$INSTDIR\bin\kdeltkt.exe"  
    Delete /REBOOTOK "$INSTDIR\bin\wshelp32.dll"
    Delete /REBOOTOK "$INSTDIR\bin\xpprof32.dll"
+   Delete /REBOOTOK "$SYSDIR\bin\kfwlogon.dll"
+   Delete /REBOOTOK "$SYSDIR\bin\kfwcpcc.exe"
 
-!IFDEF DEBUG
+!ifdef AKLOG
    Delete /REBOOTOK "$INSTDIR\bin\aklog.pdb"
+!endif
    Delete /REBOOTOK "$INSTDIR\bin\comerr32.pdb"
    Delete /REBOOTOK "$INSTDIR\bin\gss.pdb"
    Delete /REBOOTOK "$INSTDIR\bin\gss-client.pdb"
@@ -1090,15 +1178,26 @@ StartRemove:
    Delete /REBOOTOK "$INSTDIR\bin\kpasswd.pdb"   
    Delete /REBOOTOK "$INSTDIR\bin\kvno.pdb"   
    Delete /REBOOTOK "$INSTDIR\bin\krb5_32.pdb" 
+   Delete /REBOOTOK "$INSTDIR\bin\k5sprt32.pdb" 
    Delete /REBOOTOK "$INSTDIR\bin\krb524.pdb"  
    Delete /REBOOTOK "$INSTDIR\bin\krbcc32.pdb" 
    Delete /REBOOTOK "$INSTDIR\bin\krbcc32s.pdb"
    Delete /REBOOTOK "$INSTDIR\bin\krbv4w32.pdb"
+   Delete /REBOOTOK "$INSTDIR\bin\netidmgr.pdb"      
+   Delete /REBOOTOK "$INSTDIR\bin\nidmgr32.pdb"      
+   Delete /REBOOTOK "$INSTDIR\bin\krb4cred.pdb"      
+   Delete /REBOOTOK "$INSTDIR\bin\krb5cred.pdb"      
    Delete /REBOOTOK "$INSTDIR\bin\leashw32.pdb"
    Delete /REBOOTOK "$INSTDIR\bin\ms2mit.pdb"  
+   Delete /REBOOTOK "$INSTDIR\bin\mit2ms.pdb"  
+   Delete /REBOOTOK "$INSTDIR\bin\kcpytkt.pdb"  
+   Delete /REBOOTOK "$INSTDIR\bin\kdeltkt.pdb"  
    Delete /REBOOTOK "$INSTDIR\bin\wshelp32.pdb"
    Delete /REBOOTOK "$INSTDIR\bin\xpprof32.pdb"
+   Delete /REBOOTOK "$SYSDIR\bin\kfwlogon.pdb"
+   Delete /REBOOTOK "$SYSDIR\bin\kfwcpcc.pdb"
 
+!IFDEF DEBUG
 !IFDEF CL_1400
    Delete /REBOOTOK "$INSTDIR\bin\msvcr80d.dll"
    Delete /REBOOTOK "$INSTDIR\bin\msvcr80d.pdb"
@@ -1192,11 +1291,12 @@ StartRemove:
   RMDir  "$INSTDIR"
   
   Delete  "$SMPROGRAMS\${PROGRAM_NAME}\Uninstall ${PROGRAM_NAME}.lnk"
-  Delete  "$SMPROGRAMS\${PROGRAM_NAME}\Leash Kerberos Ticket Manager.lnk"
+  Delete  "$SMPROGRAMS\${PROGRAM_NAME}\Network Identity Manager.lnk"
   Delete  "$SMPROGRAMS\${PROGRAM_NAME}\Release Notes.lnk"
-  Delete  "$SMPROGRAMS\${PROGRAM_NAME}\Leash User Documentation.lnk"
+  Delete  "$SMPROGRAMS\${PROGRAM_NAME}\Network Identity Manager User Documentation.lnk"
+  Delete  "$SMPROGRAMS\${PROGRAM_NAME}\Network Identity Developer Documentation.lnk"
   RmDir   "$SMPROGRAMS\${PROGRAM_NAME}"
-  Delete  "$SMSTARTUP\Leash Kerberos Ticket Manager.lnk"
+  Delete  "$SMSTARTUP\Network Identity Manager.lnk"
 
    IfSilent SkipAsk
 ;  IfFileExists "$WINDIR\krb5.ini" CellExists SkipDelAsk
@@ -1217,11 +1317,13 @@ StartRemove:
   WriteRegDWORD HKLM "SYSTEM\CurrentControlSet\Control\Lsa\Kerberos" "AllowTGTSessionKey" $R0
 
   ; The following are keys added for Terminal Server compatibility
-  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\leash32"
+  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr"
   DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kinit"
   DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\klist"
   DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\kdestroy"
+!ifdef AKLOG
   DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\aklog"
+!endif
   DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\gss"
   DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\gss-client"
   DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\gss-server"
@@ -1244,6 +1346,10 @@ StartRemove:
   DeleteRegKey /ifempty HKLM "${KFW_REGKEY_ROOT}"
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PROGRAM_NAME}"
  
+  ; WinLogon Event Notification
+  DeleteRegKey HKLM "Software\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\MIT_KFW"
+  DeleteRegKey HKLM "SYSTEM\CurrentControlSet\Services\MIT Kerberos"
+
   RMDir  "$INSTDIR"
 
 SectionEnd
@@ -1388,7 +1494,7 @@ Function KFWPageGetStartupConfig
   
   ; Set the install options here
   
-  !insertmacro MUI_HEADER_TEXT "Leash Ticket Manager Setup" "Please select Leash ticket manager setup options:" 
+  !insertmacro MUI_HEADER_TEXT "Network Identity Manager Setup" "Please select Network Identity ticket manager setup options:" 
   InstallOptions::dialog $1
   Pop $R1
   StrCmp $R1 "cancel" exit
@@ -1674,3 +1780,87 @@ MakeClientSelected:
 end:
 FunctionEnd
 
+Function AddProvider
+   Push $R0
+   Push $R1
+   ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\NetworkProvider\HWOrder" "ProviderOrder"
+   Push $R0
+   StrCpy $R0 "MIT Kerberos"
+   Push $R0
+   Call StrStr
+   Pop $R0
+   StrCmp $R0 "" DoOther +1
+   ReadRegStr $R1 HKLM "SYSTEM\CurrentControlSet\Control\NetworkProvider\HWOrder" "ProviderOrder"
+   StrCpy $R0 "$R1,MIT Kerberos"
+   WriteRegStr HKLM "SYSTEM\CurrentControlSet\Control\NetworkProvider\HWOrder" "ProviderOrder" $R0
+DoOther:
+   ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\NetworkProvider\Order" "ProviderOrder"
+   Push $R0
+   StrCpy $R0 "MIT Kerberos"
+   Push $R0
+   Call StrStr
+   Pop $R0
+   StrCmp $R0 "" +1 End
+   ReadRegStr $R1 HKLM "SYSTEM\CurrentControlSet\Control\NetworkProvider\Order" "ProviderOrder"
+   StrCpy $R0 "$R1,MIT Kerberos"
+   WriteRegStr HKLM "SYSTEM\CurrentControlSet\Control\NetworkProvider\Order" "ProviderOrder" $R0
+End:
+   Pop $R1
+   Pop $R0
+FunctionEnd
+
+Function un.RemoveProvider
+   Push $R0
+   StrCpy $R0 "MIT Kerberos"
+   Push $R0
+   StrCpy $R0 "SYSTEM\CurrentControlSet\Control\NetworkProvider\HWOrder" 
+   Call un.RemoveFromProvider
+   StrCpy $R0 "MIT Kerberos"
+   Push $R0
+   StrCpy $R0 "SYSTEM\CurrentControlSet\Control\NetworkProvider\Order"
+   Call un.RemoveFromProvider
+   Pop $R0
+FunctionEnd
+
+Function un.RemoveFromProvider
+  Exch $0
+  Push $1
+  Push $2
+  Push $3
+  Push $4
+  Push $5
+  Push $6
+
+  ReadRegStr $1 HKLM "$R0" "ProviderOrder"
+    StrCpy $5 $1 1 -1 # copy last char
+    StrCmp $5 "," +2 # if last char != ,
+      StrCpy $1 "$1," # append ,
+    Push $1
+    Push "$0,"
+    Call un.StrStr ; Find `$0,` in $1
+    Pop $2 ; pos of our dir
+    StrCmp $2 "" unRemoveFromPath_done
+      ; else, it is in path
+      # $0 - path to add
+      # $1 - path var
+      StrLen $3 "$0,"
+      StrLen $4 $2
+      StrCpy $5 $1 -$4 # $5 is now the part before the path to remove
+      StrCpy $6 $2 "" $3 # $6 is now the part after the path to remove
+      StrCpy $3 $5$6
+
+      StrCpy $5 $3 1 -1 # copy last char
+      StrCmp $5 "," 0 +2 # if last char == ,
+        StrCpy $3 $3 -1 # remove last char
+
+      WriteRegStr HKLM "$R0" "ProviderOrder" $3
+
+  unRemoveFromPath_done:
+    Pop $6
+    Pop $5
+    Pop $4
+    Pop $3
+    Pop $2
+    Pop $1
+    Pop $0
+FunctionEnd

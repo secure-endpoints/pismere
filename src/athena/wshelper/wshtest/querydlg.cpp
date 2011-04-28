@@ -22,9 +22,9 @@ static char BASED_CODE THIS_FILE[] = __FILE__;
 CQueryDlg::CQueryDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CQueryDlg::IDD, pParent)
 {
-	long curopts;
+	long curopts = 0;
 	
-	curopts = res_getopts();
+	//curopts = res_getopts();
 	
 	//{{AFX_DATA_INIT(CQueryDlg)
 	m_Auth = (curopts & RES_AAONLY) != 0;

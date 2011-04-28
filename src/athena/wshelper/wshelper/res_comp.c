@@ -50,48 +50,39 @@ static char sccsid[] = "@(#)res_comp.c	6.22 (Berkeley) 3/19/91";
 
 #include <windows.h>
 #include <winsock.h>
-#include <arpa/nameser.h>
 #include <resolv.h>
 #include <stdio.h>
 
-#include "u-compat.h"
 
 static dn_find();
 
 /*
+	replacement for dn_expand called rdn_expand. Older versions of
+	the DLL used to this as dn_expand but this has caused some
+	conflict with more recent versions of the MSDEV
+	libraries. rdn_expand() expands the compressed domain name comp_dn to
+	a full domain name.  Expanded names are converted to upper case.
 
- @func int WINAPI | rdn_expand| 
+	\param[in]	msg		msg is a pointer to the  beginning  of  the  message
+	\param[in]	eomorig	
+	\param[in]			comp_dn the compressed domain name.
+	\param[in, out]		expn_dn	a pointer to the result buffer
+	\param[in]			length	size of the result in expn_dn
 
-
- Our replacement for dn_expand called rdn_expand. Older versions of
- the DLL used to this as dn_expand but this has caused some
- conflict with more recent versions of the MSDEV
- libraries. rdn_expand() expands the compressed domain name comp_dn to
- a full domain name.  Expanded names are converted to upper case.
-
- .  
-
- @parm u_char * | msg | msg is a pointer to the  beginning  of  the  message,
- @parm u_char * | eomorig | (I don't remember at the moment. Feed it a NULL)
- @parm u_char * | comp_dn | the compressed domain name.
- @parm u_char * | expn_dn | expn_dn a pointer to the result buffer 
- @parm int | length | size of the result in expn_dn
-
- @rdesc The size of compressed name is returned or  - 1  if there was an error.
-
+	\retval				the size of compressed name is returned or -1 if there was an error.
 */
 
 
-#ifdef _WINDLL
+
 int WINAPI
-#endif
 rdn_expand(const u_char *msg, const u_char *eomorig, 
 		   const u_char *comp_dn, u_char *exp_dn, int length)
 {
     register u_char *cp, *dn;
     register int n, c;
     u_char *eom;
-    int len = -1, checked = 0;
+	INT_PTR len = -1;
+    int checked = 0;
 
     dn = exp_dn;
     cp = (u_char *)comp_dn;
@@ -148,27 +139,24 @@ rdn_expand(const u_char *msg, const u_char *eomorig,
     *dn = '\0';
     if (len < 0)
         len = cp - comp_dn;
-    return (len);
+    return (int)(len);
 }
 
 
 /*
- @func int WINAPI | dn_comp |
-  Compress domain name 'exp_dn' into 'comp_dn'.
-  Return the size of the compressed name or -1.
-  'length' is the size of the array pointed to by 'comp_dn'.
-  'dnptrs' is a list of pointers to previous compressed names. dnptrs[0]
-  is a pointer to the beginning of the message. The list ends with NULL.
-  'lastdnptr' is a pointer to the end of the arrary pointed to
-  by 'dnptrs'. Side effect is to update the list of pointers for
-  labels inserted into the message as we compress the name.
-  If 'dnptr' is NULL, we don't try to compress names. If 'lastdnptr'
-  is NULL, we don't update the list.
-
+	Compress domain name 'exp_dn' into 'comp_dn'
+	\param[in]	exp_dn	name to compress
+	\param[in, out]	comp_dn		result of the compression
+	\paramp[in]	length			the size of the array pointed to by 'comp_dn'.
+	\param[in, out]	dnptrs		a list of pointers to previous compressed names. dnptrs[0]
+								is a pointer to the beginning of the message. The list ends with NULL.
+	\param[in]	lastdnptr		a pointer to the end of the arrary pointed to by 'dnptrs'. Side effect 
+								is to update the list of pointers for labels inserted into the 
+								message as we compress the name. If 'dnptr' is NULL, we don't try to 
+								compress names. If 'lastdnptr' is NULL, we don't update the list.
+	\retval						Return the size of the compressed name or -1
  */
-#ifdef _WINDLL
 int WINAPI
-#endif
 dn_comp(const u_char *exp_dn, u_char *comp_dn, int length, 
         u_char **dnptrs, u_char **lastdnptr)
 {
@@ -196,7 +184,7 @@ dn_comp(const u_char *exp_dn, u_char *comp_dn, int length,
                     return (-1);
                 *cp++ = (l >> 8) | INDIR_MASK;
                 *cp++ = l % 256;
-                return (cp - comp_dn);
+                return (int)(cp - comp_dn);
             }
             /* not found, save it */
             if (lastdnptr != NULL && cpp < lastdnptr-1) {
@@ -222,7 +210,7 @@ dn_comp(const u_char *exp_dn, u_char *comp_dn, int length,
             *cp++ = c;
         } while ((c = *dn++) != '\0');
         /* catch trailing '.'s but not '..' */
-        if ((l = cp - sp - 1) == 0 && c == '\0') {
+        if ((l =(int)( cp - sp - 1)) == 0 && c == '\0') {
             cp--;
             break;
         }
@@ -239,7 +227,7 @@ dn_comp(const u_char *exp_dn, u_char *comp_dn, int length,
         return (-1);
     }
     *cp++ = '\0';
-    return (cp - comp_dn);
+    return (int)(cp - comp_dn);
 }
 
 /*
@@ -266,7 +254,7 @@ __dn_skipname(const u_char *comp_dn, const u_char *eom)
         }
         break;
     }
-    return (cp - comp_dn);
+    return (int)(cp - comp_dn);
 }
 
 /*
@@ -300,7 +288,7 @@ dn_find(u_char *exp_dn, u_char *msg, u_char **dnptrs, u_char **lastdnptr)
                         goto next;
                 }
                 if ((n = *dn++) == '\0' && *cp == '\0')
-                    return (sp - msg);
+                    return (int)(sp - msg);
                 if (n == '.')
                     continue;
                 goto next;
@@ -313,7 +301,7 @@ dn_find(u_char *exp_dn, u_char *msg, u_char **dnptrs, u_char **lastdnptr)
             }
         }
         if (*dn == '\0')
-            return (sp - msg);
+            return (int)(sp - msg);
     next:   ;
     }
     return (-1);
@@ -365,13 +353,8 @@ __putshort(s, msgp)
     register u_char *msgp;
 #endif
 {
-#ifndef _WINDLL
-    msgp[1] = s;
-    msgp[0] = s >> 8;
-#else
     msgp[1] = LOBYTE(s);
     msgp[0] = HIBYTE(s);
-#endif
 }
 
 void
@@ -379,15 +362,8 @@ __putlong(l, msgp)
     register u_long l;
     register u_char *msgp;
 {
-#ifndef _WINDLL
-    msgp[3] = l;
-    msgp[2] = (l >>= 8);
-    msgp[1] = (l >>= 8);
-    msgp[0] = l >> 8;
-#else
     msgp[3] = LOBYTE(LOWORD(l));
     msgp[2] = HIBYTE(LOWORD(l));
     msgp[1] = LOBYTE(HIWORD(l));
     msgp[0] = HIBYTE(HIWORD(l));
-#endif
 }

@@ -41,6 +41,7 @@ sub cvs_try
 	my $old_Env;
 
     $rev = $rev?"-r $rev":'';
+    
 
     return 0 if !$cvsroot || ($u && !$u_gopt);
 
@@ -78,7 +79,18 @@ sub graft
     my $noorig = shift;
     my $nodefault = shift;
 
+    my $vstudiover = 6;
+    if (defined($ENV{"MSVCDIR"}) && $ENV{"MSVCDIR"} =~ m/visual studio .net/i){
+		$vstudiover = 7;
+	}
+
     return if $DONE->{$k};
+
+    if ($vstudiover == 6 && $M->{$k}->{"skipifvs6"})
+    {
+		return;
+		}
+	
 
     my $dir = File::Spec->catfile($TOP, $M->{$k}->{in});
     my $requires = $M->{$k}->{requires};
@@ -90,7 +102,7 @@ sub graft
     }
 
     chdir($dir) || die "$0: Could not chdir to $dir for $k\n";
-    if (-e $k) {
+	if (-e $k) {
 	print "$k already exists...";
 	if (-d $k) {
 	    print "skipping\n";
@@ -102,16 +114,39 @@ sub graft
     }
     $rev = $rev?$rev:0;
 
-    if (!$rev && !$nodefault && defined($ENV{"KRB5BRANCH"}) && $ENV{"KRB5BRANCH"} =~ m/TAGGED/i && $M->{$k}->{"default-if-tagged"}) {
-	$rev = $M->{$k}->{"default-if-tagged"};
+    if (!$rev && !$nodefault && defined($ENV{"KRB5BRANCH"}) && $ENV{"KRB5BRANCH"} =~ m/TAGGED/i)
+    {
+		if ($vstudiover == 7){
+			if ($M->{$k}->{"default-if-tagged"}) {
+				$rev = $M->{$k}->{"default-if-tagged"};
+			}
+		}
+		else
+		{
+			if ($M->{$k}->{"vc6default-if-tagged"}) {
+				$rev = $M->{$k}->{"vc6-default-if-tagged"};
+			}
+		}
+	
+		
+				
 	print "Environment variable KRB5BRANCH=\"".$ENV{"KRB5BRANCH"}."\":\n"; 
 	print "  Using the \"default-if-tagged\" revision, \"$rev\".\n";
     }
 
-    if (!$rev && !$nodefault && $M->{$k}->{default}) {
-	$rev = $M->{$k}->{default};
-    }
-
+    if (!$rev && !$nodefault){
+		if ($vstudiover == 7){
+			if ($M->{$k}->{default}) {
+				$rev = $M->{$k}->{default};
+			}
+		}
+		else {
+			if ($M->{$k}->{vc6default}) {
+				$rev = $M->{$k}->{vc6default};
+			}
+		}
+	}
+			
 
     if (!$noorig) {
 	$DONE->{$k} =
@@ -129,6 +164,18 @@ sub graft
 
     die "Could not successfully get $k\n" if (!$DONE->{$k});
 
+   
+	if ($M->{$k}->{"update-installer"}) {
+		$dir = File::Spec->catfile($TOP, $M->{$k}->{"update-installer"});
+		chdir($dir) || die "$0: Could not chdir to $dir for installer $M->{$k}->{installer}\n";
+		print "cvs update -d -P -r $rev $M->{$k}->{installer} \n";
+		if (system("cvs update -d -P -r $rev $M->{$k}->{installer}")/256)
+		{
+			die "could not update $M->{$k}->{installer}";
+		}
+
+
+	}
     return $DONE->{$k};
 }
 

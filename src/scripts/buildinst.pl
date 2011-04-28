@@ -833,6 +833,65 @@ sub buildinst
 		next;
 	}
 
+	if ($t eq "transform")
+	{
+		#skip if we are doing the vstuio 6 build
+		if (defined($ENV{"VSTUDIOVER"}) && ($ENV{"VSTUDIOVER"} =~ m/VSTUDIO6/i))
+		{
+			next;
+		}
+		my $NAME = get_output_filename();
+		my $SRCDIR = "\\\\afs\\all\\athena.mit.edu\\user\\d\\o\\dongq\\Public\\$NAME";
+		my $err;
+		my $command;
+		my $filename;
+		if ($target eq "debug")
+		{
+			$filename = "$NAME-DEBUG.msi";
+		}
+		else 
+		{
+			$filename = "$NAME.msi";
+		}
+		$command = "copy $SRCDIR\\$filename .";
+		print "$command \n";
+		$err = system($command) / 256;
+		if ($err)
+		{ 
+			print "error copying $SRCDIR\\$filename. return code:$err\n";
+		}
+		else
+		{
+			$command = "msitran.exe -a $NAME.mst $filename";
+			print "$command \n";
+			$err = system($command)/ 256;
+			if ($err) {
+				print "error applying transform to $filename. return code:$err\n";
+			}
+			else{
+				if (! -d $target_dir) {
+			    		mkpath($target_dir, $verbose) || die "$!";
+				}
+	
+				$command = "copy $filename $target_dir ";
+				print "\n$command \n";
+				$err = system($command) / 256;
+				if (!$err)
+				{
+					$command = "copy $filename $DIR_PISMERE_MSI_TARGET"; 
+					print "$command \n";
+					$err = system($command) / 256;
+				}
+				if ($err)
+				{
+					print "error copying $filename to the target directory. return code:$err\n";
+				}
+				system "del $filename";
+			}
+		}
+		next;		
+	}
+
 	next if ($target eq 'module' && $t ne 'wsm'); # skip installers if target is module
 	my $output_file = get_output_filename().'.'.$Flags->{"TYPE"}->{$t};
 	my $output_file_path = $target_dir.$output_file;

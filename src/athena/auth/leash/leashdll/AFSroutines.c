@@ -227,6 +227,37 @@ not_an_API_LeashAFSGetToken(
 #endif
 }
 
+static char OpenAFSConfigKeyName[] = "SOFTWARE\\OpenAFS\\Client";
+
+static int
+use_krb524(void)
+{
+    HKEY parmKey;
+    DWORD code, len;
+    DWORD use524 = 0;
+
+    code = RegOpenKeyEx(HKEY_CURRENT_USER, OpenAFSConfigKeyName,
+                         0, KEY_QUERY_VALUE, &parmKey);
+    if (code == ERROR_SUCCESS) {
+        len = sizeof(use524);
+        code = RegQueryValueEx(parmKey, "Use524", NULL, NULL,
+                                (BYTE *) &use524, &len);
+        RegCloseKey(parmKey);
+    }
+    if (code != ERROR_SUCCESS) {
+        code = RegOpenKeyEx(HKEY_LOCAL_MACHINE, OpenAFSConfigKeyName,
+                             0, KEY_QUERY_VALUE, &parmKey);
+        if (code == ERROR_SUCCESS) {
+            len = sizeof(use524);
+            code = RegQueryValueEx(parmKey, "Use524", NULL, NULL,
+                                    (BYTE *) &use524, &len);
+            RegCloseKey (parmKey);
+        }
+    }
+    return use524;
+}
+
+
 
 int
 Leash_afs_klog(
@@ -365,7 +396,8 @@ Leash_afs_klog(
         flags = 0;
         r = pkrb5_cc_set_flags(context, _krb425_ccache, flags);
 #endif
-        r = pkrb5_get_credentials(context, 0, _krb425_ccache, &increds, &k5creds);
+        if (r == 0)
+            r = pkrb5_get_credentials(context, 0, _krb425_ccache, &increds, &k5creds);
         if (r == KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN ||
 			r == KRB5KRB_ERR_GENERIC /* Heimdal */) {
             /* Next try Service@REALM */
@@ -383,12 +415,12 @@ Leash_afs_klog(
         pkrb5_free_principal(context, client_principal);
 #ifdef KRB5_TC_NOTICKET
         flags = KRB5_TC_NOTICKET;
-        r = pkrb5_cc_set_flags(context, _krb425_ccache, flags);
+        pkrb5_cc_set_flags(context, _krb425_ccache, flags);
 #endif
         (void) pkrb5_cc_close(context, _krb425_ccache);
         _krb425_ccache = 0;
 
-        if (r) {
+        if (r || k5creds == 0) {
             pkrb5_free_context(context);
             try_krb5 = 0;
             goto use_krb4;
@@ -398,7 +430,7 @@ Leash_afs_klog(
          * No need to perform a krb524 translation which is 
          * commented out in the code below
          */
-        if ( k5creds->ticket.length > MAXKTCTICKETLEN )
+        if ( use_krb524() || k5creds->ticket.length > MAXKTCTICKETLEN )
             goto try_krb524d;
 
         memset(&aserver, '\0', sizeof(aserver));
@@ -558,7 +590,7 @@ Leash_afs_klog(
     {
         strncat(aclient.name, "@", MAXKTCNAMELEN - 1 - strlen(aclient.name));
         aclient.name[MAXKTCNAMELEN - 1] = '\0';
-        strncpy(aclient.name, creds.realm, MAXKTCNAMELEN - 1 - strlen(aclient.name));
+        strncat(aclient.name, creds.realm, MAXKTCNAMELEN - 1 - strlen(aclient.name));
         aclient.name[MAXKTCNAMELEN - 1] = '\0';
     }
     aclient.name[MAXKTCNAMELEN-1] = '\0';

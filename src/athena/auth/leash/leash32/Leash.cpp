@@ -26,6 +26,7 @@
 #include "mitwhich.h"
 #include <leasherr.h>
 #include "lglobals.h"
+#include <krb5.h>
 #include <com_err.h>
 
 #include <wshelper.h>
@@ -45,7 +46,9 @@ static char THIS_FILE[] = __FILE__;
 extern "C" int VScheckVersion(HWND hWnd, HANDLE hThisInstance);
 
 TicketInfoWrapper ticketinfo;
+#ifndef KRB5_TC_NOTICKET  /* test for krb5 1.4 and thread safety */
 HANDLE m_tgsReqMutex = 0;
+#endif
 
 HWND CLeashApp::m_hProgram = 0;
 HINSTANCE CLeashApp::m_hLeashDLL = 0; 
@@ -84,7 +87,9 @@ CLeashApp::CLeashApp()
     memset(&ticketinfo, 0, sizeof(ticketinfo));
 
     ticketinfo.lockObj = CreateMutex(NULL, FALSE, NULL);
+#ifndef KRB5_TC_NOTICKET
     m_tgsReqMutex = CreateMutex(NULL, FALSE, NULL);
+#endif
 
 #ifdef USE_HTMLHELP
 #if _MSC_VER >= 1300
@@ -108,7 +113,9 @@ CLeashApp::~CLeashApp()
 #ifdef COMMENT
 	/* Do not free the locking objects.  Doing so causes an invalid handle access */
     CloseHandle(ticketinfo.lockObj);
+#ifndef KRB5_TC_NOTICKET
     CloseHandle(m_tgsReqMutex);
+#endif
 #endif
  	AfxFreeLibrary(m_hLeashDLL);
 	AfxFreeLibrary(m_hKrb4DLL); 
@@ -152,13 +159,14 @@ BOOL CLeashApp::InitInstance()
     // NOTE: Not used at this time
     /// Set LEASH_DLL to the path where the Leash.exe is
     char modulePath[MAX_PATH];
-    ASSERT(GetModuleFileName(AfxGetInstanceHandle(), modulePath, MAX_PATH));
+    DWORD result = GetModuleFileName(AfxGetInstanceHandle(), modulePath, MAX_PATH);
+    ASSERT(result);
 
     char* pPath = modulePath + strlen(modulePath) - 1;
     while (*pPath != '\\')
     {
-    	*pPath = 0;
-    	pPath--;   
+        *pPath = 0;
+        pPath--;   
     }
     strcat(modulePath, LEASH_HELP_FILE);
     m_helpFile = modulePath;
@@ -1398,16 +1406,21 @@ CLeashApp::ObtainTicketsViaUserIfNeeded(HWND hWnd)
 
     if ( !ticketinfo.Krb4.btickets && !ticketinfo.Krb5.btickets ) {
         ReleaseMutex(ticketinfo.lockObj);
+#ifndef KRB5_TC_NOTICKET
         if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
             throw("Unable to lock TGS mutex");
+#endif
         if ( pLeash_importable() ) {
             if (pLeash_import())
                 CLeashView::m_importedTickets = 1;
+#ifndef KRB5_TC_NOTICKET
             ReleaseMutex(m_tgsReqMutex);
+#endif
         } 
         else if ( ProbeKDC() ) {
+#ifndef KRB5_TC_NOTICKET
             ReleaseMutex(m_tgsReqMutex);
-
+#endif
             LSH_DLGINFO_EX ldi;
             ldi.size = sizeof(ldi);
             ldi.dlgtype = DLGTYPE_PASSWD;
@@ -1418,21 +1431,29 @@ CLeashApp::ObtainTicketsViaUserIfNeeded(HWND hWnd)
             ldi.use_defaults = 1;
 
             pLeash_kinit_dlg_ex(hWnd, &ldi);
-        } else {
+        } 
+#ifndef KRB5_TC_NOTICKET
+        else {
             ReleaseMutex(m_tgsReqMutex);
         }
+#endif
     } else if ( ticketinfo.Krb5.btickets ) {
         ReleaseMutex(ticketinfo.lockObj);
+#ifndef KRB5_TC_NOTICKET
         if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
             throw("Unable to TGS mutex");
+#endif
         if ( CLeashView::m_importedTickets && pLeash_importable() ) {
             if (pLeash_import())
                 CLeashView::m_importedTickets = 1;
+#ifndef KRB5_TC_NOTICKET
             ReleaseMutex(m_tgsReqMutex);
+#endif
         } 
         else if ( ProbeKDC() && !pLeash_renew() ) {
+#ifndef KRB5_TC_NOTICKET
             ReleaseMutex(m_tgsReqMutex);
-
+#endif
             LSH_DLGINFO_EX ldi;
             ldi.size = sizeof(ldi);
             ldi.dlgtype = DLGTYPE_PASSWD;
@@ -1443,16 +1464,22 @@ CLeashApp::ObtainTicketsViaUserIfNeeded(HWND hWnd)
             ldi.use_defaults = 1;
 
             pLeash_kinit_dlg_ex(hWnd, &ldi);
-        } else {
+        } 
+#ifndef KRB5_TC_NOTICKET
+        else {
             ReleaseMutex(m_tgsReqMutex);
         }
+#endif
     } else if ( ticketinfo.Krb4.btickets ) {
         ReleaseMutex(ticketinfo.lockObj);
+#ifndef KRB5_TC_NOTICKET
         if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
             throw("Unable to lock TGS mutex");
+#endif
         if ( ProbeKDC() ) {
+#ifndef KRB5_TC_NOTICKET
             ReleaseMutex(m_tgsReqMutex);
-
+#endif
             LSH_DLGINFO_EX ldi;
             ldi.size = sizeof(ldi);
             ldi.dlgtype = DLGTYPE_PASSWD;
@@ -1463,9 +1490,12 @@ CLeashApp::ObtainTicketsViaUserIfNeeded(HWND hWnd)
             ldi.use_defaults = 1;
 
             pLeash_kinit_dlg_ex(hWnd, &ldi);
-        } else {
+        } 
+#ifndef KRB5_TC_NOTICKET
+        else {
             ReleaseMutex(m_tgsReqMutex);
         }
+#endif
     } else {
         ReleaseMutex(ticketinfo.lockObj);
         // Do nothing ...
@@ -1543,8 +1573,10 @@ CLeashApp::IpAddrChangeMonitorInit(HWND hWnd)
 UINT
 CLeashApp::InitWorker(void * hWnd)
 {
+#ifndef KRB5_TC_NOTICKET
     if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
-        throw("Unable to lock ticketinfo");
+        throw("Unable to lock tgsReq");
+#endif
     if ( ProbeKDC() ) {
         LSH_DLGINFO_EX ldi;
         ldi.size = sizeof(ldi);
@@ -1554,11 +1586,16 @@ CLeashApp::InitWorker(void * hWnd)
         ldi.realm = NULL;
         ldi.use_defaults = 1;
 
+#ifndef KRB5_TC_NOTICKET
         ReleaseMutex(m_tgsReqMutex);
+#endif
         pLeash_kinit_dlg_ex((HWND)hWnd, &ldi);
         ::SendMessage((HWND)hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
-    } else
+    } 
+#ifndef KRB5_TC_NOTICKET
+    else
         ReleaseMutex(m_tgsReqMutex);
+#endif
     return 0;
 }
 

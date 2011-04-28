@@ -44,7 +44,7 @@
  */
 
 #if !defined(lint) && !defined(__CODECENTER__)
-static char *rcsid = "$Header: /cvs/krbdev/krb5/src/appl/gss-sample/gss-misc.c,v 1.23.2.3 2004/02/11 19:00:32 tlyu Exp $";
+static char *rcsid = "$Header$";
 #endif
 
 #include <stdio.h>
@@ -160,7 +160,7 @@ int send_token(s, flags, tok)
      int flags;
      gss_buffer_t tok;
 {
-     int len, ret;
+     int ret;
      unsigned char char_flags = (unsigned char) flags;
      unsigned char lenbuf[4];
 

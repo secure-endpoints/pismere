@@ -25,9 +25,9 @@ DIRS=\
 	whois	\
 	snetcfgex \
 	tzcpl	\
-	guiwrap \
 	kmp	\
- 	spacl
+ 	spacl	\
+	sendbug
 OPTDIRS=\
 	lib	\
 	locker	\
@@ -57,5 +57,6 @@ OPTDIRS=\
 	tzcpl	\
 	guiwrap \
 	kmp	\
- 	spacl
+ 	spacl	\
+	sendbug
 

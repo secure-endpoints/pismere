@@ -1,11 +1,11 @@
 /*
  * Copyright 1993 OpenVision Technologies, Inc., All Rights Reserved
  *
- * $Header: /cvs/krbdev/krb5/src/lib/kadm5/clnt/client_principal.c,v 1.10 2001/02/18 22:58:35 epeisach Exp $
+ * $Header$
  */
 
 #if !defined(lint) && !defined(__CODECENTER__)
-static char *rcsid = "$Header: /cvs/krbdev/krb5/src/lib/kadm5/clnt/client_principal.c,v 1.10 2001/02/18 22:58:35 epeisach Exp $";
+static char *rcsid = "$Header$";
 #endif
 
 #include    <gssrpc/rpc.h>
@@ -14,7 +14,14 @@ static char *rcsid = "$Header: /cvs/krbdev/krb5/src/lib/kadm5/clnt/client_princi
 #ifdef HAVE_MEMORY_H
 #include    <memory.h>
 #endif
+#include    <errno.h>
 #include    "client_internal.h"
+
+#ifdef DEBUG
+#define eret() do { clnt_perror(handle->clnt, "null ret"); return KADM5_RPC_ERROR; } while (0)
+#else
+#define eret() do { return KADM5_RPC_ERROR; } while (0)
+#endif
 
 kadm5_ret_t
 kadm5_create_principal(void *server_handle,
@@ -69,7 +76,7 @@ kadm5_create_principal(void *server_handle,
 	 krb5_free_principal(handle->context, arg.rec.mod_name);
 
     if(r == NULL)
-	return KADM5_RPC_ERROR;
+	eret();
     return r->code;
 }
 
@@ -130,7 +137,7 @@ kadm5_create_principal_3(void *server_handle,
 	 krb5_free_principal(handle->context, arg.rec.mod_name);
 
     if(r == NULL)
-	return KADM5_RPC_ERROR;
+	eret();
     return r->code;
 }
 
@@ -149,7 +156,7 @@ kadm5_delete_principal(void *server_handle, krb5_principal principal)
     arg.api_version = handle->api_version;
     r = delete_principal_1(&arg, handle->clnt);
     if(r == NULL)
-	return KADM5_RPC_ERROR;    
+	eret();    
     return r->code;
 }
 
@@ -202,7 +209,7 @@ kadm5_modify_principal(void *server_handle,
 	 krb5_free_principal(handle->context, arg.rec.mod_name);    
 
     if(r == NULL)
-	return KADM5_RPC_ERROR;    
+	eret();    
     return r->code;
 }
 
@@ -227,7 +234,7 @@ kadm5_get_principal(void *server_handle,
     arg.api_version = handle->api_version;
     r = get_principal_1(&arg, handle->clnt);
     if(r == NULL)
-	return KADM5_RPC_ERROR;
+	eret();
     if (handle->api_version == KADM5_API_VERSION_1) {
 	 kadm5_principal_ent_t_v1 *entp;
 
@@ -267,7 +274,7 @@ kadm5_get_principals(void *server_handle,
     arg.api_version = handle->api_version;
     r = get_princs_1(&arg, handle->clnt);
     if(r == NULL)
-	return KADM5_RPC_ERROR;
+	eret();
     if(r->code == 0) {
 	 *count = r->count;
 	 *princs = r->princs;
@@ -296,7 +303,7 @@ kadm5_rename_principal(void *server_handle,
 	return EINVAL;
     r = rename_principal_1(&arg, handle->clnt);
     if(r == NULL)
-	return KADM5_RPC_ERROR;        
+	eret();        
     return r->code;
 }
 
@@ -318,7 +325,7 @@ kadm5_chpass_principal(void *server_handle,
 	return EINVAL;
     r = chpass_principal_1(&arg, handle->clnt);
     if(r == NULL)
-	return KADM5_RPC_ERROR;        
+	eret();        
     return r->code;
 }
 
@@ -345,7 +352,7 @@ kadm5_chpass_principal_3(void *server_handle,
 	return EINVAL;
     r = chpass_principal3_1(&arg, handle->clnt);
     if(r == NULL)
-	return KADM5_RPC_ERROR;        
+	eret();        
     return r->code;
 }
 
@@ -368,7 +375,7 @@ kadm5_setv4key_principal(void *server_handle,
 	return EINVAL;
     r = setv4key_principal_1(&arg, handle->clnt);
     if(r == NULL)
-	return KADM5_RPC_ERROR;        
+	eret();        
     return r->code;
 }
 
@@ -393,7 +400,7 @@ kadm5_setkey_principal(void *server_handle,
 	return EINVAL;
     r = setkey_principal_1(&arg, handle->clnt);
     if(r == NULL)
-	return KADM5_RPC_ERROR;        
+	eret();        
     return r->code;
 }
 
@@ -423,7 +430,7 @@ kadm5_setkey_principal_3(void *server_handle,
 	return EINVAL;
     r = setkey_principal3_1(&arg, handle->clnt);
     if(r == NULL)
-	return KADM5_RPC_ERROR;        
+	eret();        
     return r->code;
 }
 
@@ -451,7 +458,7 @@ kadm5_randkey_principal_3(void *server_handle,
 	return EINVAL;
     r = chrand_principal3_1(&arg, handle->clnt);
     if(r == NULL)
-	return KADM5_RPC_ERROR;
+	eret();
     if (handle->api_version == KADM5_API_VERSION_1) {
 	 if (key)
 	      krb5_copy_keyblock(handle->context, &r->key, key);
@@ -499,7 +506,7 @@ kadm5_randkey_principal(void *server_handle,
 	return EINVAL;
     r = chrand_principal_1(&arg, handle->clnt);
     if(r == NULL)
-	return KADM5_RPC_ERROR;
+	eret();
     if (handle->api_version == KADM5_API_VERSION_1) {
 	 if (key)
 	      krb5_copy_keyblock(handle->context, &r->key, key);

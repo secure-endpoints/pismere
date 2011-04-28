@@ -5,8 +5,8 @@
  */
 
 #include <windows.h>
-#include <windowsx.h>
-
+#include <windowsx.h>
+
 #include "registry.h"
 
 HKEY
@@ -38,7 +38,7 @@ HKEY
 registry_key_create(HKEY hkey, char *sub, REGSAM sam)
 {
 	HKEY    key;
-	DWORD   err;
+	DWORD   err;
 	DWORD   disp;
 
 	err = RegCreateKeyEx(hkey, sub, 0, 0, REG_OPTION_NON_VOLATILE, sam,
@@ -51,8 +51,8 @@ registry_key_create(HKEY hkey, char *sub, REGSAM sam)
 
 int
 registry_key_delete(HKEY hkey, char *sub)
-{
-	DWORD err;
+{
+	DWORD err;
 
 	err = RegDeleteKey(hkey, sub);
 	if (err != ERROR_SUCCESS)
@@ -206,11 +206,11 @@ registry_keyval_string_set(HKEY hkey, char *base, char *sub, char *val)
 
 int
 registry_value_delete(HKEY hkey, char *sub)
-{
-	if (RegDeleteValue(hkey, sub))
-		return -1;
-
-	return 0;
+{
+	if (RegDeleteValue(hkey, sub))
+		return -1;
+
+	return 0;
 }
 
 int

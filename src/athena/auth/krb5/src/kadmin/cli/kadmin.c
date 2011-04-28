@@ -26,9 +26,9 @@
  */
 
 #include <krb5.h>
-#include <k5-int.h>
 #include <kadm5/admin.h>
 #include <krb5/adm_proto.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -87,7 +87,6 @@ char *getenv();
 int exit_status = 0;
 char *def_realm = NULL;
 char *whoami = NULL;
-time_t get_date();
 
 void *handle = NULL;
 krb5_context context;
@@ -185,6 +184,7 @@ char *kadmin_startup(argc, argv)
     krb5_ccache cc;
     krb5_principal princ;
     kadm5_config_params params;
+    char *svcname;
 
     memset((char *) &params, 0, sizeof(params));
     
@@ -194,7 +194,7 @@ char *kadmin_startup(argc, argv)
 	 exit(1);
     }
 		     
-    while ((optchar = getopt(argc, argv, "r:p:kq:w:d:s:mc:t:e:")) != EOF) {
+    while ((optchar = getopt(argc, argv, "r:p:kq:w:d:s:mc:t:e:ON")) != EOF) {
 	switch (optchar) {
 	case 'r':
 	    def_realm = optarg;
@@ -242,6 +242,12 @@ char *kadmin_startup(argc, argv)
 	    }
 	    params.mask |= KADM5_CONFIG_ENCTYPES;
 	    break;
+	case 'O':
+	    params.mask |= KADM5_CONFIG_OLD_AUTH_GSSAPI;
+	    break;
+	case 'N':
+	    params.mask |= KADM5_CONFIG_AUTH_NOFALLBACK;
+	    break;
 	default:
 	    usage();
 	}
@@ -259,6 +265,11 @@ char *kadmin_startup(argc, argv)
 
     params.mask |= KADM5_CONFIG_REALM;
     params.realm = def_realm;
+
+    if (params.mask & KADM5_CONFIG_OLD_AUTH_GSSAPI)
+	svcname = KADM5_ADMIN_SERVICE;
+    else
+	svcname = NULL;
 
     /*
      * Set cc to an open credentials cache, either specified by the -c
@@ -403,7 +414,7 @@ char *kadmin_startup(argc, argv)
 	 printf("Authenticating as principal %s with existing credentials.\n",
 		princstr);
 	 retval = kadm5_init_with_creds(princstr, cc,
-					KADM5_ADMIN_SERVICE, 
+					svcname, 
 					&params,
 					KADM5_STRUCT_VERSION,
 					KADM5_API_VERSION_2,
@@ -416,7 +427,7 @@ char *kadmin_startup(argc, argv)
 	     printf("Authenticating as principal %s with default keytab.\n",
 		    princstr);
 	 retval = kadm5_init_with_skey(princstr, keytab_name,
-				       KADM5_ADMIN_SERVICE, 
+				       svcname, 
 				       &params,
 				       KADM5_STRUCT_VERSION,
 				       KADM5_API_VERSION_2,
@@ -425,7 +436,7 @@ char *kadmin_startup(argc, argv)
 	 printf("Authenticating as principal %s with password.\n",
 		princstr);
 	 retval = kadm5_init_with_password(princstr, password,
-					   KADM5_ADMIN_SERVICE, 
+					   svcname, 
 					   &params,
 					   KADM5_STRUCT_VERSION,
 					   KADM5_API_VERSION_2,
@@ -756,7 +767,7 @@ kadmin_parse_princ_args(argc, argv, oprinc, mask, pass, randkey,
 	    if (++i > argc - 2)
 		return -1;
 	    else {
-		date = get_date(argv[i], NULL);
+		date = get_date(argv[i]);
  		if (date == (time_t)-1) {
 		     fprintf(stderr, "Invalid date specification \"%s\".\n",
 			     argv[i]);
@@ -772,7 +783,7 @@ kadmin_parse_princ_args(argc, argv, oprinc, mask, pass, randkey,
 	    if (++i > argc - 2)
 		return -1;
 	    else {
-		date = get_date(argv[i], NULL);
+		date = get_date(argv[i]);
  		if (date == (time_t)-1) {
 		     fprintf(stderr, "Invalid date specification \"%s\".\n",
 			     argv[i]);
@@ -788,7 +799,7 @@ kadmin_parse_princ_args(argc, argv, oprinc, mask, pass, randkey,
 	    if (++i > argc - 2)
 		return -1;
 	    else {
-		date = get_date(argv[i], NULL);
+		date = get_date(argv[i]);
  		if (date == (time_t)-1) {
 		     fprintf(stderr, "Invalid date specification \"%s\".\n",
 			     argv[i]);
@@ -804,7 +815,7 @@ kadmin_parse_princ_args(argc, argv, oprinc, mask, pass, randkey,
 	    if (++i > argc - 2)
 		return -1;
 	    else {
-		date = get_date(argv[i], NULL);
+		date = get_date(argv[i]);
  		if (date == (time_t)-1) {
 		     fprintf(stderr, "Invalid date specification \"%s\".\n",
 			     argv[i]);
@@ -1318,7 +1329,7 @@ kadmin_parse_policy_args(argc, argv, policy, mask, caller)
 	    if (++i > argc -2)
 		return -1;
 	    else {
-		date = get_date(argv[i], NULL);
+		date = get_date(argv[i]);
  		if (date == (time_t)-1) {
 		     fprintf(stderr, "Invalid date specification \"%s\".\n",
 			     argv[i]);
@@ -1333,7 +1344,7 @@ kadmin_parse_policy_args(argc, argv, policy, mask, caller)
 	    if (++i > argc - 2)
 		return -1;
 	    else {
-		date = get_date(argv[i], NULL);
+		date = get_date(argv[i]);
  		if (date == (time_t)-1) {
 		     fprintf(stderr, "Invalid date specification \"%s\".\n",
 			     argv[i]);

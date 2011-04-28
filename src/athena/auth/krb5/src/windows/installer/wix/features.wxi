@@ -39,9 +39,25 @@
             Description="$(loc.KerberosClientDesc)"
             InstallDefault="local"
             Title="$(loc.KerberosClientTitle)"
-            FollowParent="yes"
             Level="30">
-            
+
+            <?ifdef DebugSyms?>
+	    	<Feature 
+                    Id="feaKfwClientDebug" 
+                    AllowAdvertise="no" 
+                    Description="$(loc.StrKerberosClientDebugDesc)" 
+                    Display="expand"
+		    InstallDefault="$(var.DebugSymInstallDefault)" 
+                    Level="$(var.DebugSymLowLevel)" 
+                    Title="$(loc.StrKerberosClientDebugTitle)">
+                        <ComponentRef Id="cmf_bin_debug"/>
+			<ComponentRef Id="cmp_ClientSystemDebug"/>
+	        </Feature>
+	    <?endif?>
+
+            <ComponentRef Id="cmf_leash32_exe" />
+            <ComponentRef Id="csc_leash32_exe" />
+
             <ComponentRef Id="cmf_aklog_exe" />
             <ComponentRef Id="cmf_comerr32_dll" />
             <ComponentRef Id="cmf_gss_exe" />
@@ -51,24 +67,28 @@
             <ComponentRef Id="cmf_k524init_exe" />
             <ComponentRef Id="cmf_kclnt32_dll" />
             <ComponentRef Id="cmf_kdestroy_exe" />
+            <ComponentRef Id="cmf_kcpytkt_exe" />
+            <ComponentRef Id="cmf_kdeltkt_exe" />
             <ComponentRef Id="cmf_kinit_exe" />
             <ComponentRef Id="cmf_klist_exe" />
             <ComponentRef Id="cmf_kpasswd_exe" />
             <ComponentRef Id="cmf_kvno_exe" />
             <ComponentRef Id="cmf_krb5_32_dll" />
+            <ComponentRef Id="cmf_k5sprt32_dll" />
             <ComponentRef Id="cmf_krb524_dll" />
             <ComponentRef Id="cmf_krbcc32_dll" />
             <ComponentRef Id="cmf_krbcc32s_exe" />
             <ComponentRef Id="cmf_krbv4w32_dll" />
-            <ComponentRef Id="cmf_leash32_exe" />
             
-            <!-- Leash config options -->
-            <ComponentRef Id="rcm_leash_1" />
-            <ComponentRef Id="rcm_leash_2" />
-            <ComponentRef Id="rcm_leash_3" />
-            <ComponentRef Id="rcm_leash_5" />
-            <ComponentRef Id="rcm_leash_6" />
-            
+            <ComponentRef Id="cmf_nidmgr32_dll" />
+            <ComponentRef Id="cmf_krb5cred_dll" />
+            <ComponentRef Id="cmf_krb5cred_en_us_dll" />
+            <ComponentRef Id="cmf_krb4cred_dll" />
+            <ComponentRef Id="cmf_krb4cred_en_us_dll" />
+            <ComponentRef Id="cmf_netidmgr_exe" />
+
+	    <ComponentRef Id="cmf_kfwlogon_DLL" />
+            <ComponentRef Id="cmf_kfwcpcc_EXE" />
             <!-- Kerberos IV options -->
             <ComponentRef Id="rcm_krb4_1" />
             <ComponentRef Id="rcm_krb4_2" />
@@ -79,6 +99,14 @@
             <ComponentRef Id="rcm_krb5_1" />
             <ComponentRef Id="rcm_krb5_2" />
             <ComponentRef Id="rcm_krb5_3" />
+
+            
+            <!-- Leash config options -->
+            <ComponentRef Id="rcm_leash_1" />
+            <ComponentRef Id="rcm_leash_2" />
+            <ComponentRef Id="rcm_leash_3" />
+            <ComponentRef Id="rcm_leash_5" />
+            <ComponentRef Id="rcm_leash_6" />
             
         <?ifdef OldHelp?>
             <ComponentRef Id="cmf_leash32_hlp" />
@@ -106,13 +134,10 @@
             <ComponentRef Id="rcm_leashdll_17" />
             
             <ComponentRef Id="cmf_ms2mit_exe" />
+            <ComponentRef Id="cmf_mit2ms_exe" />
             <ComponentRef Id="cmf_wshelp32_dll" />
             <ComponentRef Id="cmf_xpprof32_dll" />
 
-        <?ifdef Debug?>            
-            <ComponentRef Id="cmf_bin_debug"/>
-        <?endif?>
-        
             <ComponentRef Id="cmf_psapi_dll" />
             
         <?ifndef Debug?>
@@ -196,7 +221,8 @@
             
             <Feature Id="feaKfwLeashStartup" AllowAdvertise="no" Display="hidden" Level="130">
                 <Condition Level="30">LEASHAUTOSTART = 1</Condition>
-                <ComponentRef Id="csc_leashStartup"/>
+                <ComponentRef Id="csc_NetIDMgrStartup" />
+                <ComponentRef Id="csc_LeashStartup" />
             </Feature>
 
         </Feature> <!-- /feaKfwClient -->
@@ -209,6 +235,7 @@
             Level="130" 
             Title="$(loc.KerberosSDKTitle)">
             
+            <ComponentRef Id="cmp_dirdoc_netid" />
             <ComponentRef Id="cmp_dirinc_kclient" />
             <ComponentRef Id="cmp_dirinc_krb4" />
             <ComponentRef Id="cmp_dirinc_krb5_gssapi" />
@@ -219,6 +246,7 @@
             <ComponentRef Id="cmp_dirinc_loadfuncs" />
             <ComponentRef Id="cmp_dirinc_wshelper" />
             <ComponentRef Id="cmp_dirinc_wshelper_arpa" />
+	    <ComponentRef Id="cmp_dirinc_netidmgr" />
             <ComponentRef Id="cmp_dirlib_i386" />
             <ComponentRef Id="cmp_dirinstall_nsis" />
             <ComponentRef Id="cmp_dirinstall_wix" />
@@ -238,6 +266,7 @@
             Title="$(loc.KerberosDocTitle)">
 
             <ComponentRef Id="efl_leash_userdoc_pdf" />
+            <ComponentRef Id="efl_netidmgr_userdoc_pdf" />
             <ComponentRef Id="efl_relnotes_html" />
             
             <ComponentRef Id="rcm_common" />

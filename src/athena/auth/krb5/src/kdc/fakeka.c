@@ -34,6 +34,7 @@
 #include <string.h>
 #include <syslog.h>
 #include <ctype.h>
+#include <errno.h>
 #include <netdb.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -53,7 +54,7 @@
 
 #ifndef LINT
 static char rcsid[]=
-	"$Id: fakeka.c,v 1.1.2.1 2004/02/23 21:29:46 tlyu Exp $";
+	"$Id: fakeka.c 17503 2005-11-29 00:01:49Z tlyu $";
 #endif
 
 /*

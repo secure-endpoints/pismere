@@ -1,3 +1,90 @@
+2005-12-02  Jeffrey Altman <jaltman@mit.edu>
+
+	* cc_mslsa.c: increase the size of the PurgeRequest
+
+2005-10-27  Jeffrey Altman <jaltman@mit.edu>
+	* ccdefault.c: 
+          (krb5int_cc_default) - add KFW support for multiple ccaches
+
+2005-10-20  Jeffrey Altman <jaltman@mit.edu>
+
+	* cc_mslsa.c: 
+          - provide defaults for client and server names in purge 
+            ticket routines
+          - properly size the buffers used to store the names.
+
+2005-06-15  Ken Raeburn  <raeburn@mit.edu>
+
+	* cc_file.c (dereference): Fix test is list-walking loop.
+
+2005-01-13  Ken Raeburn  <raeburn@mit.edu>
+
+	* cc_file.c (struct _krb5_fcc_data): Fields disk_file_lock,
+	file_is_locked deleted.
+	(krb5_fcc_open_file, krb5_fcc_close_file, dereference,
+	krb5_fcc_resolve, krb5_fcc_generate_new, krb5_fcc_set_flags):
+	Don't set or check them.
+
+2005-01-11  Jeffrey Altman <jaltman@mit.edu>
+
+        * cc_mslsa.c: 
+          - do not free krb5_creds if krb5_copy_creds fails
+          - cause MSTicketToMITTicket to return failure if
+            krb5_copy_data fails
+
+2004-12-25  Ezra Peisach  <epeisach@mit.edu>
+
+	* cc_file.c (krb5_fcc_close): Free the cache id.
+	(dereference): When removing fcc_set entry from list, free the
+	pointer as well.
+
+2004-12-16  Jeffrey Altman <jaltman@mit.edu>
+        * cc_mslsa.c:
+          Temporarily deactivate support for KerbSubmitTicketMessage   
+          and KerbQueryTicketCacheEx2Message until the new Platform SDK
+          becomes publicly available.
+
+2004-12-15  Jeffrey Altman <jaltman@mit.edu>
+
+        * cc_mslsa.c: 
+          - Activate support for KerbSubmitTicketMessage
+          - Activate support for KerbQueryTicketCacheEx2Message
+          - Add locale support for regions which use MultiByte characters
+
+2004-11-19  Ken Raeburn  <raeburn@mit.edu>
+
+	* cc_mslsa.c (MSCredToMITCred): Don't create an empty array for
+	addresses, just use a null pointer now.
+
+2004-10-07  Jeffrey Altman <jaltman@mit.edu>
+        * cc_mslsa.c: Fix the forced setting of the Initial Ticket Flag
+                on Win2000 and add it to XP and 2003 SP1
+
+2004-09-17  Jeffrey Altman <jaltman@mit.edu>
+        * cc_mslsa.c: Fix the error returned when krb5_lcc_start_seq_get()
+          discovers the cache is empty.  Check for the new error in 
+          krb5_lcc_initialize()
+
+2004-09-10  Jeffrey Altman <jaltman@mit.edu>
+        * cc_mslsa.c: Implement krb5_lcc_initialize()
+          Remove all tickets from the cache which have a client
+          principal that matches the input principal.
+
+2004-09-10  Jeffrey Altman <jaltman@mit.edu>
+        * cc_mslsa.c: Correct test for KerbQueryTicketCacheExMessage
+
+2004-09-09  Jeffrey Altman <jaltman@mit.edu>
+
+        * cc_mslsa.c: The following functionality is being committed
+                      but commented out because it is not presently
+                      available in public Microsoft SDKs
+        - support for KerbSubmitTicket which allows a KERB_CRED 
+          message to be forwarded to the LSA.  (KERB_SUBMIT_TICKET)
+        - support for the KerbQueryTicketCacheEx2Message which 
+          adds the Session Key Enctype to the contents of the
+          response from KerbQueryTicketCacheExMessage.  
+          (HAVE_CACHE_INFO_EX2)
+
 2004-09-01  Jeffrey Altman <jaltman@mit.edu>
 
         * cc_mslsa.c: 
@@ -22,15 +109,88 @@
         - Implement krb5_lcc_remove_cred
             
 
+2004-08-27  Ken Raeburn  <raeburn@mit.edu>
+
+	* t_cc.c (init_test_cred): Terminate argument list to
+	krb5_build_principal with NULL, not 0.  Patch from Nalin
+	Dahyabhai.
+
+2004-08-15  Ken Raeburn  <raeburn@mit.edu>
+
+	* cc_file.c (struct _krb5_fcc_data): Add new mutex
+	disk_file_lock and flag file_is_locked.
+	(krb5_fcc_close_file): Unlock the mutex and clear the flag.
+	(krb5_fcc_open_file): Acquire the mutex before locking the file,
+	and set the flag after.
+	(krb5_fcc_resolve): Initialize the new mutex and flag.
+	(krb5_fcc_generate_new): Initialize both mutexes and the flag.
+	(dereference): Destroy the new mutex.
+
+	* cc_file.c: Add buffering on reading.
+	(FCC_BUFSIZ): New macro.
+	(struct _krb5_fcc_data): Add new fields buf, valid_bytes,
+	cur_offset.
+	(krb5_fcc_resolve, krb5_fcc_generate_new): Initialize
+	valid_bytes.
+	(invalidate_cache): New function.
+	(krb5_fcc_write, krb5_fcc_open_file, krb5_fcc_destroy): Call
+	invalidate_cache.
+	(fcc_lseek): New function.
+	(krb5_fcc_skip_header, krb5_fcc_destroy, krb5_fcc_start_seq_get,
+	krb5_fcc_next_cred, krb5_fcc_store): Use fcc_lseek instead of
+	lseek.
+	(fcc_read): Use and maybe refill the buffer.
+	(dereference): Zap the contents of the buffer before freeing it.
+
+	* cc_file.c (dereference): Lock mutex around call to
+	krb5_fcc_close_file.
+
+2004-08-12  Ken Raeburn  <raeburn@mit.edu>
+
+	* cc_file.c (krb5_fcc_close_file): Change first argument to be an
+	fcc-data pointer, not a krb5_ccache.  All calls changed.
+	(struct fcc_set): Add a refcount member.  (Definition
+	accidentally introduced without comment in an earlier patch.)
+	(krb5int_cc_file_mutex, fccs): New variables, for managing a
+	global list of open credential cache files.
+	(dereference): New function, with most of old close/destroy
+	operations.  Decrements reference count and only frees the object
+	and removes it from the global list if the refcount hits zero.
+	(krb5_fcc_close, krb5_fcc_destroy): Call dereference.
+	(krb5_fcc_resolve): If a file cache is already open with the same
+	file name, increment its reference count and don't create a new
+	one.  When a new one is created, add it to the global list.
+	* cc-int.h (krb5int_cc_file_mutex): Declare.
+	* ccbase.c (krb5int_cc_initialize): Initialize it.
+	(krb5int_cc_finalize): Destroy it, and krb5int_mcc_mutex.
+
+2004-08-05  Ken Raeburn  <raeburn@mit.edu>
+
+	* cc_file.c: Remove USE_STDIO support.
+
 2004-07-25  Jeffrey Altman <jaltman@mit.edu>
 
     * cc_mslsa.c:  is_windows_xp() should test for major version 
         > 5 not >= 5. 
 
+2004-07-18  Ezra Peisach  <epeisach@mit.edu>
+
+	* cc_memory.c (krb5_mcc_store): When allocating krb5_mcc_link
+	memory - allocate sizeof() - not sizeof(sizeof()).
+
+2004-07-16  Ken Raeburn  <raeburn@mit.edu>
+
+	* cc_file.c: Don't check for macsock.h.
+
 2004-07-15  Alexandra Ellwood  <lxs@mit.edu>
 
 	* ccdefault.c (krb5_cc_default, krb5int_cc_default) 
         Removed default_ccprincipal field from krb5_context
+
+2004-07-14  Ken Raeburn  <raeburn@mit.edu>
+
+	* t_cc.c (cc_test): Rename one of the "resolve" cases so the
+	messages can be distinguished.
 
 2004-07-07  Jeffrey Altman <jaltman@mit.edu>
 
@@ -40,6 +200,24 @@
 
     * cc_mslsa.c:  When obtaining a TGT from MSLSA, do not ignore 
       the cache if the requested enctype is the NULL enctype.
+
+2004-06-30  Ken Raeburn  <raeburn@mit.edu>
+
+	* cc_file.c (krb5_fcc_data): Added a mutex.
+	(krb5_fcc_read*, krb5_fcc_write, krb5_fcc_store_*,
+	krb5_fcc_open_file, krb5_fcc_skip_header,
+	krb5_fcc_skip_principal): Verify that the mutex is locked.
+	(MAYBE_OPEN): Verify that the mutex is locked; unlock it if
+	returning an error.
+	(krb5_fcc_initialize, krb5_fcc_start_seq_get,
+	krb5_fcc_get_principal, krb5_fcc_store, krb5_fcc_set_flags): Lock
+	and unlock the mutex.
+	(krb5_fcc_close): Likewise.  Destroy the mutex when done.
+	(krb5_fcc_destroy): Merge stdio and non-stdio versions a little
+	more.  Destroy the mutex when done.
+	(krb5_fcc_resolve): Initialize and lock the mutex.
+	(krb5_fcc_next_cred): Lock and unlock the mutex.  Merge the stdio
+	and non-stdio branches a little more.
 
 2004-06-29  Jeffrey Altman <jaltman@mit.edu>
 
@@ -63,6 +241,40 @@
       via the MSLSA
     
 
+2004-06-29  Ken Raeburn  <raeburn@mit.edu>
+
+	* cc_memory.c (krb5_mcc_free): Don't destroy the mutex here.
+
+2004-06-28  Ken Raeburn  <raeburn@mit.edu>
+
+	* cc_memory.c: Include k5-thread.h.
+	(krb5int_mcc_mutex): New lock.
+	(krb5_mcc_store): Rewrite.
+	(NEED_WINDOWS): Don't define.
+	(krb5_mcc_*): All functions now static.
+	(struct _krb5_mcc_data): Delete 'next' pointer.  Add a mutex.
+	(krb5_mcc_*): Lock and unlock the mutex as appropriate.
+	(struct krb5_mcc_list_node): New type, separates the linked-list
+	container from the data for individual nodes.
+	(mcc_head): Now points to krb5_mcc_list_node.
+	* cc-int.h (krb5int_mcc_mutex): Declare.
+	* ccbase.c (krb5int_cc_initialize): Initialize it.
+
+2004-06-24  Ken Raeburn  <raeburn@mit.edu>
+
+	* cc_file.c (krb5_fcc_read_data): Combine stdio and posix versions
+	of code with gratuitous minor differences.
+	(krb5_fcc_read_int32, krb5_fcc_next_cred): Likewise.
+	(krb5_fcc_read_addr): Likewise.  Check that filled-in length field
+	matches the value we tried to store (i.e., that type conversion
+	didn't throw away information).
+	(krb5_fcc_read_authdatum): Likewise.
+
+2004-06-22  Ken Raeburn  <raeburn@mit.edu>
+
+	* cc_file.c (my_fopen): Function deleted.
+	(krb5_fcc_open_file): Use fopen, not my_fopen.
+
 2004-06-21  Jeffrey Altman <jaltman@mit.edu>
 
     * cc_mslsa.c: Comment out call to FormatMessage() which fails
@@ -83,6 +295,17 @@
       to the KDC;  close memory leak of krb5_cred objects in 
       krb5_lcc_retrieve().
 
+2004-06-16  Ken Raeburn  <raeburn@mit.edu>
+
+	* Makefile.in (MAC_SUBDIRS): Don't set.
+
+2004-05-27  Ezra Peisach  <epeisach@mit.edu>
+
+	* ccbase.c: Include cc-int.h.
+
+	* cc-int.h (krb5int_cc_finalize): Add prototypes for 
+	krb5int_cc_{finalize,initialize}.
+
 2004-05-25  Jeffrey Altman <jaltman@mit.edu>
 
     * cc_mslsa.c:  GetMSTGT().  Initialize pTicketRequest to NULL 
@@ -92,6 +315,11 @@
       in the future.
       krb5_lcc_get_name(): fix return value if Kerberos is not supported.
 
+
+2004-05-24  Ezra Peisach  <epeisach@mit.edu>
+
+	* t_cc.c (cc_test): Clean up memory leaks in tests.
+
 2004-05-15  Jeffrey Altman <jaltman@mit.edu>
 
     * cc_mslsa.c:  The FAILED() macro only considered an error 
@@ -99,6 +327,14 @@
       returns positive errors.  Do not use FAILED() to test the result.
       Fix a potential leak of LSA allocated memory.  Fix a leak of 
       LocalAlloc memory.
+
+2004-04-24  Ken Raeburn  <raeburn@mit.edu>
+
+	* ccbase.c: Include ctype.h.
+	(cc_typelist_lock): Use the new partial initializer.
+	(krb5int_cc_initialize): New function; finish the initialization.
+	(krb5int_cc_finalize): New function; destroy the mutex and free
+	any storage for registered types.
 
 2004-04-13  Jeffrey Altman <jaltman@mit.edu>
 
@@ -114,6 +350,13 @@
       treat it as a FILE: ccache instead of failing with a
       ccache type unknown error.
      
+2004-04-13  Jeffrey Altman <jaltman@mit.edu>
+
+    * ccbase.c:
+      krb5_cc_resolve() defines a function pointer ccresolver
+      which must be of type KRB5_CALLCONV
+
+
 2004-04-06  Jeffrey Altman <jaltman@mit.edu>
 
     * cc_mslsa.c:
@@ -133,6 +376,17 @@
       the functions loaded from ADVAPI32.DLL and SECUR32.DLL which 
       do not exist on the Windows 9x platforms.
 
+2004-03-26  Sam Hartman  <hartmans@mit.edu>
+
+	* fcc.h: Remove all but the definition of krb5_cc_file_ops because
+	the rest is static in cc_file.c 
+
+	* Makefile.in (T_file):  Remove (no longer builds, no longer used)
+
+2004-03-25  Sam Hartman  <hartmans@mit.edu>
+
+	* cc_file.c (krb5_fcc_generate_new): Use mkstemp not mktemp when possible
+	
 2004-03-18  Jeffrey Altman <jaltman@mit.edu>
 
    * cc_mslsa.c:
@@ -145,6 +399,14 @@
      New file - Add prototypes for cc internal functions
 
    * cc_retr.c - include cc-int.h
+
+2004-03-05  Ken Raeburn  <raeburn@mit.edu>
+
+	* ccbase.c: Include k5-thread.h.
+	(struct krb5_cc_typelist): Ops pointer now points to const.
+	(cc_typelist_lock): New mutex var.
+	(krb5_cc_register, krb5_cc_resolve): Lock it while working with
+	the type list.
 
 2004-02-04  Jeffrey Altman <jaltman@mit.edu>
 
@@ -215,6 +477,11 @@
 
    * cc_mslsa.c:
      Add implementation for krb5_cc_remove_cred().  Returns KRB5_CC_READONLY.
+
+2003-12-19  Jeffrey Altman <jaltman@mit.edu>
+              
+   * cc_mslsa.c: fix indirection of a krb5_creds structure which
+     is passed into MSCredToMITCred().
 
 2003-12-18  Jeffrey Altman <jaltman@mit.edu>
 
@@ -295,11 +562,22 @@
     * cc_default.c: Add support for Leash Kinit Dialog on Windows to
             krb5int_c_default()
 
+2003-08-26  Ken Raeburn  <raeburn@mit.edu>
+
+	* cc_file.c (krb5_fcc_store_int32, krb5_fcc_store_ui_4) 
+	(krb5_fcc_store_ui_2, krb5_fcc_store_octet): Remove gratuitous
+	conditionalizing of casts on USE_STDIO, left over from merge.
+
 2003-07-22  Sam Hartman  <hartmans@mit.edu>
 
 	* ccbase.c: Always register the file credentials cache type.  If
 	we do not, then when USE_CCAPI is defined, it will not be
 	available. 
+
+2003-07-17  Ken Raeburn  <raeburn@mit.edu>
+
+	* Makefile.in (LIBNAME) [##WIN16##]: Don't define.
+	($(OBJFILE)) [##WIN16##]: Omit CP action.
 
 2003-03-06  Alexandra Ellwood <lxs@mit.edu>
 

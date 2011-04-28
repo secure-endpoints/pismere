@@ -19,47 +19,64 @@
 #include <string.h> /*s*/
 
 #include <hesiod.h>
-#include "u-compat.h"
+
 
 #define LINESIZE 80
 
+extern DWORD dwHesMailIndex;
+
 
 /*
+	This call is used to obtain a user's type of mail account and the location of that 
+	account. E.g. POP PO10.MIT.EDU or IMAP IMAP-TEST.MIT.EDU
 
-@func struct hes_postoffice FAR * WINAPI | hes_getmailhost | This will
-a pointer to a hes_postoffice structure. This call is used to obtain a
-user's type of mail account and the location of that account. E.g. POP
-PO10.MIT.EDU or IMAP IMAP-TEST.MIT.EDU
+	defined in hesmailh.c
 
- @parm LPSTR | user | The username to be used when querying for the
- Hesiod Name Type POBOX.
+	\param[in]	user	The username to be used when querying for the Hesiod Name Type POBOX.
 
-@rdesc NULL if there was an error or if there was no entry for the
-username. Otherwise a pointer to a hes_postoffice structure is
-returned.
+	\retval				NULL if there was an error or if there was no entry for the
+						username. Otherwise a pointer to a hes_postoffice structure is
+						returned. The caller must never attempt to modify this structure or to free 
+						any of its components. Furthermore, only one copy of this structure is allocated per call per thread, so the application should copy any information it needs before 
+						issuing another getmailhost call
 
 */
-struct hes_postoffice FAR *
-#if defined (_WINDLL) || defined (_WIN32)
+struct hes_postoffice  *
 WINAPI
-#endif
 hes_getmailhost(LPSTR user)
 {
-    static struct hes_postoffice ret;
-    static char linebuf[LINESIZE];
-    char *p;
+    struct hes_postoffice* ret;
+    char linebuf[LINESIZE];
+    char *p, *tmp;
     char **cp;
 
+    
     cp = hes_resolve(user, "pobox");
     if (cp == NULL) return(NULL);
+    
+    ret = (struct hes_postoffice*)(TlsGetValue(dwHesMailIndex));
+    
+    if (ret == NULL)
+        return NULL;
+    if (!ret->po_type)
+        ret->po_type = LocalAlloc(LPTR, LINESIZE);
+    if (!ret->po_host)        
+        ret->po_host = LocalAlloc(LPTR, LINESIZE);
+    if (!ret->po_name)
+        ret->po_name = LocalAlloc(LPTR, LINESIZE);
     strcpy(linebuf, *cp);
-    ret.po_type = linebuf;
+    
     p = linebuf;
+    tmp = linebuf;
     while(!isspace(*p)) p++;
     *p++ = '\0';
-    ret.po_host = p;
+    strcpy(ret->po_type, tmp);
+    tmp = p;
     while(!isspace(*p)) p++;
     *p++ = '\0';
-    ret.po_name = p;
-    return(&ret);
+    strcpy(ret->po_host, tmp);
+    strcpy(ret->po_name, p);
+    if (cp)
+        hes_free(cp);
+    return(ret);
 }

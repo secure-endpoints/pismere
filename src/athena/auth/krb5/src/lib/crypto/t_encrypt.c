@@ -42,6 +42,8 @@ krb5_enctype interesting_enctypes[] = {
   ENCTYPE_DES3_CBC_SHA1,
   ENCTYPE_ARCFOUR_HMAC,
   ENCTYPE_ARCFOUR_HMAC_EXP,
+  ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+  ENCTYPE_AES128_CTS_HMAC_SHA1_96,
   0
 };
 
@@ -53,7 +55,7 @@ if( retval) { \
   abort(); \
 } else printf ("OK\n");
   
-int compare_results(krb5_data *d1, krb5_data *d2)
+static int compare_results(krb5_data *d1, krb5_data *d2)
 {
     if (d1->length != d2->length) {
 	/* Decryption can leave a little trailing cruft.
@@ -142,7 +144,9 @@ main ()
   }
 
   free(out.data);
+  free(out2.data);
   free(check.data);
+  free(check2.data);
   return 0;
 }
 

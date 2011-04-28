@@ -9,10 +9,13 @@
 #include "client.h"
 #include "autolock.hxx"
 
+extern HANDLE hCCAPIv2Mutex;
+
 #define TRY "TRY: "
 
 #define MAKE_RPC_CALL(rc, x) \
 do { \
+    WaitForSingleObject( hCCAPIv2Mutex, INFINITE ); \
     SecureClient* s = 0; \
     SecureClient::Start(s); \
     CcAutoLock* a = 0; \
@@ -27,6 +30,7 @@ do { \
     RpcEndExcept; \
     CcAutoLock::Stop(a); \
     SecureClient::Stop(s); \
+    ReleaseMutex( hCCAPIv2Mutex ); \
 } while (0)
 
 static

@@ -29,6 +29,7 @@
 #include "LeashProperties.h"
 #include "KrbProperties.h"
 #include "AfsProperties.h"
+#include <krb5.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -119,7 +120,9 @@ BOOL CLeashView::m_importedTickets = 0;
 LONG CLeashView::m_timerMsgNotInProgress = 1;
 
 bool change_icon_size = true;
+#ifndef KRB5_TC_NOTICKET
 extern HANDLE m_tgsReqMutex;
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // CLeashView construction/destruction
@@ -169,15 +172,17 @@ CFormView(CLeashView::IDD)
 
     m_bIconAdded = FALSE;
     m_bIconDeleted = FALSE;
-
+#ifndef KRB5_TC_NOTICKET
     m_tgsReqMutex = CreateMutex(NULL, FALSE, NULL);
+#endif
 }
 
 
 CLeashView::~CLeashView()
 {
+#ifndef KRB5_TC_NOTICKET
     CloseHandle(m_tgsReqMutex);
-
+#endif
     // destroys window if not already destroyed
     if (m_pDebugWindow)
         delete m_pDebugWindow; 
@@ -374,53 +379,64 @@ VOID CLeashView::OnInitTicket()
 
 UINT CLeashView::InitTicket(void * hWnd)
 {
+#ifndef KRB5_TC_NOTICKET
     if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
         throw("Unable to lock TGS request mutex");
+#endif
     m_importedTickets = 0;
 
     LSH_DLGINFO_EX ldi;
-	char username[64];
-	char realm[192];
-	int i=0, j=0;
+    char username[64];
+    char realm[192];
+    int i=0, j=0;
     if (WaitForSingleObject( ticketinfo.lockObj, INFINITE ) != WAIT_OBJECT_0) {
+#ifndef KRB5_TC_NOTICKET
         ReleaseMutex(m_tgsReqMutex);
+#endif
         throw("Unable to lock ticketinfo");
     }
 	
     char * principal = ticketinfo.Krb5.principal;
-	if (!*principal)
-		principal = ticketinfo.Krb4.principal;
-	for (; principal[i] && principal[i] != '@'; i++)
-	{
-		username[i] = principal[i];
-	}
-	username[i] = '\0';
-	if (principal[i]) {
-		for (i++ ; principal[i] ; i++, j++)
-		{
-			realm[j] = principal[i];
-		}
-	}
-	realm[j] = '\0';
+    if (!*principal)
+        principal = ticketinfo.Krb4.principal;
+    for (; principal[i] && principal[i] != '@'; i++)
+    {
+        username[i] = principal[i];
+    }
+    username[i] = '\0';
+    if (principal[i]) {
+        for (i++ ; principal[i] ; i++, j++)
+        {
+            realm[j] = principal[i];
+        }
+    }
+    realm[j] = '\0';
     ReleaseMutex(ticketinfo.lockObj);
 
-	ldi.size = sizeof(ldi);
-	ldi.dlgtype = DLGTYPE_PASSWD;
-	ldi.title = "Initialize Ticket";
-	ldi.username = username;
-	ldi.realm = realm;
-	ldi.dlgtype = DLGTYPE_PASSWD;
-	ldi.use_defaults = 1;
+    ldi.size = sizeof(ldi);
+    ldi.dlgtype = DLGTYPE_PASSWD;
+    ldi.title = ldi.in.title;
+    strcpy(ldi.in.title,"Initialize Ticket");
+    ldi.username = ldi.in.username;
+    strcpy(ldi.in.username,username);
+    ldi.realm = ldi.in.realm;
+    strcpy(ldi.in.realm,realm);
+    ldi.dlgtype = DLGTYPE_PASSWD;
+    ldi.use_defaults = 1;
 
-	if (!hWnd)
+    if (!hWnd)
     {
         AfxMessageBox("There is a problem finding the Leash Window!", 
                    MB_OK|MB_ICONSTOP);
+#ifndef KRB5_TC_NOTICKET
         ReleaseMutex(m_tgsReqMutex);
+#endif
         return 0;
     }
 
+#ifndef KRB5_TC_NOTICKET
     ReleaseMutex(m_tgsReqMutex);
+#endif
     int result = pLeash_kinit_dlg_ex((HWND)hWnd, &ldi);
     
     if (-1 == result)
@@ -430,20 +446,26 @@ UINT CLeashView::InitTicket(void * hWnd)
     }
     else if ( result )
     {
+#ifndef KRB5_TC_NOTICKET
         if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
             throw("Unable to lock TGS request mutex");
+#endif
         if (WaitForSingleObject( ticketinfo.lockObj, INFINITE ) != WAIT_OBJECT_0) {
+#ifndef KRB5_TC_NOTICKET
             ReleaseMutex(m_tgsReqMutex);
+#endif
             throw("Unable to lock ticketinfo");
         }
-		ticketinfo.Krb4.btickets = GOOD_TICKETS;
-		m_warningOfTicketTimeLeftKrb4 = 0;
+        ticketinfo.Krb4.btickets = GOOD_TICKETS;
+        m_warningOfTicketTimeLeftKrb4 = 0;
         m_warningOfTicketTimeLeftKrb5 = 0;
         m_ticketStatusKrb4 = 0;
         m_ticketStatusKrb5 = 0;
         ReleaseMutex(ticketinfo.lockObj);
         m_autoRenewalAttempted = 0;
+#ifndef KRB5_TC_NOTICKET
         ReleaseMutex(m_tgsReqMutex);
+#endif
         ::SendMessage((HWND)hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
     }
     return 0;
@@ -464,9 +486,10 @@ UINT CLeashView::ImportTicket(void * hWnd)
     if ( !CLeashApp::m_hKrb5DLL )
         return 0;
 
+#ifndef KRB5_TC_NOTICKET
     if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
         throw("Unable to lock TGS request mutex");
-
+#endif
     int import = 0;
     int warning = 0;
 
@@ -487,7 +510,9 @@ UINT CLeashView::ImportTicket(void * hWnd)
         goto cleanup;
 
     if (WaitForSingleObject( ticketinfo.lockObj, INFINITE ) != WAIT_OBJECT_0) {
+#ifndef KRB5_TC_NOTICKET
         ReleaseMutex(m_tgsReqMutex);
+#endif
         throw("Unable to lock ticketinfo");
     }
     krb5Error = pLeashKRB5GetTickets( &ticketinfo.Krb5, &tlist,
@@ -512,8 +537,9 @@ UINT CLeashView::ImportTicket(void * hWnd)
         if (warning) 
         {
             INT whatToDo;
-	 
+#ifndef KRB5_TC_NOTICKET	 
             ReleaseMutex(m_tgsReqMutex);
+#endif
             if (!CLeashApp::m_hAfsDLL || !CLeashApp::m_hKrb4DLL)
                 whatToDo = AfxMessageBox("You are about to replace your existing ticket(s)\n"
                                           "with a ticket imported from the Windows credential cache!",
@@ -522,10 +548,10 @@ UINT CLeashView::ImportTicket(void * hWnd)
                 whatToDo = AfxMessageBox("You are about to replace your existing ticket(s)/token(s)"
                                           "with ticket imported from the Windows credential cache!",
                                           MB_OKCANCEL, 0);
-
+#ifndef KRB5_TC_NOTICKET
             if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
                 throw("Unable to lock tgsReqMutex");
-
+#endif
             if (whatToDo == IDOK)
             {
                 pLeash_kdestroy();
@@ -539,7 +565,9 @@ UINT CLeashView::ImportTicket(void * hWnd)
             int result = pLeash_import();
             if (-1 == result)
             {
+#ifndef KRB5_TC_NOTICKET
                 ReleaseMutex(m_tgsReqMutex);
+#endif
                 AfxMessageBox("There is a problem importing tickets!", 
                                MB_OK|MB_ICONSTOP);
                 ::SendMessage((HWND)hWnd,WM_COMMAND, ID_UPDATE_DISPLAY, 0);
@@ -548,7 +576,9 @@ UINT CLeashView::ImportTicket(void * hWnd)
             else
             {
                 if (WaitForSingleObject( ticketinfo.lockObj, INFINITE ) != WAIT_OBJECT_0) {
+#ifndef KRB5_TC_NOTICKET
                     ReleaseMutex(m_tgsReqMutex);
+#endif
                     throw("Unable to lock ticketinfo");
                 }
                 ticketinfo.Krb4.btickets = GOOD_TICKETS;
@@ -558,16 +588,24 @@ UINT CLeashView::ImportTicket(void * hWnd)
                 m_ticketStatusKrb4 = 0;
                 m_ticketStatusKrb5 = 0;
                 ReleaseMutex(ticketinfo.lockObj);
+#ifndef KRB5_TC_NOTICKET
                 ReleaseMutex(m_tgsReqMutex);
+#endif
                 ::SendMessage((HWND)hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
 
+#ifndef KRB5_TC_NOTICKET
                 if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
                     throw("Unable to lock tgsReqMutex");
+#endif 
                 if (WaitForSingleObject( ticketinfo.lockObj, INFINITE ) != WAIT_OBJECT_0) {
+#ifndef KRB5_TC_NOTICKET
                     ReleaseMutex(m_tgsReqMutex);
+#endif
                     throw("Unable to lock ticketinfo");
                 }
+#ifndef KRB5_TC_NOTICKET
                 ReleaseMutex(m_tgsReqMutex);
+#endif
 
                 if (ticketinfo.Krb5.btickets != GOOD_TICKETS) {
                     ReleaseMutex(ticketinfo.lockObj);
@@ -578,12 +616,18 @@ UINT CLeashView::ImportTicket(void * hWnd)
                     m_autoRenewalAttempted = 0;
                 }
             }
-        } else {
+        } 
+#ifndef KRB5_TC_NOTICKET
+        else {
             ReleaseMutex(m_tgsReqMutex);
         }
-    } else {
+#endif
+    } 
+#ifndef KRB5_TC_NOTICKET
+    else {
         ReleaseMutex(m_tgsReqMutex);
     }
+#endif
     return 0;
 }
 
@@ -605,14 +649,18 @@ UINT CLeashView::RenewTicket(void * hWnd)
     if ( !CLeashApp::m_hKrb5DLL )
         return 0;
 
+#ifndef KRB5_TC_NOTICKET
     if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
         throw("Unable to lock TGS request mutex");
+#endif
 
     // Try to renew
     BOOL b_renewed = pLeash_renew();
     TicketList * tlist = NULL;
     if (WaitForSingleObject( ticketinfo.lockObj, INFINITE ) != WAIT_OBJECT_0) {
+#ifndef KRB5_TC_NOTICKET
         ReleaseMutex(m_tgsReqMutex);
+#endif
         throw("Unable to lock ticketinfo");
     }
     LONG krb5Error = pLeashKRB5GetTickets(&ticketinfo.Krb5, &tlist,
@@ -627,7 +675,9 @@ UINT CLeashView::RenewTicket(void * hWnd)
             m_ticketStatusKrb5 = 0;
             m_autoRenewalAttempted = 0;
             ReleaseMutex(ticketinfo.lockObj);
+#ifndef KRB5_TC_NOTICKET
             ReleaseMutex(m_tgsReqMutex);
+#endif
             ::SendMessage((HWND)hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
             return 0;
         }
@@ -662,8 +712,9 @@ UINT CLeashView::RenewTicket(void * hWnd)
     if (mslsa_ccache)
         pkrb5_cc_close(CLeashApp::m_krbv5_context, mslsa_ccache);
 
+#ifndef KRB5_TC_NOTICKET
     ReleaseMutex(m_tgsReqMutex);
-
+#endif
     // If imported from Kerberos LSA, re-import
     // Otherwise, init the tickets
     if ( m_importedTickets )
@@ -716,32 +767,35 @@ VOID CLeashView::OnChangePassword()
         throw("Unable to lock ticketinfo");
 
     LSH_DLGINFO_EX ldi;
-	char username[64];
-	char realm[192];
-	char * principal = ticketinfo.Krb5.principal;
+    char username[64];
+    char realm[192];
+    char * principal = ticketinfo.Krb5.principal;
     if (!*principal)
-		principal = ticketinfo.Krb4.principal;
-	int i=0, j=0;
-	for (; principal[i] && principal[i] != '@'; i++)
+	principal = ticketinfo.Krb4.principal;
+    int i=0, j=0;
+    for (; principal[i] && principal[i] != '@'; i++)
+    {
+	username[i] = principal[i];
+    }
+    username[i] = '\0';
+    if (principal[i]) {
+	for (i++ ; principal[i] ; i++, j++)
 	{
-		username[i] = principal[i];
+	    realm[j] = principal[i];
 	}
-	username[i] = '\0';
-	if (principal[i]) {
-		for (i++ ; principal[i] ; i++, j++)
-		{
-			realm[j] = principal[i];
-		}
-	}
-	realm[j] = '\0';
+    }
+    realm[j] = '\0';
     ReleaseMutex(ticketinfo.lockObj);
 
-	ldi.size = sizeof(ldi);
-	ldi.dlgtype = DLGTYPE_CHPASSWD;
-	ldi.title = "Change Password";
-	ldi.username = username;
-	ldi.realm = realm;
-	ldi.use_defaults = 1;
+    ldi.size = sizeof(ldi);
+    ldi.dlgtype = DLGTYPE_CHPASSWD;
+    ldi.title = ldi.in.title;
+    strcpy(ldi.in.title,"Change Password");
+    ldi.username = ldi.in.username;
+    strcpy(ldi.in.username,username);
+    ldi.realm = ldi.in.realm;
+    strcpy(ldi.in.realm,realm);
+    ldi.use_defaults = 1;
 
     int result = pLeash_changepwd_dlg_ex(m_hWnd, &ldi);
     if (-1 == result)
@@ -1640,25 +1694,27 @@ VOID CLeashView::OnUpdateRenewTicket(CCmdUI* pCmdUI)
 
 VOID CLeashView::OnUpdateImportTicket(CCmdUI* pCmdUI)
 {
-	bool ccIsMSLSA = false;
+    bool ccIsMSLSA = false;
 
+#ifndef KRB5_TC_NOTICKET
     if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
         throw("Unable to lock TGS request mutex");
-
+#endif
     if (CLeashApp::m_krbv5_context)
     {
         const char *ccName = pkrb5_cc_default_name(CLeashApp::m_krbv5_context);
 
-		if (ccName)
-			ccIsMSLSA = !strcmp(ccName, "MSLSA:");
+        if (ccName)
+            ccIsMSLSA = !strcmp(ccName, "MSLSA:");
     }
 
     if (!CLeashApp::m_hKrbLSA || !pLeash_importable() || ccIsMSLSA)
         pCmdUI->Enable(FALSE);
     else
         pCmdUI->Enable(TRUE);
-
+#ifndef KRB5_TC_NOTICKET
     ReleaseMutex(m_tgsReqMutex);
+#endif
 }
 
 LRESULT CLeashView::OnGoodbye(WPARAM wParam, LPARAM lParam)
@@ -1706,8 +1762,10 @@ LRESULT CLeashView::OnTrayIcon(WPARAM wParam, LPARAM lParam)
                 menu->AppendMenu(MF_STRING, ID_LEASH_RESTORE, "&Open Leash Window");
             menu->AppendMenu(MF_SEPARATOR);
             menu->AppendMenu(MF_STRING, ID_INIT_TICKET, "&Get Tickets");
+#ifndef KRB5_TC_NOTICKET
             if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
                 throw("Unable to lock TGS request mutex");
+#endif
             if (WaitForSingleObject( ticketinfo.lockObj, INFINITE ) != WAIT_OBJECT_0)
                 throw("Unable to lock ticketinfo");
             if (!(ticketinfo.Krb4.btickets || ticketinfo.Krb5.btickets) ||
@@ -1727,7 +1785,9 @@ LRESULT CLeashView::OnTrayIcon(WPARAM wParam, LPARAM lParam)
             else
                 nFlags = MF_STRING;
             ReleaseMutex(ticketinfo.lockObj);
+#ifndef KRB5_TC_NOTICKET
             ReleaseMutex(m_tgsReqMutex);
+#endif
             menu->AppendMenu(MF_STRING, ID_DESTROY_TICKET, "&Destroy Tickets");
             menu->AppendMenu(MF_STRING, ID_CHANGE_PASSWORD, "&Change Password");
 
@@ -1749,8 +1809,10 @@ LRESULT CLeashView::OnTrayIcon(WPARAM wParam, LPARAM lParam)
             POINT pt;
             GetCursorPos(&pt);
 
+	    SetForegroundWindow();
             menu->TrackPopupMenu(TPM_RIGHTALIGN | TPM_RIGHTBUTTON,
                                 pt.x, pt.y, GetParentFrame());
+	    PostMessage(WM_NULL, 0, 0);
             menu->DestroyMenu();
             delete menu;
         }
@@ -2722,19 +2784,23 @@ CLeashView::OnObtainTGTWithParam(WPARAM wParam, LPARAM lParam)
     ldi.size = sizeof(ldi);
     ldi.dlgtype = DLGTYPE_PASSWD;
     ldi.use_defaults = 1;
+    ldi.title = ldi.in.title;
+    ldi.username = ldi.in.username;
+    ldi.realm = ldi.in.realm;
     if ( param ) {
         if ( *param )
-            ldi.title = param;
+            strcpy(ldi.in.title,param);
         param += strlen(param) + 1;
         if ( *param )
-            ldi.username = param;
+            strcpy(ldi.in.username,param);
         param += strlen(param) + 1;
         if ( *param )
-            ldi.realm = param;
+            strcpy(ldi.in.realm,param);
+        param += strlen(param) + 1;
+	if ( *param )
+	    strcpy(ldi.in.ccache,param);
     } else {
-        ldi.title = "Initialize Ticket";
-        ldi.username = NULL;
-        ldi.realm = NULL;
+        strcpy(ldi.in.title,"Initialize Ticket");
     }
 
     res = pLeash_kinit_dlg_ex(m_hWnd, &ldi);

@@ -137,9 +137,16 @@ OUTDIR=$(OUTDIR2)\$(DEBUG_N)
 O=$(OUTDIR)
 T=.\$(CPU)\$(DEBUG_N)
 
-STD_LIBS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib
+STD_LIBS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib 
 
 !include .\Makefile.src
+
+!IFDEF NODEBUG
+!IFDEF DEBUG_SYMBOL
+ldebug = /DEBUG
+cdebug = -Os -Zi
+!ENDIF
+!ENDIF
 
 !if defined(NO_PLACE) || !defined(BINPLACE_CMD)
 BINPLACE=echo NOT PLACING:
@@ -271,6 +278,10 @@ C_FLAGS=$(C_FLAGS) -Gm
 
 !ifdef USE_CPP_RTTI
 C_FLAGS=$(C_FLAGS) -GR
+!endif
+
+!ifdef DETECT64
+C_FLAGS=$(C_FLAGS) -Wp64
 !endif
 
 !ifdef USE_CPP_EH
@@ -492,7 +503,7 @@ $(BSCFILE): $(O) $(SBRS)
 
 all:: output_dir
 
-LINK_LINE=-nologo $(ldebug) $(LIBFLAGS) $(LSS) $(LDEF) $(LNDL) $(LTAR) $(LMAP) -out:$(OUTFILE) -pdb:$(O)\$(NAME).pdb -pdbtype:sept $(LINK_DELAY_OPTS) $(LIBC_LIB) $(optlibs) $(LIBS) $(DELAY_HELP_LIB) $(OBJS) $(RES)
+LINK_LINE=-nologo $(ldebug) $(LIBFLAGS) $(LSS) $(LDEF) $(LNDL) $(LTAR) $(LMAP) -out:$(OUTFILE) -pdb:$(O)\$(NAME).pdb  $(LINK_DELAY_OPTS) $(LIBC_LIB) $(optlibs) $(LIBS) $(DELAY_HELP_LIB) $(OBJS) $(RES)
 
 LIB_LINE=-nologo -out:$@ $(LIBFLAGS) $(OBJS) $(LIBS) $(LNDL)
 

@@ -24,7 +24,7 @@
 #define _GSSAPIP_GENERIC_H_
 
 /*
- * $Id: gssapiP_generic.h,v 1.34.2.1 2003/12/16 02:56:16 tlyu Exp $
+ * $Id: gssapiP_generic.h 16423 2004-06-08 21:50:17Z hartmans $
  */
 
 #if defined(_WIN32)
@@ -34,6 +34,8 @@
 #include <stdlib.h>
 #endif
 #endif
+
+#include "k5-thread.h"
 
 #include "gssapi_generic.h"
 
@@ -109,12 +111,15 @@ typedef UINT64_TYPE gssint_uint64;
 #define	g_save_name		gssint_g_save_name
 #define	g_save_cred_id		gssint_g_save_cred_id
 #define	g_save_ctx_id		gssint_g_save_ctx_id
+#define	g_save_lucidctx_id	gssint_g_save_lucidctx_id
 #define	g_validate_name		gssint_g_validate_name
 #define	g_validate_cred_id	gssint_g_validate_cred_id
 #define	g_validate_ctx_id	gssint_g_validate_ctx_id
+#define	g_validate_lucidctx_id	gssint_g_validate_lucidctx_id
 #define	g_delete_name		gssint_g_delete_name
 #define	g_delete_cred_id	gssint_g_delete_cred_id
 #define	g_delete_ctx_id		gssint_g_delete_ctx_id
+#define	g_delete_lucidctx_id	gssint_g_delete_lucidctx_id
 #define	g_make_string_buffer	gssint_g_make_string_buffer
 #define	g_copy_OID_set		gssint_g_copy_OID_set
 #define	g_token_size		gssint_g_token_size
@@ -132,25 +137,33 @@ typedef UINT64_TYPE gssint_uint64;
 #define	g_local_host_name	gssint_g_local_host_name
 #define	g_strdup		gssint_g_strdup
 
-typedef struct _g_set *g_set;
+typedef struct _g_set_elt *g_set_elt;
+typedef struct {
+    k5_mutex_t mutex;
+    void *data;
+} g_set;
+#define G_SET_INIT { K5_MUTEX_PARTIAL_INITIALIZER, 0 }
 
-int g_set_init (g_set *s);
-int g_set_destroy (g_set *s);
-int g_set_entry_add (g_set *s, void *key, void *value);
-int g_set_entry_delete (g_set *s, void *key);
-int g_set_entry_get (g_set *s, void *key, void **value);
+int g_set_init (g_set_elt *s);
+int g_set_destroy (g_set_elt *s);
+int g_set_entry_add (g_set_elt *s, void *key, void *value);
+int g_set_entry_delete (g_set_elt *s, void *key);
+int g_set_entry_get (g_set_elt *s, void *key, void **value);
 
-int g_save_name (void **vdb, gss_name_t *name);
-int g_save_cred_id (void **vdb, gss_cred_id_t *cred);
-int g_save_ctx_id (void **vdb, gss_ctx_id_t *ctx);
+int g_save_name (g_set *vdb, gss_name_t *name);
+int g_save_cred_id (g_set *vdb, gss_cred_id_t *cred);
+int g_save_ctx_id (g_set *vdb, gss_ctx_id_t *ctx);
+int g_save_lucidctx_id (g_set *vdb, void *lctx);
 
-int g_validate_name (void **vdb, gss_name_t *name);
-int g_validate_cred_id (void **vdb, gss_cred_id_t *cred);
-int g_validate_ctx_id (void **vdb, gss_ctx_id_t *ctx);
+int g_validate_name (g_set *vdb, gss_name_t *name);
+int g_validate_cred_id (g_set *vdb, gss_cred_id_t *cred);
+int g_validate_ctx_id (g_set *vdb, gss_ctx_id_t *ctx);
+int g_validate_lucidctx_id (g_set *vdb, void *lctx);
 
-int g_delete_name (void **vdb, gss_name_t *name);
-int g_delete_cred_id (void **vdb, gss_cred_id_t *cred);
-int g_delete_ctx_id (void **vdb, gss_ctx_id_t *ctx);
+int g_delete_name (g_set *vdb, gss_name_t *name);
+int g_delete_cred_id (g_set *vdb, gss_cred_id_t *cred);
+int g_delete_ctx_id (g_set *vdb, gss_ctx_id_t *ctx);
+int g_delete_lucidctx_id (g_set *vdb, void *lctx);
 
 int g_make_string_buffer (const char *str, gss_buffer_t buffer);
 

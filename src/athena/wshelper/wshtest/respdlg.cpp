@@ -87,7 +87,7 @@ BOOL CRespDlg::OnInitDialog()
 	if (qdlg.m_DnSrch) topts |= RES_DNSRCH;
 	if (qdlg.m_Primary) topts |= RES_PRIMARY;
 
-	res_setopts(topts);
+	//res_setopts(topts);
 	
 	if (ret == IDCANCEL)
 	{
@@ -110,10 +110,10 @@ BOOL CRespDlg::OnInitDialog()
 			host = rgethostbyaddr((char *) &tiaddr, 4, PF_INET);
 			break;
 		case 2:
-		    mymx = (struct mxent FAR *) getmxbyname(qdlg.m_Host.GetBuffer(0));
+		   // mymx = (struct mxent FAR *) getmxbyname(qdlg.m_Host.GetBuffer(0));
 		    break;
 		case 3:
-			randinfo = gethinfobyname(qdlg.m_Host.GetBuffer(0));
+			//randinfo = gethinfobyname(qdlg.m_Host.GetBuffer(0));
 		    break;
 	}
 	

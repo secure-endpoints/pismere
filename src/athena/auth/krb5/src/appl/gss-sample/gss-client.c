@@ -20,7 +20,7 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 /*
- * Copyright (C) 2003, 2004 by the Massachusetts Institute of Technology.
+ * Copyright (C) 2003, 2004, 2005 by the Massachusetts Institute of Technology.
  * All rights reserved.
  *
  * Export of this software from the United States of America may
@@ -50,6 +50,7 @@
 #include <windows.h>
 #include <winsock.h>
 #else
+#include <assert.h>
 #include <unistd.h>
 #include <ctype.h>
 #include <sys/types.h>
@@ -69,7 +70,11 @@ static int verbose = 1;
 static void usage()
 {
      fprintf(stderr, "Usage: gss-client [-port port] [-mech mechanism] [-d]\n");
-     fprintf(stderr, "       [-seq] [-noreplay] [-nomutual]\n");
+     fprintf(stderr, "       [-seq] [-noreplay] [-nomutual]");
+#ifdef _WIN32
+     fprintf(stderr, " [-threads num]");
+#endif  
+     fprintf(stderr, "\n");
      fprintf(stderr, "       [-f] [-q] [-ccount count] [-mcount count]\n");
      fprintf(stderr, "       [-v1] [-na] [-nw] [-nx] [-nm] host service msg\n");
      exit(1);
@@ -388,184 +393,182 @@ static int call_server(host, port, oid, service_name, gss_flags, auth_flag,
 	  return -1;
      }
 
-     if (auth_flag) {
-       if (verbose) {
-	 /* display the flags */
-	 display_ctx_flags(ret_flags);
+     if (auth_flag && verbose) {
+         /* display the flags */
+         display_ctx_flags(ret_flags);
 
-	 /* Get context information */
-	 maj_stat = gss_inquire_context(&min_stat, context,
-					&src_name, &targ_name, &lifetime,
-					&mechanism, &context_flags,
-					&is_local,
-					&is_open);
-	 if (maj_stat != GSS_S_COMPLETE) {
-	   display_status("inquiring context", maj_stat, min_stat);
-	   return -1;
-	 }
+         /* Get context information */
+         maj_stat = gss_inquire_context( &min_stat, context,
+                                         &src_name, &targ_name, &lifetime,
+                                         &mechanism, &context_flags,
+                                         &is_local,
+                                         &is_open);
+         if (maj_stat != GSS_S_COMPLETE) {
+             display_status("inquiring context", maj_stat, min_stat);
+             return -1;
+         }
 
-	 maj_stat = gss_display_name(&min_stat, src_name, &sname,
-				     &name_type);
-	 if (maj_stat != GSS_S_COMPLETE) {
-	   display_status("displaying source name", maj_stat, min_stat);
-	   return -1;
-	 }
-	 maj_stat = gss_display_name(&min_stat, targ_name, &tname,
-				     (gss_OID *) NULL);
-	 if (maj_stat != GSS_S_COMPLETE) {
-	   display_status("displaying target name", maj_stat, min_stat);
-	   return -1;
-	 }
-	 printf("\"%.*s\" to \"%.*s\", lifetime %d, flags %x, %s, %s\n",
-		(int) sname.length, (char *) sname.value,
-		(int) tname.length, (char *) tname.value, lifetime,
-		context_flags,
-		(is_local) ? "locally initiated" : "remotely initiated",
-		(is_open) ? "open" : "closed");
+         maj_stat = gss_display_name(&min_stat, src_name, &sname,
+                                      &name_type);
+         if (maj_stat != GSS_S_COMPLETE) {
+             display_status("displaying source name", maj_stat, min_stat);
+             return -1;
+         }
+         maj_stat = gss_display_name(&min_stat, targ_name, &tname,
+                                      (gss_OID *) NULL);
+         if (maj_stat != GSS_S_COMPLETE) {
+             display_status("displaying target name", maj_stat, min_stat);
+             return -1;
+         }
+         printf("\"%.*s\" to \"%.*s\", lifetime %d, flags %x, %s, %s\n",
+                 (int) sname.length, (char *) sname.value,
+                 (int) tname.length, (char *) tname.value, lifetime,
+                 context_flags,
+                 (is_local) ? "locally initiated" : "remotely initiated",
+                 (is_open) ? "open" : "closed");
 
-	 (void) gss_release_name(&min_stat, &src_name);
-	 (void) gss_release_name(&min_stat, &targ_name);
-	 (void) gss_release_buffer(&min_stat, &sname);
-	 (void) gss_release_buffer(&min_stat, &tname);
+         (void) gss_release_name(&min_stat, &src_name);
+         (void) gss_release_name(&min_stat, &targ_name);
+         (void) gss_release_buffer(&min_stat, &sname);
+         (void) gss_release_buffer(&min_stat, &tname);
 
-	 maj_stat = gss_oid_to_str(&min_stat,
-				   name_type,
-				   &oid_name);
-	 if (maj_stat != GSS_S_COMPLETE) {
-	   display_status("converting oid->string", maj_stat, min_stat);
-	   return -1;
-	 }
-	 printf("Name type of source name is %.*s.\n",
-		(int) oid_name.length, (char *) oid_name.value);
-	 (void) gss_release_buffer(&min_stat, &oid_name);
+         maj_stat = gss_oid_to_str(&min_stat,
+                                    name_type,
+                                    &oid_name);
+         if (maj_stat != GSS_S_COMPLETE) {
+             display_status("converting oid->string", maj_stat, min_stat);
+             return -1;
+         }
+         printf("Name type of source name is %.*s.\n",
+                 (int) oid_name.length, (char *) oid_name.value);
+         (void) gss_release_buffer(&min_stat, &oid_name);
 
-	 /* Now get the names supported by the mechanism */
-	 maj_stat = gss_inquire_names_for_mech(&min_stat,
-					       mechanism,
-					       &mech_names);
-	 if (maj_stat != GSS_S_COMPLETE) {
-	   display_status("inquiring mech names", maj_stat, min_stat);
-	   return -1;
-	 }
+         /* Now get the names supported by the mechanism */
+         maj_stat = gss_inquire_names_for_mech(&min_stat,
+                                                mechanism,
+                                                &mech_names);
+         if (maj_stat != GSS_S_COMPLETE) {
+             display_status("inquiring mech names", maj_stat, min_stat);
+             return -1;
+         }
 
-	 maj_stat = gss_oid_to_str(&min_stat,
-				   mechanism,
-				   &oid_name);
-	 if (maj_stat != GSS_S_COMPLETE) {
-	   display_status("converting oid->string", maj_stat, min_stat);
-	   return -1;
-	 }
-	 printf("Mechanism %.*s supports %d names\n",
-		(int) oid_name.length, (char *) oid_name.value,
-		(int) mech_names->count);
-	 (void) gss_release_buffer(&min_stat, &oid_name);
+         maj_stat = gss_oid_to_str(&min_stat,
+                                    mechanism,
+                                    &oid_name);
+         if (maj_stat != GSS_S_COMPLETE) {
+             display_status("converting oid->string", maj_stat, min_stat);
+             return -1;
+         }
+         printf("Mechanism %.*s supports %d names\n",
+                 (int) oid_name.length, (char *) oid_name.value,
+                 (int) mech_names->count);
+         (void) gss_release_buffer(&min_stat, &oid_name);
 
-	 for (i=0; i<mech_names->count; i++) {
-	   maj_stat = gss_oid_to_str(&min_stat,
-				     &mech_names->elements[i],
-				     &oid_name);
-	   if (maj_stat != GSS_S_COMPLETE) {
-	     display_status("converting oid->string", maj_stat, min_stat);
-	     return -1;
-	   }
-	   printf("  %d: %.*s\n", (int) i,
-		  (int) oid_name.length, (char *) oid_name.value);
+         for (i=0; i<mech_names->count; i++) {
+             maj_stat = gss_oid_to_str(&min_stat,
+                                        &mech_names->elements[i],
+                                        &oid_name);
+             if (maj_stat != GSS_S_COMPLETE) {
+                 display_status("converting oid->string", maj_stat, min_stat);
+                 return -1;
+             }
+             printf("  %d: %.*s\n", (int) i,
+                     (int) oid_name.length, (char *) oid_name.value);
 
-	   (void) gss_release_buffer(&min_stat, &oid_name);
-	 }
-	 (void) gss_release_oid_set(&min_stat, &mech_names);
-       }
-     }
-     
-     if (use_file) {
-	 read_file(msg, &in_buf);
-     } else {
-	 /* Seal the message */
-	 in_buf.value = msg;
-	 in_buf.length = strlen(msg);
+             (void) gss_release_buffer(&min_stat, &oid_name);
+         }
+         (void) gss_release_oid_set(&min_stat, &mech_names);
      }
 
-     for (i = 0; i < mcount; i++) {
-       if (wrap_flag) {
-	 maj_stat = gss_wrap(&min_stat, context, encrypt_flag, GSS_C_QOP_DEFAULT,
-			     &in_buf, &state, &out_buf);
-	 if (maj_stat != GSS_S_COMPLETE) {
-	   display_status("wrapping message", maj_stat, min_stat);
-	   (void) close(s);
-	   (void) gss_delete_sec_context(&min_stat, &context, GSS_C_NO_BUFFER);
-	   return -1;
-	 } else if (encrypt_flag && ! state) {
-	   fprintf(stderr, "Warning!  Message not encrypted.\n");
-	 }
-       }
-       else {
-	 out_buf = in_buf;
-       }
+    if (use_file) {
+        read_file(msg, &in_buf);
+    } else {
+        /* Seal the message */
+        in_buf.value = msg;
+        in_buf.length = strlen(msg);
+    }
 
-       /* Send to server */
-       if (send_token(s, (v1_format?0
-			  :(TOKEN_DATA |
-			  (wrap_flag ? TOKEN_WRAPPED : 0) |
-			  (encrypt_flag ? TOKEN_ENCRYPTED : 0) |
-			  (mic_flag ? TOKEN_SEND_MIC : 0))), &out_buf) < 0) {
-	 (void) close(s);
-	 (void) gss_delete_sec_context(&min_stat, &context, GSS_C_NO_BUFFER);
-	 return -1;
-       }
-       if (out_buf.value != in_buf.value)
-	 (void) gss_release_buffer(&min_stat, &out_buf);
+    for (i = 0; i < mcount; i++) {
+        if (wrap_flag) {
+            maj_stat = gss_wrap(&min_stat, context, encrypt_flag, GSS_C_QOP_DEFAULT,
+                                 &in_buf, &state, &out_buf);
+            if (maj_stat != GSS_S_COMPLETE) {
+                display_status("wrapping message", maj_stat, min_stat);
+                (void) close(s);
+                (void) gss_delete_sec_context(&min_stat, &context, GSS_C_NO_BUFFER);
+                return -1;
+            } else if (encrypt_flag && ! state) {
+                fprintf(stderr, "Warning!  Message not encrypted.\n");
+            }
+        }
+        else {
+            out_buf = in_buf;
+        }
 
-       /* Read signature block into out_buf */
-       if (recv_token(s, &token_flags, &out_buf) < 0) {
-	 (void) close(s);
-	 (void) gss_delete_sec_context(&min_stat, &context, GSS_C_NO_BUFFER);
-	 return -1;
-       }
+        /* Send to server */
+        if (send_token(s, (v1_format?0
+                            :(TOKEN_DATA |
+                               (wrap_flag ? TOKEN_WRAPPED : 0) |
+                               (encrypt_flag ? TOKEN_ENCRYPTED : 0) |
+                               (mic_flag ? TOKEN_SEND_MIC : 0))), &out_buf) < 0) {
+            (void) close(s);
+            (void) gss_delete_sec_context(&min_stat, &context, GSS_C_NO_BUFFER);
+            return -1;
+        }
+        if (out_buf.value != in_buf.value)
+            (void) gss_release_buffer(&min_stat, &out_buf);
 
-       if (mic_flag) {
-	 /* Verify signature block */
-	 maj_stat = gss_verify_mic(&min_stat, context, &in_buf,
-				   &out_buf, &qop_state);
-	 if (maj_stat != GSS_S_COMPLETE) {
-	   display_status("verifying signature", maj_stat, min_stat);
-	   (void) close(s);
-	   (void) gss_delete_sec_context(&min_stat, &context, GSS_C_NO_BUFFER);
-	   return -1;
-	 }
+        /* Read signature block into out_buf */
+        if (recv_token(s, &token_flags, &out_buf) < 0) {
+            (void) close(s);
+            (void) gss_delete_sec_context(&min_stat, &context, GSS_C_NO_BUFFER);
+            return -1;
+        }
 
-	 if (verbose)
-	   printf("Signature verified.\n");
-       }
-       else {
-	 if (verbose)
-	   printf("Response received.\n");
-       }
+        if (mic_flag) {
+            /* Verify signature block */
+            maj_stat = gss_verify_mic(&min_stat, context, &in_buf,
+                                       &out_buf, &qop_state);
+            if (maj_stat != GSS_S_COMPLETE) {
+                display_status("verifying signature", maj_stat, min_stat);
+                (void) close(s);
+                (void) gss_delete_sec_context(&min_stat, &context, GSS_C_NO_BUFFER);
+                return -1;
+            }
 
-       free (out_buf.value);
-     }
+            if (verbose)
+                printf("Signature verified.\n");
+        }
+        else {
+            if (verbose)
+                printf("Response received.\n");
+        }
 
-     if (use_file)
-       free(in_buf.value);
+        free (out_buf.value);
+    }
 
-     /* Send NOOP */
-     if (!v1_format)
-     (void) send_token(s, TOKEN_NOOP, empty_token);
+    if (use_file)
+        free(in_buf.value);
 
-     if (auth_flag) {
-       /* Delete context */
-       maj_stat = gss_delete_sec_context(&min_stat, &context, &out_buf);
-       if (maj_stat != GSS_S_COMPLETE) {
-	 display_status("deleting context", maj_stat, min_stat);
-	 (void) close(s);
-	 (void) gss_delete_sec_context(&min_stat, &context, GSS_C_NO_BUFFER);
-	 return -1;
-       }
+    /* Send NOOP */
+    if (!v1_format)
+        (void) send_token(s, TOKEN_NOOP, empty_token);
 
-       (void) gss_release_buffer(&min_stat, &out_buf);
-     }
+    if (auth_flag) {
+        /* Delete context */
+        maj_stat = gss_delete_sec_context(&min_stat, &context, &out_buf);
+        if (maj_stat != GSS_S_COMPLETE) {
+            display_status("deleting context", maj_stat, min_stat);
+            (void) close(s);
+            (void) gss_delete_sec_context(&min_stat, &context, GSS_C_NO_BUFFER);
+            return -1;
+        }
 
-     (void) close(s);
-     return 0;
+        (void) gss_release_buffer(&min_stat, &out_buf);
+    }
+
+    (void) close(s);
+    return 0;
 }
 
 static void parse_oid(char *mechanism, gss_OID *oid)
@@ -597,20 +600,94 @@ static void parse_oid(char *mechanism, gss_OID *oid)
 	free(mechstr);
 }
 
+static int max_threads = 1;
+
+#ifdef _WIN32
+static thread_count = 0;
+static HANDLE hMutex = NULL;
+static HANDLE hEvent = NULL;
+
+void
+InitHandles(void)
+{
+    hMutex = CreateMutex(NULL, FALSE, NULL);
+    hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+}
+
+void
+CleanupHandles(void)
+{
+    CloseHandle(hMutex);
+    CloseHandle(hEvent);
+}
+
+BOOL
+WaitAndIncrementThreadCounter(void)
+{
+    for (;;) {
+        if (WaitForSingleObject(hMutex, INFINITE) == WAIT_OBJECT_0) {
+            if ( thread_count < max_threads ) {
+                thread_count++;
+                ReleaseMutex(hMutex);
+                return TRUE;
+            } else {
+                ReleaseMutex(hMutex);
+
+                if (WaitForSingleObject(hEvent, INFINITE) == WAIT_OBJECT_0) {
+                    continue;
+                } else {
+                    return FALSE;
+                }
+            }
+        } else {
+            return FALSE;
+        }
+    }
+}
+
+BOOL
+DecrementAndSignalThreadCounter(void)
+{
+    if (WaitForSingleObject(hMutex, INFINITE) == WAIT_OBJECT_0) {
+        if ( thread_count == max_threads )
+            ResetEvent(hEvent);
+        thread_count--;
+        ReleaseMutex(hMutex);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+#endif
+
+static char *service_name, *server_host, *msg;
+static char *mechanism = 0;
+static u_short port = 4444;
+static int use_file = 0;
+static OM_uint32 gss_flags = GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG;
+static OM_uint32 min_stat;
+static gss_OID oid = GSS_C_NULL_OID;
+static int mcount = 1, ccount = 1;
+static int auth_flag, wrap_flag, encrypt_flag, mic_flag, v1_format;
+
+void worker_bee(void * unused)
+{
+    if (call_server(server_host, port, oid, service_name,
+                    gss_flags, auth_flag, wrap_flag, encrypt_flag, mic_flag,
+                    v1_format, msg, use_file, mcount) < 0)
+        exit(1);
+
+#ifdef _WIN32
+    if ( max_threads > 1 )
+        DecrementAndSignalThreadCounter();
+#endif
+}
+
 int main(argc, argv)
      int argc;
      char **argv;
 {
-     char *service_name, *server_host, *msg;
-     char *mechanism = 0;
-     u_short port = 4444;
-     int use_file = 0;
-     OM_uint32 gss_flags = GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG;
-     OM_uint32 min_stat;
-     gss_OID oid = GSS_C_NULL_OID;
-     int mcount = 1, ccount = 1;
      int i;
-     int auth_flag, wrap_flag, encrypt_flag, mic_flag, v1_format;
 
      display_file = stdout;
      auth_flag = wrap_flag = encrypt_flag = mic_flag = 1;
@@ -627,7 +704,15 @@ int main(argc, argv)
 	       argc--; argv++;
 	       if (!argc) usage();
 	       mechanism = *argv;
-	   } else if (strcmp(*argv, "-d") == 0) {
+	   } 
+#ifdef _WIN32
+           else if (strcmp(*argv, "-threads") == 0) {
+               argc--; argv++;
+               if (!argc) usage();
+               max_threads = atoi(*argv);
+           } 
+#endif
+           else if (strcmp(*argv, "-d") == 0) {
 	       gss_flags |= GSS_C_DELEG_FLAG;
 	   } else if (strcmp(*argv, "-seq") == 0) {
 	       gss_flags |= GSS_C_SEQUENCE_FLAG;
@@ -666,6 +751,13 @@ int main(argc, argv)
      if (argc != 3)
 	  usage();
 
+#ifdef _WIN32
+     if (max_threads < 1) {
+	  fprintf(stderr, "warning: there must be at least one thread\n");
+	  max_threads = 1;
+     }
+#endif
+
      server_host = *argv++;
      service_name = *argv++;
      msg = *argv++;
@@ -673,15 +765,34 @@ int main(argc, argv)
      if (mechanism)
 	 parse_oid(mechanism, &oid);
 
-     for (i = 0; i < ccount; i++) {
-       if (call_server(server_host, port, oid, service_name,
-		       gss_flags, auth_flag, wrap_flag, encrypt_flag, mic_flag,
-		       v1_format, 		       msg, use_file, mcount) < 0)
-	 exit(1);
+     if (max_threads == 1) {
+	  for (i = 0; i < ccount; i++) {
+	       worker_bee(0);
+	  }
+     } else {
+#ifdef _WIN32
+	  for (i = 0; i < ccount; i++) {
+	       if ( WaitAndIncrementThreadCounter() ) {
+		    uintptr_t handle = _beginthread(worker_bee, 0, (void *)0);
+		    if (handle == (uintptr_t)-1) {
+			 exit(1);
+		    }
+	       } else {
+		    exit(1);
+	       }
+	  }
+#else
+	  /* boom */
+	  assert(max_threads == 1);
+#endif
      }
 
      if (oid != GSS_C_NULL_OID)
 	 (void) gss_release_oid(&min_stat, &oid);
 	 
+#ifdef _WIN32
+     CleanupHandles();
+#endif
+
      return 0;
 }

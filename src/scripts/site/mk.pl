@@ -24,7 +24,7 @@ my $TMPDIR;
 
 sub set_cpu
 {
-    my @VALID_CPUS = ( 'i386', 'alpha' );
+    my @VALID_CPUS = ( 'i386', 'alpha', 'ia64');
     $CPU = $OPT->{cpu} || lc($ENV{CPU});
     if (!$CPU) {
 	$CPU = lc($ENV{PROCESSOR_ARCHITECTURE});

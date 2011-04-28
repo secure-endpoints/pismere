@@ -1,7 +1,7 @@
 /*
  * lib/gssapi/krb5/ser_sctx.c
  *
- * Copyright 1995 by the Massachusetts Institute of Technology.
+ * Copyright 1995, 2004 by the Massachusetts Institute of Technology.
  * All Rights Reserved.
  *
  * Export of this software from the United States of America may
@@ -273,11 +273,12 @@ kg_ctx_size(kcontext, arg, sizep)
      *	krb5_int32	for cksumtype
      *	...		for acceptor_subkey
      *	krb5_int32	for acceptor_key_cksumtype
+     *	krb5_int32	for cred_rcache
      *	krb5_int32	for trailer.
      */
     kret = EINVAL;
     if ((ctx = (krb5_gss_ctx_id_rec *) arg)) {
-	required = 16*sizeof(krb5_int32);
+	required = 17*sizeof(krb5_int32);
 	required += 2*sizeof(krb5_int64);
 	required += sizeof(ctx->seed);
 
@@ -320,6 +321,11 @@ kg_ctx_size(kcontext, arg, sizep)
 	if (!kret && ctx->seqstate)
 	    kret = kg_queue_size(kcontext, ctx->seqstate, &required);
 
+	if (!kret)
+	    kret = krb5_size_opaque(kcontext,
+				    KV5M_CONTEXT,
+				    (krb5_pointer) ctx->k5_context,
+				    &required);
 	if (!kret)
 	    kret = krb5_size_opaque(kcontext,
 				    KV5M_AUTH_CONTEXT,
@@ -442,6 +448,12 @@ kg_ctx_externalize(kcontext, arg, buffer, lenremain)
 
 	    if (!kret)
 		kret = krb5_externalize_opaque(kcontext,
+					       KV5M_CONTEXT,
+					       (krb5_pointer) ctx->k5_context,
+					       &bp, &remain);
+
+	    if (!kret)
+		kret = krb5_externalize_opaque(kcontext,
 					       KV5M_AUTH_CONTEXT,
 					       (krb5_pointer) ctx->auth_context,
 					       &bp, &remain);
@@ -461,6 +473,9 @@ kg_ctx_externalize(kcontext, arg, buffer, lenremain)
 		kret = krb5_ser_pack_int32((krb5_int32) ctx->acceptor_subkey_cksumtype,
 					   &bp, &remain);
 
+	    if (!kret)
+		kret = krb5_ser_pack_int32((krb5_int32) ctx->cred_rcache,
+					   &bp, &remain);
 	    /* trailer */
 	    if (!kret)
 		kret = krb5_ser_pack_int32(KG_CONTEXT, &bp, &remain);
@@ -504,12 +519,14 @@ kg_ctx_internalize(kcontext, argp, buffer, lenremain)
 	kret = ENOMEM;
 
 	/* Get a context */
-	if ((remain >= (16*sizeof(krb5_int32)
+	if ((remain >= (17*sizeof(krb5_int32)
 			+ 2*sizeof(krb5_int64)
 			+ sizeof(ctx->seed))) &&
 	    (ctx = (krb5_gss_ctx_id_rec *)
 	     xmalloc(sizeof(krb5_gss_ctx_id_rec)))) {
 	    memset(ctx, 0, sizeof(krb5_gss_ctx_id_rec));
+
+	    ctx->k5_context = kcontext;
 
 	    /* Get static data */
 	    (void) krb5_ser_unpack_int32(&ibuf, &bp, &remain);
@@ -599,6 +616,12 @@ kg_ctx_internalize(kcontext, argp, buffer, lenremain)
 		
 	    if (!kret)
 		kret = krb5_internalize_opaque(kcontext,
+					       KV5M_CONTEXT,
+					       (krb5_pointer *) &ctx->k5_context,
+					       &bp, &remain);
+
+	    if (!kret)
+		kret = krb5_internalize_opaque(kcontext,
 					       KV5M_AUTH_CONTEXT,
 				       (krb5_pointer *) &ctx->auth_context,
 					       &bp, &remain);
@@ -617,6 +640,9 @@ kg_ctx_internalize(kcontext, argp, buffer, lenremain)
 		if (kret == EINVAL)
 		    kret = 0;
 	    }
+	    if (!kret)
+		kret = krb5_ser_unpack_int32(&ibuf, &bp, &remain);
+	    ctx->cred_rcache = ibuf;
 	    if (!kret)
 		kret = krb5_ser_unpack_int32(&ibuf, &bp, &remain);
 	    ctx->acceptor_subkey_cksumtype = ibuf;

@@ -55,26 +55,22 @@ static char sccsid[] = "@(#)inet_addr.c	5.11 (Berkeley) 12/9/91";
 
 
 /* 
-@func unsigned long WINAPI | inet_aton |
- Check whether "cp" is a valid ascii representation
- of an Internet address and convert to a binary address.
- Returns 1 if the address is valid, 0 if not.
- This replaces inet_addr, the return value from which
- cannot distinguish between failure and a local broadcast address.
+	converts a string containing an (Ipv4) Internet Protocol dotted address into a proper address for the in_addr structure
+	
+	\param[in]	cp Null-terminated character string representing a number expressed in the 
+	Internet standard ".'' (dotted) notation. 
+	\param[in, out] addr pointer to the in_addr structure. The s_addr memeber will be populated
 
-@parm register const char * | cp | pointer to a string to be checked
-@parm struct in_addr * | addr | pointer to the in_addr structure for the first 
-parameter if successfull.
 
-  @rdesc 1 if the address is valid 0 if not.
-
+	\retval Returns 1 if the address is valid, 0 if not.
  
  */
 unsigned long
 WINAPI
 inet_aton(register const char *cp, struct in_addr *addr)
 {
-    register u_long val, base, n;
+    register u_long val, base;
+	ULONG_PTR n;
     register char c;
     u_long parts[4], *pp = parts;
 

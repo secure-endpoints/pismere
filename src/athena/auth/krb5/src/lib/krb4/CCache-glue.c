@@ -4,7 +4,7 @@
  * This file contains implementations of krb4 credentials cache operations in terms
  * of the CCache API (<http://www.umich.edu/~sgr/v4Cache/>).
  *
- * $Header: /cvs/krbdev/krb5/src/lib/krb4/CCache-glue.c,v 1.6.2.1 2004/08/12 21:33:16 tlyu Exp $
+ * $Header$
  */
 
 

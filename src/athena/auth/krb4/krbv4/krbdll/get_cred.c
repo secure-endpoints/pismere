@@ -97,7 +97,6 @@ cache_checked:
         }
 
         if ( pLeash_get_default_use_krb4 &&
-             pLeash_get_default_use_krb4() &&
              pLeash_kinit_dlg_ex ) {
             LSH_DLGINFO_EX dlginfo;
             int success;
@@ -114,9 +113,12 @@ cache_checked:
             memset(&dlginfo, 0, sizeof(LSH_DLGINFO_EX));
             dlginfo.size = sizeof(LSH_DLGINFO_EX);
             dlginfo.dlgtype = DLGTYPE_PASSWD;
-            dlginfo.title = "Kerberos 4 - Obtain Tickets";
-            dlginfo.username = pTmp;
-            dlginfo.realm = realm;
+            dlginfo.title = dlginfo.in.title;
+	    strcpy(dlginfo.in.title,"Kerberos 4 - Obtain Tickets");
+            dlginfo.username = dlginfo.in.username;
+	    strcpy(dlginfo.in.username,pTmp);
+            dlginfo.realm = dlginfo.in.realm;
+	    strcpy(dlginfo.in.realm,realm);
             dlginfo.use_defaults = 1;
 
             success = pLeash_kinit_dlg_ex(GetDesktopWindow(), &dlginfo);

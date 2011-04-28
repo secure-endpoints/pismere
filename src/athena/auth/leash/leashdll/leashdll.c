@@ -15,6 +15,7 @@ HINSTANCE hService = 0;
 HINSTANCE hProfile = 0;
 HINSTANCE hPsapi = 0; 
 HINSTANCE hToolHelp32 = 0; 
+HINSTANCE hCcapi = 0;
 
 DWORD     AfsAvailable = 0;
 
@@ -141,6 +142,11 @@ DECL_FUNC_PTR(LsaCallAuthenticationPackage);
 DECL_FUNC_PTR(LsaFreeReturnBuffer);
 DECL_FUNC_PTR(LsaGetLogonSessionData);
 
+// CCAPI Functions
+DECL_FUNC_PTR(cc_initialize);
+DECL_FUNC_PTR(cc_shutdown);
+DECL_FUNC_PTR(cc_get_NC_info);
+DECL_FUNC_PTR(cc_free_NC_info);
 
 FUNC_INFO k4_fi[] = {
     MAKE_FUNC_INFO(get_krb_err_txt_entry),
@@ -227,16 +233,16 @@ FUNC_INFO k5_fi[] = {
     MAKE_FUNC_INFO(krb5_build_principal),
     MAKE_FUNC_INFO(krb5_get_renewed_creds),
     MAKE_FUNC_INFO(krb5_free_addresses),
-	MAKE_FUNC_INFO(krb5_get_default_config_files),
-	MAKE_FUNC_INFO(krb5_free_config_files),
-	MAKE_FUNC_INFO(krb5_get_default_realm),
+    MAKE_FUNC_INFO(krb5_get_default_config_files),
+    MAKE_FUNC_INFO(krb5_free_config_files),
+    MAKE_FUNC_INFO(krb5_get_default_realm),
     MAKE_FUNC_INFO(krb5_free_ticket),
     MAKE_FUNC_INFO(krb5_decode_ticket),
     MAKE_FUNC_INFO(krb5_get_host_realm),
     MAKE_FUNC_INFO(krb5_free_host_realm),
     MAKE_FUNC_INFO(krb5_c_random_make_octets),
     MAKE_FUNC_INFO(krb5_free_default_realm),
-	END_FUNC_INFO
+    END_FUNC_INFO
 };
 
 FUNC_INFO k524_fi[] = {
@@ -246,13 +252,13 @@ FUNC_INFO k524_fi[] = {
 };
 
 FUNC_INFO profile_fi[] = {
-	MAKE_FUNC_INFO(profile_init),
-	MAKE_FUNC_INFO(profile_release), 
-	MAKE_FUNC_INFO(profile_get_subsection_names),
-	MAKE_FUNC_INFO(profile_free_list),
-	MAKE_FUNC_INFO(profile_get_string),
-	MAKE_FUNC_INFO(profile_release_string),
-	END_FUNC_INFO
+    MAKE_FUNC_INFO(profile_init),
+    MAKE_FUNC_INFO(profile_release), 
+    MAKE_FUNC_INFO(profile_get_subsection_names),
+    MAKE_FUNC_INFO(profile_free_list),
+    MAKE_FUNC_INFO(profile_get_string),
+    MAKE_FUNC_INFO(profile_release_string),
+    END_FUNC_INFO
 };
 
 FUNC_INFO ce_fi[] = {
@@ -266,7 +272,7 @@ FUNC_INFO service_fi[] = {
     MAKE_FUNC_INFO(OpenServiceA),
     MAKE_FUNC_INFO(QueryServiceStatus),
     MAKE_FUNC_INFO(CloseServiceHandle),
-	MAKE_FUNC_INFO(LsaNtStatusToWinError),
+    MAKE_FUNC_INFO(LsaNtStatusToWinError),
     END_FUNC_INFO
 };
 
@@ -276,6 +282,15 @@ FUNC_INFO lsa_fi[] = {
     MAKE_FUNC_INFO(LsaCallAuthenticationPackage),
     MAKE_FUNC_INFO(LsaFreeReturnBuffer),
     MAKE_FUNC_INFO(LsaGetLogonSessionData),
+    END_FUNC_INFO
+};
+
+// CCAPI v2
+FUNC_INFO ccapi_fi[] = {
+    MAKE_FUNC_INFO(cc_initialize),
+    MAKE_FUNC_INFO(cc_shutdown),
+    MAKE_FUNC_INFO(cc_get_NC_info),
+    MAKE_FUNC_INFO(cc_free_NC_info),
     END_FUNC_INFO
 };
 
@@ -321,7 +336,8 @@ DllMain(
         LoadFuncs(SERVICE_DLL, service_fi, &hService, 0, 1, 0, 0);
         LoadFuncs(SECUR32_DLL, lsa_fi, &hSecur32, 0, 1, 1, 1);
         LoadFuncs(KRB524_DLL, k524_fi, &hKrb524, 0, 1, 1, 1);
-		LoadFuncs(PROFILE_DLL, profile_fi, &hProfile, 0, 1, 0, 0);
+	LoadFuncs(PROFILE_DLL, profile_fi, &hProfile, 0, 1, 0, 0);
+	LoadFuncs(CCAPI_DLL, ccapi_fi, &hCcapi, 0, 1, 0, 0);
 
         memset(&osvi, 0, sizeof(OSVERSIONINFO));
         osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
@@ -378,8 +394,10 @@ DllMain(
             FreeLibrary(hKrb4);
         if (hKrb5)
             FreeLibrary(hKrb5);
-		if (hProfile)
-			FreeLibrary(hProfile);
+	if (hCcapi)
+	    FreeLibrary(hCcapi);
+	if (hProfile)
+	    FreeLibrary(hProfile);
         if (hComErr)
             FreeLibrary(hComErr);
         if (hService)

@@ -79,7 +79,7 @@
 #include <assert.h>
 
 /*
- * $Id: init_sec_context.c,v 1.66.2.10 2004/02/09 20:16:16 tlyu Exp $
+ * $Id: init_sec_context.c 17027 2005-01-13 21:55:10Z tlyu $
  */
 
 /* XXX This is for debugging only!!!  Should become a real bitfield
@@ -102,6 +102,7 @@ static krb5_error_code get_credentials(context, cred, server, now,
     krb5_error_code	code;
     krb5_creds 		in_creds;
 
+    k5_mutex_assert_locked(&cred->lock);
     memset((char *) &in_creds, 0, sizeof(krb5_creds));
 
     if ((code = krb5_copy_principal(context, cred->princ, &in_creds.client)))
@@ -262,7 +263,7 @@ make_ap_req_v1(context, ctx, cred, k_cred, chan_bindings, mech_type, token)
     unsigned char *t;
     unsigned int tlen;
 
-
+    k5_mutex_assert_locked(&cred->lock);
     ap_req.data = 0;
 
     /* compute the hash of the channel bindings */
@@ -300,8 +301,10 @@ make_ap_req_v1(context, ctx, cred, k_cred, chan_bindings, mech_type, token)
     if (ctx->gss_flags & GSS_C_MUTUAL_FLAG)
 	mk_req_flags |= AP_OPTS_MUTUAL_REQUIRED;
 
-    if ((code = krb5_mk_req_extended(context, &ctx->auth_context, mk_req_flags,
-				     checksum_data, k_cred, &ap_req)))
+    code = krb5_mk_req_extended(context, &ctx->auth_context, mk_req_flags,
+				checksum_data, k_cred, &ap_req);
+    krb5_free_data_contents(context, &cksum_struct.checksum_data);
+    if (code)
 	goto cleanup;
 
    /* store the interesting stuff from creds and authent */
@@ -463,6 +466,7 @@ new_connection(
    krb5_timestamp now;
    gss_buffer_desc token;
 
+   k5_mutex_assert_locked(&cred->lock);
    major_status = GSS_S_FAILURE;
    token.length = 0;
    token.value = NULL;
@@ -478,15 +482,6 @@ new_connection(
    /* complain if the input token is non-null */
 
    if (input_token != GSS_C_NO_BUFFER && input_token->length != 0) {
-#if 0 /* def CFX_EXERCISE */
-       if (*context_handle != GSS_C_NO_CONTEXT
-	   && ((krb5_gss_ctx_id_t)*context_handle)->testing_unknown_tokid) {
-	   /* XXX Should check for a KRB_ERROR message that we can
-	      parse, and which contains the expected error code.  */
-	   ctx = (krb5_gss_ctx_id_t)*context_handle;
-	   goto resume_after_testing;
-       }
-#endif
        *minor_status = 0;
        return(GSS_S_DEFECTIVE_TOKEN);
    }
@@ -506,6 +501,15 @@ new_connection(
       goto fail;
    krb5_auth_con_setflags(context, ctx->auth_context,
 			  KRB5_AUTH_CONTEXT_DO_SEQUENCE);
+
+   /* limit the encryption types negotiated (if requested) */
+   if (cred->req_enctypes) {
+	if ((code = krb5_set_default_tgs_enctypes(context,
+						  cred->req_enctypes))) {
+	    goto fail;
+	}
+   }
+
    ctx->initiate = 1;
    ctx->gss_flags = (GSS_C_INTEG_FLAG | GSS_C_CONF_FLAG |
                      GSS_C_TRANS_FLAG | 
@@ -589,49 +593,6 @@ new_connection(
    *context_handle = (gss_ctx_id_t) ctx;
    ctx_free = 0;
 
-#if 0 /* Sigh.  We're changing the spec again.  */
-#ifdef CFX_EXERCISE
-   if (ctx->proto == 1
-       /* I think the RPC code may be broken.  Don't mess around
-	  if we're authenticating to "kadmin/whatever".  */
-       && ctx->there->data[0].data[0] != 'k'
-       /* I *know* the FTP server code is broken.  */
-       && ctx->there->data[0].data[0] != 'f'
-       ) {
-       /* Create a bogus token and return it, with status
-	  GSS_S_CONTINUE_NEEDED.  Save enough data that we can resume
-	  on the next call.  */
-       static const unsigned char hack_token[20] = {
-	   0x60, 0x12, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86,
-	   0xf7, 0x12, 0x01, 0x02, 0x02, 0x12, 0x34, 0x68,
-	   0x65, 0x6c, 0x6c, 0x6f
-       };
-       ctx->testing_unknown_tokid = 1;
-       ctx->init_token = token;
-       token.value = malloc(20);
-       token.length = 20;
-       if (token.value == NULL) {
-	   /* Skip testing.  We'll probably die soon enough, but let's
-	      not do it because we couldn't exercise this code
-	      path.  */
-	   goto resume_after_testing;
-       }
-       memcpy(token.value, hack_token, sizeof(hack_token));
-       /* Can just fall through into the normal return path, because
-	  it'll always return GSS_S_CONTINUE_NEEDED because we're
-	  doing mutual authentication.  */
-   }
-   if (0) {
-   resume_after_testing:
-       token = ctx->init_token;
-       ctx->init_token.value = 0;
-       ctx->init_token.length = 0;
-       ctx->testing_unknown_tokid = 0;
-       ctx_free = 0;
-   }
-#endif /* CFX_EXERCISE */
-#endif /* 0 */
-
    /* compute time_rec */
    if (time_rec) {
       if ((code = krb5_timeofday(context, &now)))
@@ -690,7 +651,6 @@ fail:
 static OM_uint32
 mutual_auth(
    OM_uint32 *minor_status,
-   krb5_gss_cred_id_t cred,
    gss_ctx_id_t *context_handle,
    gss_name_t target_name,
    gss_OID mech_type,
@@ -715,11 +675,11 @@ mutual_auth(
    krb5_error_code code;
    krb5int_access kaccess;
 
+   major_status = GSS_S_FAILURE;
+
    code = krb5int_accessor (&kaccess, KRB5INT_ACCESS_VERSION);
    if (code)
        goto fail;
-
-   major_status = GSS_S_FAILURE;
 
    /* validate the context handle */
    /*SUPPRESS 29*/
@@ -881,12 +841,22 @@ krb5_gss_init_sec_context(minor_status, claimant_cred_handle,
    krb5_context context;
    krb5_gss_cred_id_t cred;
    int err;
+   krb5_error_code kerr;
    int default_mech = 0;
    OM_uint32 major_status;
    OM_uint32 tmp_min_stat;
 
-   if (GSS_ERROR(kg_get_context(minor_status, &context)))
-      return(GSS_S_FAILURE);
+   if (*context_handle == GSS_C_NO_CONTEXT) {
+       kerr = krb5_init_context(&context);
+       if (kerr) {
+	   *minor_status = kerr;
+	   return GSS_S_FAILURE;
+       }
+       if (GSS_ERROR(kg_sync_ccache_name(context, minor_status)))
+	   return GSS_S_FAILURE;
+   } else {
+       context = ((krb5_gss_ctx_id_rec *)*context_handle)->k5_context;
+   }
 
    /* set up return values so they can be "freed" successfully */
 
@@ -900,6 +870,8 @@ krb5_gss_init_sec_context(minor_status, claimant_cred_handle,
 
    if (! kg_validate_name(target_name)) {
       *minor_status = (OM_uint32) G_VALIDATE_FAILED;
+      if (*context_handle == GSS_C_NO_CONTEXT)
+	  krb5_free_context(context);
       return(GSS_S_CALL_BAD_STRUCTURE|GSS_S_BAD_NAME);
    }
 
@@ -908,13 +880,24 @@ krb5_gss_init_sec_context(minor_status, claimant_cred_handle,
    if (claimant_cred_handle == GSS_C_NO_CREDENTIAL) {
       major_status = kg_get_defcred(minor_status, &cred);
       if (major_status && GSS_ERROR(major_status)) {
+	 if (*context_handle == GSS_C_NO_CONTEXT)
+	    krb5_free_context(context);
 	 return(major_status);
       }
    } else {
       major_status = krb5_gss_validate_cred(minor_status, claimant_cred_handle);
-      if (GSS_ERROR(major_status))
+      if (GSS_ERROR(major_status)) {
+	  if (*context_handle == GSS_C_NO_CONTEXT)
+	      krb5_free_context(context);
 	  return(major_status);
+      }
       cred = (krb5_gss_cred_id_t) claimant_cred_handle;
+   }
+   kerr = k5_mutex_lock(&cred->lock);
+   if (kerr) {
+       krb5_free_context(context);
+       *minor_status = kerr;
+       return GSS_S_FAILURE;
    }
 
    /* verify the mech_type */
@@ -940,37 +923,46 @@ krb5_gss_init_sec_context(minor_status, claimant_cred_handle,
    }
    
    if (err) {
+      k5_mutex_unlock(&cred->lock);
       if (claimant_cred_handle == GSS_C_NO_CREDENTIAL)
-	 krb5_gss_release_cred(minor_status, (gss_cred_id_t)cred);
+	 krb5_gss_release_cred(minor_status, (gss_cred_id_t)&cred);
       *minor_status = 0;
+      if (*context_handle == GSS_C_NO_CONTEXT)
+	 krb5_free_context(context);
       return(GSS_S_BAD_MECH);
    }
 
    /* is this a new connection or not? */
 
    /*SUPPRESS 29*/
-   if (*context_handle == GSS_C_NO_CONTEXT
-#ifdef CFX_EXERCISE
-       || ((krb5_gss_ctx_id_t)*context_handle)->testing_unknown_tokid
-#endif
-       ) {
+   if (*context_handle == GSS_C_NO_CONTEXT) {
       major_status = new_connection(minor_status, cred, context_handle,
 				    target_name, mech_type, req_flags,
 				    time_req, input_chan_bindings,
 				    input_token, actual_mech_type,
 				    output_token, ret_flags, time_rec,
 				    context, default_mech);
+      k5_mutex_unlock(&cred->lock);
+      if (*context_handle == GSS_C_NO_CONTEXT)
+	  krb5_free_context(context);
+      else
+	  ((krb5_gss_ctx_id_rec *) *context_handle)->k5_context = context;
    } else {
-      major_status = mutual_auth(minor_status, cred, context_handle,
+      /* mutual_auth doesn't care about the credentials */
+      k5_mutex_unlock(&cred->lock);
+      major_status = mutual_auth(minor_status, context_handle,
 				 target_name, mech_type, req_flags,
 				 time_req, input_chan_bindings,
 				 input_token, actual_mech_type,
 				 output_token, ret_flags, time_rec,
 				 context);
+      /* If context_handle is now NO_CONTEXT, mutual_auth called
+	 delete_sec_context, which would've zapped the krb5 context
+	 too.  */
    }
 
    if (claimant_cred_handle == GSS_C_NO_CREDENTIAL)
-      krb5_gss_release_cred(&tmp_min_stat, (gss_cred_id_t)cred);
+      krb5_gss_release_cred(&tmp_min_stat, (gss_cred_id_t)&cred);
 
    return(major_status);
 }

@@ -1764,7 +1764,7 @@ int main(argc, argv)
 	setenv("KRB5CCNAME", ccname, 1);
 
     setenv("HOME", pwd->pw_dir, 1);
-    setenv("PATH", LPATH, 1);
+    setenv("PATH", LPATH, 0);
     setenv("USER", pwd->pw_name, 1);
     setenv("SHELL", pwd->pw_shell, 1);
 
@@ -1861,7 +1861,7 @@ int main(argc, argv)
     (void) strncpy(tbuf+1, p?(p+1):pwd->pw_shell, sizeof(tbuf) - 1);
     tbuf[sizeof(tbuf) - 1] = '\0';
 
-    execlp(pwd->pw_shell, tbuf, 0);
+    execlp(pwd->pw_shell, tbuf, (char *)NULL);
     fprintf(stderr, "login: no shell: ");
     perror(pwd->pw_shell);
     exit(0);

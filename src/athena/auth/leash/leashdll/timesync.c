@@ -91,16 +91,15 @@ not_an_API_LeashGetTimeServerName(
     HKEY        rKey1;             
     HKEY        rKey2;             
     LONG        lResult; 
+    BOOL 	bEnv;
 
     memset(value, '\0', sizeof(value));
     memset(hostname, '\0', sizeof(hostname));
     
-    if (getenv(TIMEHOST) != NULL)
-    {
-        // Check system for TIMEHOST
-        strcpy(hostname, getenv(TIMEHOST));
-    }
-    else
+    GetEnvironmentVariable("TIMEHOST", hostname, sizeof(hostname));
+    bEnv = (GetLastError() == ERROR_ENVVAR_NOT_FOUND);
+
+    if (!(bEnv && hostname[0]))
     {
         // Check registry for TIMEHOST
         rKey1 = HKEY_CURRENT_USER;

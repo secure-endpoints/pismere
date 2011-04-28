@@ -49,365 +49,464 @@ static char sccsid[] = "@(#)res_query.c	5.11 (Berkeley) 3/6/91";
 
 #include <windows.h>
 #include <winsock.h>
-#include <arpa/nameser.h>
 #include <resolv.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <windns.h>
 
-
-#include "u-compat.h"
+#define MAX_MSG_SIZE 0x2003
 
 #define strcasecmp	stricmp
-
-#if PACKETSZ > 1024
-#define MAXPACKET       PACKETSZ
-#else
-#define MAXPACKET       1024
-#endif
-
-#if !defined (_WINDLL) && !defined (_WIN32)
-int h_errno;
-#endif
 
 #ifdef _DEBUG
 #define DEBUG
 #endif
-
-#if (defined (_WINDLL) || defined (_WIN32) ) && defined(DEBUG)
-/* For debugging output */
-char debstr[80];
-#endif
-
-#if defined(_WINDOWS) || defined(_WIN32)
-#define ERROR_IS(x) (WSAGetLastError() == WSA##x)
-#define SET_ERROR(x) WSASetLastError(WSA##x)
-#else
-#define ERROR_IS(x) (errno == x)
-#define SET_ERROR(x) h_errno = x
-#endif
-
-/*
- *
- @func int WINAPI | res_query | 
-	 Formulate a normal query, send, and await answer.
- Returned answer is placed in supplied buffer "answer".
- Perform preliminary check of answer, returning success only
- if no error is indicated and the answer count is nonzero.
- Return the size of the response on success, -1 on error.
- Error number is left in h_errno.
- Caller must parse answer and determine whether it answers the question.
-
-   @parm char *| name | domain name
-   @parm int | qclass | class of query
-   @parm int | type | type of query
-   @parm u_char * | answer | buffer to put answer in
-   @parm int | anslen | size of answer buffer
-*
-*	
-*
-*/
 int
-#ifdef _WINDLL
-WINAPI
-#endif
-res_query(char *name, int qclass, int type, u_char *answer, int anslen)
-    /* domain name, class and type of query, buffer to put answer, size of answer buffer */
-{
-    char buf[MAXPACKET];
-    HEADER *hp;
-    int n;
+__hostalias(register const char *name, char* abuf);
+DNS_STATUS do_res_search(const char *name, int qclass, int type, u_char *retanswer, int retanswerlen, int* anslen);
+void __putshort(register u_short, register u_char *);
+void __putlong(register u_long, u_char *);
+int build_rr(char* p, PDNS_RECORD ptr, int qclass);
+int put_qname(char* p, char* qname);
 
-    if ((_res.options & RES_INIT) == 0 && res_init() == -1)
-        return (-1);
-#ifdef DEBUG
-    if (_res.options & RES_DEBUG)
-#if !defined (_WINDLL) && !defined (_WIN32)
-        printf("res_query(%s, %d, %d)\n", name, qclass, type);
-#else
-    {
-        wsprintf(debstr, "res_query(%s, %d, %d)\n", name, qclass, type);
-        OutputDebugString(debstr);
-    }
-#endif		
-#endif
-    n = res_mkquery(QUERY, name, qclass, type, (char *)NULL, 0, NULL,
-                    buf, sizeof(buf));
-
-    if (n <= 0) {
-#ifdef DEBUG
-        if (_res.options & RES_DEBUG)
-#if !defined (_WINDLL) && !defined (_WIN32)
-            printf("res_query: mkquery failed\n");
-#else
-        {
-            wsprintf(debstr, "res_query: mkquery failed\n");
-            OutputDebugString(debstr);
-        }
-#endif
-#endif
-
-#if !defined (_WINDLL) && !defined (_WIN32)
-        h_errno = NO_RECOVERY;
-#else
-        WSASetLastError(WSANO_RECOVERY);
-#endif
-        return (n);
-    }
-    n = res_send(buf, n, (char *)answer, anslen);
-    if (n < 0) {
-#ifdef DEBUG
-        if (_res.options & RES_DEBUG)
-#if !defined (_WINDLL) && !defined (_WIN32)
-            printf("res_query: send error\n");
-#else
-        {
-            wsprintf(debstr, "res_query: send error\n");
-            OutputDebugString(debstr);
-        }
-#endif    
-#endif
-
-#if !defined (_WINDLL) && !defined (_WIN32)
-        h_errno = TRY_AGAIN;
-#else
-        WSASetLastError(WSATRY_AGAIN);
-#endif
-        return(n);
-    }
-
-    hp = (HEADER *) answer;
-    if (hp->rcode != NOERROR || ntohs(hp->ancount) == 0) {
-#ifdef DEBUG
-        if (_res.options & RES_DEBUG)
-#if !defined (_WINDLL) && !defined (_WIN32)
-            printf("rcode = %d, ancount=%d\n", hp->rcode,
-                   ntohs(hp->ancount));
-#else
-        {
-            wsprintf(debstr, "rcode = %d, ancount=%d\n", hp->rcode,
-                     ntohs(hp->ancount));
-            OutputDebugString(debstr);
-        }
-#endif
-#endif
-        switch (hp->rcode) {
-        case NXDOMAIN:
-#if !defined (_WINDLL) && !defined (_WIN32)
-            h_errno = HOST_NOT_FOUND;
-#else
-            WSASetLastError(WSAHOST_NOT_FOUND);
-#endif
-            break;
-        case SERVFAIL:
-#if !defined (_WINDLL) && !defined (_WIN32)
-            h_errno = TRY_AGAIN;
-#else
-            WSASetLastError(WSATRY_AGAIN);
-#endif
-            break;
-        case NOERROR:
-#if !defined (_WINDLL) && !defined (_WIN32)
-            h_errno = NO_DATA;
-#else
-            WSASetLastError(WSANO_DATA);
-#endif
-            break;
-        case FORMERR:
-        case NOTIMP:
-        case REFUSED:
-        default:
-#if !defined (_WINDLL) && !defined (_WIN32)
-            h_errno = NO_RECOVERY;
-#else
-            WSASetLastError(WSANO_RECOVERY);
-#endif
-            break;
-        }
-        return (-1);
-    }
-    return(n);
-}
 
 
 /*
+	a generic query interface to the DNS name space. The query is performed with the dnsapi and
+	the answer buffer is populated based on the returned RR set.
 
-  @func int WINAPI | res_search |
-  
- Formulate a normal query, send, and retrieve answer in supplied buffer.
- Return the size of the response on success, -1 on error.
- If enabled, implement search rules until answer or unrecoverable failure
- is detected.  Error number is left in h_errno.
- Only useful for queries in the same name hierarchy as the local host
- (not, for example, for host address-to-name lookups in domain in-addr.arpa).
+	\param[in]	name	domain name
+	\param[in]	qclass  class of query(such as DNS_CLASS_INTERNET, DNS_CLASS_CSNET, DNS_CLASS_CHAOS, 
+						DNS_CLASS_HESIOD. Defined in windns.h) 
+	\param[in]	type	type of query(such as DNS_TYPE_A, DNS_TYPE_NS, DNS_TYPE_MX, DNS_TYPE_SRV. Defined in
+						windns.h)
+	\param[in]	answer  buffer to put answer in
+	\param[in]	anslen	size of the answer buffer. compare the anslen with the return value, if the return
+						value is bigger than anslen, it means the answer buffer doesn't contain the complete
+						response. You will need to call this function again with a bigger answer buffer if
+						you care about the complete response
 
-	@parm char *| name | domain name
-	@parm int | qclass | class of query
-	@parm int | type| type of query
-	@parm u_char *| answer | buffer to put answer in
-	@parm int | anslen | size of the answer buffer
+	\retval		return the size of the response on success, -1 on error
 
 
  */
-#ifdef _WINDLL
 int WINAPI
-#endif
 res_search(const char *name, int qclass, int type, u_char *answer, int anslen)
     /* domain name, class and type of query, buffer to put answer, size of answer */
 {
-    register char *cp, **domain;
-    int n, ret, got_nodata = 0;
-    char *__hostalias();
-	
-    if ((_res.options & RES_INIT) == 0 && res_init() == -1)
-        return (-1);
+    char debstr[80];
+    int n = 0;
+    DNS_STATUS status; 
+    char queryname[DNS_MAX_NAME_BUFFER_LENGTH ];
+    register const char *cp;
+    int len = 0;
+    
+    char** domain;
 
-#if !defined (_WINDLL) && !defined (_WIN32)
-    errno = 0;
-    h_errno = HOST_NOT_FOUND;               /* default, if we never query */
-#else
-    WSASetLastError(WSAHOST_NOT_FOUND);
-#endif
+    status = -1;
+    memset(answer, 0, anslen);
+    memset(queryname, 0, sizeof(queryname));
+
+    if ((_res.options & RES_INIT) == 0 && res_init() == -1)
+        return (-1);	
+   
     for (cp = name, n = 0; *cp; cp++)
         if (*cp == '.')
             n++;
-    if (n == 0 && (cp = __hostalias(name)))
-        return (res_query(cp, qclass, type, answer, anslen));
 
-    /*
-     * We do at least one level of search if
-     *      - there is no dot and RES_DEFNAME is set, or
-     *      - there is at least one dot, there is no trailing dot,
-     *        and RES_DNSRCH is set.
-     */
-    if ((n == 0 && _res.options & RES_DEFNAMES) ||
-        (n != 0 && *--cp != '.' && _res.options & RES_DNSRCH))
-        for (domain = _res.dnsrch; *domain; domain++) {
-            ret = res_querydomain(name, *domain, qclass, type,
-                                  answer, anslen);
-            if (ret > 0)
-                return (ret);
-            /*
-             * If no server present, give up.
-             * If name isn't found in this domain,
-             * keep trying higher domains in the search list
-             * (if that's enabled).
-             * On a NO_DATA error, keep trying, otherwise
-             * a wildcard entry of another type could keep us
-             * from finding this entry higher in the domain.
-             * If we get some other error (negative answer or
-             * server failure), then stop searching up,
-             * but try the input name below in case it's fully-qualified.
-             */
-            if (ERROR_IS(ECONNREFUSED)) {
-                SET_ERROR(TRY_AGAIN);
-                return (-1);
-            }
-            if (ERROR_IS(NO_DATA))
-                got_nodata++;
-            if ((!ERROR_IS(HOST_NOT_FOUND) && !ERROR_IS(NO_DATA)) ||
-                (_res.options & RES_DNSRCH) == 0)
-                break;
-        }
-    /*
-     * If the search/default failed, try the name as fully-qualified,
-     * but only if it contained at least one dot (even trailing).
-     * This is purely a heuristic; we assume that any reasonable query
-     * about a top-level domain (for servers, SOA, etc) will not use
-     * res_search.
-     */
-    if (n && (ret = res_querydomain(name, (char *)NULL, qclass, type,
-                                    answer, anslen)) > 0)
-        return (ret);
-    if (got_nodata)
-        SET_ERROR(NO_DATA);
-    return (-1);
-}
-
-
-/*
-
-  @func int WINAPI | res_querydomain| 
-
-  Perform a call on res_query on the concatenation of name and domain,
-  removing a trailing dot from name if domain is NULL.
-
-  @parm char *| name| name
-  @parm char *| domain| domain
-  @parm int | qclass | query class
-  @parm int | type | query type
-  @parm u_char *| answer | buffer for answer
-  @parm int | anslen | length of buffer
-
- */
-int
-#ifdef _WINDLL
-WINAPI
-#endif
-res_querydomain(const char *name, const char *domain, int qclass, int type, u_char *answer, int anslen)
-{
-    char nbuf[2*MAXDNAME+2];
-    char *longname = nbuf;
-    int n;
-
-#ifdef DEBUG
-    if (_res.options & RES_DEBUG)
-#if !defined (_WINDLL) && !defined (_WIN32)
-        printf("res_querydomain(%s, %s, %d, %d)\n",
-               name, domain, qclass, type);
-#else
+    if (n == 0 && !__hostalias(name, queryname) && strlen(queryname)>0)
     {
-        wsprintf(debstr, "res_querydomain(%s, %s, %d, %d)\n",
-                 name, domain ? domain : "<NULL>", qclass, type); /* il 8/22/95 -- bombed when domain is NULL */
-        OutputDebugString(debstr);
+	status = do_res_search(queryname, qclass, type, answer, anslen, &len);
+	if (status == 0)
+	    return len;
+    }	
+
+    if ((n == 0 && _res.options & RES_DEFNAMES)) 
+	// (n != 0 && *--cp != '.' && _res.options & RES_DNSRCH))
+    {
+	for (domain = _res.dnsrch; *domain; domain++) {
+	    strcpy(queryname, name);
+	    strcat(queryname, ".");
+	    strcat(queryname, *domain);
+	    status = do_res_search(queryname, qclass, type, answer, anslen, &len);
+	    if (status == 0)
+		return len;
 	}
-#endif
-#endif
-    if (domain == NULL) {
-        /*
-         * Check for trailing '.';
-         * copy without '.' if present.
-         */
-        n = strlen(name) - 1;
-        if (name[n] == '.' && n < sizeof(nbuf) - 1) {
-#if !defined (_WINDLL) && !defined (_WIN32)
-            bcopy(name, nbuf, n);
-#else
-            memcpy(nbuf, name, n);
-#endif
-            nbuf[n] = '\0';
-        } else
-            longname = name;
-    } else
-#if !defined (_WINDLL) && !defined (_WIN32)
-        (void)sprintf(nbuf, "%.*s.%.*s",
-                      MAXDNAME, name, MAXDNAME, domain);
-#else
-    /*
-      This has to be done because wsprintf() doesn't understand * as a
-      precision specifer - if MAXDNAME should ever change (in arpa/nameser.h)
-      then this will need to be better implemented
-    */
-    (void)wsprintf(nbuf, "%.256s.%.256s",
-                   name, domain);
-#endif
-    return (res_query(longname, qclass, type, answer, anslen));
+    }
+
+
+    strcpy(queryname, name);
+    status = do_res_search(queryname, qclass, type, answer, anslen, &len);
+
+
+    if (status)
+    {
+#ifdef DEBUG
+        if (_res.options & RES_DEBUG)
+        {
+            wsprintf(debstr, "res_query failed\n");
+            OutputDebugString(debstr);
+        }	
+#endif	
+	return -1;
+    }
+    return len;
 }
 
-char *
-__hostalias(register const char *name)
+int 
+put_qname(char* cp, char* qname)
+{
+    char* p;
+    char* temp;
+    INT_PTR n = 0;
+    INT_PTR i = 0;
+    temp = qname;
+    while (p = strchr(temp, '.'))
+    {
+	n = p - temp;
+	if (n == 0)
+	{
+	    temp++;
+	    break;
+	}
+	cp[0] = (int)n;
+	cp++;
+	i++;
+	strncpy(cp, temp, n);
+	temp = p+1;
+	cp =  cp + n;
+	i = i + n;
+    }
+    n = strlen(temp);
+    if (n > 0)
+    {
+	cp[0] = (int)n;
+	cp++;
+	i++;
+	strcpy(cp, temp);
+	cp = cp+n;
+    }
+    cp[0] = 0;
+    i = i+n+1;
+    return (int)i;
+}	
+
+DNS_STATUS 
+do_res_search(const char *queryname, int qclass, int type, u_char *retanswer, int retanswerlen, int* anslen)
+{
+    PDNS_RECORD pDnsRecord; 
+    PDNS_RECORD ptr;
+    DNS_STATUS status; 
+    DNS_FREE_TYPE freetype ;
+    HEADER *hp;
+    char *cp;
+    int  n;
+    int i;
+    u_char  answer[MAX_MSG_SIZE];
+    DWORD options = DNS_QUERY_STANDARD;
+    freetype =  DnsFreeRecordListDeep;
+
+    memset(answer, 0, MAX_MSG_SIZE);
+    if (!(_res.options & RES_RECURSE))
+	options = options | DNS_QUERY_NO_RECURSION;
+    if (_res.options & RES_USEVC)
+	options = options | DNS_QUERY_USE_TCP_ONLY;
+    if (_res.options & RES_IGNTC)
+	options = options | DNS_QUERY_ACCEPT_TRUNCATED_RESPONSE;
+
+    status = DnsQuery_A(queryname,                 //pointer to OwnerName 
+                        type,         //Type of the record to be queried
+                        options,
+                        NULL,                   //contains DNS server IP address
+                        &pDnsRecord,                //Resource record comprising the response
+                        NULL);                     //reserved for future use
+    
+    if (status) 
+        return  status;
+   
+
+    hp = (HEADER *) answer;
+    cp = answer + sizeof(HEADER);
+
+    // populating the header
+    hp->id = htons(++_res.id); // query id
+    hp->qr = 1;  // 0 for query 1 for response
+    hp->opcode = 0; // standard query
+    hp->aa = 1; // authoritative answer
+    hp->tc = 0; // no truncation
+    hp->rd = (_res.options & RES_RECURSE) != 0; // resursion desired
+    hp->ra = 1;  // recursion available
+    hp->pr = (_res.options & RES_PRIMARY) != 0; // primary server required
+    hp->rcode = NOERROR;
+    hp->qdcount = htons(1); // number of question entries
+    i = put_qname(cp, (char*)queryname);
+    cp = cp + i;
+    __putshort(type, (u_char *)cp);
+    cp += sizeof(u_short);
+    __putshort(qclass, (u_char *)cp);
+    cp += sizeof(u_short);
+
+    // get the answer
+    for (n = 0, ptr = pDnsRecord; ptr; ptr = ptr->pNext)
+    {
+	if ((ptr->Flags).S.Section == DNSREC_ANSWER ||
+	     (type == DNS_TYPE_PTR && (ptr->Flags).S.Section==DNSREC_QUESTION))
+	{
+	    i = build_rr(cp, ptr, qclass);
+	    cp = cp + i;
+	    //strcpy(cp, pDnsRecord->pName);
+	    //cp += strlen(pDnsRecord->pName);
+	    //cp++;
+
+	    n++;
+	}
+    }
+    hp->ancount = htons(n);
+
+    // get the authority
+    for (n = 0, ptr = pDnsRecord; ptr; ptr = ptr->pNext)
+    {
+	if ((ptr->Flags).S.Section == DNSREC_AUTHORITY )
+	{
+	    i = build_rr(cp, ptr, qclass);
+	    cp = cp + i;
+
+	    n++;
+	}
+    }
+    hp->nscount = htons(n);
+
+    // get the additional resource
+    for (n = 0, ptr = pDnsRecord; ptr; ptr = ptr->pNext)
+    {
+	if ((ptr->Flags).S.Section == DNSREC_ADDITIONAL)
+	{
+	    i = build_rr(cp, ptr, qclass);
+	    cp = cp + i;
+
+	    n++;
+	}
+
+    }
+    hp->arcount = htons(n);
+
+    *anslen = (int)(cp - answer);
+    if (*anslen > retanswerlen)
+	memcpy(retanswer, answer, retanswerlen); // partial copy
+    else
+	memcpy(retanswer, answer, *anslen);
+    DnsRecordListFree(pDnsRecord, freetype);
+    return status;
+}	
+
+int
+build_rr(char* p, PDNS_RECORD ptr, int qclass)
+{
+    int i = 0;
+    int n = 0;
+    char* cp = p;
+    char* temp = NULL;
+    unsigned int index = 0;
+
+    i = put_qname(cp, ptr->pName);
+    cp = p + i;
+
+    __putshort(ptr->wType, (u_char *)cp);
+    i += sizeof(u_short);
+    cp = p + i;
+    __putshort(qclass, (u_char *)cp);
+    i += sizeof(u_short);
+    cp = p + i;
+    __putlong(ptr->dwTtl, (u_char*)cp);
+    i += sizeof(u_long);
+    cp = p + i;
+    switch (ptr->wType)
+    {
+    case DNS_TYPE_A:
+	__putshort(sizeof(ptr->Data.A), (u_char*)cp); //RDLENGTH
+	i += sizeof(u_short);
+	cp = p + i;
+	memcpy(cp, &(ptr->Data.A), sizeof(ptr->Data.A));
+	i += sizeof(ptr->Data.A);
+	break;
+    case DNS_TYPE_NS:
+    case DNS_TYPE_MD:         
+    case DNS_TYPE_MF:
+    case DNS_TYPE_CNAME:
+    case DNS_TYPE_MB:
+    case DNS_TYPE_MG:
+    case DNS_TYPE_MR:
+    case DNS_TYPE_PTR:
+	temp = cp;     // hold the spot for RD length
+	i += sizeof(u_short); 
+	cp = p+i;
+	n = put_qname(cp, ptr->Data.Ptr.pNameHost);
+	i += n;
+	__putshort(n, (u_char*)temp); //set RDLENGTH
+	break;
+    case DNS_TYPE_TEXT:
+    case DNS_TYPE_HINFO:
+    case DNS_TYPE_ISDN:
+    case DNS_TYPE_X25:
+	temp = cp; // hold the spot for RDLENGTH
+	i += sizeof(u_short); 
+	cp = p + i;
+	n = 0;
+	for (index = 0; index < ptr->Data.Txt.dwStringCount; index++)
+	{
+	    *cp = (int)(strlen(ptr->Data.Txt.pStringArray[index]));
+	    n += *cp;
+	    n++;
+	    strcpy(++cp, ptr->Data.Txt.pStringArray[index]);
+	}
+	i += n;
+	__putshort(n,(u_char*)temp); // set RDLENGTH
+	break;
+    case DNS_TYPE_SRV:
+	temp = cp; // hold the spot for RDLENGTH
+	i += sizeof(u_short); 
+	cp = p + i;
+	// priority
+	__putshort(ptr->Data.Srv.wPriority, (u_char*)cp); 
+	i += sizeof(u_short);
+	cp = p + i;
+	//weight
+	__putshort(ptr->Data.Srv.wWeight, (u_char*)cp); 
+	i += sizeof(u_short);
+	cp = p + i;
+	//port
+	__putshort(ptr->Data.Srv.wPort, (u_char*)cp); 
+	i += sizeof(u_short);
+	cp = p + i;
+
+	n = put_qname(cp, ptr->Data.Srv.pNameTarget);
+	i+=n;
+	__putshort((u_short)(n + sizeof(u_short)*3),(u_char*)temp);
+
+	break;
+    case DNS_TYPE_MX:
+    case DNS_TYPE_AFSDB:
+    case DNS_TYPE_RT:
+	temp = cp; // hold the spot for RDLENGTH
+	i += sizeof(u_short); 
+	cp = p + i;
+	__putshort(ptr->Data.Mx.wPreference, (u_char*)cp); // put wPreference
+	i += sizeof(u_short);
+	cp = p + i;
+	n = put_qname(cp, ptr->Data.Mx.pNameExchange);
+	i+=n;
+	__putshort((u_short)(n+sizeof(u_short)),(u_char*)temp);
+	break;
+	case DNS_TYPE_SOA:
+	temp = cp; // hold the spot for RDLENGTH
+	i += sizeof(u_short); 
+	cp = p + i;
+	// primary server name
+	n = put_qname(cp, ptr->Data.Soa.pNamePrimaryServer);
+	i+= n;
+	cp = p + i;
+	//the person responsible for this zone.
+	n += put_qname(cp, ptr->Data.Soa.pNameAdministrator);
+	i += n;
+	cp = p + i;
+	//SERIAL
+	__putlong(ptr->Data.Soa.dwSerialNo, cp);
+	n += sizeof(u_long);
+	i += sizeof(u_long);
+	cp = p + i;
+	//refresh
+	__putlong(ptr->Data.Soa.dwRefresh, cp);
+	n += sizeof(u_long);
+	i += sizeof(u_long);
+	cp = p + i;
+	//retry
+	__putlong(ptr->Data.Soa.dwRetry, cp);
+	n += sizeof(u_long);
+	i += sizeof(u_long);
+	cp = p + i;
+	// expire
+	__putlong(ptr->Data.Soa.dwExpire, cp);
+	n += sizeof(u_long);
+	i += sizeof(u_long);
+	cp = p + i;
+	// minimum TTL
+	__putlong(ptr->Data.Soa.dwDefaultTtl, cp);
+	n += sizeof(u_long);
+	i += sizeof(u_long);
+	// set RDLength
+	__putshort(n,(u_char*)temp);
+	break;
+	case DNS_TYPE_NULL:
+	__putshort((short)ptr->Data.Null.dwByteCount, (u_char*)cp); //RDLENGTH
+	i += sizeof(u_short);
+	cp = p + i;
+	memcpy(cp, ptr->Data.Null.Data, ptr->Data.Null.dwByteCount);
+	i += ptr->Data.Null.dwByteCount;	
+	break;
+	case DNS_TYPE_WKS:   // needs more work
+	temp = cp; // hold the spot for RDLENGTH
+	i += sizeof(u_short); 
+	cp = p + i;
+	// address
+	memcpy(cp, &(ptr->Data.Wks.IpAddress), sizeof(ptr->Data.Wks.IpAddress));
+	n = sizeof(ptr->Data.Wks.IpAddress);
+	i += sizeof(ptr->Data.Wks.IpAddress);
+	cp = p + i;
+	// protocol
+	*cp = ptr->Data.Wks.chProtocol;
+	i++;
+	n++;
+	cp = p + i;
+	//bit mask
+	memcpy(cp, &(ptr->Data.Wks.BitMask), sizeof(ptr->Data.Wks.BitMask));
+	n+=sizeof(ptr->Data.Wks.BitMask);
+	i += n;
+	// set RDLength
+	__putshort(n,(u_char*)temp);	
+	break;
+	case DNS_TYPE_MINFO:
+	case DNS_TYPE_RP:
+	temp = cp; // hold the spot for RDLENGTH
+	i += sizeof(u_short); 
+	cp = p + i;
+	// pNameMailbox
+	n = put_qname(cp, ptr->Data.Minfo.pNameMailbox);
+	i+= n;
+	cp = p + i;
+	// pNameErrorsMailbox;
+	n += put_qname(cp, ptr->Data.Minfo.pNameMailbox);
+	i += n;
+	// set RDLength
+	__putshort(n,(u_char*)temp);	
+    break;
+	case DNS_TYPE_AAAA:
+	__putshort(sizeof(ptr->Data.AAAA), (u_char*)cp); //RDLENGTH
+	i += sizeof(u_short);
+	cp = p + i;
+	memcpy(cp, &(ptr->Data.AAAA), sizeof(ptr->Data.AAAA));
+	i += sizeof(ptr->Data.AAAA);
+
+    break;
+    }
+    return i;
+}
+
+
+int
+__hostalias(register const char *name, char* abuf)
 {
     register char *C1, *C2;
     FILE *fp;
     char *file; 
 //  char *getenv(), *strcpy(), *strncpy();  // pbh XXX 11/1/96
     char buf[BUFSIZ];
-    static char abuf[MAXDNAME];
+    
 
     file = getenv("HOSTALIASES");
     if (file == NULL || (fp = fopen(file, "r")) == NULL)
-        return (NULL);
+        return -1;
     buf[sizeof(buf) - 1] = '\0';
     while (fgets(buf, sizeof(buf), fp)) {
         for (C1 = buf; *C1 && !isspace(*C1); ++C1);
@@ -422,9 +521,41 @@ __hostalias(register const char *name)
             abuf[sizeof(abuf) - 1] = *C2 = '\0';
             (void)strncpy(abuf, C1, sizeof(abuf) - 1);
             fclose(fp);
-            return (abuf);
+            return 0;
         }
     }
     fclose(fp);
-    return (NULL);
+    return -1;
+}
+
+int  WINAPI 
+res_mkquery(int op, const char  *dname,
+	    int qclass, int type, 
+	    const char  *data, int datalen, 
+	    const struct rrec  *newrr,
+	    char  *buf, int buflen)
+{
+    return -1;
+}
+
+int  WINAPI 
+res_querydomain(const char  *name,
+		const char  *domain, 
+		int qclass, int type, 
+		u_char  *answer, int anslen)
+{
+    return -1;
+}
+
+int  WINAPI 
+res_send(const char  *msg, int msglen,
+	 char  *answer, int anslen)
+{
+	return -1;
+}
+
+int  WINAPI
+res_query(char *name, int qclass, int type, u_char *answer, int anslen)
+{
+    return -1;
 }

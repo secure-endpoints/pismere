@@ -32,3 +32,4 @@ EXPORTS
 		hes_getpwuid            @26
 		wsh_gethostname
 		wsh_getdomainname
+		hes_free

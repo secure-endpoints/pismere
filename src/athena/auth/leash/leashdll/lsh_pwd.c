@@ -6,6 +6,7 @@
    8/2/94
    DCNS/IS MIT
 
+   Re-written for KFW 2.6 by Jeffrey Altman <jaltman@mit.edu>
 
    Contains the callback functions for the EnterPassword an
    ChangePassword dialog boxes and well as the API function
@@ -81,11 +82,235 @@ long Leash_get_lsh_errno(LONG *err_val)
 
 /*/////// ******** API Calls follow here.   ******** /////////*/
 
+static int
+NetId_dialog(LPLSH_DLGINFO lpdlginfo)
+{
+    LRESULT             lrc;
+    HWND    	        hNetIdMgr;
+    HWND    		hForeground;
+
+    hNetIdMgr = FindWindow("IDMgrRequestDaemonCls", "IDMgrRequestDaemon");
+    if (hNetIdMgr != NULL) {
+	char desiredPrincipal[512]; 
+	NETID_DLGINFO *dlginfo;
+	char		*desiredName = 0;
+	char            *desiredRealm = 0;
+	HANDLE hMap;
+	DWORD  tid = GetCurrentThreadId();
+	char mapname[256];
+
+	strcpy(desiredPrincipal, lpdlginfo->principal);
+
+	/* do we want a specific client principal? */
+	if (desiredPrincipal[0]) {
+	    char * p;
+	    desiredName = desiredPrincipal;
+	    for (p = desiredName; *p && *p != '@'; p++);
+	    if ( *p == '@' ) {
+		*p = '\0';
+		desiredRealm = ++p;
+	    }
+	}
+
+	sprintf(mapname,"Local\\NetIDMgr_DlgInfo_%lu",tid);
+
+	hMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
+				 0, 4096, mapname);
+	if (hMap == NULL) {
+	    return -1;
+	} else if (hMap != NULL && GetLastError() == ERROR_ALREADY_EXISTS) {
+	    CloseHandle(hMap);
+	    return -1;
+	}
+
+	dlginfo = (NETID_DLGINFO *)MapViewOfFileEx(hMap, FILE_MAP_READ|FILE_MAP_WRITE,
+						 0, 0, 4096, NULL);
+	if (dlginfo == NULL) {
+	    CloseHandle(hMap);
+	    return -1;
+	}
+
+	hForeground = GetForegroundWindow();
+
+	memset(dlginfo, 0, sizeof(NETID_DLGINFO));
+
+	dlginfo->size = sizeof(NETID_DLGINFO);
+	if (lpdlginfo->dlgtype == DLGTYPE_PASSWD)
+	    dlginfo->dlgtype = NETID_DLGTYPE_TGT;
+	else
+	    dlginfo->dlgtype = NETID_DLGTYPE_CHPASSWD;
+	dlginfo->in.use_defaults = 1;
+
+	if (lpdlginfo->title) {
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				lpdlginfo->title, -1,
+				dlginfo->in.title, NETID_TITLE_SZ);
+	} else if (desiredName && (strlen(desiredName) + strlen(desiredRealm) + 32 < NETID_TITLE_SZ)) {
+	    char mytitle[NETID_TITLE_SZ];
+	    sprintf(mytitle, "Obtain Kerberos TGT for %s@%s",desiredName,desiredRealm);
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				mytitle, -1,
+				dlginfo->in.title, NETID_TITLE_SZ);
+	} else {
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				"Obtain Kerberos TGT", -1,
+				dlginfo->in.title, NETID_TITLE_SZ);
+	}
+	if (desiredName)
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				desiredName, -1,
+				dlginfo->in.username, NETID_USERNAME_SZ);
+	if (desiredRealm)
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				desiredRealm, -1,
+				dlginfo->in.realm, NETID_REALM_SZ);
+	lrc = SendMessage(hNetIdMgr, 32809, 0, (LPARAM) tid);
+
+	UnmapViewOfFile(dlginfo);
+	CloseHandle(hMap);
+
+	SetForegroundWindow(hForeground);
+	return lrc;
+    }
+    return -1;
+}
+
+static int
+NetId_dialog_ex(LPLSH_DLGINFO_EX lpdlginfo)
+{
+    HWND    	        hNetIdMgr;
+    HWND    		hForeground;
+
+    hNetIdMgr = FindWindow("IDMgrRequestDaemonCls", "IDMgrRequestDaemon");
+    if (hNetIdMgr != NULL) {
+	NETID_DLGINFO   *dlginfo;
+	char		*desiredName = lpdlginfo->username;
+	char            *desiredRealm = lpdlginfo->realm;
+	LPSTR            title;
+	char            *ccache;
+	LRESULT         lrc;
+	HANDLE hMap;
+	DWORD  tid = GetCurrentThreadId();
+	char mapname[256];
+
+	sprintf(mapname,"Local\\NetIDMgr_DlgInfo_%lu",tid);
+
+	hMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
+				 0, 4096, mapname);
+	if (hMap == NULL) {
+	    return -1;
+	} else if (hMap != NULL && GetLastError() == ERROR_ALREADY_EXISTS) {
+	    CloseHandle(hMap);
+	    return -1;
+	}
+
+	dlginfo = (NETID_DLGINFO *)MapViewOfFileEx(hMap, FILE_MAP_READ|FILE_MAP_WRITE,
+						 0, 0, 4096, NULL);
+	if (dlginfo == NULL) {
+	    CloseHandle(hMap);
+	    return -1;
+	}
+
+	hForeground = GetForegroundWindow();
+
+	if (lpdlginfo->size == LSH_DLGINFO_EX_V1_SZ ||
+	    lpdlginfo->size == LSH_DLGINFO_EX_V2_SZ) 
+	{
+	    title = lpdlginfo->title;
+	    desiredName = lpdlginfo->username;
+	    desiredRealm = lpdlginfo->realm;
+	    ccache = NULL;
+	} else {
+	    title = lpdlginfo->in.title;
+	    desiredName = lpdlginfo->in.username;
+	    desiredRealm = lpdlginfo->in.realm;
+	    ccache = lpdlginfo->in.ccache;
+	}
+
+	memset(dlginfo, 0, sizeof(NETID_DLGINFO));
+
+	dlginfo->size = sizeof(NETID_DLGINFO);
+	if (lpdlginfo->dlgtype == DLGTYPE_PASSWD)
+	    dlginfo->dlgtype = NETID_DLGTYPE_TGT;
+	else
+	    dlginfo->dlgtype = NETID_DLGTYPE_CHPASSWD;
+
+	dlginfo->in.use_defaults = lpdlginfo->use_defaults;
+	dlginfo->in.forwardable  = lpdlginfo->forwardable;
+	dlginfo->in.noaddresses  = lpdlginfo->noaddresses;
+	dlginfo->in.lifetime     = lpdlginfo->lifetime;
+	dlginfo->in.renew_till   = lpdlginfo->renew_till;
+	dlginfo->in.proxiable    = lpdlginfo->proxiable;
+	dlginfo->in.publicip     = lpdlginfo->publicip;
+
+	if (title) {
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				title, -1,
+				dlginfo->in.title, NETID_TITLE_SZ);
+	} else if (desiredName && (strlen(desiredName) + strlen(desiredRealm) + 32 < NETID_TITLE_SZ)) {
+	    char mytitle[NETID_TITLE_SZ];
+	    sprintf(mytitle, "Obtain Kerberos TGT for %s@%s",desiredName,desiredRealm);
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				mytitle, -1,
+				dlginfo->in.title, NETID_TITLE_SZ);
+	} else {
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				"Obtain Kerberos TGT", -1,
+				dlginfo->in.title, NETID_TITLE_SZ);
+	}
+	if (desiredName)
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				desiredName, -1,
+				dlginfo->in.username, NETID_USERNAME_SZ);
+	if (desiredRealm)
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				desiredRealm, -1,
+				dlginfo->in.realm, NETID_REALM_SZ);
+	if (ccache)
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				ccache, -1,
+				dlginfo->in.ccache, NETID_CCACHE_NAME_SZ);
+	lrc = SendMessage(hNetIdMgr, 32809, 0, (LPARAM) tid);
+
+	if (lrc > 0) {
+	    if (lpdlginfo->size == LSH_DLGINFO_EX_V2_SZ) 
+	    {
+		WideCharToMultiByte(CP_ACP, 0, dlginfo->out.username, -1, 
+				     lpdlginfo->out.username, LEASH_USERNAME_SZ, 
+				     NULL, NULL);
+		WideCharToMultiByte(CP_ACP, 0, dlginfo->out.realm, -1, 
+				     lpdlginfo->out.realm, LEASH_REALM_SZ, 
+				     NULL, NULL);
+	    }
+	    if (lpdlginfo->size == LSH_DLGINFO_EX_V3_SZ) 
+	    {
+		WideCharToMultiByte(CP_ACP, 0, dlginfo->out.ccache, -1, 
+				     lpdlginfo->out.ccache, LEASH_CCACHE_NAME_SZ, 
+				     NULL, NULL);
+	    }
+	}
+
+	UnmapViewOfFile(dlginfo);
+	CloseHandle(hMap);
+
+	SetForegroundWindow(hForeground);
+	return lrc;
+    }
+    return -1;
+}
+
+
 #define LEASH_DLG_MUTEX_NAME  TEXT("Leash_Dialog_Mutex")
 int Leash_kinit_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo)
 {
     int rc;
-    HANDLE hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
+    HANDLE hMutex;
+    
+    rc = NetId_dialog(lpdlginfo);
+    if (rc > -1)
+	return rc;
+    
+    hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
     if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
         if ( WaitForSingleObject( hMutex, INFINITE ) != WAIT_OBJECT_0 ) {
             return -1;
@@ -114,7 +339,13 @@ int Leash_kinit_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo)
 int Leash_kinit_dlg_ex(HWND hParent, LPLSH_DLGINFO_EX lpdlginfo)
 {
     int rc;
-    HANDLE hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
+    HANDLE hMutex;
+    
+    rc = NetId_dialog_ex(lpdlginfo);
+    if (rc > -1)
+	return rc;
+    
+    hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
     if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
         if ( WaitForSingleObject( hMutex, INFINITE ) != WAIT_OBJECT_0 ) {
             return -1;
@@ -142,7 +373,13 @@ int Leash_kinit_dlg_ex(HWND hParent, LPLSH_DLGINFO_EX lpdlginfo)
 int Leash_changepwd_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo)
 {
     int rc;
-    HANDLE hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
+    HANDLE hMutex;
+    
+    rc = NetId_dialog(lpdlginfo);
+    if (rc > -1)
+	return rc;
+    
+    hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
     if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
         if ( WaitForSingleObject( hMutex, INFINITE ) != WAIT_OBJECT_0 ) {
             return -1;
@@ -166,7 +403,13 @@ int Leash_changepwd_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo)
 int Leash_changepwd_dlg_ex(HWND hParent, LPLSH_DLGINFO_EX lpdlginfo)
 {
     int rc;
-    HANDLE hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
+    HANDLE hMutex;
+    
+    rc = NetId_dialog_ex(lpdlginfo);
+    if (rc > -1)
+	return rc;
+    
+    hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
     if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
         if ( WaitForSingleObject( hMutex, INFINITE ) != WAIT_OBJECT_0 ) {
             return -1;
@@ -1274,50 +1517,49 @@ AuthenticateProc(
 {
     static POINT Position = { -1, -1 };
     static char username[LEASH_USERNAME_SZ]="";
-	static char realm[LEASH_REALM_SZ]="";
-	static char password[256]="";
-	static int  lifetime=0;
-	static int  renew_till=0;
-	static int  forwardable=0;
-	static int  noaddresses=0;
-	static int  proxiable=0;
-	static int  publicip=0;
+    static char realm[LEASH_REALM_SZ]="";
+    static char password[256]="";
+    static int  lifetime=0;
+    static int  renew_till=0;
+    static int  forwardable=0;
+    static int  noaddresses=0;
+    static int  proxiable=0;
+    static int  publicip=0;
     static LPLSH_DLGINFO_EX lpdi;
-	static HWND hDlg=0;
-	static HWND hSliderLifetime=0;
-	static HWND hSliderRenew=0;
+    static HWND hDlg=0;
+    static HWND hSliderLifetime=0;
+    static HWND hSliderRenew=0;
     static RECT dlgRect;
     static int  hideDiff = 0;
-    char gbuf[256];                 /* global buffer for random stuff. */
-	char principal[256];
-	long realm_count = 0;
+    char principal[256];
+    long realm_count = 0;
     int disable_noaddresses = 0;
 
     switch (message) {
 
     case WM_INITDIALOG:
-		hDlg = hDialog;
+	hDlg = hDialog;
 
         SetVersionInfo(hDialog,IDC_STATIC_VERSION,IDC_STATIC_COPYRIGHT);
-		hSliderLifetime = GetDlgItem(hDialog, IDC_STATIC_LIFETIME_VALUE);
-		hSliderRenew = GetDlgItem(hDialog, IDC_STATIC_RENEW_TILL_VALUE);
+	hSliderLifetime = GetDlgItem(hDialog, IDC_STATIC_LIFETIME_VALUE);
+	hSliderRenew = GetDlgItem(hDialog, IDC_STATIC_RENEW_TILL_VALUE);
 
         *( (LPLSH_DLGINFO_EX far *)(&lpdi) ) = (LPLSH_DLGINFO_EX)(LPSTR)lParam;
 
-		if ((lpdi->size != LSH_DLGINFO_EX_V1_SZ && 
-             lpdi->size < sizeof(LSH_DLGINFO_EX)) ||
-			lpdi->dlgtype != DLGTYPE_PASSWD) {
+	if ((lpdi->size != LSH_DLGINFO_EX_V1_SZ && 
+	      lpdi->size < sizeof(LSH_DLGINFO_EX)) ||
+	     lpdi->dlgtype != DLGTYPE_PASSWD) {
 
-			MessageBox(hDialog, "An incorrect initialization data structure was provided.",
-						"AuthenticateProc()",
-						MB_OK | MB_ICONSTOP);
-			return FALSE;
-		}
+	    MessageBox(hDialog, "An incorrect initialization data structure was provided.",
+			"AuthenticateProc()",
+			MB_OK | MB_ICONSTOP);
+	    return FALSE;
+	}
 
         if ( lpdi->size >= sizeof(LSH_DLGINFO_EX) ) {
             lpdi->out.username[0] = 0;
             lpdi->out.realm[0] = 0;
-        }
+        }	
 
         SetWindowText(hDialog, lpdi->title);
 
@@ -1325,78 +1567,78 @@ AuthenticateProc(
 
         if (lpdi->username)
             lstrcpy(username, lpdi->username);
-		if (lpdi->realm)
-			lstrcpy(realm, lpdi->realm);
-		if (lpdi->use_defaults) {
-			lifetime = Leash_get_default_lifetime();
-			if (lifetime <= 0)
-				lifetime = 600; /* 10 hours */
-			if (Leash_get_default_renewable()) {
+	if (lpdi->realm)
+	    lstrcpy(realm, lpdi->realm);
+	if (lpdi->use_defaults) {
+	    lifetime = Leash_get_default_lifetime();
+	    if (lifetime <= 0)
+		lifetime = 600; /* 10 hours */
+	    if (Leash_get_default_renewable()) {
                 renew_till = Leash_get_default_renew_till();
                 if (renew_till < 0)
                     renew_till = 10800; /* 7 days */
-            } else 
+            } else 		
                 renew_till = 0;
-			forwardable = Leash_get_default_forwardable();
-			if (forwardable < 0)
-				forwardable = 0;
-			noaddresses = Leash_get_default_noaddresses();
-			if (noaddresses < 0)
-				noaddresses = 0;
-			proxiable = Leash_get_default_proxiable();
-			if (proxiable < 0)
-				proxiable = 0;
-			publicip = Leash_get_default_publicip();
-			if (publicip < 0)
-				publicip = 0;
-		} else {
-			forwardable = lpdi->forwardable;
-			noaddresses = lpdi->noaddresses;
-			lifetime = lpdi->lifetime;
-			renew_till = lpdi->renew_till;
-			proxiable = lpdi->proxiable;
-			publicip = lpdi->publicip;
-		}
+	    forwardable = Leash_get_default_forwardable();
+	    if (forwardable < 0)
+		forwardable = 0;
+	    noaddresses = Leash_get_default_noaddresses();
+	    if (noaddresses < 0)
+		noaddresses = 0;
+	    proxiable = Leash_get_default_proxiable();
+	    if (proxiable < 0)
+		proxiable = 0;
+	    publicip = Leash_get_default_publicip();
+	    if (publicip < 0)
+		publicip = 0;
+	} else {
+	    forwardable = lpdi->forwardable;
+	    noaddresses = lpdi->noaddresses;
+	    lifetime = lpdi->lifetime;
+	    renew_till = lpdi->renew_till;
+	    proxiable = lpdi->proxiable;
+	    publicip = lpdi->publicip;
+	}
 
         CSetDlgItemText(hDialog, IDC_EDIT_PRINCIPAL, username);
         CSetDlgItemText(hDialog, IDC_EDIT_PASSWORD, "");
 
 #if 0  /* 20030619 - mjv wishes to return to the default character */
         /* echo spaces */
-		CSendDlgItemMessage(hDialog, IDC_EDIT_PASSWORD, EM_SETPASSWORDCHAR, 32, 0);
+	CSendDlgItemMessage(hDialog, IDC_EDIT_PASSWORD, EM_SETPASSWORDCHAR, 32, 0);
 #endif
 
-		/* Populate list of Realms */
-		CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_RESETCONTENT, 0, 0);
-		CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_LIMITTEXT, 192, 0);
+	/* Populate list of Realms */
+	CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_RESETCONTENT, 0, 0);
+	CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_LIMITTEXT, 192, 0);
 
-		if (pprofile_get_subsection_names && pprofile_free_list) {
-			const char*  rootSection[] = {"realms", NULL};
-			const char** rootsec = rootSection;
-			char **sections = NULL, **cpp = NULL, *value = NULL;
+	if (pprofile_get_subsection_names && pprofile_free_list) {
+	    const char*  rootSection[] = {"realms", NULL};
+	    const char** rootsec = rootSection;
+	    char **sections = NULL, **cpp = NULL, *value = NULL;
 
-			char krb5_conf[MAX_PATH+1];
+	    char krb5_conf[MAX_PATH+1];
 
-			if (!GetProfileFile(krb5_conf,sizeof(krb5_conf))) {
-				profile_t profile;
-				long retval;
-				const char *filenames[2];
+	    if (!GetProfileFile(krb5_conf,sizeof(krb5_conf))) {
+		profile_t profile;
+		long retval;
+		const char *filenames[2];
 
-				filenames[0] = krb5_conf;
-				filenames[1] = NULL;
-				retval = pprofile_init(filenames, &profile);
-				if (!retval) {
-					retval = pprofile_get_subsection_names(profile,	rootsec, &sections);
+		filenames[0] = krb5_conf;
+		filenames[1] = NULL;
+		retval = pprofile_init(filenames, &profile);
+		if (!retval) {
+		    retval = pprofile_get_subsection_names(profile,	rootsec, &sections);
 
-					if (!retval)
-					{
-						for (cpp = sections; *cpp; cpp++)
-						{
-							CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_ADDSTRING, 0, (LPARAM)*cpp);
-							realm_count++;
-						}
-					}
-					pprofile_free_list(sections);
+		    if (!retval)
+		    {
+			for (cpp = sections; *cpp; cpp++)
+			{
+			    CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_ADDSTRING, 0, (LPARAM)*cpp);
+			    realm_count++;
+			}
+		    }
+		    pprofile_free_list(sections);
 
                     retval = pprofile_get_string(profile, "libdefaults","noaddresses", 0, "true", &value);
                     if ( value ) {
@@ -1404,102 +1646,102 @@ AuthenticateProc(
                         pprofile_release_string(value);
                     }
 
-					pprofile_release(profile);
-				}
-			}
-		} else {
-			FILE * file;
-			char krb_conf[MAX_PATH+1];
-			char * p;
-
-			if (!GetKrb4ConFile(krb_conf,sizeof(krb_conf)) && 
-				(file = fopen(krb_conf, "rt")))
-			{
-				char lineBuf[256];
-				// Skip the default realm
-				readstring(file,lineBuf,sizeof(lineBuf));
-
-				// Read the defined realms
-				while (TRUE)
-				{
-					if (readstring(file,lineBuf,sizeof(lineBuf)) < 0)
-						break;
-
-					if (*(lineBuf + strlen(lineBuf) - 1) == '\r')
-						*(lineBuf + strlen(lineBuf) - 1) = 0;
-
-					for (p=lineBuf; *p ; p++)
-					{
-						if (isspace(*p)) {
-							*p = 0;
-							break;
-						}
-					}
-
-					if ( strncmp(".KERBEROS.OPTION.",lineBuf,17) ) {
- 						CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_ADDSTRING, 0, (LPARAM)lineBuf);
-						realm_count++;
-					}
-				}
-
-				fclose(file);
-			}
+		    pprofile_release(profile);
 		}
-		if (realm_count == 0)
-			CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_ADDSTRING, 0, (LPARAM)realm);
+	    }
+	} else {
+	    FILE * file;
+	    char krb_conf[MAX_PATH+1];
+	    char * p;
 
-		/* Select the default Realm */
-		if (!realm[0] && hKrb5) {
-			krb5_context ctx=0;
-			char * def = 0;
-			pkrb5_init_context(&ctx);
-			pkrb5_get_default_realm(ctx,&def);
-			if (def) {
-				lstrcpy(realm, def);
-				free(def);
+	    if (!GetKrb4ConFile(krb_conf,sizeof(krb_conf)) && 
+		 (file = fopen(krb_conf, "rt")))
+	    {
+		char lineBuf[256];
+		// Skip the default realm
+		readstring(file,lineBuf,sizeof(lineBuf));
+
+		// Read the defined realms
+		while (TRUE)
+		{
+		    if (readstring(file,lineBuf,sizeof(lineBuf)) < 0)
+			break;
+
+		    if (*(lineBuf + strlen(lineBuf) - 1) == '\r')
+			*(lineBuf + strlen(lineBuf) - 1) = 0;
+
+		    for (p=lineBuf; *p ; p++)
+		    {
+			if (isspace(*p)) {
+			    *p = 0;
+			    break;
 			}
-			pkrb5_free_context(ctx);
+		    }
+
+		    if ( strncmp(".KERBEROS.OPTION.",lineBuf,17) ) {
+			CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_ADDSTRING, 0, (LPARAM)lineBuf);
+			realm_count++;
+		    }
 		}
-		CSetDlgItemText(hDialog, IDC_COMBO_REALM, realm);
 
-		/* Set Lifetime Slider 
-		 *   min value = 5
-		 *   max value = 1440
-		 *   current value 
-		 */
+		fclose(file);
+	    }
+	}
+	if (realm_count == 0)
+	    CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_ADDSTRING, 0, (LPARAM)realm);
 
-		SetupSlider( hDialog, 
-					 IDC_SLIDER_LIFETIME,
-					 IDC_STATIC_LIFETIME_VALUE,
-					 Leash_get_default_life_min(), 
-					 Leash_get_default_life_max(), 
-					 lifetime );
+	/* Select the default Realm */
+	if (!realm[0] && hKrb5) {
+	    krb5_context ctx=0;
+	    char * def = 0;
+	    pkrb5_init_context(&ctx);
+	    pkrb5_get_default_realm(ctx,&def);
+	    if (def) {
+		lstrcpy(realm, def);
+		free(def);
+	    }
+	    pkrb5_free_context(ctx);
+	}
+	CSetDlgItemText(hDialog, IDC_COMBO_REALM, realm);
 
-		/* Set Forwardable checkbox */
-		CheckDlgButton(hDialog, IDC_CHECK_FORWARDABLE, forwardable);
-		/* Set NoAddress checkbox */
-		CheckDlgButton(hDialog, IDC_CHECK_NOADDRESS, noaddresses);
+	/* Set Lifetime Slider 
+	*   min value = 5
+	*   max value = 1440
+	*   current value 
+	*/
+
+	SetupSlider( hDialog, 
+		     IDC_SLIDER_LIFETIME,
+		     IDC_STATIC_LIFETIME_VALUE,
+		     Leash_get_default_life_min(), 
+		     Leash_get_default_life_max(), 
+		     lifetime );
+
+	/* Set Forwardable checkbox */
+	CheckDlgButton(hDialog, IDC_CHECK_FORWARDABLE, forwardable);
+	/* Set NoAddress checkbox */
+	CheckDlgButton(hDialog, IDC_CHECK_NOADDRESS, noaddresses);
         if ( disable_noaddresses )
             EnableWindow(GetDlgItem(hDialog,IDC_CHECK_NOADDRESS),FALSE);
-		/* Set Renewable checkbox */
-		CheckDlgButton(hDialog, IDC_CHECK_RENEWABLE, renew_till);
-		/* if not renewable, disable Renew Till slider */
-		/* if renewable, set Renew Till slider 
-		 *     min value
-		 *     max value
-		 *     current value
-		 */
-		SetupSlider( hDialog, 
-					 IDC_SLIDER_RENEWLIFE, 
-					 IDC_STATIC_RENEW_TILL_VALUE,
-					 Leash_get_default_renew_min(), 
-					 Leash_get_default_renew_max(),
-					 renew_till);
-		if (renew_till) {
-			EnableWindow(GetDlgItem(hDialog,IDC_SLIDER_RENEWLIFE),TRUE);
-		} else {
-			EnableWindow(GetDlgItem(hDialog,IDC_SLIDER_RENEWLIFE),FALSE);
-		}
+	/* Set Renewable checkbox */
+	CheckDlgButton(hDialog, IDC_CHECK_RENEWABLE, renew_till);
+	/* if not renewable, disable Renew Till slider */
+	/* if renewable, set Renew Till slider 
+	*     min value
+	*     max value
+	*     current value
+	*/
+	SetupSlider( hDialog, 
+		     IDC_SLIDER_RENEWLIFE, 
+		     IDC_STATIC_RENEW_TILL_VALUE,
+		     Leash_get_default_renew_min(), 
+		     Leash_get_default_renew_max(),
+		     renew_till);
+	if (renew_till) {
+	    EnableWindow(GetDlgItem(hDialog,IDC_SLIDER_RENEWLIFE),TRUE);
+	} else {
+	    EnableWindow(GetDlgItem(hDialog,IDC_SLIDER_RENEWLIFE),FALSE);
+	}
 
         // Compute sizes of items necessary to show/hide the advanced options
         GetWindowRect( hDialog, &dlgRect );
@@ -1542,23 +1784,23 @@ AuthenticateProc(
         break;
 
 	case WM_HSCROLL:
-		switch (LOWORD(wParam)) {
-		case TB_THUMBTRACK:
-		case TB_THUMBPOSITION: 
-			{
-				long pos = HIWORD(wParam); // the position of the slider
-				int  ctrlID = GetDlgCtrlID((HWND)lParam);
+	switch (LOWORD(wParam)) {
+	case TB_THUMBTRACK:
+	case TB_THUMBPOSITION: 
+	    {
+		long pos = HIWORD(wParam); // the position of the slider
+		int  ctrlID = GetDlgCtrlID((HWND)lParam);
 
-				if (ctrlID == IDC_SLIDER_RENEWLIFE) {
-					SetWindowText(GetDlgItem(hDialog, IDC_STATIC_RENEW_TILL_VALUE),
-								   NewSliderString(IDC_SLIDER_RENEWLIFE,pos));
-				}
-				if (ctrlID == IDC_SLIDER_LIFETIME) {
-					SetWindowText(GetDlgItem(hDialog, IDC_STATIC_LIFETIME_VALUE),
-								   NewSliderString(IDC_SLIDER_LIFETIME,pos));
-				}
-			}
-			break;
+		if (ctrlID == IDC_SLIDER_RENEWLIFE) {
+		    SetWindowText(GetDlgItem(hDialog, IDC_STATIC_RENEW_TILL_VALUE),
+				   NewSliderString(IDC_SLIDER_RENEWLIFE,pos));
+		}	
+		if (ctrlID == IDC_SLIDER_LIFETIME) {
+		    SetWindowText(GetDlgItem(hDialog, IDC_STATIC_LIFETIME_VALUE),
+				   NewSliderString(IDC_SLIDER_LIFETIME,pos));
+		}	
+	    }
+	    break;
         case TB_BOTTOM:
         case TB_TOP:
         case TB_ENDTRACK:
@@ -1566,27 +1808,27 @@ AuthenticateProc(
         case TB_LINEUP:
         case TB_PAGEDOWN:
         case TB_PAGEUP:
-		default:
-			{
-				int  ctrlID = GetDlgCtrlID((HWND)lParam);
-				long pos = SendMessage(GetDlgItem(hDialog,ctrlID), TBM_GETPOS, 0, 0); // the position of the slider
+	default:
+	    {
+		int  ctrlID = GetDlgCtrlID((HWND)lParam);
+		long pos = SendMessage(GetDlgItem(hDialog,ctrlID), TBM_GETPOS, 0, 0); // the position of the slider
 
-				if (ctrlID == IDC_SLIDER_RENEWLIFE) {
-					SetWindowText(GetDlgItem(hDialog, IDC_STATIC_RENEW_TILL_VALUE),
-								   NewSliderString(IDC_SLIDER_RENEWLIFE,pos));
-				}
-				if (ctrlID == IDC_SLIDER_LIFETIME) {
-					SetWindowText(GetDlgItem(hDialog, IDC_STATIC_LIFETIME_VALUE),
-								   NewSliderString(IDC_SLIDER_LIFETIME,pos));
-				}
-			}
-		}
+		if (ctrlID == IDC_SLIDER_RENEWLIFE) {
+		    SetWindowText(GetDlgItem(hDialog, IDC_STATIC_RENEW_TILL_VALUE),
+				   NewSliderString(IDC_SLIDER_RENEWLIFE,pos));
+		}	
+		if (ctrlID == IDC_SLIDER_LIFETIME) {
+		    SetWindowText(GetDlgItem(hDialog, IDC_STATIC_LIFETIME_VALUE),
+				   NewSliderString(IDC_SLIDER_LIFETIME,pos));
+		}	
+	    }
+	}
         break;
 
     case WM_COMMAND:
         switch (wParam) {
-		case IDC_BUTTON_OPTIONS:
-			{
+	case IDC_BUTTON_OPTIONS:
+	    {
                 AdjustOptions(hDialog,Leash_get_hide_kinit_options(),hideDiff);
                 GetWindowRect(hDialog,&dlgRect);
                 if ( dlgRect.bottom > GetSystemMetrics(SM_CYSCREEN))
@@ -1596,148 +1838,150 @@ AuthenticateProc(
                                   0,0,
                                   SWP_NOZORDER|SWP_NOSIZE);
 
-			}
-			break;
-		case IDC_CHECK_RENEWABLE:
-			{
-				if (IsDlgButtonChecked(hDialog, IDC_CHECK_RENEWABLE)) {
-					EnableWindow(hSliderRenew,TRUE);
-				} else {
-					EnableWindow(hSliderRenew,FALSE);
-				}
-			}
-			break;
+	    }
+	    break;
+	case IDC_CHECK_RENEWABLE:
+	    {
+		if (IsDlgButtonChecked(hDialog, IDC_CHECK_RENEWABLE)) {
+		    EnableWindow(hSliderRenew,TRUE);
+		} else {
+		    EnableWindow(hSliderRenew,FALSE);
+		}
+	    }
+	    break;
         case ID_HELP:
-			{	
-				WinHelp(GetWindow(hDialog,GW_OWNER), KRB_HelpFile, HELP_CONTEXT,
-						ID_INITTICKETS);
-			}
-			break;
+	    {	
+		WinHelp(GetWindow(hDialog,GW_OWNER), KRB_HelpFile, HELP_CONTEXT,
+			 ID_INITTICKETS);
+	    }	
+	    break;
         case ID_CLOSEME:
-			{
-				CleanupSliders();
-				memset(password,0,sizeof(password));
-				RemoveProp(hDialog, "HANDLES_HELP");
-				EndDialog(hDialog, (int)lParam);
+	    {
+		CleanupSliders();
+		memset(password,0,sizeof(password));
+		RemoveProp(hDialog, "HANDLES_HELP");
+		EndDialog(hDialog, (int)lParam);
                 return TRUE;
-			}
-			break;
+	    }
+	    break;
         case IDOK:
-			{
-				DWORD value = 0;
+	    {
+		DWORD value = 0;
 
-				CGetDlgItemText(hDialog, IDC_EDIT_PRINCIPAL, username, sizeof(username));
-				CGetDlgItemText(hDialog, IDC_EDIT_PASSWORD, password, sizeof(password));
-				CGetDlgItemText(hDialog, IDC_COMBO_REALM, realm, sizeof(realm));
+		CGetDlgItemText(hDialog, IDC_EDIT_PRINCIPAL, username, sizeof(username));
+		CGetDlgItemText(hDialog, IDC_EDIT_PASSWORD, password, sizeof(password));
+		CGetDlgItemText(hDialog, IDC_COMBO_REALM, realm, sizeof(realm));
 
-				if (!username[0])
-				{
-					MessageBox(hDialog, 
+		if (!username[0])
+		{
+		    MessageBox(hDialog, 
                                 "You are not allowed to enter a blank username.",
-								"Invalid Principal",
-								MB_OK | MB_ICONSTOP);
-					return TRUE;
-				}
-				if (!realm[0])
-				{
-					MessageBox(hDialog, 
+				"Invalid Principal",
+				MB_OK | MB_ICONSTOP);
+		    return TRUE;
+		}
+		if (!realm[0])
+		{
+		    MessageBox(hDialog, 
                                 "You are not allowed to enter a blank realm.",
-								"Invalid Principal",
-								MB_OK | MB_ICONSTOP);
-					return TRUE;
-				}
+				"Invalid Principal",
+				MB_OK | MB_ICONSTOP);
+		    return TRUE;
+		}
 
-				if (Leash_get_default_uppercaserealm())
-				{
-					// found
-					strupr(realm);
-				}
-				
-				if (!password[0])
-				{
-					MessageBox(hDialog, 
+		if (Leash_get_default_uppercaserealm())
+		{
+		    // found
+		    strupr(realm);
+		}
+
+		if (!password[0])
+		{
+		    MessageBox(hDialog, 
                                 "You are not allowed to enter a blank password.",
-								"Invalid Password",
-								MB_OK | MB_ICONSTOP);
-					return TRUE;
-				}
-				
-				lifetime = NewSliderValue(hDialog, IDC_SLIDER_LIFETIME);
+				"Invalid Password",
+				MB_OK | MB_ICONSTOP);
+		    return TRUE;
+		}
 
-				forwardable = IsDlgButtonChecked(hDialog, IDC_CHECK_FORWARDABLE);
-				noaddresses = IsDlgButtonChecked(hDialog, IDC_CHECK_NOADDRESS);
-				if (IsDlgButtonChecked(hDialog, IDC_CHECK_RENEWABLE)) {
-					renew_till = NewSliderValue(hDialog, IDC_SLIDER_RENEWLIFE);
-				} else {
-					 renew_till= 0;
-				}
+		lifetime = NewSliderValue(hDialog, IDC_SLIDER_LIFETIME);
 
-				sprintf(principal,"%s@%s",username,realm);
-				lsh_errno = Leash_int_kinit_ex( 0,
-											   hDialog,
-											   principal, password, lifetime,
-											   forwardable,
-											   proxiable,
-											   renew_till,
-											   noaddresses,
-											   publicip,
-                                               1
-											   );
-				if (lsh_errno != 0)
-				{
-					int capslock;
-					LONG check_time;
-					char *cp;
+		forwardable = IsDlgButtonChecked(hDialog, IDC_CHECK_FORWARDABLE);
+		noaddresses = IsDlgButtonChecked(hDialog, IDC_CHECK_NOADDRESS);
+		if (IsDlgButtonChecked(hDialog, IDC_CHECK_RENEWABLE)) {
+		    renew_till = NewSliderValue(hDialog, IDC_SLIDER_RENEWLIFE);
+		} else {
+		    renew_till= 0;
+		}
 
-					err_context = "";
-					switch(lsh_errno)
-					{
-					case LSH_INVPRINCIPAL:
-					case LSH_INVINSTANCE:
+		sprintf(principal,"%s@%s",username,realm);
+		lsh_errno = Leash_int_kinit_ex( 0,
+						hDialog,
+						principal, password, lifetime,
+						forwardable,
+						proxiable,
+						renew_till,
+						noaddresses,
+						publicip,
+						1	
+						);
+		if (lsh_errno != 0)
+		{
+		    LONG check_time;
+#ifdef COMMENT
+		    char gbuf[256];
+		    int capslock;
+		    char *cp;
+#endif
+		    err_context = "";
+		    switch(lsh_errno)
+		    {
+		    case LSH_INVPRINCIPAL:
+		    case LSH_INVINSTANCE:
                     case KRBERR(KDC_PR_UNKNOWN):
                         CSendDlgItemMessage(hDialog, IDC_EDIT_PRINCIPAL, EM_SETSEL, 0, 256);
                         SetFocus(GetDlgItem(hDialog,IDC_EDIT_PRINCIPAL));
                         break;
-					case LSH_INVREALM:
+		    case LSH_INVREALM:
                         CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, EM_SETSEL, 0, 256);
                         SetFocus(GetDlgItem(hDialog,IDC_COMBO_REALM));
-						break;
-					case KRBERR(RD_AP_TIME):
-					case KRBERR(KDC_SERVICE_EXP):
-						check_time = Leash_timesync(1);
-						if( check_time == 0 ){
-							SendMessage(hDialog, WM_COMMAND, IDOK, 0);
-							return(TRUE);
-						} else {
-							lsh_errno = check_time;
-							return(TRUE);
-						}
-						break;
+			break;
+		    case KRBERR(RD_AP_TIME):
+		    case KRBERR(KDC_SERVICE_EXP):
+			check_time = Leash_timesync(1);
+			if( check_time == 0 ){
+			    SendMessage(hDialog, WM_COMMAND, IDOK, 0);
+			    return(TRUE);
+			} else {
+			    lsh_errno = check_time;
+			    return(TRUE);
+			}
+			break;
                     default:
                         CSendDlgItemMessage(hDialog, IDC_EDIT_PASSWORD, EM_SETSEL, 0, 256);
                         SetFocus(GetDlgItem(hDialog,IDC_EDIT_PASSWORD));
-						return(TRUE);
-					}
+			return(TRUE);
+		    }
 #ifdef COMMENT
-					capslock = lsh_getkeystate(VK_CAPITAL);
-					/* low-order bit means caps lock is
-					toggled; if so, warn user since there's
-					been an error. */
-					if (capslock & 1)
-					{
-						lstrcpy((LPSTR)gbuf, (LPSTR)err_context);
-						cp = gbuf + lstrlen((LPSTR)gbuf);
-						if (cp != gbuf)
-							*cp++ = ' ';
-						lstrcpy(cp, "(This may be because your CAPS LOCK key is down.)");
-						err_context = gbuf;
-					}
+		    capslock = lsh_getkeystate(VK_CAPITAL);
+		    /* low-order bit means caps lock is
+		    toggled; if so, warn user since there's
+		    been an error. */
+		    if (capslock & 1)
+		    {
+			lstrcpy((LPSTR)gbuf, (LPSTR)err_context);
+			cp = gbuf + lstrlen((LPSTR)gbuf);
+			if (cp != gbuf)
+			    *cp++ = ' ';
+			lstrcpy(cp, "(This may be because your CAPS LOCK key is down.)");
+			err_context = gbuf;
+		    }
 
-					// XXX		    DoNiftyErrorReport(lsh_errno, ISCHPASSWD ? ""
-					// XXX				       : "Ticket initialization failed.");
-#endif /* COMMENT */
-					return TRUE;
-				}
+		    // XXX DoNiftyErrorReport(lsh_errno, ISCHPASSWD ? ""
+		    // XXX : "Ticket initialization failed.");
+#endif /* COMMENT */	
+		    return TRUE;
+		}
 
                 if ( Leash_get_default_preserve_kinit_settings() ) 
                 {
@@ -1761,8 +2005,8 @@ AuthenticateProc(
 				
                 CloseMe(TRUE); /* success */
                 return FALSE;
-			}
-			break;
+	    }
+	    break;
         case IDCANCEL:
             CloseMe(FALSE);
             break;
@@ -1772,10 +2016,10 @@ AuthenticateProc(
     case WM_MOVE:
 #ifdef _WIN32
 #define LONG2POINT(l,pt) ((pt).x=(SHORT)LOWORD(l),  \
-						   (pt).y=(SHORT)HIWORD(l))
-	        LONG2POINT(lParam,Position);
+			 (pt).y=(SHORT)HIWORD(l))
+    LONG2POINT(lParam,Position);
 #else
-			Position = MAKEPOINT(lParam);
+	Position = MAKEPOINT(lParam);
 #endif
         break;
     }
@@ -1795,34 +2039,33 @@ NewPasswordProc(
 {
     static POINT Position = { -1, -1 };
     static char username[LEASH_USERNAME_SZ]="";
-	static char realm[LEASH_REALM_SZ]="";
-	static char password[256]="";
-	static char password2[256]="";
-	static char password3[256]="";
+    static char realm[LEASH_REALM_SZ]="";
+    static char password[256]="";
+    static char password2[256]="";
+    static char password3[256]="";
     static LPLSH_DLGINFO_EX lpdi;
-	static HWND hDlg=0;
-    char gbuf[256];                 /* global buffer for random stuff. */
-	char principal[256];
-	long realm_count = 0;
+    static HWND hDlg=0;
+    char principal[256];
+    long realm_count = 0;
 
     switch (message) {
 
     case WM_INITDIALOG:
-		hDlg = hDialog;
+	hDlg = hDialog;
 
         SetVersionInfo(hDialog,IDC_STATIC_VERSION,IDC_STATIC_COPYRIGHT);
 
         *( (LPLSH_DLGINFO_EX far *)(&lpdi) ) = (LPLSH_DLGINFO_EX)(LPSTR)lParam;
 
-		if ((lpdi->size < sizeof(LSH_DLGINFO_EX) && 
-             lpdi->size != LSH_DLGINFO_EX_V1_SZ) ||
-			 lpdi->dlgtype != DLGTYPE_CHPASSWD) {
+	if ((lpdi->size < sizeof(LSH_DLGINFO_EX) && 
+	      lpdi->size != LSH_DLGINFO_EX_V1_SZ) ||
+	     lpdi->dlgtype != DLGTYPE_CHPASSWD) {
 
-			MessageBox(hDialog, "An incorrect initialization data structure was provided.",
-						"PasswordProc()",
-						MB_OK | MB_ICONSTOP);
-			return FALSE;
-		}
+	    MessageBox(hDialog, "An incorrect initialization data structure was provided.",
+			"PasswordProc()",
+			MB_OK | MB_ICONSTOP);
+	    return FALSE;
+	}
 
         if ( lpdi->size >= sizeof(LSH_DLGINFO_EX) ) {
             lpdi->out.username[0] = 0;
@@ -1835,8 +2078,8 @@ NewPasswordProc(
 
         if (lpdi->username)
             lstrcpy(username, lpdi->username);
-		if (lpdi->realm)
-			lstrcpy(realm, lpdi->realm);
+	if (lpdi->realm)
+	    lstrcpy(realm, lpdi->realm);
 
         CSetDlgItemText(hDialog, IDC_EDIT_PRINCIPAL, username);
         CSetDlgItemText(hDialog, IDC_EDIT_PASSWORD, "");
@@ -1844,100 +2087,100 @@ NewPasswordProc(
         CSetDlgItemText(hDialog, IDC_EDIT_PASSWORD3, "");
 
 #if 0  /* 20030619 - mjv wishes to return to the default character */
-		/* echo spaces */
-		CSendDlgItemMessage(hDialog, IDC_EDIT_PASSWORD, EM_SETPASSWORDCHAR, 32, 0);
-		CSendDlgItemMessage(hDialog, IDC_EDIT_PASSWORD2, EM_SETPASSWORDCHAR, 32, 0);
-		CSendDlgItemMessage(hDialog, IDC_EDIT_PASSWORD3, EM_SETPASSWORDCHAR, 32, 0);
-#endif
+	/* echo spaces */
+	CSendDlgItemMessage(hDialog, IDC_EDIT_PASSWORD, EM_SETPASSWORDCHAR, 32, 0);
+	CSendDlgItemMessage(hDialog, IDC_EDIT_PASSWORD2, EM_SETPASSWORDCHAR, 32, 0);
+	CSendDlgItemMessage(hDialog, IDC_EDIT_PASSWORD3, EM_SETPASSWORDCHAR, 32, 0);
+#endif	
 
-		/* Populate list of Realms */
-		CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_RESETCONTENT, 0, 0);
-		CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_LIMITTEXT, 192, 0);
+	/* Populate list of Realms */
+	CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_RESETCONTENT, 0, 0);
+	CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_LIMITTEXT, 192, 0);
 
-		if (pprofile_get_subsection_names && pprofile_free_list) {
-			const char*  rootSection[] = {"realms", NULL};
-			const char** rootsec = rootSection;
-			char **sections = NULL, **cpp = NULL, *value = NULL;
+	if (pprofile_get_subsection_names && pprofile_free_list) {
+	    const char*  rootSection[] = {"realms", NULL};
+	    const char** rootsec = rootSection;
+	    char **sections = NULL, **cpp = NULL, *value = NULL;
 
-			char krb5_conf[MAX_PATH+1];
+	    char krb5_conf[MAX_PATH+1];
 
-			if (!GetProfileFile(krb5_conf,sizeof(krb5_conf))) {
-				profile_t profile;
-				long retval;
-				const char *filenames[2];
+	    if (!GetProfileFile(krb5_conf,sizeof(krb5_conf))) {
+		profile_t profile;
+		long retval;
+		const char *filenames[2];
 
-				filenames[0] = krb5_conf;
-				filenames[1] = NULL;
-				retval = pprofile_init(filenames, &profile);
-				if (!retval) {
-					retval = pprofile_get_subsection_names(profile,	rootsec, &sections);
+		filenames[0] = krb5_conf;
+		filenames[1] = NULL;
+		retval = pprofile_init(filenames, &profile);
+		if (!retval) {
+		    retval = pprofile_get_subsection_names(profile,	rootsec, &sections);
 
-					if (!retval)
-					{
-						for (cpp = sections; *cpp; cpp++)
-						{
-							CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_ADDSTRING, 0, (LPARAM)*cpp);
-							realm_count++;
-						}
-					}
-					pprofile_free_list(sections);
-					pprofile_release(profile);
-				}
-			}
-		} else {
-			FILE * file;
-			char krb_conf[MAX_PATH+1];
-			char * p;
-
-			if (!GetKrb4ConFile(krb_conf,sizeof(krb_conf)) && 
-				(file = fopen(krb_conf, "rt")))
+		    if (!retval)
+		    {
+			for (cpp = sections; *cpp; cpp++)
 			{
-				char lineBuf[256];
-				// Skip the default realm
-				readstring(file,lineBuf,sizeof(lineBuf));
-
-				// Read the defined realms
-				while (TRUE)
-				{
-					if (readstring(file,lineBuf,sizeof(lineBuf)) < 0)
-						break;
-
-					if (*(lineBuf + strlen(lineBuf) - 1) == '\r')
-						*(lineBuf + strlen(lineBuf) - 1) = 0;
-
-					for (p=lineBuf; *p ; p++)
-					{
-						if (isspace(*p)) {
-							*p = 0;
-							break;
-						}
-					}
-
-					if ( strncmp(".KERBEROS.OPTION.",lineBuf,17) ) {
- 						CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_ADDSTRING, 0, (LPARAM)lineBuf);
-						realm_count++;
-					}
-				}
-
-				fclose(file);
+			    CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_ADDSTRING, 0, (LPARAM)*cpp);
+			    realm_count++;
 			}
+		    }
+		    pprofile_free_list(sections);
+		    pprofile_release(profile);
 		}
-		if (realm_count == 0)
-			CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_ADDSTRING, 0, (LPARAM)realm);
+	    }
+	} else {
+	    FILE * file;
+	    char krb_conf[MAX_PATH+1];
+	    char * p;
 
-		/* Select the default Realm */
-		if (!realm[0] && hKrb5) {
-			krb5_context ctx=0;
-			char * def = 0;
-			pkrb5_init_context(&ctx);
-			pkrb5_get_default_realm(ctx,&def);
-			if (def) {
-				lstrcpy(realm, def);
-				free(def);
+	    if (!GetKrb4ConFile(krb_conf,sizeof(krb_conf)) && 
+		 (file = fopen(krb_conf, "rt")))
+	    {
+		char lineBuf[256];
+		// Skip the default realm
+		readstring(file,lineBuf,sizeof(lineBuf));
+
+		// Read the defined realms
+		while (TRUE)
+		{
+		    if (readstring(file,lineBuf,sizeof(lineBuf)) < 0)
+			break;
+
+		    if (*(lineBuf + strlen(lineBuf) - 1) == '\r')
+			*(lineBuf + strlen(lineBuf) - 1) = 0;
+
+		    for (p=lineBuf; *p ; p++)
+		    {
+			if (isspace(*p)) {
+			    *p = 0;
+			    break;
 			}
-			pkrb5_free_context(ctx);
+		    }
+
+		    if ( strncmp(".KERBEROS.OPTION.",lineBuf,17) ) {
+			CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_ADDSTRING, 0, (LPARAM)lineBuf);
+			realm_count++;
+		    }
 		}
-		CSetDlgItemText(hDialog, IDC_COMBO_REALM, realm);
+
+		fclose(file);
+	    }
+	}
+	if (realm_count == 0)
+	    CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_ADDSTRING, 0, (LPARAM)realm);
+
+	/* Select the default Realm */
+	if (!realm[0] && hKrb5) {
+	    krb5_context ctx=0;
+	    char * def = 0;
+	    pkrb5_init_context(&ctx);
+	    pkrb5_get_default_realm(ctx,&def);
+	    if (def) {
+		lstrcpy(realm, def);
+		free(def);
+	    }
+	    pkrb5_free_context(ctx);
+	}
+	CSetDlgItemText(hDialog, IDC_COMBO_REALM, realm);
 
         /* setup text of stuff. */
 
@@ -1961,67 +2204,67 @@ NewPasswordProc(
     case WM_COMMAND:
         switch (wParam) {
         case ID_HELP:
-			{	
-				WinHelp(GetWindow(hDialog,GW_OWNER), KRB_HelpFile, HELP_CONTEXT,
-						ID_INITTICKETS);
-			}
-			break;
+	    {	
+		WinHelp(GetWindow(hDialog,GW_OWNER), KRB_HelpFile, HELP_CONTEXT,
+			 ID_INITTICKETS);
+	    }	
+	    break;
         case ID_CLOSEME:
-			{
-				CleanupSliders();
-				memset(password,0,sizeof(password));
-				memset(password2,0,sizeof(password2));
-				memset(password3,0,sizeof(password3));
-				RemoveProp(hDialog, "HANDLES_HELP");
-				EndDialog(hDialog, (int)lParam);
+	    {
+		CleanupSliders();
+		memset(password,0,sizeof(password));
+		memset(password2,0,sizeof(password2));
+		memset(password3,0,sizeof(password3));
+		RemoveProp(hDialog, "HANDLES_HELP");
+		EndDialog(hDialog, (int)lParam);
                 return TRUE;
-			}
-			break;
+	    }
+	    break;
         case IDOK:
-			{
-				DWORD value = 0;
-				int i = 0;
+	    {
+		DWORD value = 0;
+		int i = 0;
                 int bit8 = 0;
 
-				CGetDlgItemText(hDialog, IDC_EDIT_PRINCIPAL, username, sizeof(username));
-				CGetDlgItemText(hDialog, IDC_EDIT_PASSWORD, password, sizeof(password));
-				CGetDlgItemText(hDialog, IDC_EDIT_PASSWORD2, password2, sizeof(password2));
-				CGetDlgItemText(hDialog, IDC_EDIT_PASSWORD3, password3, sizeof(password3));
-				CGetDlgItemText(hDialog, IDC_COMBO_REALM, realm, sizeof(realm));
+		CGetDlgItemText(hDialog, IDC_EDIT_PRINCIPAL, username, sizeof(username));
+		CGetDlgItemText(hDialog, IDC_EDIT_PASSWORD, password, sizeof(password));
+		CGetDlgItemText(hDialog, IDC_EDIT_PASSWORD2, password2, sizeof(password2));
+		CGetDlgItemText(hDialog, IDC_EDIT_PASSWORD3, password3, sizeof(password3));
+		CGetDlgItemText(hDialog, IDC_COMBO_REALM, realm, sizeof(realm));
 
-				if (!username[0])
-				{
-					MessageBox(hDialog, "You are not allowed to enter a "
-								"blank username.",
-								"Invalid Principal",
-								MB_OK | MB_ICONSTOP);
-					return TRUE;
-				}
-				if (!realm[0])
-				{
-					MessageBox(hDialog, "You are not allowed to enter a "
-								"blank realm.",
-								"Invalid Principal",
-								MB_OK | MB_ICONSTOP);
-					return TRUE;
-				}
+		if (!username[0])
+		{
+		    MessageBox(hDialog, "You are not allowed to enter a "
+				"blank username.",
+				"Invalid Principal",
+				MB_OK | MB_ICONSTOP);
+		    return TRUE;
+		}
+		if (!realm[0])
+		{
+		    MessageBox(hDialog, "You are not allowed to enter a "
+				"blank realm.",
+				"Invalid Principal",
+				MB_OK | MB_ICONSTOP);
+		    return TRUE;
+		}
 
-				if (Leash_get_default_uppercaserealm())
-				{
-					// found
-					strupr(realm);
-				}
-				
-				if (!password[0] || !password2[0] || !password3[0])
-				{
-					MessageBox(hDialog, "You are not allowed to enter a "
-								"blank password.",
-								"Invalid Password",
-								MB_OK | MB_ICONSTOP);
-					return TRUE;
-				}
+		if (Leash_get_default_uppercaserealm())
+		{
+		    // found
+		    strupr(realm);
+		}
 
-				for( i = 0; i < 255; i++ ){
+		if (!password[0] || !password2[0] || !password3[0])
+		{
+		    MessageBox(hDialog, "You are not allowed to enter a "
+				"blank password.",
+				"Invalid Password",
+				MB_OK | MB_ICONSTOP);
+		    return TRUE;
+		}
+
+		for( i = 0; i < 255; i++ ){
                     if( password2[i] == '\0' ){
                         if ( bit8 ) {
                             MessageBox(hDialog, 
@@ -2042,68 +2285,71 @@ NewPasswordProc(
                         return TRUE;
                     } else if ( password2[i] > 127 )
                         bit8 = 1;
-				}
+		}
 
-				if (lstrcmp(password2, password3))
-				{
+		if (lstrcmp(password2, password3))
+		{
                     MessageBox(hDialog, 
                                 "The new password was not entered the same way twice.",
                                 "Password validation error",
                                 MB_OK | MB_ICONSTOP);
                     return TRUE;
-				}
+		}
 
-				sprintf(principal,"%s@%s",username,realm);
+		sprintf(principal,"%s@%s",username,realm);
 
                 lsh_errno = Leash_int_changepwd(principal, password, password2, 0, 1);
-				if (lsh_errno != 0)
-				{
-					int capslock;
-					LONG check_time;
-					char *cp;
-
-					err_context = "";
-					switch(lsh_errno)
-					{
-					case LSH_INVPRINCIPAL:
-					case LSH_INVINSTANCE:
-					case LSH_INVREALM:
-					case KRBERR(KDC_PR_UNKNOWN):
-						break;
-					case KRBERR(RD_AP_TIME):
-					case KRBERR(KDC_SERVICE_EXP):
-						check_time = Leash_timesync(1);
-						if( check_time == 0 ){
-							SendMessage(hDialog, WM_COMMAND, IDOK, 0);
-							return(TRUE);
-						} else {
-							lsh_errno = check_time;
-							return(TRUE);
-						}
-						break;
-					default:
-						return(TRUE);
-					}
+		if (lsh_errno != 0)
+		{
 #ifdef COMMENT
-					capslock = lsh_getkeystate(VK_CAPITAL);
-					/* low-order bit means caps lock is
-					toggled; if so, warn user since there's
-					been an error. */
-					if (capslock & 1)
-					{
-						lstrcpy((LPSTR)gbuf, (LPSTR)err_context);
-						cp = gbuf + lstrlen((LPSTR)gbuf);
-						if (cp != gbuf)
-							*cp++ = ' ';
-						lstrcpy(cp, "(This may be because your CAPS LOCK key is down.)");
-						err_context = gbuf;
-					}
+		    char gbuf[256];
+		    int capslock;
+		    char *cp;
+#endif /* COMMENT */
+		    LONG check_time;
 
-					// XXX		    DoNiftyErrorReport(lsh_errno, ISCHPASSWD ? ""
-					// XXX				       : "Ticket initialization failed.");
-#endif /* COMMENT */              
+		    err_context = "";
+		    switch(lsh_errno)
+		    {
+		    case LSH_INVPRINCIPAL:
+		    case LSH_INVINSTANCE:
+		    case LSH_INVREALM:
+		    case KRBERR(KDC_PR_UNKNOWN):
+			break;
+		    case KRBERR(RD_AP_TIME):
+		    case KRBERR(KDC_SERVICE_EXP):
+			check_time = Leash_timesync(1);
+			if( check_time == 0 ){
+			    SendMessage(hDialog, WM_COMMAND, IDOK, 0);
+			    return(TRUE);
+			} else {
+			    lsh_errno = check_time;
+			    return(TRUE);
+			}
+			break;
+		    default:
+			return(TRUE);
+		    }
+#ifdef COMMENT
+		    capslock = lsh_getkeystate(VK_CAPITAL);
+		    /* low-order bit means caps lock is
+		    toggled; if so, warn user since there's
+		    been an error. */
+		    if (capslock & 1)
+		    {
+			lstrcpy((LPSTR)gbuf, (LPSTR)err_context);
+			cp = gbuf + lstrlen((LPSTR)gbuf);
+			if (cp != gbuf)
+			    *cp++ = ' ';
+			lstrcpy(cp, "(This may be because your CAPS LOCK key is down.)");
+			err_context = gbuf;
+		    }
+
+		    // XXX   DoNiftyErrorReport(lsh_errno, ISCHPASSWD ? ""
+		    // XXX   : "Ticket initialization failed.");
+#endif /* COMMENT */	              
                     return TRUE;
-				}
+		}
 
                 if ( lpdi->size >= sizeof(LSH_DLGINFO_EX) ) {
                     strncpy(lpdi->out.username, username, LEASH_USERNAME_SZ);
@@ -2113,8 +2359,8 @@ NewPasswordProc(
                 }
 
                 CloseMe(TRUE); /* success */
-			}
-			break;
+	    }
+	    break;
         case IDCANCEL:
             CloseMe(FALSE);
             break;
@@ -2124,10 +2370,10 @@ NewPasswordProc(
     case WM_MOVE:
 #ifdef _WIN32
 #define LONG2POINT(l,pt) ((pt).x=(SHORT)LOWORD(l),  \
-						   (pt).y=(SHORT)HIWORD(l))
-	        LONG2POINT(lParam,Position);
+	    	   (pt).y=(SHORT)HIWORD(l))
+    LONG2POINT(lParam,Position);
 #else
-			Position = MAKEPOINT(lParam);
+	Position = MAKEPOINT(lParam);
 #endif
         break;
     }

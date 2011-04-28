@@ -29,6 +29,19 @@
 
 #include "krb5.h"
 #include <stdio.h>
+#include <string.h>
+
+extern int optind;
+extern char *optarg;
+
+static char *prog;
+
+static void 
+xusage(void)
+{
+    fprintf(stderr, "xusage: %s [-c ccache]\n", prog);
+    exit(1);
+}
 
 void
 main(
@@ -44,7 +57,24 @@ main(
     krb5_creds creds;
     krb5_principal princ;
     int initial_ticket = 0;
+    int option;
+    char * ccachestr = 0;
 
+    prog = strrchr(argv[0], '/');
+    prog = prog ? (prog + 1) : argv[0];
+
+    while ((option = getopt(argc, argv, "c:h")) != -1) {
+        switch (option) {
+        case 'c':
+            ccachestr = optarg;
+            break;
+        case 'h':
+        default:
+            xusage();
+            break;
+        }
+    }
+        
     if (code = krb5_init_context(&kcontext)) {
         com_err(argv[0], code, "while initializing kerberos library");
         exit(1);
@@ -52,6 +82,13 @@ main(
   
     if (code = krb5_cc_resolve(kcontext, "MSLSA:", &mslsa_ccache)) {
         com_err(argv[0], code, "while opening MS LSA ccache");
+        krb5_free_context(kcontext);
+        exit(1);
+    }
+
+    if (code = krb5_cc_set_flags(kcontext, mslsa_ccache, KRB5_TC_NOTICKET)) {
+        com_err(argv[0], code, "while setting KRB5_TC_NOTICKET flag");
+        krb5_cc_close(kcontext, mslsa_ccache);
         krb5_free_context(kcontext);
         exit(1);
     }
@@ -75,6 +112,13 @@ main(
     }
     krb5_cc_end_seq_get(kcontext, mslsa_ccache, &cursor);
 
+    if (code = krb5_cc_set_flags(kcontext, mslsa_ccache, 0)) {
+        com_err(argv[0], code, "while clearing flags");
+        krb5_cc_close(kcontext, mslsa_ccache);
+        krb5_free_context(kcontext);
+        exit(1);
+    }
+
     if ( !initial_ticket ) {
         fprintf(stderr, "%s: Initial Ticket Getting Tickets are not available from the MS LSA\n",
                 argv[0]);
@@ -90,7 +134,11 @@ main(
         exit(1);
     }
 
-    if (code = krb5_cc_default(kcontext, &ccache)) {
+    if (ccachestr)
+        code = krb5_cc_resolve(kcontext, ccachestr, &ccache);
+    else
+        code = krb5_cc_default(kcontext, &ccache);
+    if (code) {
         com_err(argv[0], code, "while getting default ccache");
         krb5_free_principal(kcontext, princ);
         krb5_cc_close(kcontext, mslsa_ccache);

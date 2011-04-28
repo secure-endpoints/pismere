@@ -1,8 +1,81 @@
+2005-10-31  Jeffrey Altman <jaltman@mit.edu>
+
+	* gssapi32.def:  export missing functions
+        	gss_krb5_set_allowable_enctypes
+	        gss_krb5_export_lucid_sec_context
+	        gss_krb5_free_lucid_sec_context
+
+2005-04-22  Jeffrey Altman <jaltman@mit.edu>
+
+        * win_glue.c:  Remove calls to WSAStartup/WSACleanup because
+        they can result in deadlocks when called from DllMain().
+
+2005-02-16  Jeffrey Altman <jaltman@mit.edu>
+
+        * gssapi32.def: export the missing DATA symbols
+
+2005-01-03  Jeffrey Altman <jaltman@mit.edu>
+
+        * krb5_32.def: export krb5_is_thread_safe()
+
+2004-12-18  Jeffrey Altman <jaltman@mit.edu>
+
+        * krb5_32.def: mark krb5_principal2salt as using the wrong 
+          calling convention.
+
+2004-12-15  Jeffrey Altman <jaltman@mit.edu>
+
+        *.cvsignore, Makefile.in: rename krb5support32.def to k5sprt32.def
+
+2004-09-24  Tom Yu  <tlyu@mit.edu>
+
+	* Makefile.in (RCFLAGS): Add -I$(SRCTOP) to get patchlevel.h.
+
+2004-06-18  Ken Raeburn  <raeburn@mit.edu>
+
+	* Makefile.in (SLIBS, SDEF, S_GLUE, COMERR_GLUE, PROF_GLUE,
+	SGLUE): New variables.
+	(NO_GLUE): Deleted.
+	(CGLUE, PGLUE): Use new separate glue files instead of no_glue.
+	(SRES) [WIN32]: New variable.
+	($(SRES), $(SLIB)) [WIN32]: New targets.
+	($(CLIB), $(PLIB), $(KLIB), $(GLIB)) [WIN32]: Depend on and link
+	against $(SLIB) too.
+	($(SDEF)): New target.  Generate Windows export list from common
+	symbol list.
+	($(COMERR_GLUE), $(PROF_GLUE), $(S_GLUE)): New targets.
+
+	* win_glue.c (control): Reference add/remove_error_table only if
+	building for krb4 library.  Add calls to library init/fini
+	functions for other libraries.  For support library, also call a
+	hook function on DLL_THREAD_DETACH.  If no recognized
+	library-specific macro is defined, don't compile.
+	(DllMain): Do call control() on DLL_THREAD_DETACH.
+
+2004-06-16  Ken Raeburn  <raeburn@mit.edu>
+
+	* Makefile.in (MAC_SUBDIRS): Don't set.
+	(all-mac, clean-mac): Targets deleted.
+
+2004-06-15  Ken Raeburn  <raeburn@mit.edu>
+
+	* exports.crypto, exports.des425, exports.kdb5, exports.krb5:
+	Unused files deleted.
+
 2004-03-31  Jeffrey Altman <jaltman@mit.edu>
 
     * Makefile.in: Delay Load the ADVAPI32.DLL and SECUR32.DLL libraries
       to enable the KRB5_32.DLL to load on Windows 9x systems which do
       not support the LSA Kerberos functionality.
+
+2004-03-08  Ken Raeburn  <raeburn@mit.edu>
+
+	* Makefile.in (LOCAL_SUBDIRS): Renamed from MY_SUBDIRS.
+
+2004-02-26  Ken Raeburn  <raeburn@mit.edu>
+
+	* Makefile.in (MY_SUBDIRS): Add apputils.
+	(CLEANLIBS): Add libapputils.a.
 
 2003-12-18  Jeffrey Altman <jaltman@mit.edu>
 

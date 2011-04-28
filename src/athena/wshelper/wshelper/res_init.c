@@ -52,22 +52,14 @@ static char sccsid[] = "@(#)res_init.c  6.15 (Berkeley) 2/24/91";
 
 #include <windows.h>
 #include <winsock.h>
-#include <arpa/nameser.h>
 #include <resolv.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#if !defined(_WIN32)
-#include <wownt16.h>
-#endif
-
-#include "u-compat.h"
+#include <windns.h>   //DNS api's
 
 #include <shellapi.h>
-#ifndef _WIN32
-#include <toolhelp.h>
-#endif
+
 
 #include <mitwhich.h>
                     
@@ -88,53 +80,11 @@ char debstr[80];
 
 DWORD WhichOS( DWORD *check);
 
-static WORD WhichRegistry();
-static int set_nameservers_using_registry( DWORD which_reg );
-static int set_searchlist_using_registry( DWORD which_reg );
-static int set_nameservers_using_iphlp();
-static FILE *find_config_file( LPSTR config_path );
 static int const getRegKeyEx(const HKEY key, const char *subkey, const char *value, char *buf, unsigned int len);
 
 int WINAPI wsh_getdomainname(char* name, int size);
 
 static HMODULE this_module();
-
-#ifndef _WIN32
-
-#ifndef KEY_QUERY_VALUE
-#define KEY_QUERY_VALUE         (0x0001)
-#endif
-
-#ifndef KEY_ENUMERATE_SUB_KEYS
-#define KEY_ENUMERATE_SUB_KEYS  (0x0008)
-#endif
-
-#ifndef HKEY_LOCAL_MACHINE
-#define HKEY_LOCAL_MACHINE      ((HKEY) 0x80000002 )
-#endif
-
-#ifndef REG_EXPAND_SZ
-#define REG_EXPAND_SZ           (2)
-#endif
-
-LONG RegOpenKeyEx(
-    HKEY hKey,
-    LPCSTR lpSubKey,
-    DWORD ulOptions,
-    LONG samDesired,
-    PHKEY phkResult
-    );
-
-LONG RegQueryValueEx(
-    HKEY hKey, 
-    LPCSTR lpszValueName, 
-    LPDWORD lpdwReserved, 
-    LPDWORD lpdwType, 
-    LPBYTE lpbData, 
-    LPDWORD lpcbData
-    );
-
-#endif /* !_WIN32 */
 
 
 /*
@@ -148,18 +98,6 @@ struct state _res = {
     RES_DEFAULT,                    /* @field options flags */
     1,                              /* @field number of name servers */
 };
-
-/*
- * Set up default settings.  If the configuration file exist, the values
- * there will have precedence.  Otherwise, the server address is set to
- * INADDR_ANY and the default domain name comes from the gethostname().
- *
- * The configuration file should only be used if you want to redefine your
- * domain or run without a server on your machine.
- *
- * Return 0 if completes successfully, -1 on error
- */
-
 
 #ifndef _MSC_VER
 
@@ -181,52 +119,25 @@ _strnicmp( register const char *a, register const char *b, register size_t n)
 
 
 /*
-
-@func int WINAPI | res_init |
-
-This function reads the resolver configuration files and retrieves 
-the default domain name, search order and name server address(es).  If 
-no server is given, the local host is tried.  If no domain is given, 
-that associated with the local host is used.  It can be overriden with 
-the environment variable LOCALDOMAIN.  This function is normally executed 
-by the first call to one of the other resolver functions.
-
-@rdesc	The return value is 0 if the operation was successful.  
-        Otherwise the value -1 is returned.
-
-
+	This function retrieves the default domain name and search order. It will look to see if an 
+	environment variable LOCALDOMAIN is defined. Otherwise, the domain associated with the local host 
+	is used. Otherwise, it will try to find the domain name from the registry
+	
+	\retval		The return value is 0 if the operation was successful.  
+				Otherwise the value -1 is returned.
 
 */
-
-
-
 int
-#ifdef _WINDLL
 WINAPI
-#endif
 res_init()
 {
     register char *cp, **pp;
-/*  LONG cb;                il 8/17/95 */
-#if defined (_WINDLL) || defined (_WIN32)
-#if 0
-    UINT i, wnServs;
-    char wnDomain[MAXDNAME], wnTmp[8];
-#endif
-    char wnServAddr[16];
-#endif
+
     register int n;
-    char buf[BUFSIZ];
-    WORD which_reg = 0;
-    int nserv = 0;      /* number of nameserver records read from file or registry -- il 8/1/95 */
+    
     int haveenv = 0;	/* have an environment variable for local domain */
     int havedomain = 0; /* 0 or 1 do we have a value for the domain */
-    int havesearch = 0; /* have we found components of local domain that might be searched */
-    int havens = 0;    /* 0 or 1 do we have name servers ? */
-#ifndef _WIN32
-    FILE *fp;
-    char nettcppath[_MAX_PATH];
-#endif
+   
     LONG result1 = -1995;
 
 #define WSH_SPACES " \t,;="
@@ -236,7 +147,6 @@ res_init()
     _res.nsaddr.sin_port = htons(NAMESERVER_PORT);
     _res.nscount = 1;
 
-    which_reg = WhichRegistry();
 
     /* Allow user to override the local domain definition */
     if ((cp = getenv("LOCALDOMAIN")) != NULL) {
@@ -250,33 +160,12 @@ res_init()
             havedomain++;
     }
 
-    if ( !havens ) {
-        /* try to get nameservers from IP Helper API */
-        if ( set_nameservers_using_iphlp() ) {
-            havens++;
-            nserv = _res.nscount;
-        }
-    }
+    
 
-    if( which_reg ){
-        /* try to get nameservers from the registry */ /* il 8/1/95 */
-        if( !havens &&
-            set_nameservers_using_registry( which_reg ) )
-        {
-            havens++;
-            nserv = _res.nscount;
-        }
-
-        if ( set_searchlist_using_registry( which_reg ) )
-        {
-            havesearch++;
-        }
-    }
-
-    if( 0 != havedomain && 0 != nserv ){
+    if( 0 != havedomain){
         // return early, we've done our job
         /* find components of local domain that might be searched */
-        if (havesearch == 0) {
+       
             pp = _res.dnsrch;
             *pp++ = _res.defdname;
             for (cp = _res.defdname, n = 0; *cp; cp++)
@@ -288,299 +177,35 @@ res_init()
                 cp = index(cp, '.');
                 *pp++ = ++cp;
             }
-            *pp++ = 0;
-        };
-        _res.options |= RES_INIT;
+            *pp++ = 0;  
+    }
+
+   _res.options |= RES_INIT;
         return(0);
-    }
-
-#ifndef _WIN32
-    // Now comes th ugly work of supporting Win16 or non MS TCP stacks.    
-    if( fp = find_config_file( nettcppath ) ){
-        char *tp;
-
-        /* try to guess the path */
-#define WSH_IS_FIELD(field) (!_strnicmp(buf, field, sizeof(field) - 1) && \
-               strchr(WSH_SPACES, buf[sizeof(field) - 1]) && \
-               ((cp = buf + sizeof(field) - 1), 1 /* to be optimized out */))
-               /* il 8/24/95 -- multi-nameserver fields */
-
-        /* open was sucessfull.  read the config file */
-        while (fgets(buf, sizeof(buf), fp) != NULL) {
-            /* read default domain name */
-            if (WSH_IS_FIELD("domain") ||
-                WSH_IS_FIELD("domainname") /* for Core */
-                ) {
-                if (haveenv)        /* skip if have from environ */
-                    continue;
-              /* cp = buf + sizeof("domain") - 1; */ /* moved to WSH_IS_FIELD */
-                while (strchr( WSH_SPACES"."/* for Tropic */, *cp )) /* ! assumed \0 is impossible */
-                    cp++;
-                if ((*cp == '\0') || (*cp == '\n'))
-                    continue;
-                (void)strncpy(_res.defdname, cp, sizeof(_res.defdname) - 1);
-                if ((cp = index(_res.defdname, '\n')) != NULL)
-                    *cp = '\0';
-                havesearch = 0;
-                continue;
-            }
-            /* set search list */
-            /* will need to be rewritten like domains if multi-entry search
-               filed is present in any TCP/IP stack -- il */
-            if (WSH_IS_FIELD("search")) {
-                if (haveenv)        /* skip if have from environ */
-                    continue;
-                /* cp = buf + sizeof("search") - 1; */ /* moved to WSH_IS_FIELD */
-                while (strchr( WSH_SPACES"."/* for Tropic */, *cp )) /* ! assumed \0 is impossible */
-                    cp++;
-                if ((*cp == '\0') || (*cp == '\n'))
-                    continue;
-                (void)strncpy(_res.defdname, cp, sizeof(_res.defdname) - 1);
-                if ((cp = index(_res.defdname, '\n')) != NULL)
-                    *cp = '\0';
-                /*
-                 * Set search list to be blank-separated strings
-                 * on rest of line.
-                 */
-                cp = _res.defdname;
-                pp = _res.dnsrch;
-                *pp++ = cp;
-                for (n = 0; *cp && pp < _res.dnsrch + MAXDNSRCH; cp++) {
-                    if (*cp == ' ' || *cp == '\t') {
-                        *cp = 0;
-                        n = 1;
-                    } else if (n) {
-                        *pp++ = cp;
-                        n = 0;
-                    }
-                }
-                /* null terminate last domain if there are excess */
-                while (*cp != '\0' && *cp != ' ' && *cp != '\t')
-                    cp++;
-                *cp = '\0';
-                *pp++ = 0;
-                havesearch = 1;
-                continue;
-            }
-            /* read nameservers to query */
-            if (nserv < MAXNS &&
-                (WSH_IS_FIELD("nameserver") ||
-                 WSH_IS_FIELD("dns") ||  /* il 8/24/95 -- for Trumpet */
-                 WSH_IS_FIELD("nameservers"))) { /* il 8/24/95 -- for Core */
-
-                /* Some WinSocks don't like \n's in their inet_addr() calls */
-                if ((tp = strchr(cp, '\n')) != NULL)
-                    *tp= '\0';
-
-                /* break into tokens and fill the nameserver spots */
-                /* il 8/24/95 -- multi-dns field for Trumpet */
-                for (cp = strtok(cp,WSH_SPACES"="); cp && nserv < MAXNS; cp = strtok(NULL,WSH_SPACES"="))
-                    if ((_res.nsaddr_list[nserv].sin_addr.s_addr = inet_addr(cp)) == (unsigned)-1)
-                        _res.nsaddr_list[nserv].sin_addr.s_addr = INADDR_ANY;
-                    else{
-                        _res.nsaddr_list[nserv].sin_family = AF_INET;
-                        _res.nsaddr_list[nserv].sin_port = htons(NAMESERVER_PORT);
-                        nserv++;
-                        /*havens++;*/
-                    }
-            }
-        }
-        if (nserv >= 1)
-            _res.nscount = nserv;
-        (void) fclose(fp);
-    }
-#endif /* !_WIN32 */
-    
-    /* no reliable source of name servers */
-    if (!nserv ){
-
-        // We output this to any attached debugger.
-        // You can get a free debug message viewer from www.sysinternals.com
-
-        OutputDebugString(
-            "wshelper error:\n"
-            "\tNo reliable info about the local domain or the "
-            "name servers found.\n"
-            "\tPerhaps the network is not properly setup "
-            "(or down if using DHCP).\n"
-            "\tUsing built-in defaults.\n"
-            );
-
-        // Let's use those hard coded defaults
-        // Note: these must match the DEF file entries
-
-        if(LoadString(this_module(), IDS_DEF_DNS1, 
-                      wnServAddr, sizeof(wnServAddr) )){
-
-            if ((_res.nsaddr_list[0].sin_addr.s_addr = inet_addr(wnServAddr)) == (unsigned)-1)
-                _res.nsaddr_list[0].sin_addr.s_addr = INADDR_ANY;
-            else{
-                _res.nsaddr_list[0].sin_family = AF_INET;
-                _res.nsaddr_list[0].sin_port = htons(NAMESERVER_PORT);
-                nserv++;
-            }
-        }
-        if(LoadString(this_module(), IDS_DEF_DNS2, 
-                      wnServAddr, sizeof(wnServAddr) )){
-
-            if ((_res.nsaddr_list[1].sin_addr.s_addr = inet_addr(wnServAddr)) == (unsigned)-1)
-                _res.nsaddr_list[1].sin_addr.s_addr = INADDR_ANY;
-            else{
-                _res.nsaddr_list[1].sin_family = AF_INET;
-                _res.nsaddr_list[1].sin_port = htons(NAMESERVER_PORT);
-                nserv++;
-            }
-
-        }
-        if(LoadString(this_module(), IDS_DEF_DNS3, 
-                      wnServAddr, sizeof(wnServAddr) )){
-
-            if ((_res.nsaddr_list[2].sin_addr.s_addr = inet_addr(wnServAddr)) == (unsigned)-1)
-                _res.nsaddr_list[2].sin_addr.s_addr = INADDR_ANY;
-            else{
-                _res.nsaddr_list[2].sin_family = AF_INET;
-                _res.nsaddr_list[2].sin_port = htons(NAMESERVER_PORT);
-                nserv++;
-            }
-        }
-    }
-
-    /* no reliable source of a domain name */
-    if (_res.defdname[0] == 0) {
-        if (gethostname(buf, sizeof(_res.defdname)) == 0 &&
-            (cp = /*index*/ strrchr (buf, '.')))
-            (void)strcpy(_res.defdname, cp + 1);
-    };
-          
-    /* find components of local domain that might be searched */
-    if (havesearch == 0) {
-        pp = _res.dnsrch;
-        *pp++ = _res.defdname;
-        for (cp = _res.defdname, n = 0; *cp; cp++)
-            if (*cp == '.')
-                n++;
-        cp = _res.defdname;
-        for (; n >= LOCALDOMAINPARTS && pp < _res.dnsrch + MAXDFLSRCH;
-            n--) {
-            cp = index(cp, '.');
-            *pp++ = ++cp;
-        }
-        *pp++ = 0;
-    };
-    _res.options |= RES_INIT;
-    return (0);
 }
 
 
 /* 
-
-  @func void WINAPI | res_setopts |
-  
-Global information that is used by the resolver routines is kept 
-in the variable _res.  Most of the values have reasonable defaults and can be 
-ignored. Options are a simple bit mask and are OR'ed in to enable.
-Options stored in _res.options are defined in <lt> resolv.h <gt> and are as 
-follows.
-
-@parm long | opts | the resolver option flags
-
-  @flag RES_INIT      | True if the initial name server  address and  default
-                        domain name are initialized (that is, res_init() has 
-                        been called).
-
-  @flag RES_DEBUG     | Print debugging messages.
-
-  @flag RES_AAONLY    | Accept authoritative answers only. res_send() will
-                        continue until it finds an authoritative answer or
-                        finds an error.  Currently this is not implemented.
-
-  @flag RES_USEVC     | Use TCP connections for queries  instead of UDP.
-
-  @flag RES_PRIMARY   | Query primary server only.
-
-  @flag RES_IGNTC     | Unused currently (ignore truncation errors, that is, do
-                        not retry with TCP).
-
-  @flag RES_RECURSE   | Set the recursion desired bit in queries.  This is the
-                        default. res_send() does not do iterative queries
-                        and expects the name server to handle recursion.
-
-  @flag RES_DEFNAMES  | Append the default domain name to single label queries.
-                        This is the default.
-
-  @flag RES_STAYOPEN  | Used with RES_USEVC to keep the TCP connection open
-                        between queries.  This is useful only in programs
-                        that regularly do many queries.  UDP should be the
-                        normal mode used.
-
-  @flag RES_DNSRCH    | Search up local domain tree.
-
+ res_setopts -- unsupported
 */
 
 void
-#ifdef _WINDLL
 WINAPI
-#endif
 res_setopts(long opts)
-/* Set resolver options */
 {
-    _res.options = opts;
 }
 
 
 
 /* 
-
-  @func long WINAPI | res_getopts |
-  
-Global information that is used by the resolver routines is kept 
-in the variable _res.  Most of the values have reasonable defaults and can be
-ignored. Options are a simple bit mask and are OR'ed in to enable. Options
-stored in _res.options are defined in <lt> resolv.h <gt> and are as follows.
-
-@rdesc returns a long which is the resolver option flags
-
-  @flag RES_INIT      | True if the initial name server  address and  default
-                        domain name are initialized (that is, res_init() has 
-                        been called).
-
-  @flag RES_DEBUG     | Print debugging messages.
-
-  @flag RES_AAONLY    | Accept authoritative answers only. res_send() will
-                        continue until it finds an authoritative answer or
-                        finds an error.  Currently this is not implemented.
-
-  @flag RES_USEVC     | Use TCP connections for queries  instead of UDP.
-
-  @flag RES_PRIMARY   | Query primary server only.
-
-  @flag RES_IGNTC     | Unused currently (ignore truncation errors, that is, do
-                        not retry with TCP).
-
-  @flag RES_RECURSE   | Set the recursion desired bit in queries.  This is the
-                        default. res_send() does not do iterative queries
-                        and expects the name server to handle recursion.
-
-  @flag RES_DEFNAMES  | Append the default domain name to single label queries.
-                        This is the default.
-
-  @flag RES_STAYOPEN  | Used with RES_USEVC to keep the TCP connection open
-                        between queries.  This is useful only in programs
-                        that regularly do many queries.  UDP should be the
-                        normal mode used.
-
-  @flag RES_DNSRCH    | Search up local domain tree.
-
+	res_getopts -- unsupported
 */
 
 long
-#ifdef _WINDLL
 WINAPI
-#endif
 res_getopts()
-/* Get resolver options */
 {
-    return (_res.options);
+    return -1;
 }
 
 /* --------------------------------------------------------------------------*/
@@ -589,192 +214,6 @@ res_getopts()
 #define MAX_DOMAIN_NAME_LEN             128 // arb.
 #define MAX_SCOPE_ID_LEN                256 // arb.
 
-//
-// IP_ADDRESS_STRING - store an IP address as a dotted decimal string
-//
-
-typedef struct {
-    char String[4 * 4];
-} IP_ADDRESS_STRING, *PIP_ADDRESS_STRING, IP_MASK_STRING, *PIP_MASK_STRING;
-
-//
-// IP_ADDR_STRING - store an IP address with its corresponding subnet mask,
-// both as dotted decimal strings
-//
-
-typedef struct _IP_ADDR_STRING {
-    struct _IP_ADDR_STRING* Next;
-    IP_ADDRESS_STRING IpAddress;
-    IP_MASK_STRING IpMask;
-    DWORD Context;
-} IP_ADDR_STRING, *PIP_ADDR_STRING;
-
-// FIXED_INFO - the set of IP-related information which does not depend on DHCP
-//
-typedef struct {
-    char HostName[MAX_HOSTNAME_LEN + 4] ;
-    char DomainName[MAX_DOMAIN_NAME_LEN + 4];
-    PIP_ADDR_STRING CurrentDnsServer;
-    IP_ADDR_STRING DnsServerList;
-    UINT NodeType;
-    char ScopeId[MAX_SCOPE_ID_LEN + 4];
-    UINT EnableRouting;
-    UINT EnableProxy;
-    UINT EnableDns;
-} FIXED_INFO, *PFIXED_INFO;
-
-/* End of Except from iptypes.h */
-/* --------------------------------------------------------------------------*/
-
-static HINSTANCE hIPHLPAPI = NULL;
-static DWORD (__stdcall * pGetNetworkParams)
-    (PFIXED_INFO pFixedInfo, PULONG pOutBufLen) = NULL;
-static PFIXED_INFO ipinfo = NULL;
-
-static int
-load_iphelper()
-{
-    if (ipinfo != NULL)
-        return(1);
-
-    if (hIPHLPAPI == NULL)
-        return 0;
-
-    (FARPROC) pGetNetworkParams = GetProcAddress(hIPHLPAPI, 
-                                                 "GetNetworkParams");
-    if (pGetNetworkParams)
-    {
-        DWORD dwBuf = 0;
-        DWORD rc = pGetNetworkParams(ipinfo, &dwBuf);
-        if (rc == ERROR_BUFFER_OVERFLOW) {
-            ipinfo = (PFIXED_INFO) malloc(dwBuf);
-            if ( ipinfo == NULL )
-                return(0);
-            if (pGetNetworkParams(ipinfo, &dwBuf) == ERROR_SUCCESS)
-                return(1);
-            free(ipinfo);
-            ipinfo = NULL;
-        }
-    }
-    return(0);
-}
-
-static int
-set_nameservers_using_iphlp()
-{
-    if ( !load_iphelper() )
-        return(0);
-
-    if ( ipinfo->DnsServerList.IpAddress.String[0] ) {
-        int nserv = 0;
-        PIP_ADDR_STRING AddrList = &(ipinfo->DnsServerList);
-
-        do {
-            if ((_res.nsaddr_list[nserv].sin_addr.s_addr = 
-                  inet_addr(AddrList->IpAddress.String)) == (unsigned)-1) 
-            {
-                _res.nsaddr_list[nserv].sin_addr.s_addr = INADDR_ANY;
-            } else {
-                _res.nsaddr_list[nserv].sin_family = AF_INET;
-                _res.nsaddr_list[nserv].sin_port = htons(NAMESERVER_PORT);
-                nserv++;
-            }
-
-            AddrList = AddrList->Next;
-        } while (AddrList && nserv < MAXNS);
-
-        if (nserv >= 1){
-            _res.nscount = nserv;
-            return( nserv );
-        }
-    }
-
-    // if we got here we didn't get the nameservers so return 0
-    return(0);
-}
-
-static
-WORD
-WhichRegistry(
-    )
-{
-    static WORD result = (WORD)-1;
-
-    if (result != (WORD)-1)
-        return result;
-
-#define TCPIP_PARAMS_ALA_WIN95  1
-#define TCPIP_PARAMS_ALA_NT4    2
-#define TCPIP_PARAMS_ALA_NT5    3
-
-/*
-What we really want to figure out is the access method.
-
-- Registry ala Win95
-- Registry ala WinNT4
-- Registry ala WinNT5
-
-- none of the above...
-
-*/
-
-#ifdef _WIN32
-    // This is a 32-bit DLL.
-    {
-        OSVERSIONINFO osvi = { 0 };
-        osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-        if (!GetVersionEx(&osvi)) {
-            // houston, we have a problem....
-            exit(1);
-        }
-
-        switch(osvi.dwPlatformId) {
-        case VER_PLATFORM_WIN32s:
-            return (result = 0);
-        case VER_PLATFORM_WIN32_WINDOWS:
-            return (result = TCPIP_PARAMS_ALA_WIN95);
-        case VER_PLATFORM_WIN32_NT:
-            if (osvi.dwMajorVersion > 4)
-                return (result =  TCPIP_PARAMS_ALA_NT5);
-            else
-                return (result = TCPIP_PARAMS_ALA_NT4);
-        default:
-            return (result = 0);
-        }
-
-    }
-#else // !_WIN32
-    // This is a 16-bit DLL.
-    {
-        DWORD dwVersion = GetVersion();
-        DWORD dwFlags = GetWinFlags();
-
-        if( _res.options & RES_DEBUG ){
-            wsprintf( debstr, "dwFlags = %x ", dwFlags );
-            OutputDebugString( debstr );
-            wsprintf( debstr, "dwVersion = %8lx ", dwVersion );
-            OutputDebugString( debstr );
-        }
-
-#define __WF_WOW 0x4000
-
-        if (dwFlags & __WF_WOW) {
-            // We are some kind of NT
-            if (HIBYTE(LOWORD(dwVersion)) == 95)
-                // We are beyond NT4
-                return (result = TCPIP_PARAMS_ALA_NT5);
-            else
-                // We are NT4 or lower
-                return (result = TCPIP_PARAMS_ALA_NT4);
-        } else {
-            if (HIBYTE(LOWORD(dwVersion)) == 95)
-                return (result = TCPIP_PARAMS_ALA_WIN95);
-            else
-                return (result = 0);
-        }
-    }
-#endif // !_WIN32
-}
 
  
 /*
@@ -1041,7 +480,7 @@ get_nt5_adapter_param(
     HKEY hAdapters;
 
     char* DEVICE_STR = "\\Device\\";
-    int DEVICE_LEN = strlen(DEVICE_STR);
+    SIZE_T DEVICE_LEN = strlen(DEVICE_STR);
 
 #define TCPIP_PATH_ADAPTERS "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces"
 #define TCPIP_PATH_LINKAGE "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Linkage"
@@ -1090,103 +529,17 @@ get_nt5_adapter_param(
     return FALSE;
 }
 
-static
-BOOL
-_getsearchlist(
-    char *searchlist,
-    int size,
-    DWORD which_reg
-    )
-{
-    char buf[BUFSIZ*4];
-    char Tcpip_path[_MAX_PATH];
-    char* param = "SearchList";
-    BOOL ok = FALSE;
-    char* rbuf;
-    unsigned int rlen;
 
-    if (!searchlist || (size <= 0)) 
-        return FALSE;
-
-    rbuf = (size >= sizeof(buf))?searchlist:buf;
-    rlen = (size >= sizeof(buf))?size:sizeof(buf);
-
-    switch(which_reg) {
-    case TCPIP_PARAMS_ALA_NT4:
-        if(!LoadString(this_module(), IDS_TCPIP_PATH_NT, 
-                       Tcpip_path, sizeof(Tcpip_path)))
-            strcpy(Tcpip_path, NT_TCP_PATH);
-        ok = getRegKeyEx(HKEY_LOCAL_MACHINE, Tcpip_path, param, rbuf, rlen);
-        break;
-    case TCPIP_PARAMS_ALA_WIN95:
-        if(!LoadString(this_module(), IDS_TCPIP_PATH_95,
-                       Tcpip_path, sizeof(Tcpip_path))){
-            strcpy(Tcpip_path, W95_TCP_PATH);
-        }
-        ok = getRegKeyEx(HKEY_LOCAL_MACHINE, Tcpip_path, param, rbuf, rlen);
-        break;
-    case TCPIP_PARAMS_ALA_NT5:
-        ok = get_nt5_adapter_param(param, 0, rbuf, rlen);
-        break;
-    }
-
-    if (ok) {
-        if (size < (lstrlen(rbuf) + 1))
-            return FALSE;
-        if (rbuf != searchlist)
-            strncpy(searchlist, rbuf, size);
-        return TRUE;
-    }
-    return FALSE;
-}
-
-static
-int
-set_searchlist_using_registry(
-    DWORD which_reg
-    )
-{
-    static char buf[BUFSIZ*4];
-    if (!_getsearchlist(buf, sizeof(buf), which_reg))
-        return 0;
-
-    if (buf[0]) {
-        char *cp, **pp;
-        int n;
-
-        _res.dnsrch[0] = buf;
-        cp = _res.dnsrch[0];
-        pp = _res.dnsrch;
-        pp++;
-        for (n = 0; *cp && pp < _res.dnsrch + MAXDNSRCH; cp++) {
-            if (*cp == ' ' || *cp == '\t' || *cp == ',') {
-                *cp = 0;
-                n = 1;
-            } else if (n) {
-                *pp++ = cp;
-                n = 0;
-            }
-        }
-        /* null terminate last domain if there are excess */
-        while (*cp != '\0' && *cp != ' ' && *cp != '\t')
-            cp++;
-        *cp = '\0';
-        *pp++ = 0;
-        return 1;
-    }
-    return 0;
-}
 
 static
 BOOL
 _getdomainname(
     char* name, 
-    int size, 
-    WORD which_reg
+    int size
     )
 {
     char buf[BUFSIZ];
-    char Tcpip_path[_MAX_PATH];
+  
     char* dhcp_param = "DhcpDomain";
     char* param = "Domain";
     BOOL ok = FALSE;
@@ -1199,29 +552,11 @@ _getdomainname(
     rbuf = (size >= sizeof(buf))?name:buf;
     rlen = (size >= sizeof(buf))?size:sizeof(buf);
 
-    switch(which_reg) {
-    case TCPIP_PARAMS_ALA_NT4:
-        if(!LoadString(this_module(), IDS_TCPIP_PATH_NT, 
-                       Tcpip_path, sizeof(Tcpip_path)))
-            strcpy(Tcpip_path, NT_TCP_PATH);
-        ok = getRegKeyEx(HKEY_LOCAL_MACHINE, Tcpip_path, dhcp_param, rbuf, rlen);
-        if (!ok || !rbuf[0])
-            ok = getRegKeyEx(HKEY_LOCAL_MACHINE, Tcpip_path, param, rbuf, rlen);
-        break;
-    case TCPIP_PARAMS_ALA_WIN95:
-        if(!LoadString(this_module(), IDS_TCPIP_PATH_95,
-                       Tcpip_path, sizeof(Tcpip_path))){
-            strcpy(Tcpip_path, W95_TCP_PATH);
-        }
-        ok = getRegKeyEx(HKEY_LOCAL_MACHINE, Tcpip_path, param, rbuf, rlen);
-        break;
-    case TCPIP_PARAMS_ALA_NT5:
-        ok = get_nt5_adapter_param(dhcp_param, 0, rbuf, rlen);
-        if (!ok || !rbuf[0])
-            ok = get_nt5_adapter_param(param, 0, rbuf, rlen);
-        break;
-    }
-
+    
+    ok = get_nt5_adapter_param(dhcp_param, 0, rbuf, rlen);
+    if (!ok || !rbuf[0])
+        ok = get_nt5_adapter_param(param, 0, rbuf, rlen);
+  
     if (ok && rbuf[0]) {
         if (size < (lstrlen(rbuf) + 1))
             return FALSE;
@@ -1233,506 +568,104 @@ _getdomainname(
 }
 
 /*
-
-  @doc MISC
+	Gets the base part of the hostname
+	defined in wshelper\res_init.c
   
-  @func int | wsh_gethostname | Gets the base part of the hostname
-  
-  @parm char* | name | buffer into which to put name (must be large
-                       enough to hold NULL-terminated host name)
-  @parm int   | size | buffer size
+	\param[in, out]	name pointer to a buffer that receives a null-terminated string containing the computer name 
+	\param[in]		size specifies the size of the buffer, in chars (must be large
+                    enough to hold NULL-terminated host name)
 
-  @rdesc 0 indicates success.  -1 on error.
+	\retval			return 0 ifsuccess,  -1 on error.
 
 */
 int WINAPI
 wsh_gethostname(char* name, int size)
 {
-    if (!name || gethostname(name, size))
-        return -1;
-    while (*name && (*name != '.')) name++;
-    if (*name == '.') *name = 0;
-    return 0;
+    if (name){   
+       // Get and display the name of the computer. 
+ 
+        if( GetComputerName(name, &size) ) 
+        {
+            while (*name && (*name != '.')) 
+            {
+                *name = tolower(*name);
+                name++;
+            }
+            if (*name == '.') *name = 0;
+                return 0;
+        }
+    }
+    return -1;
 }
 
 /*
+	Gets the machine's domain name
+	
+	\param[in, out]	name pointer to a buffer that receives a null-terminated string containing the domain name 
+	\param[in]		size specifies the size of the buffer, in chars (must be large
+                    enough to hold NULL-terminated domain name)
 
-  @doc MISC
-  
-  @func int | wsh_getdomainname | Gets the machine's domain name
-  
-  @parm char* | name | buffer into which to put domain name (must be large
-                       enough to hold NULL-terminated domain name)
-  @parm int   | size | buffer size
+	\retval			return 0 ifsuccess,  -1 on error.
 
-  @rdesc 0 indicates success.  -1 on error.
 
 */
 int WINAPI
 wsh_getdomainname(char* name, int size)
 {
-    // First, regardless of the operating system type we will use a
-    // call to gethostbyname() to determine the domain name.  Only
-    // if that fails will we look at the registry.
-    struct hostent * host = NULL;
-    if (!name) return -1;
+    DNS_STATUS status; 
     
-    /* try to get local domain from IP Helper API */ 
-    if (load_iphelper() && ipinfo->DomainName[0])
-    {
-        strncpy(name, ipinfo->DomainName, size);
-        return 0;
-    }
+    PDNS_RECORD pDnsRecord; 
+    DNS_FREE_TYPE freetype ;
+    
+    DWORD length;
+    char hostName[BUFSIZ];
 
-    host = gethostbyname(NULL);
-    if (host) {
-        char * cp;
-        cp = index(host->h_name, '.');
-        if (!cp)
-        {
-            /* we have a hostent structure which contains IP addresses */
-            /* let use them to determine the domain of the first.      */
-            host = gethostbyaddr((char *)host->h_addr, 4, PF_INET);
-            if (host)
-                cp = index(host->h_name, '.');
-        }
-        if (cp)
-        {
-            cp++;
-            strncpy(name, cp, size);
-            name[size-1] = '\0';
-            return(0);
-        }
-    }
+    length = BUFSIZ;
+    freetype =  DnsFreeRecordListDeep;
+    
+ 
+   // Get and display the name of the computer. 
+ 
+   if( GetComputerName(hostName, &length) ) 
+   {
 
+        status = DnsQuery_A(hostName,                 //pointer to OwnerName 
+                        DNS_TYPE_A,                      //Type of the record to be queried
+                        DNS_QUERY_BYPASS_CACHE|DNS_QUERY_NO_LOCAL_NAME,     // Bypasses the resolver cache on the lookup. 
+                        NULL,                   //contains DNS server IP address
+                        &pDnsRecord,                //Resource record comprising the response
+                        NULL);                     //reserved for future use
+    
+        if (status) 
+            return -1;
+        else
+        {
+            char* cp;
+            cp = index(pDnsRecord->pName, '.');
+            if (cp)
+            {
+                cp++;
+                strncpy(name, cp, size);
+                name[size-1] = '\0';
+                DnsRecordListFree(pDnsRecord, freetype);
+                return(0);
+            }   
+            DnsRecordListFree(pDnsRecord, freetype);
+
+        }
+   }
+  
     /* try to get local domain from the registry */
-    if (_getdomainname(name, size, WhichRegistry()))
+    if (_getdomainname(name, size))
         return 0;
     else
         return -1;
 }
 
-static
-int
-get_w95_dhcp_nameservers()
-{
-    unsigned char buf[BUFSIZ];
-    unsigned char *cp;
-    int nserv = 0;
-    BOOL ok = FALSE;
-
-    HKEY hkDHCP;
-    HKEY hkDHCPInfo;
-    DWORD dwIndex;
-    DWORD dwSize;
-    DWORD dwType;
-    FILETIME filetime;
-
-    if (RegOpenKey(HKEY_LOCAL_MACHINE,
-                   "SYSTEM\\CurrentControlSet\\Services\\VxD\\DHCP", 
-                   &hkDHCP) == ERROR_SUCCESS) {
-        dwIndex = 0;
-        dwSize = BUFSIZ;
-        while ( nserv < MAXNS && 
-                RegEnumKeyEx(hkDHCP, dwIndex, buf, &dwSize, NULL, NULL, NULL, &filetime)
-                == ERROR_SUCCESS ) {
-            if ( RegOpenKey(hkDHCP, buf, &hkDHCPInfo) == ERROR_SUCCESS ) {
-                dwSize = BUFSIZ;
-                if ( RegQueryValueEx( hkDHCPInfo, "OptionInfo", NULL, &dwType,
-                                      buf, &dwSize) == ERROR_SUCCESS ) {
-                    // the OptionInfo data field is a tagged set of length specified fields
-                    // 03 - Route
-                    // 06 - List of Name Servers (4bytes per IP address)
-                    // 0F - Domain Name
-                    // 2C - IP Address of WINS
-                    // FF - end of list
-                    for (cp = buf ; *cp != 0xFF ; ) {
-                        switch ( *cp++ ) {
-                        case 0x06: {    /* List of Name Servers */
-                            int n = *cp++ / 4 ;
-                            for ( ; n > 0 ; n-- ) {
-                                if ( nserv < MAXNS ) {
-                                    char ipaddr[16];
-                                    sprintf(ipaddr,"%d.%d.%d.%d",
-                                             cp[0],cp[1],cp[2],cp[3]);
-                                    if ((_res.nsaddr_list[nserv].sin_addr.s_addr = 
-                                          inet_addr(ipaddr)) == (unsigned)-1) 
-                                    {
-                                        _res.nsaddr_list[nserv].sin_addr.s_addr = INADDR_ANY;
-                                    } else {
-                                        _res.nsaddr_list[nserv].sin_family = AF_INET;
-                                        _res.nsaddr_list[nserv].sin_port = htons(NAMESERVER_PORT);
-                                        nserv++;
-                                    }
-                                }
-                                cp += 4;
-                            }
-                            break;
-                        }
-                        case 0x03:      /* Route */
-                        case 0x0F:      /* Domain Name */
-                        case 0x2C:      /* IP Address of WINS */
-                        default:
-                            cp += *cp + 1;
-                        }
-                    }
-                }
-                RegCloseKey(hkDHCPInfo);
-            }
-            dwIndex++;
-            dwSize = BUFSIZ;
-        }
-        RegCloseKey(hkDHCP);
-    }
-
-    if (RegOpenKey(HKEY_LOCAL_MACHINE,
-                    "SYSTEM\\CurrentControlSet\\Services\\VxD\\DHCPOptions", 
-                    &hkDHCP) == ERROR_SUCCESS) {
-        dwIndex = 0;
-        dwSize = BUFSIZ;
-        while ( nserv < MAXNS && 
-                RegEnumKeyEx(hkDHCP, dwIndex, buf, &dwSize, NULL, NULL, NULL, &filetime)
-                == ERROR_SUCCESS ) {
-            if ( RegOpenKey(hkDHCP, buf, &hkDHCPInfo) == ERROR_SUCCESS ) {
-                dwSize = BUFSIZ;
-                if ( RegQueryValueEx( hkDHCPInfo, "OptionInfo", NULL, &dwType,
-                                      buf, &dwSize) == ERROR_SUCCESS ) {
-                    int n;
-                    // the OptionInfo data field is an ordered set of length specified fields
-                    // Mask
-                    // Route
-                    // Name Servers
-                    // Domain
-                    // WINS
-                    // Unknown 1
-                    // Unknown 2
-                    // Unknown 3
-                    // Unknown 4
-                    // Unknown 5
-
-                    cp = buf;
-                    cp += *cp + 1;  // Mask
-                    cp += *cp + 1;  // Route
-
-                    n = *cp++ / 4 ; // Domain
-                    for ( ;n>0;n-- ) {
-                        if ( nserv < MAXNS ) {
-                            char ipaddr[16];
-                            sprintf(ipaddr,"%d.%d.%d.%d",
-                                     cp[0],cp[1],cp[2],cp[3]);
-                            if ((_res.nsaddr_list[nserv].sin_addr.s_addr = 
-                                  inet_addr(ipaddr)) == (unsigned)-1) 
-                            {
-                                _res.nsaddr_list[nserv].sin_addr.s_addr = INADDR_ANY;
-                            } else {
-                                _res.nsaddr_list[nserv].sin_family = AF_INET;
-                                _res.nsaddr_list[nserv].sin_port = htons(NAMESERVER_PORT);
-                                nserv++;
-                            }
-                        }
-                        cp += 4;
-                    }
-                    // ignore the rest
-                }
-                RegCloseKey(hkDHCPInfo);
-            }
-            dwIndex++;
-            dwSize = BUFSIZ;
-        }
-        RegCloseKey(hkDHCP);
-    }
-
-    if (nserv >= 1){
-        _res.nscount = nserv;
-        return( nserv );
-    }
-
-    // if we got here we didn't get the nameservers so return 0
-    return(0);
-}
-
-static
-int
-set_nameservers_using_registry(
-    DWORD which_reg
-    )
-{
-    char buf[BUFSIZ];
-    char *cp;
-    int nserv = 0;
-    char Tcpip_path[_MAX_PATH];
-    char* dhcp_param = "DhcpNameServer";
-    char* param = "NameServer";
-    BOOL ok = FALSE;
-
-    switch(which_reg) {
-    case TCPIP_PARAMS_ALA_NT4:
-        /* NT4 stores DNS information in three different places depending
-           on where the information came from.  First, in the 
-           TCPIP_PATH_NT_TRANSIENT key under subkey "NameServer".  This is
-           set by dialup networking when connecting to an ISP.
-           Second is TCPIP_PATH_NT under subkey "NameServer" and finally
-           under the TCPIP_PATH_NT under subkey "DhcpNameServer".
-
-           We must check all three.
-         */
-           
-        if(!LoadString(this_module(), IDS_TCPIP_PATH_NT_TRANSIENT, 
-                       Tcpip_path, sizeof(Tcpip_path)))
-            strcpy(Tcpip_path, NT_TCP_PATH_TRANS);
-        ok = getRegKeyEx(HKEY_LOCAL_MACHINE, Tcpip_path, param, buf, sizeof(buf));
-
-        if ( !ok || !buf[0] ) {
-            if(!LoadString(this_module(), IDS_TCPIP_PATH_NT,
-                           Tcpip_path, sizeof(Tcpip_path)))
-                strcpy(Tcpip_path, NT_TCP_PATH);
-            ok = getRegKeyEx(HKEY_LOCAL_MACHINE, Tcpip_path, dhcp_param, buf, sizeof(buf));
-
-            if ( !ok || !buf[0] ) {
-                ok = getRegKeyEx(HKEY_LOCAL_MACHINE, Tcpip_path, param, buf, sizeof(buf));
-            }
-        }
-        break;
-    case TCPIP_PARAMS_ALA_WIN95:
-        /* W9X stores DNS information in two different places depending
-           on where the information came from.
-
-           If the information is placed into the Registry from the
-           Network Control Panel DNS page then it goes into the 
-           "NameServer" key.
-
-           However, if the information is placed there via the DHCP or
-           PPP drivers then it gets placed in binary records in the
-           VxD\DHCP and VxD\DHCPOptions keys.  It is not possible for
-           us to easily determine which is the active one so we will
-           gather as many Name Servers as we can and place them into
-           the list.
-         */
-        if(!LoadString(this_module(), IDS_TCPIP_PATH_95,
-                       Tcpip_path, sizeof(Tcpip_path))){
-            strcpy(Tcpip_path, W95_TCP_PATH);
-        }
-        ok = getRegKeyEx(HKEY_LOCAL_MACHINE, Tcpip_path, param, buf, sizeof(buf));
-        if ( !ok || !buf[0] ) {
-            return(get_w95_dhcp_nameservers());
-        }
-        break;
-    case TCPIP_PARAMS_ALA_NT5:
-        ok = get_nt5_adapter_param(dhcp_param, 0, buf, sizeof(buf));
-        if (!ok || !buf[0])
-            ok = get_nt5_adapter_param(param, 0, buf, sizeof(buf));
-        break;
-    }
-
-    if (ok) {
-        /* break into tokens and fill the nameserver spots */
-        for (cp=strtok(buf,WSH_SPACES); cp && nserv < MAXNS; cp=strtok(NULL,WSH_SPACES)){
-
-            if ((_res.nsaddr_list[nserv].sin_addr.s_addr = inet_addr(cp)) == (unsigned)-1){
-                _res.nsaddr_list[nserv].sin_addr.s_addr = INADDR_ANY;
-	    } else {
-                _res.nsaddr_list[nserv].sin_family = AF_INET;
-                _res.nsaddr_list[nserv].sin_port = htons(NAMESERVER_PORT);
-                nserv++;
-            }
-        }
- 
-        if (nserv >= 1){
-            _res.nscount = nserv;
-            return( nserv );
-        }
-    }
-
-    // if we got here we didn't get the nameservers so return 0
-    return(0);
-}
 
 
-#ifndef _WIN32
-
-static
-FILE *
-find_config_file(
-    LPSTR config_path
-    )
-{
-    char *cp;
-    FILE *fp;
-    char buf[BUFSIZ];
-    char DefConfigFile[_MAX_PATH];
-
-/* il 8/1/95 -- added more search paths */
-#define WSH_TRY(env_str, form_str) \
-    ((cp = getenv(env_str)) && \
-     (fp = fopen((wsprintf(config_path, (form_str), cp), config_path),\
-		 "r")))
-
-/* il 8/23/95 -- added path search (for Trumpet) */
-#define WSH_SEARCH_TRY(fname) \
-    ((OpenFile(fname, (LPOFSTRUCT)buf, OF_EXIST) != HFILE_ERROR) && \
-     (fp = fopen(strcpy(config_path, ((LPOFSTRUCT)buf)->szPathName), "r")))
-    
-    if(!LoadString( this_module(), IDS_DEF_RESCONF_PATH, 
-                    DefConfigFile, sizeof(DefConfigFile) )){
-        strcpy( DefConfigFile, _PATH_RESCONF);
-    }
-
-    /* try to guess the path */
-    if (WSH_TRY("ETC", "%s\\resolv.cfg") || /* il 8/1/95 -- added more search paths */
-        WSH_TRY("EXCELAN", "%s\\TCP\\resolv.cfg") ||
-        WSH_TRY("NDIR", "%s\\ETC\\resolv.cfg") ||
-        WSH_TRY("NDIR", "%s\\TCP\\resolv.cfg") ||
-        WSH_TRY("PCTCP", "%s") ||
-	(fp = fopen(strcpy(config_path, DefConfigFile), "r")) ||
-        WSH_SEARCH_TRY("resolv.cfg") || /* il 8/23/95 -- patch for */
-        WSH_SEARCH_TRY("TRUMPWSK.INI") || /* il 8/23/95 -- patch for Trumpet */
-        WSH_SEARCH_TRY("CORE.INI") || /* il 8/23/95 -- patch for Coreworks */
-        WSH_SEARCH_TRY("PCTCP.INI")
-        ) {
-        return(fp);
-    }
-
-    return(0); // we didn't find it
-}
 
 
-// All of this section is thunking support to allow the 16 bit DLL wshelper to
-// access the registry when running under NT or WIndows 95.
-
-
-DWORD (WINAPI *ExpandEnvironmentStringsW)(
-    LPSTR lpSrc,  // pointer to string with environment variables 
-    LPSTR lpDst,  // pointer to string with expanded environment variables  
-    DWORD nSize   // maximum characters in expanded string 
-    );
-
-HMODULE hKernel;                        
-
-LONG RegQueryValueEx(
-    HKEY hKey,
-    LPCSTR lpszValueName,
-    LPDWORD lpdwReserved,
-    LPDWORD lpdwType,
-    LPBYTE lpbData,
-    LPDWORD lpcbData
-    )
-{
-    DWORD pFn;
-    DWORD dwResult = ERROR_ACCESS_DENIED;
-    DWORD hAdvApi32; 
-
-#define CPEX_DEST_STDCALL   0x00000000L
-
-    hAdvApi32 = LoadLibraryEx32W( "ADVAPI32.DLL", NULL, 0);
-
-    if( (DWORD) 0 != hAdvApi32 ){
-
-        // call ANSI version
-        pFn = GetProcAddress32W(hAdvApi32, "RegQueryValueExA");
-        if((DWORD) 0 != pFn) {
-            dwResult=CallProcEx32W(
-                CPEX_DEST_STDCALL | 6,  // standard function call with
-                                        // six parameters
-                0x3e,                   // Identify what parameters
-                                        // (addresses) must be translated
-                pFn,                    // function pointer
-                hKey,	                // open key
-                lpszValueName,          // value to query
-                lpdwReserved,           // reserved for future use
-                lpdwType,               // value type
-                lpbData,                // value data
-                lpcbData                // value data length
-                );
-        }
-    }
-    if (hAdvApi32){
-        FreeLibrary32W(hAdvApi32);
-    }
-    return(dwResult);
-}
-
-
-// This is for the 16 bit build running under a 32 bit OS
-
-LONG RegOpenKeyEx(
-    HKEY hKey,
-    LPCSTR lpSubKey,
-    DWORD ulOptions,
-    LONG samDesired,
-    PHKEY phkResult
-){
-    DWORD pFn;
-    DWORD dwResult = ERROR_ACCESS_DENIED;
-    DWORD hAdvApi32;
-
-    hAdvApi32 = LoadLibraryEx32W( "ADVAPI32.DLL", NULL, 0);
-
-    if( (DWORD) 0 != hAdvApi32 ){
-        // call ANSI version
-        pFn = GetProcAddress32W(hAdvApi32, "RegOpenKeyExA");
-        if((DWORD) 0 != pFn) {  
-            dwResult=CallProcEx32W(
-                CPEX_DEST_STDCALL | 5,	// standard function call with
-                                        // five parameters
-                0x1e,                   // Identify what parameters
-                                        // (addresses) must be translated
-                pFn,                    // function pointer
-                hKey,                   // handle of open key
-                lpSubKey,               // address of name of subkey to open
-                ulOptions,              // reserved
-                samDesired,             // security access mask
-                phkResult               // address of handle of open key
-                );
-        }
-    }
-    if (hAdvApi32){
-        FreeLibrary32W(hAdvApi32);
-    }
-    return(dwResult);
-}
-
-     
-     
-DWORD ExpandEnvironmentStrings(
-    LPCSTR lpSrc, // pointer to string with environment variables 
-    LPSTR lpDst,  // pointer to string with expanded environment variables  
-    DWORD nSize   // maximum characters in expanded string 
-){
-    DWORD pFn;
-    DWORD dwResult = ERROR_ACCESS_DENIED;
-    DWORD hAdvApi32; 
-
-    hAdvApi32 = LoadLibraryEx32W( "ADVAPI32.DLL", NULL, 0);
-
-    if( (DWORD) 0 != hAdvApi32 ){
-        // call ANSI version
-        pFn = GetProcAddress32W(hAdvApi32, "RegOpenKeyExA");
-        if((DWORD) 0 != pFn) {
-            dwResult=CallProcEx32W(
-                CPEX_DEST_STDCALL | 3,	// standard function call with
-                                        // three parameters
-                0x3e,                   // Identify what parameters
-                                        // (addresses) must be translated
-                pFn,                    // function pointer
-                lpSrc,                  // string w/environment variables 
-                lpDst,                  // string w/expanded environment variables  
-                nSize                   // max characters in expanded string 
-                );
-        }
-
-    }
-
-    if (hAdvApi32){
-        FreeLibrary32W(hAdvApi32);
-    }
-
-    return(dwResult);
-}
-
-     
-     
-		            
-#endif // !_WIN32		                        
 
 
 
@@ -1785,7 +718,6 @@ getRegKeyEx(
     DWORD type, cb;
     char *env_buf;
 
-//  if (RegOpenKeyEx(key, subkey, 0, KEY_QUERY_VALUE, &hkTcpipParameters) == ERROR_SUCCESS) {
 
     if (RegOpenKey(key, subkey, &hkTcpipParameters) == ERROR_SUCCESS) {
         cb = len;
@@ -1816,12 +748,6 @@ getRegKeyEx(
 #ifdef __cplusplus
 inline
 #endif
-int const getNoNameRegKey(const HKEY key, const char *subkey, char *buf)
-{
-    LONG cb;
-    cb = BUFSIZ;
-    return RegQueryValue(key, subkey, buf, &cb) == ERROR_SUCCESS;
-}
 
 #include "wsh-int.h"
 
@@ -1872,7 +798,6 @@ res_init_startup()
 {
     DWORD debug_on = 0;
 
-    hIPHLPAPI = LoadLibrary("IPHLPAPI");
 
     if (try_registry(HKEY_CURRENT_USER, "DebugOn", &debug_on) ||
         try_registry(HKEY_LOCAL_MACHINE, "DebugOn", &debug_on))
@@ -1885,11 +810,5 @@ res_init_startup()
 void
 res_init_cleanup()
 {
-    if (ipinfo)
-        free(ipinfo);
-    if (hIPHLPAPI)
-    {
-        FreeLibrary(hIPHLPAPI);
-        hIPHLPAPI = 0;
-    }
+   
 }

@@ -4,6 +4,9 @@
 #include "init.hxx"
 #include "secure.hxx"
 
+#define CCAPI_V2_MUTEX_NAME     TEXT("MIT_CCAPI_V2_MUTEX")
+HANDLE  hCCAPIv2Mutex = NULL;
+
 BOOL
 WINAPI
 DllMain(
@@ -16,6 +19,7 @@ DllMain(
     switch (fdwReason) {
     case DLL_PROCESS_ATTACH:
     {
+        hCCAPIv2Mutex = CreateMutex(NULL, FALSE, CCAPI_V2_MUTEX_NAME);
         break;
     }
     case DLL_PROCESS_DETACH:
@@ -54,6 +58,7 @@ DllMain(
         // only affects people running debuggers under 9x/Me who are
         // using multiple DLLs that use this DLL.
         //
+        WaitForSingleObject( hCCAPIv2Mutex, INFINITE );
 #if 0
         bool process_teardown_workaround = false;
         if (lpvReserved) {
@@ -68,6 +73,8 @@ DllMain(
         // return value is ignored, so we set status for debugging purposes
         status = Client::Cleanup();
         status = Init::Cleanup();
+        ReleaseMutex( hCCAPIv2Mutex );
+        CloseHandle( hCCAPIv2Mutex );
         break;
     }
     case DLL_THREAD_ATTACH:

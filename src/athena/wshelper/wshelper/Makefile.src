@@ -9,19 +9,15 @@ TARGETSS=console
 OBJS = \
 	$(O)\dllmain.obj \
 	$(O)\gethna.obj \
-	$(O)\herror.obj \
 	$(O)\hesiod.obj \
 	$(O)\hesmailh.obj \
 	$(O)\hespwnam.obj \
 	$(O)\hesservb.obj \
 	$(O)\inetaton.obj \
 	$(O)\res_comp.obj \
-	$(O)\res_debu.obj \
 	$(O)\res_init.obj \
-	$(O)\res_mkqu.obj \
-	$(O)\res_quer.obj \
-	$(O)\res_send.obj \
-	$(O)\resolve.obj
+	$(O)\res_quer.obj 
+	
 
 RES=$(O)\resource.res
 
@@ -31,6 +27,7 @@ USE_DEFAULTLIB=1
 #USE_PCH=1
 
 INCLUDES=..\include
-LIBS=wsock32.lib $(STD_LIBS)
+#LIBS=wsock32.lib dnsapi.lib bufferoverflowu.lib $(STD_LIBS)
+LIBS=wsock32.lib dnsapi.lib  $(STD_LIBS)
 
 C_FLAGS=-DWINDOWS -DWIN32 -D_WINDOWS

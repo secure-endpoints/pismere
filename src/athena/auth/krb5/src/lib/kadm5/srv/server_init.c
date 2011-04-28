@@ -1,16 +1,17 @@
 /*
  * Copyright 1993 OpenVision Technologies, Inc., All Rights Reserved.
  *
- * $Id: server_init.c,v 1.8 2002/10/15 15:40:49 epeisach Exp $
- * $Source: /cvs/krbdev/krb5/src/lib/kadm5/srv/server_init.c,v $
+ * $Id: server_init.c 17503 2005-11-29 00:01:49Z tlyu $
+ * $Source$
  */
 
 #if !defined(lint) && !defined(__CODECENTER__)
-static char *rcsid = "$Header: /cvs/krbdev/krb5/src/lib/kadm5/srv/server_init.c,v 1.8 2002/10/15 15:40:49 epeisach Exp $";
+static char *rcsid = "$Header$";
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <k5-int.h>
 #include <com_err.h>
 #include <kadm5/admin.h>
 #include <krb5.h>

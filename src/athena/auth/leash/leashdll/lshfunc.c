@@ -557,18 +557,18 @@ Leash_kinit_ex(
     )
 {
     return Leash_int_kinit_ex( 0, /* krb5 context */
-							   0, /* parent window */
+			       0, /* parent window */
                                principal, 
                                password, 
                                lifetime,
-							   forwardable,
-							   proxiable,
-							   renew_life,
-							   addressless,
-							   publicip,
+			       forwardable,
+			       proxiable,
+			       renew_life,
+			       addressless,
+			       publicip,
                                0
-							   );
-}
+			       );
+}	
 
 long
 Leash_int_kinit_ex(
@@ -597,6 +597,7 @@ Leash_int_kinit_ex(
     int rc4 = 0;
     int rc5 = 0;
     int rcA = 0;
+    int rcB = 0;
     int rcL = 0;
 
     if (lifetime < 5)
@@ -604,10 +605,10 @@ Leash_int_kinit_ex(
     else
         lifetime /= 5;
 
-	if (renew_life > 0 && renew_life < 5)
-		renew_life = 1;
-	else
-		renew_life /= 5;
+    if (renew_life > 0 && renew_life < 5)
+	renew_life = 1;
+    else
+	renew_life /= 5;
 
     /* This should be changed if the maximum ticket lifetime */
     /* changes */
@@ -677,65 +678,69 @@ Leash_int_kinit_ex(
     }
 
     rc5 = Leash_krb5_kinit(ctx, hParent, 
-							temp, password, lifetime,
-							forwardable,
-							proxiable,
-							renew_life,
-							addressless,
-							publicip
-							);
-	if ( Leash_get_default_use_krb4() ) {
-		if ( !rc5 ) {
+                            temp, password, lifetime,
+                            forwardable,
+                            proxiable,
+                            renew_life,
+                            addressless,
+                            publicip
+                            );
+    if ( Leash_get_default_use_krb4() ) {
+        rc4 = KSUCCESS;
+
+        if ( !rc5 ) {
             if (!Leash_convert524(ctx))
                 rc4 = KFAILURE;
-		} else {
-			if (pkname_parse == NULL)
-			{
-				goto cleanup;
-			}
+        } 
+        
+        if (rc4 != KSUCCESS) {
+            if (pkname_parse == NULL)
+            {
+                goto cleanup;
+            }
 
-			err_context = "getting realm";
-			if (!*realm && (rc4  = (int)(*pkrb_get_lrealm)(realm, 1))) 
-			{
-				functionName = "krb_get_lrealm()";
-				rcL  = LSH_FAILEDREALM;
-				goto cleanup;
-			}
+            err_context = "getting realm";
+            if (!*realm && (rc4  = (int)(*pkrb_get_lrealm)(realm, 1))) 
+            {
+                functionName = "krb_get_lrealm()";
+                rcL  = LSH_FAILEDREALM;
+                goto cleanup;
+            }
 
-			err_context = "checking principal";
-			if ((!*aname) || (!(rc4  = (int)(*pk_isname)(aname))))
-			{
-				functionName = "krb_get_lrealm()";
-				rcL = LSH_INVPRINCIPAL;
-				goto cleanup;
-			}
+            err_context = "checking principal";
+            if ((!*aname) || (!(rc4  = (int)(*pk_isname)(aname))))
+            {
+                functionName = "krb_get_lrealm()";
+                rcL = LSH_INVPRINCIPAL;
+                goto cleanup;
+            }
 
-			/* optional instance */
-			if (!(rc4 = (int)(*pk_isinst)(inst)))
-			{
-				functionName = "k_isinst()";
-				rcL = LSH_INVINSTANCE;
-				goto cleanup;
-			}
+            /* optional instance */
+            if (!(rc4 = (int)(*pk_isinst)(inst)))
+            {
+                functionName = "k_isinst()";
+                rcL = LSH_INVINSTANCE;
+                goto cleanup;
+            }
 
-			if (!(rc4 = (int)(*pk_isrealm)(realm)))
-			{
-				functionName = "k_isrealm()";
-				rcL = LSH_INVREALM;
-				goto cleanup;
-			}
+            if (!(rc4 = (int)(*pk_isrealm)(realm)))
+            {
+                functionName = "k_isrealm()";
+                rcL = LSH_INVREALM;
+                goto cleanup;
+            }
 
-			err_context = "fetching ticket";	
-			rc4 = (*pkrb_get_pw_in_tkt)(aname, inst, realm, "krbtgt", realm, 
-											   lifetime, password);
-			if (rc4) /* XXX: do we want: && (rc != NO_TKT_FIL) as well? */
-			{ 
-				functionName = "krb_get_pw_in_tkt()";
-				rcL = KRBERR(rc4);
-				goto cleanup;
-			}
-		}
-	}
+            err_context = "fetching ticket";	
+            rc4 = (*pkrb_get_pw_in_tkt)(aname, inst, "", "krbtgt", realm, 
+                                         lifetime, password);
+            if (rc4) /* XXX: do we want: && (rc != NO_TKT_FIL) as well? */
+            { 
+                functionName = "krb_get_pw_in_tkt()";
+                rcL = KRBERR(rc4);
+                goto cleanup;
+            }
+        }
+    }
 
 #ifndef NO_AFS
     if ( !rc5 || (Leash_get_default_use_krb4() && !rc4) ) {
@@ -746,9 +751,12 @@ Leash_int_kinit_ex(
             *t = isupper(c) ? tolower(c) : c;
         *t = '\0';
 
-        rcA = Leash_afs_klog("afs", temp, realm, lifetime);
-        if (rcA)
-            rcA = Leash_afs_klog("afs", "", realm, lifetime);
+        rcA = Leash_afs_klog("afs", temp, "", lifetime);
+        rcB = Leash_afs_klog("afs", "", "", lifetime);
+        if (!(rcA && rcB))
+            rcA = 0;
+        else if (!rcA)
+            rcA = rcB;
     }
 #endif /* NO_AFS */
 
@@ -888,6 +896,7 @@ Leash_import(void)
             char  realm[256];
             int   i = 0;
             int   rcA = 0;
+            int   rcB = 0;
 
             krb5_context ctx = 0;
             krb5_error_code code = 0;
@@ -913,9 +922,12 @@ Leash_import(void)
             }
             *r = *t = '\0';
 
-            rcA = Leash_afs_klog("afs", cell, realm, lifetime);
-            if (rcA)
-                rcA = Leash_afs_klog("afs", "", realm, lifetime);
+            rcA = Leash_afs_klog("afs", cell, "", lifetime);
+            rcB = Leash_afs_klog("afs", "", "", lifetime);
+            if (!(rcA && rcB))
+                rcA = 0;
+            else if (!rcA)
+                rcA = rcB;
 
           cleanup:
             if (me) 
@@ -1349,17 +1361,17 @@ cleanup:
 // used.
 BOOL Leash_set_help_file( char *szHelpFile )
 {
-    char *tmpHelpFile;
+    char tmpHelpFile[256];
     BOOL ret = 0;
 
     if( szHelpFile == NULL ){
-	tmpHelpFile = getenv("KERB_HELP");
+	GetEnvironmentVariable("KERB_HELP", tmpHelpFile, sizeof(tmpHelpFile));
     } else {
 	strcpy( KRB_HelpFile, szHelpFile );
 	ret++;
     }
 
-    if( !ret && tmpHelpFile ){
+    if( !ret && tmpHelpFile[0] ){
 	strcpy( KRB_HelpFile, tmpHelpFile );
 	ret++;
     }
@@ -1603,10 +1615,10 @@ Leash_get_default_lifetime(
     )
 {
     HMODULE hmLeash;
-    char *env;
+    char env[32];
     DWORD result;
 
-    if(env = getenv("LIFETIME"))
+    if(GetEnvironmentVariable("LIFETIME",env,sizeof(env)))
     {
         return atoi(env);
     }
@@ -1709,10 +1721,10 @@ Leash_get_default_renew_till(
     )
 {
     HMODULE hmLeash;
-    char *env;
+    char env[32];
     DWORD result;
 
-    if(env = getenv("RENEW_TILL"))
+    if(GetEnvironmentVariable("RENEW_TILL",env,sizeof(env)))
     {
         return atoi(env);
     }
@@ -1815,10 +1827,11 @@ Leash_get_default_forwardable(
     )
 {
     HMODULE hmLeash;
-    char *env;
+
+    char env[32];
     DWORD result;
 
-    if(env = getenv("FORWARDABLE"))
+    if(GetEnvironmentVariable("FORWARDABLE",env,sizeof(env)))
     {
         return atoi(env);
     }
@@ -1921,10 +1934,10 @@ Leash_get_default_renewable(
     )
 {
     HMODULE hmLeash;
-    char *env;
+    char env[32];
     DWORD result;
 
-    if(env = getenv("RENEWABLE"))
+    if(GetEnvironmentVariable("RENEWABLE",env,sizeof(env)))
     {
         return atoi(env);
     }
@@ -2027,7 +2040,7 @@ Leash_get_default_noaddresses(
     )
 {
     HMODULE hmLeash;
-    char *env;
+    char env[32];
     DWORD result;
 
     if ( hKrb5 ) {
@@ -2060,7 +2073,7 @@ Leash_get_default_noaddresses(
 
     // The library default is false, check other locations
 
-    if (env = getenv("NOADDRESSES"))
+    if(GetEnvironmentVariable("NOADDRESSES",env,sizeof(env)))
     {
         return atoi(env);
     }
@@ -2139,10 +2152,10 @@ Leash_get_default_proxiable(
     )
 {
     HMODULE hmLeash;
-    char *env;
+    char env[32];
     DWORD result;
 
-    if(env = getenv("PROXIABLE"))
+    if(GetEnvironmentVariable("PROXIABLE",env,sizeof(env)))
     {
         return atoi(env);
     }
@@ -2245,10 +2258,10 @@ Leash_get_default_publicip(
     )
 {
     HMODULE hmLeash;
-    char *env;
+    char env[32];
     DWORD result;
 
-    if(env = getenv("PUBLICIP"))
+    if(GetEnvironmentVariable("PUBLICIP",env,sizeof(env)))
     {
         return atoi(env);
     }
@@ -2328,10 +2341,10 @@ Leash_get_default_use_krb4(
     )
 {
     HMODULE hmLeash;
-    char *env;
+    char env[32];
     DWORD result;
 
-    if(env = getenv("USEKRB4"))
+    if(GetEnvironmentVariable("USEKRB4",env,sizeof(env)))
     {
         return atoi(env);
     }
@@ -3062,13 +3075,13 @@ Leash_reset_defaults(void)
     Leash_reset_default_noaddresses();
     Leash_reset_default_proxiable();
     Leash_reset_default_publicip();
-	Leash_reset_default_use_krb4();
-	Leash_reset_hide_kinit_options();
-	Leash_reset_default_life_min();
-	Leash_reset_default_life_max();
-	Leash_reset_default_renew_min();
-	Leash_reset_default_renew_max();
-	Leash_reset_default_uppercaserealm();
+    Leash_reset_default_use_krb4();
+    Leash_reset_hide_kinit_options();
+    Leash_reset_default_life_min();
+    Leash_reset_default_life_max();
+    Leash_reset_default_renew_min();
+    Leash_reset_default_renew_max();
+    Leash_reset_default_uppercaserealm();
     Leash_reset_default_mslsa_import();
     Leash_reset_default_preserve_kinit_settings();
 }
@@ -3087,41 +3100,173 @@ FindFirstChildWindow(HWND parent)
 {
     HWND hFirstChild = 0;
     EnumChildWindows(parent, EnumChildProc, (LPARAM) &hFirstChild);
-	return hFirstChild;
+    return hFirstChild;
 }
 
-void FAR
-not_an_API_Leash_AcquireInitialTicketsIfNeeded(krb5_context context, krb5_principal desiredKrb5Principal) 
+static int
+acquire_tkt_send_msg(krb5_context ctx, const char * title, 
+		     const char * ccachename,
+		     krb5_principal desiredKrb5Principal,
+		     const char * out_ccname, int out_cclen)
 {
     krb5_error_code 	err;
-    LSH_DLGINFO_EX      dlginfo;
-    HGLOBAL hData;
-    HWND    hLeash;
-    HWND    hForeground;
-    char		        *desiredName = 0;
+    HWND    	        hNetIdMgr;
+    HWND    		hForeground;
+    char		*desiredName = 0;
     char                *desiredRealm = 0;
-    char                *p;
-    TicketList * list = NULL;
-    TICKETINFO   ticketinfo;
+
+    /* do we want a specific client principal? */
+    if (desiredKrb5Principal != NULL) {
+	err = pkrb5_unparse_name (ctx, desiredKrb5Principal, &desiredName);
+	if (!err) {
+	    char * p;
+	    for (p = desiredName; *p && *p != '@'; p++);
+	    if ( *p == '@' ) {
+		*p = '\0';
+		desiredRealm = ++p;
+	    }
+	}
+    }
+    
+    hForeground = GetForegroundWindow();
+    hNetIdMgr = FindWindow("IDMgrRequestDaemonCls", "IDMgrRequestDaemon");
+    if (hNetIdMgr != NULL) {
+	HANDLE hMap;
+	DWORD  tid = GetCurrentThreadId();
+	char mapname[256];
+	NETID_DLGINFO *dlginfo;
+	
+	sprintf(mapname,"Local\\NetIDMgr_DlgInfo_%lu",tid);
+
+	hMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
+				 0, 4096, mapname);
+	if (hMap == NULL) {
+	    return -1;
+	} else if (hMap != NULL && GetLastError() == ERROR_ALREADY_EXISTS) {
+	    CloseHandle(hMap);
+	    return -1;
+	}
+
+	dlginfo = (NETID_DLGINFO *)MapViewOfFileEx(hMap, FILE_MAP_READ|FILE_MAP_WRITE,
+						 0, 0, 4096, NULL);
+	if (dlginfo == NULL) {
+	    CloseHandle(hMap);
+	    return -1;
+	}
+
+	memset(dlginfo, 0, sizeof(NETID_DLGINFO));
+
+	dlginfo->size = sizeof(NETID_DLGINFO);
+	dlginfo->dlgtype = NETID_DLGTYPE_TGT;
+	dlginfo->in.use_defaults = 1;
+
+	if (title) {
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				title, -1,
+				dlginfo->in.title, NETID_TITLE_SZ);
+	} else if (desiredName && (strlen(desiredName) + strlen(desiredRealm) + 32 < NETID_TITLE_SZ)) {
+	    char mytitle[NETID_TITLE_SZ];
+	    sprintf(mytitle, "Obtain Kerberos TGT for %s@%s",desiredName,desiredRealm);
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				mytitle, -1,
+				dlginfo->in.title, NETID_TITLE_SZ);
+	} else {
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				"Obtain Kerberos TGT", -1,
+				dlginfo->in.title, NETID_TITLE_SZ);
+	}
+	if (desiredName)
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				desiredName, -1,
+				dlginfo->in.username, NETID_USERNAME_SZ);
+	if (desiredRealm)
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				desiredRealm, -1,
+				dlginfo->in.realm, NETID_REALM_SZ);
+	if (ccachename)
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+				ccachename, -1,
+				dlginfo->in.ccache, NETID_CCACHE_NAME_SZ);
+	SendMessage(hNetIdMgr, 32810, 0, (LPARAM) tid);
+
+	if (out_ccname && out_cclen > 0) {
+	    WideCharToMultiByte(CP_ACP, WC_COMPOSITECHECK, dlginfo->out.ccache, -1, 
+				out_ccname, out_cclen, NULL, NULL);
+	}
+
+	UnmapViewOfFile(dlginfo);
+	CloseHandle(hMap);
+    } else {
+	HGLOBAL 		hData;
+	HWND hLeash = FindWindow("LEASH.0WNDCLASS", NULL);
+	hLeash = FindFirstChildWindow(hLeash);
+
+	/* construct a marshalling of data
+ 	 *   <title><principal><realm><ccache>
+	 * then send to Leash
+	 */
+
+	hData = GlobalAlloc( GHND, 4096 );
+	SetForegroundWindow(hLeash);
+	if ( hData && hLeash ) {
+	    char * strs = GlobalLock(hData);
+	    if ( strs ) {
+		if (title)
+		    strcpy(strs, title);
+		else if (desiredName)
+		    sprintf(strs, "Obtain Kerberos TGT for %s@%s",desiredName,desiredRealm);
+		else
+		    strcpy(strs, "Obtain Kerberos TGT");
+		strs += strlen(strs) + 1;
+		if ( desiredName ) {
+		    strcpy(strs, desiredName);
+		    strs += strlen(strs) + 1;
+		    if (desiredRealm) {
+			strcpy(strs, desiredRealm);
+			strs += strlen(strs) + 1;
+		    }
+		} else {
+		    *strs = 0;
+		    strs++;
+		    *strs = 0;
+		    strs++;
+		}
+
+		/* Append the ccache name */
+		if (ccachename)
+		    strcpy(strs, ccachename);
+		else
+		    *strs = 0;
+		strs++;
+
+		GlobalUnlock( hData );
+		SendMessage(hLeash, 32810, 0, (LPARAM) hData);
+	    }
+	}
+	GlobalFree( hData );
+    }
+
+    SetForegroundWindow(hForeground);
+    if (desiredName != NULL)
+	pkrb5_free_unparsed_name(ctx, desiredName);
+
+    return 0;
+}
+
+static void 
+acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
+{
+    TicketList 		*list = NULL;
+    TICKETINFO   	ticketinfo;
     krb5_context        ctx;
-    char newenv[256];
-    char * env = 0;
-    DWORD dwMsLsaImport = Leash_get_default_mslsa_import();
-
-    char loginenv[16];
-    BOOL prompt;
-
-    GetEnvironmentVariable("KERBEROSLOGIN_NEVER_PROMPT", loginenv, sizeof(loginenv));
-    prompt = (GetLastError() == ERROR_ENVVAR_NOT_FOUND);
-
-    if ( !prompt || !pkrb5_init_context )
-        return;
-
+    DWORD 		dwMsLsaImport = Leash_get_default_mslsa_import();
+    char ccachename[272]="";
+	
     ctx = context;
-    env = getenv("KRB5CCNAME");
-    if ( !env && context ) {
-        sprintf(newenv,"KRB5CCNAME=%s",pkrb5_cc_default_name(ctx));
-        env = (char *)putenv(newenv);
+
+    GetEnvironmentVariable("KRB5CCNAME", ccachename, sizeof(ccachename));    
+    if ( (GetLastError() == ERROR_ENVVAR_NOT_FOUND) && context ) {
+	SetEnvironmentVariable("KRB5CCNAME", pkrb5_cc_default_name(ctx));
     }
 
     not_an_API_LeashKRB5GetTickets(&ticketinfo,&list,&ctx);
@@ -3179,73 +3324,222 @@ not_an_API_Leash_AcquireInitialTicketsIfNeeded(krb5_context context, krb5_princi
     }
 
     if ( ticketinfo.btickets != GOOD_TICKETS ) 
-    {
-        /* do we want a specific client principal? */
-        if (desiredKrb5Principal != NULL) {
-            err = pkrb5_unparse_name (ctx, desiredKrb5Principal, &desiredName);
-            if (!err) {
-                dlginfo.username = desiredName;
-                for (p = desiredName; *p && *p != '@'; p++);
-                if ( *p == '@' ) {
-                    *p = '\0';
-                    desiredRealm = dlginfo.realm = ++p;
-                }
-            }
-        }
-		
-#ifdef COMMENT
-        memset(&dlginfo, 0, sizeof(LSH_DLGINFO_EX));
-        dlginfo.size = sizeof(LSH_DLGINFO_EX);
-        dlginfo.dlgtype = DLGTYPE_PASSWD;
-        dlginfo.title = "Obtain Kerberos Ticket Getting Tickets";
-        dlginfo.use_defaults = 1;
+	acquire_tkt_send_msg(ctx, NULL, ccachename, NULL, ccname, cclen);
 
-        err = Leash_kinit_dlg_ex(NULL, &dlginfo);
-#else
-        /* construct a marshalling of data
-         *   <title><principal><realm>
-         * then send to Leash
-         */
-
-        hData = GlobalAlloc( GHND, 4096 );
-        hForeground = GetForegroundWindow();
-        hLeash = FindWindow("LEASH.0WNDCLASS", NULL);
-        SetForegroundWindow(hLeash);
-        hLeash = FindFirstChildWindow(hLeash);
-        if ( hData && hLeash ) {
-            char * strs = GlobalLock( hData );
-            if ( strs ) {
-                strcpy(strs, "Obtain Kerberos Ticket Getting Tickets");
-                strs += strlen(strs) + 1;
-                if ( desiredName ) {
-                    strcpy(strs, desiredName);
-                    strs += strlen(strs) + 1;
-					if (desiredRealm) {
-						strcpy(strs, desiredRealm);
-						strs += strlen(strs) + 1;
-					}
-                } else {
-                    *strs = 0;
-                    strs++;
-                    *strs = 0;
-                    strs++;
-                }
-
-                GlobalUnlock( hData );
-                SendMessage(hLeash, 32809, 0, (LPARAM) hData);
-            }
-
-            GlobalFree( hData );
-        }
-        SetForegroundWindow(hForeground);
-#endif
-        if (desiredName != NULL)
-            pkrb5_free_unparsed_name(ctx, desiredName);
-    }
-
-    if ( !env && context )
-        putenv("KRB5CCNAME=");
+    if ( !ccachename[0] && context )
+        SetEnvironmentVariable("KRB5CCNAME",NULL);
+    else if ( ccname && strcmp(ccachename,ccname) )
+	SetEnvironmentVariable("KRB5CCNAME",ccname);
 
     if ( !context )
         pkrb5_free_context(ctx);
+}
+
+
+static int
+leash_int_get_princ_expiration_time(krb5_context ctx, krb5_ccache cc, 
+				    krb5_principal desiredPrincipal, 
+				    krb5_timestamp * pexpiration)
+{
+    krb5_principal principal = 0;
+    char * princ_name = NULL;
+    char * desired_name = NULL;
+    krb5_creds creds;
+    krb5_error_code code, code2;
+    krb5_error_code cc_code;
+    krb5_cc_cursor cur;
+    krb5_timestamp now, expiration = 0;
+
+    int rv = -1;
+
+    if (!ctx || !cc || !desiredPrincipal || !pexpiration)
+        return -1;
+
+    code = pkrb5_cc_get_principal(ctx, cc, &principal);
+    if ( code )
+        return -1;
+
+
+    code = pkrb5_unparse_name(ctx, desiredPrincipal, &desired_name);
+    code2 = pkrb5_unparse_name(ctx, principal, &princ_name);
+
+    /* compare principal to ident. */
+    if ( code || !princ_name ||	code2 || !desired_name || 
+	 strcmp(princ_name, desired_name) ) {
+        if (princ_name)
+            pkrb5_free_unparsed_name(ctx, princ_name);
+        if (desired_name)
+            pkrb5_free_unparsed_name(ctx, desired_name);
+        pkrb5_free_principal(ctx, principal);
+        return -1;
+    }
+
+    pkrb5_free_unparsed_name(ctx, princ_name);
+    pkrb5_free_unparsed_name(ctx, desired_name);
+    pkrb5_free_principal(ctx, principal);
+
+    code = pkrb5_timeofday(ctx, &now);
+
+    if (code)
+        return -1;
+
+    cc_code = pkrb5_cc_start_seq_get(ctx, cc, &cur);
+
+    while (!(cc_code = pkrb5_cc_next_cred(ctx, cc, &cur, &creds))) {
+        krb5_data * c0 = krb5_princ_name(ctx, creds.server);
+        krb5_data * c1  = krb5_princ_component(ctx, creds.server, 1);
+        krb5_data * r = krb5_princ_realm(ctx, creds.server);
+
+        if ( c0 && c1 && r && c1->length == r->length && 
+             !strncmp(c1->data,r->data,r->length) &&
+             !strncmp("krbtgt",c0->data,c0->length) ) {
+
+            /* we have a TGT, check for the expiration time.
+             * if it is valid and renewable, use the renew time 
+             */
+
+            if (!(creds.ticket_flags & TKT_FLG_INVALID) &&
+                creds.times.starttime < now && creds.times.endtime > now) {
+                expiration = creds.times.endtime;
+
+                if ((creds.ticket_flags & TKT_FLG_RENEWABLE) && 
+                    (creds.times.renew_till > creds.times.endtime)) {
+                    expiration = creds.times.renew_till;
+                }
+            }
+        }
+    }
+
+    if (cc_code == KRB5_CC_END) {
+        cc_code = pkrb5_cc_end_seq_get(ctx, cc, &cur);
+        rv = 0;
+        *pexpiration = expiration;
+    }
+
+    return rv;
+}
+
+/* returns 0 on success */
+static int
+leash_int_find_ccache_for_princ(krb5_context ctx, krb5_principal princ,
+				char * buffer, int * pcbbuf)
+{
+    krb5_ccache         cache = 0;
+    krb5_error_code     code;
+    apiCB *             cc_ctx = 0;
+    struct _infoNC **   pNCi = NULL;
+    int                 i;
+    krb5_timestamp      expiration = 0;
+    krb5_timestamp      best_match_expiration = 0;
+    char                best_match_ccname[256] = "";
+
+    if (!buffer || !pcbbuf)
+	return -1;
+
+    code = pcc_initialize(&cc_ctx, CC_API_VER_2, NULL, NULL);
+    if (code)
+        goto _exit;
+
+    code = pcc_get_NC_info(cc_ctx, &pNCi);
+    if (code) 
+        goto _exit;
+
+    for(i=0; pNCi[i]; i++) {
+        if (pNCi[i]->vers != CC_CRED_V5)
+            continue;
+
+        code = pkrb5_cc_resolve(ctx, pNCi[i]->name, &cache);
+        if (code)
+            continue;
+
+        /* need a function to check the cache for the identity
+         * and determine if it has valid tickets.  If it has 
+         * the right identity and valid tickets, store the 
+         * expiration time and the cache name.  If it has the
+         * right identity but no valid tickets, store the ccache
+         * name and an expiration time of zero.  if it does not
+         * have the right identity don't save the name.
+         * 
+         * Keep searching to find the best cache available.
+         */
+
+        if (!leash_int_get_princ_expiration_time(ctx, cache, princ,
+						 &expiration)) {
+            if ( expiration > best_match_expiration ) {
+                best_match_expiration = expiration;
+                strncpy(best_match_ccname, "API:",
+                              sizeof(best_match_ccname));
+                strncat(best_match_ccname, pNCi[i]->name,
+			 sizeof(best_match_ccname));
+		best_match_ccname[sizeof(best_match_ccname)-1] = '\0';
+                expiration = 0;
+            }
+        }
+
+        if(ctx != NULL && cache != NULL)
+            pkrb5_cc_close(ctx, cache);
+        cache = 0;
+    }
+
+    code = pkrb5_cc_resolve(ctx, "MSLSA:", &cache);
+    if (code == 0 && cache) {
+	if (!leash_int_get_princ_expiration_time(ctx, cache, princ,
+						 &expiration)) {
+	    if ( expiration > best_match_expiration ) {
+		best_match_expiration = expiration;
+		strcpy(best_match_ccname, "MSLSA:");
+		expiration = 0;
+	    }
+	}
+    }
+
+    if (ctx != NULL && cache != NULL)
+	pkrb5_cc_close(ctx, cache);
+
+    cache = 0;
+
+ _exit:
+    if (pNCi)
+        pcc_free_NC_info(cc_ctx, &pNCi);
+
+    if (cc_ctx)
+        pcc_shutdown(&cc_ctx);
+
+    if (best_match_ccname[0]) {
+	strncpy(buffer, best_match_ccname, *pcbbuf);
+	buffer[*pcbbuf-1]='\0';
+
+	*pcbbuf = strlen(buffer) + 1;
+	return 0;
+    }
+
+    return -1;
+}
+
+void FAR
+not_an_API_Leash_AcquireInitialTicketsIfNeeded(krb5_context context, 
+					       krb5_principal desiredKrb5Principal, 
+					       char * ccname, int cclen)
+{
+    char		*desiredName = 0;
+    char                *desiredRealm = 0;
+    TicketList 		*list = NULL;
+    DWORD 		dwMsLsaImport = Leash_get_default_mslsa_import();
+    char loginenv[16];
+    char ccachename[272]="";
+    BOOL prompt;
+
+    GetEnvironmentVariable("KERBEROSLOGIN_NEVER_PROMPT", loginenv, sizeof(loginenv));
+    prompt = (GetLastError() == ERROR_ENVVAR_NOT_FOUND);
+
+    if (!prompt)
+        return;
+
+    if (!desiredKrb5Principal) {
+	acquire_tkt_no_princ(context, ccname, cclen);
+    } else {
+	if (leash_int_find_ccache_for_princ(context, desiredKrb5Principal, ccname, &cclen))
+	    acquire_tkt_no_princ(context, ccname, cclen);
+    }
+    return;
 }

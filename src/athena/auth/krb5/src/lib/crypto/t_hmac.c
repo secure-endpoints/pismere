@@ -33,7 +33,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#include <krb5.h>
 #include "hash_provider.h"
 
 #define ASIZE(ARRAY) (sizeof(ARRAY)/sizeof(ARRAY[0]))
@@ -101,8 +100,8 @@ static krb5_error_code hmac1(const struct krb5_hash_provider *h,
     krb5_error_code err;
 
     printk(" test key", key);
-    h->block_size(&blocksize);
-    h->hash_size(&hashsize);
+    blocksize = h->blocksize;
+    hashsize = h->hashsize;
     if (hashsize > sizeof(tmp))
 	abort();
     if (key->length > blocksize) {

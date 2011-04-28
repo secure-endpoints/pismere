@@ -4,6 +4,10 @@
 
 	* config/unix.exp: Add PRIOCNTL_HACK.
 
+2003-05-09  Tom Yu  <tlyu@mit.edu>
+
+	* kpasswd.0/changing.exp: Replace ovpasswd with kpasswd.
+
 2003-01-07  Ken Raeburn  <raeburn@mit.edu>
 
 	* Makefile.ov: Deleted.

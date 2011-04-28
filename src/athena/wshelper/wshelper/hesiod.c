@@ -7,6 +7,7 @@
  		hes_to_bind
  		hes_resolve
  		hes_error
+        hes_free
   as well as the internal function hes_init. The hes_init function
   is the one that determines what the Hesiod servers are for your
   site and will parse the configuration files, if any are
@@ -37,26 +38,12 @@
 #include <windows.h>
 #include <winsock.h>
 #include <string.h>
-#include <malloc.h>
-#include <stdlib.h>
-
-#include "u-compat.h"
-
-#include <sys/types.h>
-#include <arpa/nameser.h>
 #include <hesiod.h>
 #include <resolv.h>
-#include "resscan.h"
+#include <windns.h>
 
 #include "resource.h"
 
-extern nsmsg_p far _resolve(LPSTR name, int class, int type, retransXretry_t patience );
-
-#ifndef _WIN32
-#define strncpy _fstrncpy
-#define strcmp _fstrcmp
-#define strlen _fstrlen
-#endif
 
 #define USE_HS_QUERY	/* undefine this if your higher-level name servers */
 			/* don't know class HS */
@@ -66,7 +53,8 @@ static char Hes_LHS[256];
 static char Hes_RHS[256];
 static int Hes_Errno = HES_ER_UNINIT;
 
-retransXretry_t NoRetryTime = { 0, 0};
+extern  DWORD dwHesIndex;
+
 
 
 /*
@@ -102,26 +90,19 @@ retransXretry_t NoRetryTime = { 0, 0};
 int hes_init( void )
 {
     register FILE *fp;
-    register char FAR *key;
-    register char FAR *cp;
-    // register char FAR **cpp;
-    // int len;
+    register char  *key;
+    register char  *cp;
     char buf[MAXDNAME+7];
     HMODULE hModWSHelp;
-#if !defined( MSDOS ) && !defined( WIN32 ) /* il 8/17/95 -- NT is not DOS */
-    char *calloc(), *getenv();
-#endif
+
 
     Hes_Errno = HES_ER_UNINIT;
     Hes_LHS[0] = '\0';
     Hes_RHS[0] = '\0';
 
     // Note: these must match the DEF file entries
-#if defined (_WIN32)
+
     hModWSHelp = GetModuleHandle( "WSHELP32" );
-#else
-    hModWSHelp = GetModuleHandle( "WSHELPER" );
-#endif
 
     if(!LoadString( hModWSHelp, IDS_DEF_HES_CONFIG_FILE, 
                     HesConfigFile, sizeof(HesConfigFile) )){
@@ -140,7 +121,6 @@ int hes_init( void )
         if(!LoadString( hModWSHelp, IDS_DEF_HES_LHS, Hes_LHS, sizeof(Hes_LHS) )){
             strcpy( Hes_LHS, DEF_LHS);
         }
-
     } else {
         while(fgets((LPSTR) buf, MAXDNAME+7, fp) != NULL) {
             cp = (LPSTR) buf;
@@ -191,36 +171,45 @@ int hes_init( void )
 
 
 /* 
-
-  @func char * WINAPI  | hes_to_bind |
-
-  The hes_to_bind function use the LHS and RHS values and 
+  hes_to_bind function use the LHS and RHS values and 
   binds them with the parameters so that a well formed DNS query may
   be performed.
 
-  @parm LPSTR | HesiodName     | The Hesiod name such as a username or 
-                                 service name
-  @parm LPSTR | HesiodNameType | The Hesiod name type such as pobox, passwd, 
-                                 or sloc
+  \param[in]	HesiodName		The Hesiod name such as a username or service name
+  \param[in]	HesiodNameType	The Hesiod name type such as pobox, passwd, or sloc
 
-  @rdesc Returns NULL if there was an error. Otherwise the pointer to a 
-         string containing a valid query is returned.
+  \retval		Returns NULL if there was an error. Otherwise the pointer to a string containing a valid query is returned.
 
 */
 char *
-#if defined  (_WINDLL) || defined (_DLL) || defined(_MT)
 WINAPI 
-#endif
 hes_to_bind(LPSTR HesiodName,			
             LPSTR HesiodNameType)		
 {
     register char *cp, **cpp;
-    static char bindname[MAXDNAME];
+    char* bindname;
+    LPVOID lpvData;
     char *RHS;
 
+    cp = NULL;
+    cpp = NULL;
+
+    bindname = (LPSTR)(TlsGetValue(dwHesIndex));
+    if (bindname == NULL) 
+    { 
+        lpvData = LocalAlloc(LPTR, DNS_MAX_NAME_BUFFER_LENGTH); 
+        if (lpvData != NULL) 
+        {
+            TlsSetValue(dwHesIndex, lpvData); 
+            bindname = (LPSTR)lpvData;
+        }
+        else
+            return NULL;
+    }
     if (Hes_Errno == HES_ER_UNINIT || Hes_Errno == HES_ER_CONFIG)
         (void) hes_init();
-    if (Hes_Errno == HES_ER_CONFIG) return(NULL);
+    if (Hes_Errno == HES_ER_CONFIG) 
+	return(NULL);
     if (cp = index(HesiodName,'@')) {
         if (index(++cp,'.'))
             RHS = cp;
@@ -247,116 +236,120 @@ hes_to_bind(LPSTR HesiodName,
     if (RHS[0] != '.')
         (void) strcat(bindname,".");
     (void) strcat(bindname, RHS);
-/*
-    if(cpp != NULL ){	
-        free( *cpp );
-        *cpp = NULL;
-    }
-*/
+
+    if(cpp != NULL )	
+        hes_free(cpp);
+
     return(bindname);
 }
 
 
 /*
-  @func char ** WINAPI | hes_resolve |
+	This function calls hes_to_bind to form a valid hesiod query, then queries the dns database.
+	defined in hesiod.c
 
-  This is the primary interface to the Hesiod name server.  It takes
-  two arguments, a name to be resolved and a string, known as a
-  HesiodNameType. Remarks If the environment variable HES_DOMAIN is
-  set, this domain will override what is in /etc/athena/hesiod.conf.
-  FILES: hesiod.h, hesiod.conf
+	\param[in]	HesiodName		The Hesiod name such as a username or service name
+	\param[in]	HesiodNameType	The Hesiod name type such as pobox, passwd, or sloc
 
-  @parm LPSTR | HesiodName | The name to be resovled.
-  @parm LPSTR | HesiodNameType | A valid Hesiod name type.
-
-  @rdesc It returns a NULL terminated vector of strings (a la argv),
-  one for each resource record containing Hesiod data, or NULL if
-  there is any error. If there is an error call hes_error() to get
-  further information.
+	\retval		returns a NULL terminated vector of strings (a la argv),
+				one for each resource record containing Hesiod data, or NULL if
+				there is any error. If there is an error call hes_error() to get
+				further information. You will need to call hes_free to free the result
 
 */
 char **
-#if defined (_WINDLL) || defined (_WIN32)
 WINAPI
-#endif
 hes_resolve(LPSTR HesiodName, LPSTR HesiodNameType)
 {
-    register char FAR *cp;
-    static char FAR *retvec[100];
-    char FAR *ocp;
-    char FAR *dst;
-#if !defined( MSDOS ) && !defined( WIN32 ) /* il 8/17/95 -- NT is not DOS */
-    char *calloc();
-#endif
-    char *freeme;
-    int i, j, n;
-#ifndef WINDOWS
-    struct nsmsg *ns, *_resolve();
-    rr_t *rp;
-#else
-    struct nsmsg FAR *ns;
-    struct nsmsg FAR *_resolve();
-    rr_t FAR *rp;
-#endif
-#if !defined( MSDOS ) && !defined( WIN32 ) /* il 8/17/95 -- NT is not DOS */
-    extern int errno;
-#endif
+    register char  *cp;
+    LPSTR* retvec;
+    DNS_STATUS status; 
+    
+    PDNS_RECORD pDnsRecord; 
+    PDNS_RECORD pR;
+    DNS_FREE_TYPE freetype ;
+    int i = 0;
+    freetype =  DnsFreeRecordListDeep;
+    
 
     cp = hes_to_bind(HesiodName, HesiodNameType);
     if (cp == NULL) return(NULL);
     errno = 0;
-    ns = _resolve(cp, C_IN, T_TXT, NoRetryTime);
-    if (errno == ETIMEDOUT || errno == ECONNREFUSED) {
-        Hes_Errno = HES_ER_NET;
-        return(NULL);
-    }
-    if (ns == NULL || ns->ns_off <= 0) {
+
+    
+    status = DnsQuery_A(cp,                 //pointer to OwnerName 
+                        DNS_TYPE_TEXT,         //Type of the record to be queried
+                        DNS_QUERY_STANDARD,     // Bypasses the resolver cache on the lookup. 
+                        NULL,                   //contains DNS server IP address
+                        &pDnsRecord,                //Resource record comprising the response
+                        NULL);                     //reserved for future use
+    
+    if (status) {
+        errno = status;
         Hes_Errno = HES_ER_NOTFOUND;
-        return(NULL);
+        return  NULL;
     }
-    for(i = j = 0, rp = &ns->rr; i < ns->ns_off; rp++, i++) {
-        if (
-            rp->class == C_IN &&
-            rp->type == T_TXT) { /* skip CNAME records */
-            retvec[j] = calloc(rp->dlen + 1, sizeof(char));
-            freeme = retvec[j]; /* pbh 8-1-93 */
-            dst = retvec[j];
-            ocp = cp = rp->data;
-            while (cp < ocp + rp->dlen) {
-                n = (unsigned char) *cp++;
-#ifndef _WINDLL
-                (void) bcopy(cp, dst, n);
-#else
-                (void) memcpy(dst, cp, n);
-#endif
-                cp += n;
-                dst += n;
-            }
-            *dst = 0;
-            j++;
+     
+    pR = pDnsRecord;
+    while (pR)
+    {   
+        if (pR->wType == DNS_TYPE_TEXT)
+            i++;
+        pR = pR->pNext;
+    }
+    i++;
+    retvec = LocalAlloc(LPTR, i*sizeof(LPSTR));
+    pR = pDnsRecord;
+    i = 0;
+    while (pR)
+    {   
+        if (pR->wType == DNS_TYPE_TEXT){
+            SIZE_T l = strlen(((pR->Data).Txt.pStringArray)[0]);
+            retvec[i] = LocalAlloc(LPTR, l+1);
+            strcpy(retvec[i], ((pR->Data).Txt.pStringArray)[0]);
+            i++;
         }
+        pR = pR->pNext;
     }
-    retvec[j] = 0;
-    // free( freeme ); /* pbh 9/96 */
-    return(retvec);
+    retvec[i] = NULL;
+    DnsRecordListFree(pDnsRecord, freetype);
+    return retvec;
+         
 }
 
 
 /* 
-@func int WINAPI | hes_error |
-
-The  function  hes_error may be called to determine the 
-source of the error.  It will return one of the HES_ER_* codes defined 
-in hesiod.h. It does not take an argument.
-
-
-
+	The  function  hes_error may be called to determine the 
+	source of the error.  It does not take an argument.
+	
+	\retval		return one of the HES_ER_* codes defined in hesiod.h.
 */
+
 int 
-#if defined (_WINDLL) || (_WIN32)
 WINAPI
-#endif
 hes_error(void)
 {
     return(Hes_Errno);
+}
+
+
+/* 
+
+	The function hes_free should be called to free up memeory returned by
+	hes_resolve
+
+	\param[in]	hesinfo		a NULL terminiated array of strings returned by hes_resolve
+
+
+*/
+void
+WINAPI
+hes_free(LPSTR* info)
+{
+    int i= 0;
+    for (; info[i]; i++)
+    {
+        LocalFree(info[i]);
+    }
+    LocalFree(info);
 }

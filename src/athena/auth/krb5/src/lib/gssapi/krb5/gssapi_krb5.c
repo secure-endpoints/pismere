@@ -47,7 +47,7 @@
  */
 
 /*
- * $Id: gssapi_krb5.c,v 1.23.2.2 2003/12/12 20:32:14 lxs Exp $
+ * $Id: gssapi_krb5.c 16632 2004-07-30 03:55:07Z raeburn $
  */
 
 
@@ -124,8 +124,7 @@ const gss_OID_set_desc * const gss_mech_set_krb5 = oidsets+0;
 const gss_OID_set_desc * const gss_mech_set_krb5_old = oidsets+1;
 const gss_OID_set_desc * const gss_mech_set_krb5_both = oidsets+2;
 
-void *kg_vdb = NULL;
-static char *kg_ccache_name = NULL;
+g_set kg_vdb = G_SET_INIT;
 
 /** default credential support */
 
@@ -151,47 +150,12 @@ kg_get_defcred(minor_status, cred)
 }
 
 OM_uint32
-kg_get_context(minor_status, context)
-   OM_uint32 *minor_status;
-   krb5_context *context;
+kg_sync_ccache_name (krb5_context context, OM_uint32 *minor_status)
 {
-   static krb5_context kg_context = NULL;
-   krb5_error_code code;
-
-   if (!kg_context) {
-	   if ((code = krb5_init_context(&kg_context)))
-		   goto fail;
-	   if ((code = krb5_ser_context_init(kg_context)))
-		   goto fail;
-	   if ((code = krb5_ser_auth_context_init(kg_context)))
-		   goto fail;
-	   if ((code = krb5_ser_ccache_init(kg_context)))
-		   goto fail;
-	   if ((code = krb5_ser_rcache_init(kg_context)))
-		   goto fail;
-	   if ((code = krb5_ser_keytab_init(kg_context)))
-		   goto fail;
-	   if ((code = krb5_ser_auth_context_init(kg_context)))
-	       goto fail;
-   }
-   *context = kg_context;
-   *minor_status = 0;
-   return GSS_S_COMPLETE;
-   
-fail:
-   *minor_status = (OM_uint32) code;
-   return GSS_S_FAILURE;
-}
-
-OM_uint32
-kg_sync_ccache_name (OM_uint32 *minor_status)
-{
-    krb5_context context = NULL;
     OM_uint32 err = 0;
-    OM_uint32 minor;
     
     /* 
-     * Sync up the kg_context ccache name with the GSSAPI ccache name.
+     * Sync up the context ccache name with the GSSAPI ccache name.
      * If kg_ccache_name is NULL -- normal unless someone has called 
      * gss_krb5_ccache_name() -- then the system default ccache will 
      * be picked up and used by resetting the context default ccache.
@@ -199,14 +163,9 @@ kg_sync_ccache_name (OM_uint32 *minor_status)
      */
     
     if (!err) {
-        if (GSS_ERROR(kg_get_context (&minor, &context))) {
-            err = minor;
-        }
-    }
-    
-    if (!err) {
-        /* kg_ccache_name == NULL resets the context default ccache */
-        err = krb5_cc_set_default_name(context, kg_ccache_name);
+        /* if NULL, resets the context default ccache */
+        err = krb5_cc_set_default_name(context,
+				       (char *) k5_getspecific(K5_KEY_GSS_KRB5_CCACHE_NAME));
     }
     
     *minor_status = err;
@@ -216,27 +175,34 @@ kg_sync_ccache_name (OM_uint32 *minor_status)
 OM_uint32
 kg_get_ccache_name (OM_uint32 *minor_status, const char **out_name)
 {
-    krb5_context context = NULL;
     const char *name = NULL;
     OM_uint32 err = 0;
-    OM_uint32 minor;
+    char *kg_ccache_name;
+
+    kg_ccache_name = k5_getspecific(K5_KEY_GSS_KRB5_CCACHE_NAME);
     
-    if (!err) {
-        if (GSS_ERROR(kg_get_context (&minor, &context))) {
-            err = minor;
-        }
-    }
-    
-    if (!err) {
-        if (kg_ccache_name != NULL) {
-            name = kg_ccache_name;
-        } else {
-            /* reset the context default ccache (see text above) */
-            err = krb5_cc_set_default_name (context, NULL);
-            if (!err) {
-                name = krb5_cc_default_name(context);
-            }
-        }
+    if (kg_ccache_name != NULL) {
+	name = strdup(kg_ccache_name);
+	if (name == NULL)
+	    err = errno;
+    } else {
+	krb5_context context = NULL;
+
+	/* Reset the context default ccache (see text above), and then
+	   retrieve it.  */
+	err = krb5_init_context(&context);
+	if (!err)
+	    err = krb5_cc_set_default_name (context, NULL);
+	if (!err) {
+	    name = krb5_cc_default_name(context);
+	    if (name) {
+		name = strdup(name);
+		if (name == NULL)
+		    err = errno;
+	    }
+	}
+	if (context)
+	    krb5_free_context(context);
     }
 
     if (!err) {
@@ -253,32 +219,33 @@ OM_uint32
 kg_set_ccache_name (OM_uint32 *minor_status, const char *name)
 {
     char *new_name = NULL;
-    OM_uint32 err = 0;
-    
-    if (!err) {
-        if (name) {
-            new_name = malloc(strlen(name) + 1);
-            if (new_name == NULL) {
-                err = ENOMEM;
-            } else {
-                strcpy(new_name, name);
-            }
-        }
-    }
-    
-    if (!err) {
-        char *swap = NULL;
-        
-        swap = kg_ccache_name;
-        kg_ccache_name = new_name;
-        new_name = swap;
-    }
-    
-    if (new_name != NULL) {
-        free (new_name);
-    }
-    
-    *minor_status = err;
-    return (*minor_status == 0) ? GSS_S_COMPLETE : GSS_S_FAILURE;
-}
+    char *swap = NULL;
+    char *kg_ccache_name;
+    krb5_error_code kerr;
 
+    if (name) {
+	new_name = malloc(strlen(name) + 1);
+	if (new_name == NULL) {
+	    *minor_status = ENOMEM;
+	    return GSS_S_FAILURE;
+	}
+	strcpy(new_name, name);
+    }
+
+    kg_ccache_name = k5_getspecific(K5_KEY_GSS_KRB5_CCACHE_NAME);
+    swap = kg_ccache_name;
+    kg_ccache_name = new_name;
+    new_name = swap;
+    kerr = k5_setspecific(K5_KEY_GSS_KRB5_CCACHE_NAME, kg_ccache_name);
+    if (kerr != 0) {
+	/* Can't store, so free up the storage.  */
+	free(kg_ccache_name);
+	/* ??? free(new_name); */
+	*minor_status = kerr;
+	return GSS_S_FAILURE;
+    }
+
+    free (new_name);
+    *minor_status = 0;
+    return GSS_S_COMPLETE;
+}

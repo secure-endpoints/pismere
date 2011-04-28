@@ -23,7 +23,7 @@ my @FILES;
 
 sub set_cpu
 {
-    my @VALID_CPUS = ( 'i386', 'alpha' );
+    my @VALID_CPUS = ( 'i386', 'alpha' ,'ia64');
     $CPU = $OPT->{cpu} || lc($ENV{CPU});
     if (!$CPU) {
 	$CPU = lc($ENV{PROCESSOR_ARCHITECTURE});
@@ -77,7 +77,7 @@ sub set_map
       };
     $EXTRA =
       {
-       exe => ['pdb', 'bsc'],
+       exe => ['pdb', 'bsc', 'exe.manifest'],
        scr => ['pdb', 'bsc'],
        dll => ['pdb', 'bsc', 'lib'],
        cpl => ['pdb', 'bsc', 'lib'],

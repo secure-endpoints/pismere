@@ -28,8 +28,7 @@
 #include "cksumtypes.h"
 
 krb5_boolean KRB5_CALLCONV
-krb5_c_is_keyed_cksum(ctype)
-     krb5_cksumtype ctype;
+krb5_c_is_keyed_cksum(krb5_cksumtype ctype)
 {
     int i;
 
@@ -46,7 +45,7 @@ krb5_c_is_keyed_cksum(ctype)
 
     /* ick, but it's better than coredumping, which is what the
        old code would have done */
-    return -1U;
+    return 0;   /* error case */
 }
 
 krb5_boolean KRB5_CALLCONV

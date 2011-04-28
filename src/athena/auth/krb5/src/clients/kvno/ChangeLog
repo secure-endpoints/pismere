@@ -9,6 +9,10 @@
         * kvno.c: Add -c ccache command line option
                   use krb5_free_unparsed_name() instead of free()
 
+2004-06-16  Ken Raeburn  <raeburn@mit.edu>
+
+	* Makefile.in (all-mac): Target deleted.
+
 2002-08-29  Ken Raeburn  <raeburn@mit.edu>
 
 	* Makefile.in: Revert $(S)=>/ change, for Windows support.

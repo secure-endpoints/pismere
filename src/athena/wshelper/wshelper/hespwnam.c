@@ -31,136 +31,143 @@
 #include <stdlib.h>
 
 #include <windows.h>
+#include <hesiod.h>
 
 #include "pwd.h"
-#include "u-compat.h"
 
-static struct passwd pw_entry;
-static char buf[256];
+extern DWORD dwHesPwNamIndex;
+extern DWORD dwHesPwUidIndex;
+
+#define MAX_PW_BUFFER_LENGTH  64
+
+static char *
+_NextPWField(char *ptr);
+
+struct passwd *  GetPasswdStruct(struct passwd* pw, char* buf);
+
+
 
 
 /* 
-
-@func struct passwd * WINAPI | hes_getpwuid |
-Given a UID this function will return the pwd information, eg username, uid,
-gid, fullname, office location, phone number, home directory, and default shell
-
-@parm  int | uid | The user ID
-
-@rdesc NULL or a pointer to the passwd structure.
-
-
+	Given a UID this function will return the pwd information, eg username, uid,
+	gid, fullname, office location, phone number, home directory, and default shell
+	
+	defined in hespwnam.c
+	\param	uid			The user ID
+	\retval				NULL if there was an error or a pointer to the passwd structure. The caller must 
+						never attempt to modify this structure or to free any of its components. 
+						Furthermore, only one copy of this structure is allocated per call per thread, so the application should copy any information it needs before 
+						issuing another hes_getpwuid call
 */
-struct passwd *
-#ifdef _WINDLL
+struct passwd * 
 WINAPI
-#endif
 hes_getpwuid(int uid)
 {
-    register char *p, **pp; char *_NextPWField( char *),
-#ifndef _WINDLL 
-    **hes_resolve();
-#else
-	** WINAPI hes_resolve(char *, char *);
-#endif
+    char **pp; 
+    struct passwd* pw = NULL;
+    char buf[256];
 
     char nam[8];
-#ifndef _WINDLL
     sprintf(nam, "%d", uid);
-#else
-    wsprintf(nam, "%d", uid);
-#endif  
+
     pp = hes_resolve(nam, "uid");
     if (pp == NULL || *pp == NULL)
         return(NULL);
-    /* choose only the first response (only 1 expected) */
-    (void) strcpy(buf, pp[0]);
-    p = buf;
-    pw_entry.pw_name = p;
-    p = _NextPWField(p);
-    pw_entry.pw_passwd = p;
-    p = _NextPWField(p);
-    pw_entry.pw_uid = atoi(p);
-    p = _NextPWField(p);
-    pw_entry.pw_gid = atoi(p);
-#if !defined(_AIX) || (AIXV < 31)
-    pw_entry.pw_quota = 0;
-#if defined(_AIX) && (AIXV < 31)
-    pw_entry.pw_age =
-#endif
-    pw_entry.pw_comment = "";
-#endif
-    p = _NextPWField(p);
-    pw_entry.pw_gecos = p;
-    p = _NextPWField(p);
-    pw_entry.pw_dir = p;
-    p = _NextPWField(p);
-    pw_entry.pw_shell = p;
-    while (*p && *p != '\n')
-        p++;
-    *p = '\0';
-    return(&pw_entry);
+
+    pw = (struct passwd*)(TlsGetValue(dwHesPwUidIndex));
+    if (pw == NULL)
+        return NULL;
+
+    strcpy(buf, pp[0]);
+    hes_free(pp);
+    return GetPasswdStruct(pw, buf);
 }
 
 
 /*
+	Given a username this function will return the pwd information, eg
+	username, uid, gid, fullname, office location, phone number, home
+	directory, and default shell
 
-  @func struct passwd * WINAPI | hes_getpwnam |
+	defined in hespwnam.c
 
-Given a username this function will return the pwd information, eg
-username, uid, gid, fullname, office location, phone number, home
-directory, and default shell
+	\param	nam			a pointer to the username
 
-  @parm char *| nam | a pointer to the username
-
-  @rdesc NULL or a pointer to the passwd structure.
+	\retval				NULL if there was an error or a pointer to the passwd structure. The caller must 
+						never attempt to modify this structure or to free any of its components. 
+						Furthermore, only one copy of this structure is allocated per call per thread, so the application should copy any information it needs before 
+						issuing another hes_getpwnam call
 
 */
-struct passwd *
-#ifdef _WINDLL
+struct passwd * 
 WINAPI
-#endif
 hes_getpwnam(char *nam)
 {
-    register char *p, **pp; char *_NextPWField( char *), 
-#ifndef _WINDLL 
-    **hes_resolve();
-#else
-    ** WINAPI hes_resolve(char *, char *);
-#endif
+	
+   char **pp; 
+   struct passwd* pw = NULL;
+   char buf[256];
 
     pp = hes_resolve(nam, "passwd");
     if (pp == NULL || *pp == NULL)
         return(NULL);
+
+    pw = (struct passwd*)(TlsGetValue(dwHesPwNamIndex));
+    if (pw == NULL)
+        return NULL;
+
+    strcpy(buf, pp[0]);
+    hes_free(pp);
+    return GetPasswdStruct(pw, buf);
+}
+
+
+struct passwd*  GetPasswdStruct(struct passwd* pw, char* buf)
+{
+    char* temp;
+    char* p;
+
+    if (pw->pw_name == NULL)
+	pw->pw_name = LocalAlloc(LPTR, MAX_PW_BUFFER_LENGTH);
+    if (pw->pw_passwd == NULL)
+	pw->pw_passwd = LocalAlloc(LPTR, MAX_PW_BUFFER_LENGTH);
+    if (pw->pw_comment == NULL)
+	pw->pw_comment = LocalAlloc(LPTR, MAX_PW_BUFFER_LENGTH);
+    if (pw->pw_gecos == NULL)
+	pw->pw_gecos = LocalAlloc(LPTR, MAX_PW_BUFFER_LENGTH);
+    if (pw->pw_dir == NULL)
+	pw->pw_dir = LocalAlloc(LPTR, MAX_PW_BUFFER_LENGTH);
+    if (pw->pw_shell == NULL)
+	pw->pw_shell = LocalAlloc(LPTR, MAX_PW_BUFFER_LENGTH);
     /* choose only the first response (only 1 expected) */
-    (void) strcpy(buf, pp[0]);
     p = buf;
-    pw_entry.pw_name = p;
+    temp = p;
     p = _NextPWField(p);
-    pw_entry.pw_passwd = p;
+    strcpy(pw->pw_name, temp);
+    temp = p;
     p = _NextPWField(p);
-    pw_entry.pw_uid = atoi(p);
+    strcpy(pw->pw_passwd, temp);
+    pw->pw_uid = atoi(p);
     p = _NextPWField(p);
-    pw_entry.pw_gid = atoi(p);
-#if !defined(_AIX) || (AIXV < 31)
-    pw_entry.pw_quota = 0;
-#if defined(_AIX) && (AIXV < 31)
-    pw_entry.pw_age =
-#endif
-    pw_entry.pw_comment = "";
-#endif
+    pw->pw_gid = atoi(p);
+    pw->pw_quota = 0;
+    strcpy(pw->pw_comment, "");
     p = _NextPWField(p);
-    pw_entry.pw_gecos = p;
+    temp = p;
     p = _NextPWField(p);
-    pw_entry.pw_dir = p;
+    strcpy(pw->pw_gecos, temp);
+    temp = p;
     p = _NextPWField(p);
-    pw_entry.pw_shell = p;
+    strcpy(pw->pw_dir,  temp);
+    temp = p; 
     while (*p && *p != '\n')
         p++;
     *p = '\0';
-    return(&pw_entry);
-}
+    strcpy(pw->pw_shell, temp);
+    return pw;
 
+
+}
 
 /* Move the pointer forward to the next colon-separated field in the
  * password entry.

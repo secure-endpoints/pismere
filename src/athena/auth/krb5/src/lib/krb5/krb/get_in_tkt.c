@@ -78,6 +78,24 @@ typedef krb5_error_code (*git_decrypt_proc) (krb5_context,
 static krb5_error_code make_preauth_list (krb5_context, 
 						    krb5_preauthtype *,
 						    int, krb5_pa_data ***);
+
+/*
+ * This function performs 32 bit bounded addition so we can generate
+ * lifetimes without overflowing krb5_int32
+ */
+static krb5_int32 krb5int_addint32 (krb5_int32 x, krb5_int32 y)
+{
+    if ((x > 0) && (y > (KRB5_INT32_MAX - x))) {
+        /* sum will be be greater than KRB5_INT32_MAX */
+        return KRB5_INT32_MAX;
+    } else if ((x < 0) && (y < (KRB5_INT32_MIN - x))) {
+        /* sum will be less than KRB5_INT32_MIN */
+        return KRB5_INT32_MIN;
+    }
+    
+    return x + y;
+}
+
 /*
  * This function sends a request to the KDC, and gets back a response;
  * the response is parsed into ret_err_reply or ret_as_reply if the
@@ -90,7 +108,7 @@ send_as_request(krb5_context 		context,
 		krb5_timestamp 		*time_now,
 		krb5_error ** 		ret_err_reply,
 		krb5_kdc_rep ** 	ret_as_reply,
-		int 			use_master)
+		int 			    *use_master)
 {
     krb5_kdc_rep *as_reply = 0;
     krb5_error_code retval;
@@ -410,7 +428,7 @@ make_preauth_list(krb5_context	context,
 }
 
 #define MAX_IN_TKT_LOOPS 16
-static krb5_enctype get_in_tkt_enctypes[] = {
+static const krb5_enctype get_in_tkt_enctypes[] = {
     ENCTYPE_DES3_CBC_SHA1,
     ENCTYPE_ARCFOUR_HMAC,
     ENCTYPE_DES_CBC_MD5,
@@ -444,6 +462,7 @@ krb5_get_in_tkt(krb5_context context,
     krb5_pa_data  **	preauth_to_use = 0;
     int			loopcount = 0;
     krb5_int32		do_more = 0;
+    int             use_master = 0;
 
     if (! krb5_realm_compare(context, creds->client, creds->server))
 	return KRB5_IN_TKT_REALM_MISMATCH;
@@ -535,7 +554,7 @@ krb5_get_in_tkt(krb5_context context,
 	err_reply = 0;
 	as_reply = 0;
 	if ((retval = send_as_request(context, &request, &time_now, &err_reply,
-				      &as_reply, 0)))
+				      &as_reply, &use_master)))
 	    goto cleanup;
 
 	if (err_reply) {
@@ -738,7 +757,7 @@ krb5_get_init_creds(krb5_context context,
 		    krb5_get_init_creds_opt *options,
 		    krb5_gic_get_as_key_fct gak_fct,
 		    void *gak_data,
-		    int  use_master,
+		    int  *use_master,
 		    krb5_kdc_rep **as_reply)
 {
     krb5_error_code ret;
@@ -746,6 +765,7 @@ krb5_get_init_creds(krb5_context context,
     krb5_pa_data **padata;
     int tempint;
     char *tempstr;
+    krb5_deltat tkt_life;
     krb5_deltat renew_life;
     int loopcount;
     krb5_data salt;
@@ -805,15 +825,43 @@ krb5_get_init_creds(krb5_context context,
     if (tempint)
 	request.kdc_options |= KDC_OPT_PROXIABLE;
 
-    /* renewable */
-
+    /* allow_postdate */
+    
+    if (start_time > 0)
+	request.kdc_options |= (KDC_OPT_ALLOW_POSTDATE|KDC_OPT_POSTDATED);
+    
+    /* ticket lifetime */
+    
+    if ((ret = krb5_timeofday(context, &request.from)))
+	goto cleanup;
+    request.from = krb5int_addint32(request.from, start_time);
+    
+    if (options && (options->flags & KRB5_GET_INIT_CREDS_OPT_TKT_LIFE)) {
+        tkt_life = options->tkt_life;
+    } else if ((ret = krb5_libdefault_string(context, &client->realm,
+					     "ticket_lifetime", &tempstr))
+	       == 0) {
+	ret = krb5_string_to_deltat(tempstr, &tkt_life);
+	free(tempstr);
+	if (ret) {
+	    goto cleanup;
+	}
+    } else {
+	/* this used to be hardcoded in kinit.c */
+	tkt_life = 24*60*60;
+    }
+    request.till = krb5int_addint32(request.from, tkt_life);
+    
+    /* renewable lifetime */
+    
     if (options && (options->flags & KRB5_GET_INIT_CREDS_OPT_RENEW_LIFE)) {
 	renew_life = options->renew_life;
     } else if ((ret = krb5_libdefault_string(context, &client->realm,
 					     "renew_lifetime", &tempstr))
 	       == 0) {
-	if ((ret = krb5_string_to_deltat(tempstr, &renew_life))) {
-	    free(tempstr);
+	ret = krb5_string_to_deltat(tempstr, &renew_life);
+	free(tempstr);
+	if (ret) {
 	    goto cleanup;
 	}
     } else {
@@ -821,16 +869,25 @@ krb5_get_init_creds(krb5_context context,
     }
     if (renew_life > 0)
 	request.kdc_options |= KDC_OPT_RENEWABLE;
-
-    /* allow_postdate */
-
-    if (start_time > 0)
-	request.kdc_options |= (KDC_OPT_ALLOW_POSTDATE|KDC_OPT_POSTDATED);
-
+    
+    if (renew_life > 0) {
+	request.rtime = krb5int_addint32(request.from, renew_life);
+        if (request.rtime < request.till) {
+            /* don't ask for a smaller renewable time than the lifetime */
+            request.rtime = request.till;
+        }
+        /* we are already asking for renewable tickets so strip this option */
+	request.kdc_options &= ~(KDC_OPT_RENEWABLE_OK);
+    } else {
+	request.rtime = 0;
+    }
+    
     /* client */
 
     request.client = client;
 
+    /* service */
+    
     if (in_tkt_service) {
 	/* this is ugly, because so are the data structures involved.  I'm
 	   in the library, so I'm going to manipulate the data structures
@@ -862,25 +919,6 @@ krb5_get_init_creds(krb5_context context,
 					   request.client->realm.data,
 					   0)))
 	    goto cleanup;
-    }
-
-    if ((ret = krb5_timeofday(context, &request.from)))
-	goto cleanup;
-    request.from += start_time;
-
-    request.till = request.from;
-    if (options && (options->flags & KRB5_GET_INIT_CREDS_OPT_TKT_LIFE))
-	request.till += options->tkt_life;
-    else
-	request.till += 24*60*60; /* this used to be hardcoded in kinit.c */
-
-    if (renew_life > 0) {
-	request.rtime = request.from;
-	request.rtime += renew_life;
-	if (request.rtime >= request.till)
-	    request.kdc_options &= ~(KDC_OPT_RENEWABLE_OK);
-    } else {
-	request.rtime = 0;
     }
 
     /* nonce is filled in by send_as_request */

@@ -29,7 +29,9 @@ $tagged_build = 1 if (defined($ENV{"KRB5BRANCH"}) && ($ENV{"KRB5BRANCH"} =~ m/TA
 $DIR_SUFFIX = "-tagged" if ($tagged_build);
 $DIR_SUFFIX = "-head" if (defined($ENV{"KRB5BRANCH"}) && ($ENV{"KRB5BRANCH"} =~ m/HEAD/i));
 
-$DIR_SUFFIX = ($DIR_SUFFIX."-vstudio7") if (defined($ENV{"VSTUDIOVER"}) && ($ENV{"VSTUDIOVER"} =~ m/VSTUDIO7/i));
+$DIR_SUFFIX = ($DIR_SUFFIX."-vs7") if (defined($ENV{"VSTUDIOVER"}) && ($ENV{"VSTUDIOVER"} =~ m/VSTUDIO7/i));
+
+$DIR_SUFFIX = ($DIR_SUFFIX."xpsp2") if (defined($ENV{"SDKVER"}) && ($ENV{"SDKVER"} =~ m/MSSDK\.XPSP2/i));
 
 my $USERNAME = $ENV{USERNAME} || Win32::LoginName();
 my $DOMAIN = 'mit.edu';
@@ -94,6 +96,8 @@ sub main
 	$remote_config .=$ENV{"USERNAME"};
 	$remote_config .= "\nbuild-tool:";
 	$remote_config .= $ENV{"VSTUDIOVER"};
+	$remote_config .= "\nMicrosoft SDK version:";
+	$remote_config .= $ENV{"SDKVER"};
 	$remote_config .= "\nbuild-type:";
         $remote_config .= $ENV{"KRB5BRANCH"};
 	$remote_config .= "\ninstaller:";

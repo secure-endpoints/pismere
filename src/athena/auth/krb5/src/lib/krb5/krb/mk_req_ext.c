@@ -90,8 +90,13 @@ krb5int_generate_and_save_subkey (krb5_context context,
     d.data = (char *) &rnd_data;
     (void) krb5_c_random_add_entropy (context, KRB5_C_RANDSOURCE_TIMING, &d);
 
+    if (auth_context->send_subkey)
+	krb5_free_keyblock(context, auth_context->send_subkey);
     if ((retval = krb5_generate_subkey(context, keyblock, &auth_context->send_subkey)))
 	return retval;
+
+    if (auth_context->recv_subkey)
+	krb5_free_keyblock(context, auth_context->recv_subkey);
     retval = krb5_copy_keyblock(context, auth_context->send_subkey,
 				&auth_context->recv_subkey);
     if (retval) {
@@ -136,6 +141,11 @@ krb5_mk_req_extended(krb5_context context, krb5_auth_context *auth_context,
 	if ((retval = krb5_auth_con_init(context, &new_auth_context)))
 	    goto cleanup;
 	*auth_context = new_auth_context;
+    }
+
+    if ((*auth_context)->keyblock != NULL) {
+	krb5_free_keyblock(context, (*auth_context)->keyblock);
+	(*auth_context)->keyblock = NULL;
     }
 
     /* set auth context keyblock */

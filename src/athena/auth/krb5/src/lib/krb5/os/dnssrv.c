@@ -28,28 +28,8 @@
  */
 
 #ifdef KRB5_DNS_LOOKUP
-#define NEED_SOCKETS
-#include "k5-int.h"
-#include "os-proto.h"
-#include <stdio.h>
-#ifdef WSHELPER
-#include <wshelper.h>
-#else /* WSHELPER */
-#include <arpa/inet.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
-#include <netdb.h>
-#endif /* WSHELPER */
-#ifndef T_SRV
-#define T_SRV 33
-#endif /* T_SRV */
 
-/* for old Unixes and friends ... */
-#ifndef MAXHOSTNAMELEN
-#define MAXHOSTNAMELEN 64
-#endif
-
-#define MAX_DNS_NAMELEN (15*(MAXHOSTNAMELEN + 1)+1)
+#include "dnsglue.h"
 
 /*
  * Lookup a KDC via DNS SRV records
@@ -78,16 +58,11 @@ krb5int_make_srv_query_realm(const krb5_data *realm,
 			     const char *protocol,
 			     struct srv_dns_entry **answers)
 {
-    union {
-        unsigned char bytes[2048];
-        HEADER hdr;
-    } answer;
-    unsigned char *p=NULL;
-    char host[MAX_DNS_NAMELEN], *h;
-    int type, rrclass;
-    int priority, weight, size, len, numanswers, numqueries, rdlen;
-    unsigned short port;
-    const int hdrsize = sizeof(HEADER);
+    const unsigned char *p = NULL, *base = NULL;
+    char host[MAXDNAME], *h;
+    int size, ret, rdlen, nlen;
+    unsigned short priority, weight, port;
+    struct krb5int_dns_state *ds = NULL;
 
     struct srv_dns_entry *head = NULL;
     struct srv_dns_entry *srv = NULL, *entry = NULL;
@@ -106,7 +81,7 @@ krb5int_make_srv_query_realm(const krb5_data *realm,
     if (memchr(realm->data, 0, realm->length))
 	return 0;
     if ( strlen(service) + strlen(protocol) + realm->length + 6 
-         > MAX_DNS_NAMELEN )
+         > MAXDNAME )
 	return 0;
     sprintf(host, "%s.%s.%.*s", service, protocol, (int) realm->length,
 	    realm->data);
@@ -128,145 +103,81 @@ krb5int_make_srv_query_realm(const krb5_data *realm,
     fprintf (stderr, "sending DNS SRV query for %s\n", host);
 #endif
 
-    size = res_search(host, C_IN, T_SRV, answer.bytes, sizeof(answer.bytes));
-
-    if ((size < hdrsize) || (size > sizeof(answer.bytes)))
+    size = krb5int_dns_init(&ds, host, C_IN, T_SRV);
+    if (size < 0)
 	goto out;
 
-    /*
-     * We got an answer!  First off, parse the header and figure out how
-     * many answers we got back.
-     */
-
-    p = answer.bytes;
-
-    numqueries = ntohs(answer.hdr.qdcount);
-    numanswers = ntohs(answer.hdr.ancount);
-
-    p += sizeof(HEADER);
-
-    /*
-     * We need to skip over all of the questions, so we have to iterate
-     * over every query record.  dn_expand() is able to tell us the size
-     * of compress DNS names, so we use it.
-     */
-
-#define INCR_CHECK(x,y) x += y; if (x > size + answer.bytes) goto out
-#define CHECK(x,y) if (x + y > size + answer.bytes) goto out
-#define NTOHSP(x,y) x[0] << 8 | x[1]; x += y
-
-    while (numqueries--) {
-	len = dn_expand(answer.bytes, answer.bytes + size, p, host, sizeof(host));
-	if (len < 0)
+    for (;;) {
+	ret = krb5int_dns_nextans(ds, &base, &rdlen);
+	if (ret < 0 || base == NULL)
 	    goto out;
-	INCR_CHECK(p, len + 4);
-    }
 
-    /*
-     * We're now pointing at the answer records.  Only process them if
-     * they're actually T_SRV records (they might be CNAME records,
-     * for instance).
-     *
-     * But in a DNS reply, if you get a CNAME you always get the associated
-     * "real" RR for that CNAME.  RFC 1034, 3.6.2:
-     *
-     * CNAME RRs cause special action in DNS software.  When a name server
-     * fails to find a desired RR in the resource set associated with the
-     * domain name, it checks to see if the resource set consists of a CNAME
-     * record with a matching class.  If so, the name server includes the CNAME
-     * record in the response and restarts the query at the domain name
-     * specified in the data field of the CNAME record.  The one exception to
-     * this rule is that queries which match the CNAME type are not restarted.
-     *
-     * In other words, CNAMEs do not need to be expanded by the client.
-     */
+	p = base;
 
-    while (numanswers--) {
-
-	/* First is the name; use dn_expand to get the compressed size */
-	len = dn_expand(answer.bytes, answer.bytes + size, p, host, sizeof(host));
-	if (len < 0)
-	    goto out;
-	INCR_CHECK(p, len);
-
-	/* Next is the query type */
-        CHECK(p, 2);
-	type = NTOHSP(p,2);
-
-	/* Next is the query class; also skip over 4 byte TTL */
-        CHECK(p, 6);
-	rrclass = NTOHSP(p,6);
-
-	/* Record data length */
-
-        CHECK(p,2);
-	rdlen = NTOHSP(p,2);
+	SAFE_GETUINT16(base, rdlen, p, 2, priority, out);
+	SAFE_GETUINT16(base, rdlen, p, 2, weight, out);
+	SAFE_GETUINT16(base, rdlen, p, 2, port, out);
 
 	/*
-	 * If this is an SRV record, process it.  Record format is:
-	 *
-	 * Priority
-	 * Weight
-	 * Port
-	 * Server name
+	 * RFC 2782 says the target is never compressed in the reply;
+	 * do we believe that?  We need to flatten it anyway, though.
+	 */
+	nlen = krb5int_dns_expand(ds, p, host, sizeof(host));
+	if (nlen < 0 || !INCR_OK(base, rdlen, p, nlen))
+	    goto out;
+
+	/*
+	 * We got everything!  Insert it into our list, but make sure
+	 * it's in the right order.  Right now we don't do anything
+	 * with the weight field
 	 */
 
-	if (rrclass == C_IN && type == T_SRV) {
-            CHECK(p,2);
-	    priority = NTOHSP(p,2);
-	    CHECK(p, 2);
-	    weight = NTOHSP(p,2);
-	    CHECK(p, 2);
-	    port = NTOHSP(p,2);
-	    len = dn_expand(answer.bytes, answer.bytes + size, p, host, sizeof(host));
-	    if (len < 0)
-		goto out;
-	    INCR_CHECK(p, len);
+	srv = (struct srv_dns_entry *) malloc(sizeof(struct srv_dns_entry));
+	if (srv == NULL)
+	    goto out;
+	
+	srv->priority = priority;
+	srv->weight = weight;
+	srv->port = port;
+	/* The returned names are fully qualified.  Don't let the
+	   local resolver code do domain search path stuff.  */
+	if (strlen(host) + 2 < sizeof(host))
+	    strcat(host, ".");
+	srv->host = strdup(host);
+	if (srv->host == NULL) {
+	    free(srv);
+	    goto out;
+	}
 
+	if (head == NULL || head->priority > srv->priority) {
+	    srv->next = head;
+	    head = srv;
+	} else {
 	    /*
-	     * We got everything!  Insert it into our list, but make sure
-	     * it's in the right order.  Right now we don't do anything
-	     * with the weight field
+	     * This is confusing.  Only insert an entry into this
+	     * spot if:
+	     * The next person has a higher priority (lower priorities
+	     * are preferred).
+	     * Or
+	     * There is no next entry (we're at the end)
 	     */
-
-	    srv = (struct srv_dns_entry *) malloc(sizeof(struct srv_dns_entry));
-	    if (srv == NULL)
-		goto out;
-	
-	    srv->priority = priority;
-	    srv->weight = weight;
-	    srv->port = port;
-	    srv->host = strdup(host);
-	    if (srv->host == NULL) {
-		free(srv);
-		goto out;
+	    for (entry = head; entry != NULL; entry = entry->next) {
+		if ((entry->next &&
+		     entry->next->priority > srv->priority) ||
+		    entry->next == NULL) {
+		    srv->next = entry->next;
+		    entry->next = srv;
+		    break;
+		}
 	    }
-
-	    if (head == NULL || head->priority > srv->priority) {
-		srv->next = head;
-		head = srv;
-	    } else
-		/*
-		 * This is confusing.  Only insert an entry into this
-		 * spot if:
-		 * The next person has a higher priority (lower priorities
-		 * are preferred).
-		 * Or
-		 * There is no next entry (we're at the end)
-		 */
-		for (entry = head; entry != NULL; entry = entry->next)
-		    if ((entry->next &&
-			 entry->next->priority > srv->priority) ||
-			entry->next == NULL) {
-			srv->next = entry->next;
-			entry->next = srv;
-			break;
-		    }
-	} else
-	    INCR_CHECK(p, rdlen);
+	}
     }
-	
-  out:
+
+out:
+    if (ds != NULL) {
+	krb5int_dns_fini(ds);
+	ds = NULL;
+    }
     *answers = head;
     return 0;
 }

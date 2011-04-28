@@ -230,10 +230,14 @@ etype_string(krb5_enctype enctype)
         return "RC4-HMAC-NT-EXP";
     case ENCTYPE_UNKNOWN:
         return "UNKNOWN";
+#ifdef ENCTYPE_LOCAL_DES3_HMAC_SHA1
     case ENCTYPE_LOCAL_DES3_HMAC_SHA1:
         return "LOCAL-DES3-HMAC-SHA1";
+#endif
+#ifdef ENCTYPE_LOCAL_RC4_MD4
     case ENCTYPE_LOCAL_RC4_MD4:
         return "LOCAL-RC4-MD4";
+#endif
     default:
         wsprintf(buf, "#%d", enctype);
         return buf;

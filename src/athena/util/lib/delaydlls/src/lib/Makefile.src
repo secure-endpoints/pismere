@@ -10,3 +10,4 @@ OBJS= \
 	$(O)\delaydlls.obj
 
 INCLUDES=..\..\inc
+DEBUG_SYMBOL=1

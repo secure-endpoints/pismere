@@ -77,7 +77,9 @@ CPU = i386
 
 !IF "$(CPU)" != "i386"
 !IF "$(CPU)" != "ALPHA"
+!IF "$(CPU)" != "IA64"
 !ERROR  Must specify CPU environment variable ( CPU=i386, CPU=ALPHA)
+!ENDIF
 !ENDIF
 !ENDIF
 
@@ -189,7 +191,7 @@ ccommon = $(ccommon) -DDBCS -DFE_IME
 
 
 
-!IF "$(CPU)" == "i386"
+!IF "$(CPU)" == "i386" || "$(CPU)" == "IA64"
 cflags = $(ccommon) -D_X86_=1
 scall  = -Gz
 !ELSE
@@ -246,7 +248,7 @@ cdebug = -Gh -Zd -Ox
 !IFDEF TUNE
 cdebug = -Gh -Zd -Ox
 !ELSE
-cdebug = -ZI -Od
+cdebug = -Zi -Od
 !ENDIF
 !ENDIF
 !ENDIF
@@ -306,7 +308,11 @@ DCRT=d
 !endif
 
 # for Windows applications that use the C Run-Time libraries
+!IF "$(CPU)" == "IA64"
+cvars	   = -DWIN64 $(noansi) -D_WIN64
+!ELSE
 cvars      = -DWIN32 $(noansi) -D_WIN32
+!ENDIF
 cvarsstd   = $(cvars) -ML$(DCRT)
 cvarsmt    = $(cvars) -D_MT -MT$(DCRT)
 cvarsdll   = $(cvars) -D_MT -D_DLL -MD$(DCRT)
@@ -319,7 +325,12 @@ psxvars    = -D_POSIX_
 
 # resource compiler
 rcflags = /r
+
+!IF "$(CPU)" == "IA64"
+rcvars = -DWIN64 -D_WIN64 -DWINVER=$(NMAKE_WINVER) $(noansi)
+!ELSE
 rcvars = -DWIN32 -D_WIN32 -DWINVER=$(NMAKE_WINVER) $(noansi)
+! ENDIF
 
 !IF "$(TARGETLANG)" == "LANG_JAPANESE"
 rcflags = $(rcflags) /c932

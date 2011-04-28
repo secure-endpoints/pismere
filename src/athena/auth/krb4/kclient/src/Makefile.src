@@ -24,3 +24,6 @@ RES=$(O)\kclient.res
 C_FLAGS=-DPC -DPLATFORM=win32 -DBSDSOCK -DWINSOCK
 
 kclient.rc: ver.rc2
+
+
+DEBUG_SYMBOL=1

@@ -1,3 +1,46 @@
+2005-11-28  Tom Yu  <tlyu@mit.edu>
+
+	* adb_openclose.c: Include k5-int.h.
+
+2005-11-17  Ken Raeburn  <raeburn@mit.edu>
+
+	* server_init.c, svr_policy.c: Include errno.h.
+
+2005-09-27  Tom Yu  <tlyu@mit.edu>
+
+	* svr_iters.c (glob_to_regexp): Increment pointer, not character,
+	when handling backslash quoting.  Patch from K.G. Gokulavasan.
+
+2004-12-20  Tom Yu  <tlyu@mit.edu>
+
+	* svr_principal.c (add_to_history): Rewrite somewhat, using
+	temporary variables to make things somewhat more readable.  Fix
+	buffer overflow case where the next pointer points into
+	unallocated space but resizing wasn't done, i.e., when someone
+	decreases the policy history count to the exact "right" number.
+	Fix some memory leaks.  To avoid losing entries, shift some
+	entries forward after growing the array.
+
+2004-08-21  Tom Yu  <tlyu@mit.edu>
+
+	* libkadm5srv.exports: Update for previous renaming.
+
+2004-08-20  Alexandra Ellwood <lxs@mit.edu>
+
+        * server_acl.[ch]: renamed acl_* functions to kadm5int_acl_*
+
+2004-06-16  Ken Raeburn  <raeburn@mit.edu>
+
+	* Makefile.in (clean-mac): Target deleted.
+
+2004-06-04  Ken Raeburn  <raeburn@mit.edu>
+
+	* Makefile.in (LIBBASE): Renamed from LIB.
+
+2004-04-22  Ken Raeburn  <raeburn@mit.edu>
+
+	* libkadm5srv.exports: New file.
+
 2003-09-02  Alexandra Ellwood  <lxs@mit.edu>
 
 	* svr_principal.c: Added Apple password server support.

@@ -125,7 +125,7 @@ static int yyparse (void *);
 %union { int val; }
 
 %token <val> NUM LONGNUM OVERFLOW
-%token '-' ':' 'd' 'h' 'm' 's' WS
+%token '-' ':' 'd' 'h' 'm' 's' tok_WS
 
 %type <val> num opt_hms opt_ms opt_s wsnum posnum
 
@@ -136,9 +136,9 @@ static int yyparse (void *);
 start: deltat;
 posnum: NUM | LONGNUM ;
 num: posnum | '-' posnum { $$ = - $2; } ;
-ws: /* nothing */ | WS ;
+ws: /* nothing */ | tok_WS ;
 wsnum: ws num { $$ = $2; }
-        | ws OVERFLOW { YYERROR };
+        | ws OVERFLOW { YYERROR; };
 deltat:
 	  wsnum 'd' opt_hms		{ DO ($1,  0,  0, $3); }
 	| wsnum 'h' opt_ms		{ DO ( 0, $1,  0, $3); }
@@ -147,6 +147,7 @@ deltat:
 	| wsnum '-' NUM ':' NUM ':' NUM	{ DO ($1, $3, $5, $7); }
 	| wsnum ':' NUM ':' NUM		{ DO ( 0, $1, $3, $5); }
 	| wsnum ':' NUM			{ DO ( 0, $1, $3,  0); }
+	| wsnum 			{ DO ( 0,  0,  0, $1); } /* default to 's' */
 	;
 
 opt_hms:
@@ -209,7 +210,7 @@ mylex (krb5_int32 *intp, char **pp)
     case '\n':
 	while (isspace ((int) *P))
 	    P++;
-	return WS;
+	return tok_WS;
     default:
 	return YYEOF;
     }
@@ -222,7 +223,7 @@ krb5_string_to_deltat(char *string, krb5_deltat *deltatp)
     p.delta = 0;
     p.p = string;
     if (yyparse (&p))
-	return EINVAL;
+	return KRB5_DELTAT_BADFORMAT;
     *deltatp = p.delta;
     return 0;
 }

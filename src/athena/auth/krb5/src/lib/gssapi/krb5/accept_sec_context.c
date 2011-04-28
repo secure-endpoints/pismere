@@ -1,5 +1,5 @@
 /*
- * Copyright 2000 by the Massachusetts Institute of Technology.
+ * Copyright 2000, 2004  by the Massachusetts Institute of Technology.
  * All Rights Reserved.
  *
  * Export of this software from the United States of America may
@@ -160,9 +160,17 @@ rd_and_store_for_creds(context, auth_context, inbuf, out_cred)
 	/* zero it out... */
 	memset(cred, 0, sizeof(krb5_gss_cred_id_rec));
 
+	retval = k5_mutex_init(&cred->lock);
+	if (retval) {
+	    xfree(cred);
+	    cred = NULL;
+	    goto cleanup;
+	}
+
 	/* copy the client principle into it... */
 	if ((retval =
 	     krb5_copy_principal(context, creds[0]->client, &(cred->princ)))) {
+	    k5_mutex_destroy(&cred->lock);
 	    retval = ENOMEM; /* out of memory? */
 	    xfree(cred); /* clean up memory on failure */
 	    cred = NULL;
@@ -193,10 +201,10 @@ cleanup:
     if (out_cred)
 	*out_cred = cred; /* return credential */
 
-	if (new_auth_ctx)
-		krb5_auth_con_free(context, new_auth_ctx);
+    if (new_auth_ctx)
+	krb5_auth_con_free(context, new_auth_ctx);
 
-	krb5_auth_con_setflags(context, auth_context, flags_org);
+    krb5_auth_con_setflags(context, auth_context, flags_org);
 
     return retval;
 }
@@ -249,15 +257,19 @@ krb5_gss_accept_sec_context(minor_status, context_handle,
    gss_cred_id_t cred_handle = NULL;
    krb5_gss_cred_id_t deleg_cred = NULL;
    krb5int_access kaccess;
+   int cred_rcache = 0;
 
    code = krb5int_accessor (&kaccess, KRB5INT_ACCESS_VERSION);
-    if (code) {
-        *minor_status = code;
-        return(GSS_S_FAILURE);
-    }
-       
-   if (GSS_ERROR(kg_get_context(minor_status, &context)))
-      return(GSS_S_FAILURE);
+   if (code) {
+       *minor_status = code;
+       return(GSS_S_FAILURE);
+   }
+
+   code = krb5_init_context(&context);
+   if (code) {
+       *minor_status = code;
+       return GSS_S_FAILURE;
+   }
 
    /* set up returns to be freeable */
 
@@ -284,6 +296,7 @@ krb5_gss_accept_sec_context(minor_status, context_handle,
    /*SUPPRESS 29*/
    if (*context_handle != GSS_C_NO_CONTEXT) {
       *minor_status = 0;
+      krb5_free_context(context);
       return(GSS_S_FAILURE);
    }
 
@@ -378,6 +391,7 @@ krb5_gss_accept_sec_context(minor_status, context_handle,
        goto fail;
    }
    if (cred->rcache) {
+       cred_rcache = 1;
        if ((code = krb5_auth_con_setrcache(context, auth_context, cred->rcache))) {
 	   major_status = GSS_S_FAILURE;
 	   goto fail;
@@ -477,10 +491,7 @@ krb5_gss_accept_sec_context(minor_status, context_handle,
           GSS_C_NO_CHANNEL_BINDINGS then we skip the check.  If
           the server does provide channel bindings then we compute
           a checksum and compare against those provided by the
-          client.  If the check fails we test the clients checksum
-          to see whether the client specified GSS_C_NO_CHANNEL_BINDINGS.
-          If either test succeeds we continue without error.
-       */
+          client.         */
 
        if ((code = kg_checksum_channel_bindings(context, 
 						input_chan_bindings,
@@ -496,17 +507,9 @@ krb5_gss_accept_sec_context(minor_status, context_handle,
            if (memcmp(ptr2, reqcksum.contents, reqcksum.length) != 0) {
                xfree(reqcksum.contents);
                reqcksum.contents = 0;
-               if ((code = kg_checksum_channel_bindings(context, 
-                                                  GSS_C_NO_CHANNEL_BINDINGS,
-                                                  &reqcksum, bigend))) {
-                   major_status = GSS_S_BAD_BINDINGS;
+	       code = 0;
+	       major_status = GSS_S_BAD_BINDINGS;
                    goto fail;
-               }
-               if (memcmp(ptr2, reqcksum.contents, reqcksum.length) != 0) {
-                   code = 0;
-                   major_status = GSS_S_BAD_BINDINGS;
-                   goto fail;
-               }
            }
            
        }
@@ -617,6 +620,7 @@ krb5_gss_accept_sec_context(minor_status, context_handle,
                             GSS_C_SEQUENCE_FLAG | GSS_C_DELEG_FLAG)));
    ctx->seed_init = 0;
    ctx->big_endian = bigend;
+   ctx->cred_rcache = cred_rcache;
 
    /* Intern the ctx pointer so that delete_sec_context works */
    if (! kg_save_ctx_id((gss_ctx_id_t) ctx)) {
@@ -884,7 +888,9 @@ krb5_gss_accept_sec_context(minor_status, context_handle,
        krb5_free_authenticator(context, authdat);
    /* The ctx structure has the handle of the auth_context */
    if (auth_context && !ctx) {
-       (void)krb5_auth_con_setrcache(context, auth_context, NULL);
+       if (cred_rcache)
+	   (void)krb5_auth_con_setrcache(context, auth_context, NULL);
+
        krb5_auth_con_free(context, auth_context);
    }
    if (reqcksum.contents)
@@ -892,8 +898,10 @@ krb5_gss_accept_sec_context(minor_status, context_handle,
    if (ap_rep.data)
        krb5_free_data_contents(context, &ap_rep);
 
-   if (!GSS_ERROR(major_status) && major_status != GSS_S_CONTINUE_NEEDED)
+   if (!GSS_ERROR(major_status) && major_status != GSS_S_CONTINUE_NEEDED) {
+       ctx->k5_context = context;
        return(major_status);
+   }
 
    /* from here on is the real "fail" code */
 
@@ -925,8 +933,10 @@ krb5_gss_accept_sec_context(minor_status, context_handle,
    if (decode_req_message) {
        krb5_ap_req 	* request;
 	   
-       if (decode_krb5_ap_req(&ap_req, &request))
+       if (decode_krb5_ap_req(&ap_req, &request)) {
+	   krb5_free_context(context);
 	   return (major_status);
+       }
        if (request->ap_options & AP_OPTS_MUTUAL_REQUIRED)
 	   gss_flags |= GSS_C_MUTUAL_FLAG;
        krb5_free_ap_req(context, request);
@@ -954,16 +964,20 @@ krb5_gss_accept_sec_context(minor_status, context_handle,
        krb_error_data.server = cred->princ;
 
        code = krb5_mk_error(context, &krb_error_data, &scratch);
-       if (code)
+       if (code) {
+	   krb5_free_context(context);
 	   return (major_status);
+       }
 
        tmsglen = scratch.length;
        toktype = KG_TOK_CTX_ERROR;
 
        token.length = g_token_size((gss_OID) mech_used, tmsglen);
        token.value = (unsigned char *) xmalloc(token.length);
-       if (!token.value)
+       if (!token.value) {
+	   krb5_free_context(context);
 	   return (major_status);
+       }
 
        ptr = token.value;
        g_make_token_header((gss_OID) mech_used, tmsglen, &ptr, toktype);
@@ -976,5 +990,6 @@ krb5_gss_accept_sec_context(minor_status, context_handle,
    if (!verifier_cred_handle && cred_handle) {
 	   krb5_gss_release_cred(minor_status, cred_handle);
    }
+   krb5_free_context(context);
    return (major_status);
 }

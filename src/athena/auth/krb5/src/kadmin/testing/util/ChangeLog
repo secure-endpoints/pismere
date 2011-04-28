@@ -1,3 +1,21 @@
+2005-11-17  Ken Raeburn  <raeburn@mit.edu>
+
+	* tcl_kadm5.c, tcl_ovsec_kadm.c: Don't include k5-int.h.
+
+2005-02-10  Tom Yu  <tlyu@mit.edu>
+
+	* tcl_kadm5.c (unparse_err): Add entries for KRB5_CC_NOTFOUND and
+	KRB5_FCC_NOFILE, to handle changes in client_init.c.
+
+2004-07-28  Ken Raeburn  <raeburn@mit.edu>
+
+	* tcl_kadm5.c (parse_flags, parse_keysalts, parse_key_data,
+	parse_tl_data, parse_principal_ent, parse_policy_ent): Use
+	Tcl_Free, not free, to release storage allocated by
+	Tcl_SplitList.
+	* tcl_ovsec_kadm.c (parse_flags, parse_principal_ent,
+	parse_policy_ent): Likewise.
+
 2003-01-08  Ken Raeburn  <raeburn@mit.edu>
 
 	* Makefile.in (DEFINES): New variable.  Define HAS_STDARG for Tcl

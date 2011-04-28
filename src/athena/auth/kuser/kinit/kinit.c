@@ -1,7 +1,7 @@
 /*
  * clients/kinit/kinit.c
  *
- * Copyright 1990 by the Massachusetts Institute of Technology.
+ * Copyright 1990,2005 by the Massachusetts Institute of Technology.
  * All Rights Reserved.
  *
  * Export of this software from the United States of America may
@@ -136,6 +136,7 @@ struct k_opts
     int no_addresses;
 
     int verbose;
+    int debug;
 
     char* principal_name;
     char* service_name;
@@ -203,7 +204,7 @@ usage(void)
 #define USAGE_BREAK_LONG       ""
 #endif
 
-    fprintf(stderr, "Usage: %s [-5] [-4] [-V] "
+    fprintf(stderr, "Usage: %s [-5] [-4] [-V] [-d]"
 	    "[-l lifetime] [-s start_time] "
 	    USAGE_BREAK
 	    "[-r renewable_life] "
@@ -250,6 +251,7 @@ fprintf(stderr, USAGE_OPT_FMT, indent, col1, col2)
 	    default_k4?"Kerberos 4":"",
 	    (!default_k5 && !default_k4)?"neither":"");
     ULINE("\t", "-V verbose",                   OPTTYPE_EITHER);
+    ULINE("\t", "-d debug",                     OPTTYPE_EITHER);
     ULINE("\t", "-l lifetime",                  OPTTYPE_EITHER);
     ULINE("\t", "-s start time",                OPTTYPE_KRB5);
     ULINE("\t", "-r renewable lifetime",        OPTTYPE_KRB5);
@@ -281,9 +283,13 @@ parse_options(argc, argv, opts)
     int use_k5 = 0;
     int i;
 
-    while ((i = GETOPT(argc, argv, "r:fpFP54AVl:s:c:kt:RS:v"))
+    while ((i = GETOPT(argc, argv, "r:dfpFP54AVl:s:c:kt:RS:v"))
 	   != -1) {
 	switch (i) {
+        case 'd':
+            opts->verbose = 1;
+            opts->debug = 1;
+            break;
 	case 'V':
 	    opts->verbose = 1;
 	    break;
@@ -562,11 +568,17 @@ struct k4_data* k4;
 #ifdef KRB5_KRB4_COMPAT
     if (got_k4)
     {
+        if (opts->debug)
+            fprintf(stderr,"converting Kerberos 5 principal to Kerberos 4\n");
+
 	/* Translate to a Kerberos 4 principal */
 	code = krb5_524_conv_principal(k5->ctx, k5->me,
 				       k4->aname, k4->inst, k4->realm);
 	if (code) {
-	    k4->aname[0] = 0;
+            if (opts->debug)
+                fprintf(stderr,"conversion failed: %lX\n", code);
+
+            k4->aname[0] = 0;
 	    k4->inst[0] = 0;
 	    k4->realm[0] = 0;
 	}
@@ -1099,21 +1111,33 @@ main(argc, argv)
     got_k5 = k5_begin(&opts, &k5, &k4);
     got_k4 = k4_begin(&opts, &k4);
 
-    authed_k5 = k5_kinit(&opts, &k5);
+    if (opts.debug)
+    {
+        if (got_k5)
+            fprintf(stderr, "Kerberos 5 is ready\n");
+        if (got_k4)
+            fprintf(stderr, "Kerberos 4 is ready\n");
+    }
+    if (got_k5)
+        authed_k5 = k5_kinit(&opts, &k5);
+    if (authed_k5 && opts.verbose)
+	fprintf(stderr, "Authenticated to Kerberos v5\n");
 #ifdef HAVE_KRB524
-    if (authed_k5)
+    if (authed_k5 && got_k4) {
+        if (opts.debug)
+            fprintf(stderr, "Attempting Kerberos 5 to 4 conversion\n"); 
 	authed_k4 = try_convert524(&k5);
+        if (opts.debug && !authed_k4)
+            fprintf(stderr, "Kerberos 5 to 4 conversion failed\n"); 
+    }
 #endif
-    if (!authed_k4)
+    if (!authed_k4 && got_k4)
 	authed_k4 = k4_kinit(&opts, &k4, k5.ctx);
+    if (authed_k4 && opts.verbose)
+	fprintf(stderr, "Authenticated to Kerberos v4\n");
 #ifdef KRB5_KRB4_COMPATH
     memset(stash_password, 0, sizeof(stash_password));
 #endif
-
-    if (authed_k5 && opts.verbose)
-	fprintf(stderr, "Authenticated to Kerberos v5\n");
-    if (authed_k4 && opts.verbose)
-	fprintf(stderr, "Authenticated to Kerberos v4\n");
 
     k5_end(&k5);
     k4_end(&k4);

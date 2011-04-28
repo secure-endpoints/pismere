@@ -98,13 +98,13 @@ static int got_k4 = 0;
 static int got_cc = 0;
 
 static int default_k5 = 1;
-#ifdef KRB5_KRB4_COMPAT
+#if defined(KRB5_KRB4_COMPAT) && defined(KLIST_DEFAULT_BOTH)
 static int default_k4 = 1;
 #else
 static int default_k4 = 0;
 #endif
 
-static int	exit_status = 0;
+static int exit_status = 0;
 
 void usage()
 {

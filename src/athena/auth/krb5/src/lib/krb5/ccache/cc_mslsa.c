@@ -1,7 +1,7 @@
 /*
  * lib/krb5/ccache/cc_mslsa.c
  *
- * Copyright 2003 by the Massachusetts Institute of Technology.
+ * Copyright 2003,2004 by the Massachusetts Institute of Technology.
  * All Rights Reserved.
  *
  * Export of this software from the United States of America may
@@ -44,7 +44,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Implementation of read-only microsoft windows lsa credentials cache
+ * Implementation of microsoft windows lsa read-only credentials cache
  */
 
 #ifdef _WIN32
@@ -69,9 +69,10 @@
 #define MAX_MSPRINC_SIZE 1024
 
 /* THREAD SAFETY 
- * The functions is_windows_2000(), is_windows_xp(), and does_retrieve_ticket_cache_ticket()
- * contain static variables to cache the responses of the tests being performed.  There is
- * no harm in the test being performed more than once since the result will always be the 
+ * The functions is_windows_2000(), is_windows_xp(), and 
+ * does_retrieve_ticket_cache_ticket() contain static variables to cache 
+ * the responses of the tests being performed.  There is no harm in the 
+ * test being performed more than once since the result will always be the 
  * same.
  */
 
@@ -188,9 +189,18 @@ UnicodeToANSI(LPTSTR lpInputString, LPSTR lpszOutputString, int nOutStringLen)
 
     GetCPInfo(CP_ACP, &CodePageInfo);
 
-    if (CodePageInfo.MaxCharSize > 1)
+    if (CodePageInfo.MaxCharSize > 1) {
         // Only supporting non-Unicode strings
-        return FALSE;
+        int reqLen = WideCharToMultiByte(CP_ACP, 0, (LPCWSTR) lpInputString, -1,
+                                         NULL, 0, NULL, NULL);
+        if ( reqLen > nOutStringLen) 
+        {
+            return FALSE;
+        } else {
+            WideCharToMultiByte(CP_ACP, 0, (LPCWSTR) lpInputString, -1,
+                                lpszOutputString, nOutStringLen, NULL, NULL);
+        }
+    } 
     else if (((LPBYTE) lpInputString)[1] == '\0')
     {
         // Looks like unicode, better translate it
@@ -199,12 +209,13 @@ UnicodeToANSI(LPTSTR lpInputString, LPSTR lpszOutputString, int nOutStringLen)
     }
     else
         lstrcpyA(lpszOutputString, (LPSTR) lpInputString);
+
     return TRUE;
 }  // UnicodeToANSI
 
 static VOID
 WINAPI
-ANSIToUnicode(LPSTR  lpInputString, LPTSTR lpszOutputString, int nOutStringLen)
+ANSIToUnicode(LPSTR lpInputString, LPTSTR lpszOutputString, int nOutStringLen)
 {
 
     CPINFO CodePageInfo;
@@ -213,12 +224,9 @@ ANSIToUnicode(LPSTR  lpInputString, LPTSTR lpszOutputString, int nOutStringLen)
 
     GetCPInfo(CP_ACP, &CodePageInfo);
 
-    if (CodePageInfo.MaxCharSize > 1)
-        // It must already be a Unicode string
-        return;
-    else if (((LPBYTE) lpInputString)[1] != '\0')
+    if (CodePageInfo.MaxCharSize > 1 || ((LPBYTE) lpInputString)[1] != '\0')
     {
-        // Looks like ANSI, better translate it
+        // Looks like ANSI or MultiByte, better translate it
         MultiByteToWideChar(CP_ACP, 0, (LPCSTR) lpInputString, -1,
                             (LPWSTR) lpszOutputString, nOutStringLen);
     }
@@ -242,9 +250,9 @@ MITPrincToMSPrinc(krb5_context context, krb5_principal principal, UNICODE_STRING
     }
 }
 
-static void
+static BOOL
 UnicodeStringToMITPrinc(UNICODE_STRING *service, WCHAR *realm, krb5_context context, 
-                  krb5_principal *principal)
+                        krb5_principal *principal)
 {
     WCHAR princbuf[512];
     char aname[512];
@@ -254,14 +262,17 @@ UnicodeStringToMITPrinc(UNICODE_STRING *service, WCHAR *realm, krb5_context cont
     princbuf[service->Length/sizeof(WCHAR)]=0;
     wcscat(princbuf, L"@");
     wcscat(princbuf, realm);
-    UnicodeToANSI(princbuf, aname, sizeof(aname));
-    krb5_parse_name(context, aname, principal);
+    if (UnicodeToANSI(princbuf, aname, sizeof(aname))) {
+        krb5_parse_name(context, aname, principal);
+        return TRUE;
+    }
+    return FALSE;
 }
 
 
-static void
+static BOOL
 KerbExternalNameToMITPrinc(KERB_EXTERNAL_NAME *msprinc, WCHAR *realm, krb5_context context, 
-                  krb5_principal *principal)
+                           krb5_principal *principal)
 {
     WCHAR princbuf[512],tmpbuf[128];
     char aname[512];
@@ -277,8 +288,11 @@ KerbExternalNameToMITPrinc(KERB_EXTERNAL_NAME *msprinc, WCHAR *realm, krb5_conte
     }
     wcscat(princbuf, L"@");
     wcscat(princbuf, realm);
-    UnicodeToANSI(princbuf, aname, sizeof(aname));
-    krb5_parse_name(context, aname, principal);
+    if (UnicodeToANSI(princbuf, aname, sizeof(aname))) {
+        krb5_parse_name(context, aname, principal);
+        return TRUE;
+    }
+    return FALSE;
 }
 
 static time_t
@@ -319,18 +333,25 @@ MSFlagsToMITFlags(ULONG msflags, ULONG *mitflags)
     *mitflags=msflags;
 }
 
-static void
+static BOOL
 MSTicketToMITTicket(KERB_EXTERNAL_TICKET *msticket, krb5_context context, krb5_data *ticket)
 {
-    krb5_data tmpdata, *newdata;
+    krb5_data tmpdata, *newdata = 0;
+    krb5_error_code rc;
+
     tmpdata.magic=KV5M_DATA;
     tmpdata.length=msticket->EncodedTicketSize;
     tmpdata.data=msticket->EncodedTicket;
 
     // this is ugly and will break krb5_free_data() 
     // now that this is being done within the library it won't break krb5_free_data()
-    krb5_copy_data(context, &tmpdata, &newdata);
+    rc = krb5_copy_data(context, &tmpdata, &newdata);
+    if (rc)
+        return FALSE;
+    
     memcpy(ticket, newdata, sizeof(krb5_data));
+    krb5_xfree(newdata);
+    return TRUE;
 }
 
 /*
@@ -375,7 +396,7 @@ PreserveInitialTicketIdentity(void)
 }
 
 
-static void
+static BOOL
 MSCredToMITCred(KERB_EXTERNAL_TICKET *msticket, UNICODE_STRING ClientRealm, 
                 krb5_context context, krb5_creds *creds)
 {
@@ -386,27 +407,24 @@ MSCredToMITCred(KERB_EXTERNAL_TICKET *msticket, UNICODE_STRING ClientRealm,
     // construct Client Principal
     wcsncpy(wrealm, ClientRealm.Buffer, ClientRealm.Length/sizeof(WCHAR));
     wrealm[ClientRealm.Length/sizeof(WCHAR)]=0;
-    KerbExternalNameToMITPrinc(msticket->ClientName, wrealm, context, &creds->client);
+    if (!KerbExternalNameToMITPrinc(msticket->ClientName, wrealm, context, &creds->client))
+        return FALSE;
 
     // construct Service Principal
     wcsncpy(wrealm, msticket->DomainName.Buffer,
             msticket->DomainName.Length/sizeof(WCHAR));
     wrealm[msticket->DomainName.Length/sizeof(WCHAR)]=0;
-    KerbExternalNameToMITPrinc(msticket->ServiceName, wrealm, context, &creds->server);
+    if (!KerbExternalNameToMITPrinc(msticket->ServiceName, wrealm, context, &creds->server))
+        return FALSE;
     MSSessionKeyToMITKeyblock(&msticket->SessionKey, context, 
                               &creds->keyblock);
     MSFlagsToMITFlags(msticket->TicketFlags, &creds->ticket_flags);
     creds->times.starttime=FileTimeToUnixTime(&msticket->StartTime);
     creds->times.endtime=FileTimeToUnixTime(&msticket->EndTime);
     creds->times.renew_till=FileTimeToUnixTime(&msticket->RenewUntil);
+    creds->addresses = NULL;
 
-    /* MS Tickets are addressless.  MIT requires an empty address
-     * not a NULL list of addresses.
-     */
-    creds->addresses = (krb5_address **)malloc(sizeof(krb5_address *));
-    memset(creds->addresses, 0, sizeof(krb5_address *));
-
-    MSTicketToMITTicket(msticket, context, &creds->ticket);
+    return MSTicketToMITTicket(msticket, context, &creds->ticket);
 }
 
 static BOOL
@@ -498,6 +516,9 @@ does_retrieve_ticket_cache_ticket (void)
 
        if (FAILED(Status) || FAILED(SubStatus)) {
            if ( SubStatus == STATUS_NOT_SUPPORTED )
+               /* The combination of the two CacheOption flags 
+                * is not supported; therefore, the new flag is supported 
+                */
                fCachesTicket = TRUE;
        }
        fChecked = TRUE;
@@ -505,7 +526,6 @@ does_retrieve_ticket_cache_ticket (void)
 
    return fCachesTicket;
 }
-
 
 static DWORD
 ConcatenateUnicodeStrings(UNICODE_STRING *pTarget, UNICODE_STRING Source1, UNICODE_STRING Source2)
@@ -709,7 +729,6 @@ PurgeAllTickets(HANDLE LogonHandle, ULONG  PackageId)
     return TRUE;
 }
 
-
 static BOOL
 PurgeTicket2000( HANDLE LogonHandle, ULONG  PackageId, 
                  krb5_context context, krb5_creds *cred )
@@ -717,8 +736,8 @@ PurgeTicket2000( HANDLE LogonHandle, ULONG  PackageId,
     NTSTATUS Status = 0;
     NTSTATUS SubStatus = 0;
     KERB_PURGE_TKT_CACHE_REQUEST * pPurgeRequest;
-    DWORD dwRequestLen = sizeof(KERB_PURGE_TKT_CACHE_REQUEST) + 1024;
-    char * sname, * srealm = NULL;
+    DWORD dwRequestLen = sizeof(KERB_PURGE_TKT_CACHE_REQUEST) + 2048;
+    char * sname = NULL, * srealm = NULL;
 
     if (krb5_unparse_name(context, cred->server, &sname))
         return FALSE;
@@ -736,12 +755,12 @@ PurgeTicket2000( HANDLE LogonHandle, ULONG  PackageId,
     pPurgeRequest->LogonId.LowPart = 0;
     pPurgeRequest->LogonId.HighPart = 0;
     pPurgeRequest->ServerName.Buffer = (PWSTR)(((CHAR *)pPurgeRequest)+sizeof(KERB_PURGE_TKT_CACHE_REQUEST));
-    pPurgeRequest->ServerName.Length = strlen(sname);
+    pPurgeRequest->ServerName.Length = strlen(sname)*sizeof(WCHAR);
     pPurgeRequest->ServerName.MaximumLength = 256;
     ANSIToUnicode(sname, pPurgeRequest->ServerName.Buffer,
                   pPurgeRequest->ServerName.MaximumLength);
     pPurgeRequest->RealmName.Buffer = (PWSTR)(((CHAR *)pPurgeRequest)+sizeof(KERB_PURGE_TKT_CACHE_REQUEST)+512);
-    pPurgeRequest->RealmName.Length = strlen(srealm);
+    pPurgeRequest->RealmName.Length = strlen(srealm)*sizeof(WCHAR);
     pPurgeRequest->RealmName.MaximumLength = 256;
     ANSIToUnicode(srealm, pPurgeRequest->RealmName.Buffer,
                   pPurgeRequest->RealmName.MaximumLength);
@@ -771,9 +790,9 @@ PurgeTicketXP( HANDLE LogonHandle, ULONG  PackageId,
     NTSTATUS Status = 0;
     NTSTATUS SubStatus = 0;
     KERB_PURGE_TKT_CACHE_EX_REQUEST * pPurgeRequest;
-    DWORD dwRequestLen = sizeof(KERB_PURGE_TKT_CACHE_EX_REQUEST) + 2048;
-    char * cname, * crealm = NULL;
-    char * sname, * srealm = NULL;
+    DWORD dwRequestLen = sizeof(KERB_PURGE_TKT_CACHE_EX_REQUEST) + 4096;
+    char * cname = NULL, * crealm = NULL;
+    char * sname = NULL, * srealm = NULL;
 
     if (krb5_unparse_name(context, cred->client, &cname))
         return FALSE;
@@ -801,25 +820,25 @@ PurgeTicketXP( HANDLE LogonHandle, ULONG  PackageId,
     pPurgeRequest->LogonId.HighPart = 0;
     pPurgeRequest->Flags = 0;
     pPurgeRequest->TicketTemplate.ClientName.Buffer = (PWSTR)((CHAR *)pPurgeRequest + sizeof(KERB_PURGE_TKT_CACHE_EX_REQUEST));
-    pPurgeRequest->TicketTemplate.ClientName.Length = strlen(cname);
+    pPurgeRequest->TicketTemplate.ClientName.Length = strlen(cname)*sizeof(WCHAR);
     pPurgeRequest->TicketTemplate.ClientName.MaximumLength = 256;
     ANSIToUnicode(cname, pPurgeRequest->TicketTemplate.ClientName.Buffer,
                   pPurgeRequest->TicketTemplate.ClientName.MaximumLength);
 
     pPurgeRequest->TicketTemplate.ClientRealm.Buffer = (PWSTR)(((CHAR *)pPurgeRequest)+sizeof(KERB_PURGE_TKT_CACHE_EX_REQUEST) + 512);
-    pPurgeRequest->TicketTemplate.ClientRealm.Length = strlen(crealm);
+    pPurgeRequest->TicketTemplate.ClientRealm.Length = strlen(crealm)*sizeof(WCHAR);
     pPurgeRequest->TicketTemplate.ClientRealm.MaximumLength = 256;
     ANSIToUnicode(crealm, pPurgeRequest->TicketTemplate.ClientRealm.Buffer,
                   pPurgeRequest->TicketTemplate.ClientRealm.MaximumLength);
 
     pPurgeRequest->TicketTemplate.ServerName.Buffer = (PWSTR)(((CHAR *)pPurgeRequest)+sizeof(KERB_PURGE_TKT_CACHE_EX_REQUEST) + 1024);
-    pPurgeRequest->TicketTemplate.ServerName.Length = strlen(sname);
+    pPurgeRequest->TicketTemplate.ServerName.Length = strlen(sname)*sizeof(WCHAR);
     pPurgeRequest->TicketTemplate.ServerName.MaximumLength = 256;
     ANSIToUnicode(sname, pPurgeRequest->TicketTemplate.ServerName.Buffer,
                   pPurgeRequest->TicketTemplate.ServerName.MaximumLength);
 
     pPurgeRequest->TicketTemplate.ServerRealm.Buffer = (PWSTR)(((CHAR *)pPurgeRequest)+sizeof(KERB_PURGE_TKT_CACHE_EX_REQUEST) + 1536);
-    pPurgeRequest->TicketTemplate.ServerRealm.Length = strlen(srealm);
+    pPurgeRequest->TicketTemplate.ServerRealm.Length = strlen(srealm)*sizeof(WCHAR);
     pPurgeRequest->TicketTemplate.ServerRealm.MaximumLength = 256;
     ANSIToUnicode(srealm, pPurgeRequest->TicketTemplate.ServerRealm.Buffer,
                   pPurgeRequest->TicketTemplate.ServerRealm.MaximumLength);
@@ -846,7 +865,6 @@ PurgeTicketXP( HANDLE LogonHandle, ULONG  PackageId,
         return FALSE;
     return TRUE;
 }
-
 
 /* 
  * A simple function to determine if there is an exact match between two tickets
@@ -1381,9 +1399,9 @@ GetMSCacheTicketFromCacheInfoW2K( HANDLE LogonHandle, ULONG PackageId,
      * to us.
      */
     if ( tktinfo->TicketFlags & KERB_TICKET_FLAGS_initial )
-        (*ticket)->TicketFlags &= KERB_TICKET_FLAGS_initial;
-    return(TRUE);
+        (*ticket)->TicketFlags |= KERB_TICKET_FLAGS_initial;
 
+    return(TRUE);
 }
 
 static BOOL
@@ -1439,8 +1457,15 @@ GetMSCacheTicketFromCacheInfoXP( HANDLE LogonHandle, ULONG PackageId,
     
     /* otherwise return ticket */
     *ticket = &(pTicketResponse->Ticket);
-    return(TRUE);
+    
+    /* set the initial flag if we were attempting to retrieve one
+     * because Windows won't necessarily return the initial ticket
+     * to us.
+     */
+    if ( tktinfo->TicketFlags & KERB_TICKET_FLAGS_initial )
+        (*ticket)->TicketFlags |= KERB_TICKET_FLAGS_initial;
 
+    return(TRUE);
 }
 
 static krb5_error_code KRB5_CALLCONV krb5_lcc_close
@@ -1539,21 +1564,10 @@ krb5_lcc_resolve (krb5_context context, krb5_ccache *id, const char *residual)
     HANDLE LogonHandle;
     ULONG  PackageId;
     KERB_EXTERNAL_TICKET *msticket;
+    krb5_error_code retval = KRB5_OK;
 
     if (!is_windows_2000())
         return KRB5_FCC_NOFILE;
-
-#ifdef COMMENT
-    /* In at least one case on Win2003 it appears that it is possible 
-     * for the logon session to be authenticated via NTLM and yet for
-     * there to be Kerberos credentials obtained by the LSA on behalf
-     * of the logged in user.  Therefore, we are removing this test
-     * which was meant to avoid the need to perform GetMSTGT() when
-     * there was no possibility of credentials being found.
-     */
-    if (!IsKerberosLogon())
-        return KRB5_FCC_NOFILE;
-#endif
 
     if (!PackageConnectLookup(&LogonHandle, &PackageId))
         return KRB5_FCC_NOFILE;
@@ -1594,10 +1608,12 @@ krb5_lcc_resolve (krb5_context context, krb5_ccache *id, const char *residual)
     if (GetMSTGT(context, data->LogonHandle, data->PackageId, &msticket, FALSE)) {
         /* convert the ticket */
         krb5_creds creds;
-        MSCredToMITCred(msticket, msticket->DomainName, context, &creds);
+        if (!MSCredToMITCred(msticket, msticket->DomainName, context, &creds))
+            retval = KRB5_FCC_INTERNAL;
         LsaFreeReturnBuffer(msticket);
 
-        krb5_copy_principal(context, creds.client, &data->princ);
+        if (retval == KRB5_OK)
+            krb5_copy_principal(context, creds.client, &data->princ);
         krb5_free_cred_contents(context,&creds);
     } else if (!does_retrieve_ticket_cache_ticket()) {
         krb5_xfree(data->cc_name);
@@ -1612,23 +1628,50 @@ krb5_lcc_resolve (krb5_context context, krb5_ccache *id, const char *residual)
      * if cache is non-existent/unusable 
      */
     *id = lid;
-    return KRB5_OK;
+    return retval;
 }
 
 /*
- *  return success although we do not do anything
- *  perhaps we could purge all existing tickets but that is 
- *  probably not wise
- */
+*  return success although we do not do anything
+*  We should delete all tickets belonging to the specified principal
+*/
+
+static krb5_error_code KRB5_CALLCONV
+krb5_lcc_remove_cred(krb5_context context, krb5_ccache id, krb5_flags flags,
+                     krb5_creds *creds);
+
 static krb5_error_code KRB5_CALLCONV
 krb5_lcc_initialize(krb5_context context, krb5_ccache id, krb5_principal princ)
 {
+    krb5_cc_cursor cursor;
+    krb5_error_code code;
+    krb5_creds cred;
+
     if (!is_windows_2000())
         return KRB5_FCC_NOFILE;
 
-    return KRB5_OK;
-}
+    code = krb5_cc_start_seq_get(context, id, &cursor);
+    if (code) {
+        if (code == KRB5_CC_NOTFOUND)
+            return KRB5_OK;
+        return code;
+    }
 
+    while ( !(code = krb5_cc_next_cred(context, id, &cursor, &cred)) )
+    {
+        if ( krb5_principal_compare(context, princ, cred.client) ) {
+            code = krb5_lcc_remove_cred(context, id, 0, &cred);
+        }
+        krb5_free_cred_contents(context, &cred);
+    }
+
+    if (code == KRB5_CC_END || code == KRB5_CC_NOTFOUND)
+    {
+        krb5_cc_end_seq_get(context, id, &cursor);
+        return KRB5_OK;
+    }
+    return code;
+}
 
 /*
  * Modifies:
@@ -1677,8 +1720,8 @@ krb5_lcc_destroy(krb5_context context, krb5_ccache id)
     if (id) { 
         data = (krb5_lcc_data *) id->data;
 
-		return PurgeAllTickets(data->LogonHandle, data->PackageId) ? KRB5_OK : KRB5_FCC_INTERNAL;
-    }
+        return PurgeAllTickets(data->LogonHandle, data->PackageId) ? KRB5_OK : KRB5_FCC_INTERNAL;
+    }   
     return KRB5_FCC_INTERNAL;
 }
 
@@ -1716,7 +1759,7 @@ krb5_lcc_start_seq_get(krb5_context context, krb5_ccache id, krb5_cc_cursor *cur
     if (!GetMSTGT(context, data->LogonHandle, data->PackageId, &lcursor->mstgt, TRUE)) {
         free(lcursor);
         *cursor = 0;
-        return KRB5_FCC_INTERNAL;
+        return KRB5_CC_NOTFOUND;
     }
 
     if ( is_windows_xp() ) {
@@ -1817,12 +1860,14 @@ krb5_lcc_next_cred(krb5_context context, krb5_ccache id, krb5_cc_cursor *cursor,
 
     /* convert the ticket */
     if ( is_windows_xp() ) {
-        MSCredToMITCred(msticket, lcursor->response.xp->Tickets[lcursor->index-1].ClientRealm, context, creds);
+        if (!MSCredToMITCred(msticket, lcursor->response.xp->Tickets[lcursor->index-1].ClientRealm, context, creds))
+            retval = KRB5_FCC_INTERNAL;
     } else {
-        MSCredToMITCred(msticket, lcursor->mstgt->DomainName, context, creds);
+        if (!MSCredToMITCred(msticket, lcursor->mstgt->DomainName, context, creds))
+            retval = KRB5_FCC_INTERNAL;
     }
     LsaFreeReturnBuffer(msticket);
-    return KRB5_OK;
+    return retval;
 }
 
 /*
@@ -1910,7 +1955,6 @@ static krb5_error_code KRB5_CALLCONV
 krb5_lcc_get_principal(krb5_context context, krb5_ccache id, krb5_principal *princ)
 {
     krb5_lcc_data *data = (krb5_lcc_data *)id->data;
-    krb5_error_code kret = KRB5_OK;
 
     if (!is_windows_2000())
         return KRB5_FCC_NOFILE;
@@ -1926,7 +1970,11 @@ krb5_lcc_get_principal(krb5_context context, krb5_ccache id, krb5_principal *pri
         if (GetMSTGT(context, data->LogonHandle, data->PackageId, &msticket, FALSE)) {
             /* convert the ticket */
             krb5_creds creds;
-            MSCredToMITCred(msticket, msticket->DomainName, context, &creds);
+            if (!MSCredToMITCred(msticket, msticket->DomainName, context, &creds))
+            {
+                LsaFreeReturnBuffer(msticket);
+                return KRB5_FCC_INTERNAL;
+            }
             LsaFreeReturnBuffer(msticket);
 
             krb5_copy_principal(context, creds.client, &data->princ);
@@ -1945,7 +1993,7 @@ krb5_lcc_retrieve(krb5_context context, krb5_ccache id, krb5_flags whichfields,
     krb5_error_code kret = KRB5_OK;
     krb5_lcc_data *data = (krb5_lcc_data *)id->data;
     KERB_EXTERNAL_TICKET *msticket = 0, *mstgt = 0, *mstmp = 0;
-    krb5_creds * mcreds_noflags;
+    krb5_creds * mcreds_noflags = 0;
     krb5_creds   fetchcreds;
 
     if (!is_windows_2000())
@@ -1959,7 +2007,9 @@ krb5_lcc_retrieve(krb5_context context, krb5_ccache id, krb5_flags whichfields,
         return KRB5_OK;
     
     /* if not, we must try to get a ticket without specifying any flags or etypes */
-    krb5_copy_creds(context, mcreds, &mcreds_noflags);
+    kret = krb5_copy_creds(context, mcreds, &mcreds_noflags);
+    if (kret)
+        goto cleanup;
     mcreds_noflags->ticket_flags = 0;
     mcreds_noflags->keyblock.enctype = 0;
 
@@ -1972,8 +2022,6 @@ krb5_lcc_retrieve(krb5_context context, krb5_ccache id, krb5_flags whichfields,
     kret = krb5_cc_retrieve_cred_default (context, id, whichfields, mcreds, creds);
     if ( !kret )
         goto cleanup;
-
-
 
     /* if not, obtain a ticket using the request flags and enctype even though it may not
      * be stored in the LSA cache for future use.
@@ -1993,13 +2041,17 @@ krb5_lcc_retrieve(krb5_context context, krb5_ccache id, krb5_flags whichfields,
         if ( PreserveInitialTicketIdentity() )
             GetMSTGT(context, data->LogonHandle, data->PackageId, &mstgt, FALSE);
 
-        MSCredToMITCred(msticket, mstgt ? mstgt->DomainName : msticket->DomainName, context, &fetchcreds);
+        if (!MSCredToMITCred(msticket, mstgt ? mstgt->DomainName : msticket->DomainName, context, &fetchcreds))
+        {
+            kret = KRB5_FCC_INTERNAL;
+            goto cleanup;
+        }
     } else {
         /* We can obtain the correct client realm for a ticket by walking the
          * cache contents until we find the matching service ticket.
          */
         PKERB_QUERY_TKT_CACHE_EX_RESPONSE pResponse = 0;
-        int i;
+        unsigned int i;
 
         if (!GetQueryTktCacheResponseXP( data->LogonHandle, data->PackageId, &pResponse)) {
             kret = KRB5_FCC_INTERNAL;
@@ -2019,7 +2071,12 @@ krb5_lcc_retrieve(krb5_context context, krb5_ccache id, krb5_flags whichfields,
             mstmp = 0;
         }
 
-        MSCredToMITCred(msticket, mstmp ? pResponse->Tickets[i].ClientRealm : msticket->DomainName, context, &fetchcreds);
+        if (!MSCredToMITCred(msticket, mstmp ? pResponse->Tickets[i].ClientRealm : msticket->DomainName, context, &fetchcreds))
+        {
+            LsaFreeReturnBuffer(pResponse);
+            kret = KRB5_FCC_INTERNAL;
+            goto cleanup;
+        }
         LsaFreeReturnBuffer(pResponse);
     }
 
@@ -2061,7 +2118,7 @@ krb5_lcc_store(krb5_context context, krb5_ccache id, krb5_creds *creds)
     krb5_error_code kret = KRB5_OK;
     krb5_lcc_data *data = (krb5_lcc_data *)id->data;
     KERB_EXTERNAL_TICKET *msticket = 0, *msticket2 = 0;
-    krb5_creds * creds_noflags;
+    krb5_creds * creds_noflags = 0;
 
     if (!is_windows_2000())
         return KRB5_FCC_NOFILE;
@@ -2069,12 +2126,14 @@ krb5_lcc_store(krb5_context context, krb5_ccache id, krb5_creds *creds)
     /* If not, lets try to obtain a matching ticket from the KDC */
     if ( creds->ticket_flags != 0 && creds->keyblock.enctype != 0 ) {
         /* if not, we must try to get a ticket without specifying any flags or etypes */
-        krb5_copy_creds(context, creds, &creds_noflags);
-        creds_noflags->ticket_flags = 0;
-        creds_noflags->keyblock.enctype = 0;
+        kret = krb5_copy_creds(context, creds, &creds_noflags);
+        if (kret == 0) {
+            creds_noflags->ticket_flags = 0;
+            creds_noflags->keyblock.enctype = 0;
 
-        GetMSCacheTicketFromMITCred(data->LogonHandle, data->PackageId, context, creds_noflags, &msticket2);
-        krb5_free_creds(context, creds_noflags);
+            GetMSCacheTicketFromMITCred(data->LogonHandle, data->PackageId, context, creds_noflags, &msticket2);
+            krb5_free_creds(context, creds_noflags);
+        }
     }
 
     GetMSCacheTicketFromMITCred(data->LogonHandle, data->PackageId, context, creds, &msticket);
