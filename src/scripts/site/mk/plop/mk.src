@@ -1,0 +1,43 @@
+#!perl -w
+
+sub mk_src_do
+{
+    my $origdir = shift || die;
+    my $tag = shift || die;
+    my $zdir = shift || die;
+
+    my $core =
+      [
+       'pismere/scripts/build.pl',
+       'pismere/scripts/binplace.pl',
+       'pismere/scripts/tee.pl',
+       'pismere/scripts/build',
+       'pismere/scripts/site/mk.pl',
+       'pismere/scripts/site/mk.pm',
+       'pismere/scripts/site/mk/plop',
+       '-l pismere/athena',
+       '-l pismere/athena/util',
+       '-l pismere/athena/util/lib',
+       'pismere/athena/util/plop',
+       'pismere/athena/util/lib/about',
+       'pismere/athena/util/lib/getopt',
+       'pismere/athena/util/lib/gftp',
+      ];
+
+    my $site =
+      [
+      ];
+
+    foreach my $m (@$core) {
+	my_system("cvs -d :kserver:cvs.mit.edu:/cvs/pismere co -r $tag $m")
+	  || die;
+    }
+
+    my_move("pismere", $zdir) || die;
+    for my $i (0..$#{$site}) {
+	$$site[$i] =~ s/^pismere/$zdir/;
+    }
+    return $site;
+}
+
+1;

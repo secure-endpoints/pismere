@@ -1,0 +1,140 @@
+#!perl -w
+
+sub mk_src_do
+{
+    my $OPT = shift || die;
+    my $origdir = shift || die;
+    my $tag = shift || die;
+    my $zdir = shift || die;
+
+    # UN-COMMON
+    my $krb5_zip = shift;
+
+    my $cmd;
+    my $base;
+    my $dir;
+    my $ext;
+
+    my $gtag;
+    my $gtag_opt;
+
+    if ($krb5_zip) {
+	my $origdrive = my_getdrive($origdir);
+	my $drive = my_getdrive($krb5_zip);
+
+	if (!my_isabsolute($krb5_zip)) {
+	    $krb5_zip = "$origdir/$krb5_zip";
+	} elsif (!my_getdrive($krb5_zip)) {
+	    $krb5_zip = my_getdrive($origdir).":".$krb5_zip;
+	}
+
+	die "Cannot find file: $krb5_zip\n" if (! -e $krb5_zip);
+
+	($cmd, $base, $dir, $ext) = mk_src_get_uncompress($krb5_zip);
+	if (!$cmd) {
+	    die "Invalid extension for $krb5_zip: $ext\n";
+	}
+    }
+
+    if ($krb5_zip) {
+	print "UNCOMPRESS FILE: $krb5_zip\n";
+	print "UNCOMPRESS COMMAND: $cmd\n";
+    } else {
+	$gtag = $OPT->{gtag}->{krb5};
+	if ($gtag) {
+	    $tag_opt = "-r $gtag" if $gtag;
+	    print "USING GRAFT: $gtag\n";
+	} else {
+	    print "USING GRAFT\n";
+	}
+    }
+
+    my_pause() if !$OPT->{nopause};
+
+    my $core =
+      [
+       '-l pismere/athena',
+       '-l pismere/athena/auth',
+       'pismere/athena/auth/krb4',
+       'pismere/athena/auth/krbcc',
+       'pismere/athena/auth/kuser',
+       'pismere/athena/auth/leash',
+       'pismere/athena/include',
+       'pismere/athena/util/loadfuncs',
+       'pismere/athena/util/lib/delaydlls',
+       'pismere/athena/util/lib/getopt',
+       'pismere/athena/wshelper',
+       '-l pismere/doc',
+       'pismere/doc/kerberos',
+       '-l pismere/scripts',
+       'pismere/scripts/build',
+       '-l pismere/scripts/site',
+       'pismere/scripts/site/graft/krb5',
+       'pismere/scripts/site/mk/kfw',
+      ];
+
+    my $site =
+      [
+       'pismere/athena/util/lib/afscompat',
+      ];
+
+    foreach my $m (@$core) {
+	my_system("cvs -d :kserver:cvs.mit.edu:/cvs/pismere co -r $tag $m")
+	  || die;
+    }
+    foreach my $m (@$site) {
+	my_system("cvs -d :kserver:cvs.mit.edu:/cvs/pismere co -r $tag $m")
+	  || die;
+    }
+
+    if ($krb5_zip) {
+	pushd("pismere/athena/auth");
+	my_system($cmd);
+	print "Moving: $base --> krb5\n";
+	my_move($base, 'krb5') || die;
+	popd();
+	my_system("perl -w pismere/scripts/site/graft.pl --update -s krb5")
+	  || die;
+    } else {
+	my_system("perl -w pismere/scripts/site/graft.pl $tag_opt krb5") || die;
+    }
+    my_copy("pismere/doc/kerberos/README", "pismere/.") || die;
+    #my_copy("pismere/scripts/site/mk/kfw/version.rc", "pismere/athena/auth/krb5/src/windows/.") || die;
+    my_move("pismere", $zdir) || die;
+    for my $i (0..$#{$site}) {
+	$$site[$i] =~ s/^pismere/$zdir/;
+    }
+    return $site;
+}
+
+sub mk_src_get_uncompress
+{
+    my $filename = shift || die;
+
+
+    my $emap =
+      {
+       '\.tar.gz' => 'gzip -d -c $ | tar xv',
+       '\.zip' => 'unzip $',
+      };
+
+    my $base;
+    my $dir;
+    my $ext;
+    my $cmd;
+
+    foreach my $e (keys %$emap) {
+	($base, $dir, $ext) = fileparse($filename, $e);
+	$cmd = $emap->{$e};
+	last if $ext;
+    }
+    if (!$ext) {
+	($base, $dir, $ext) = fileparse($filename, '\.[^\.]*');
+	return (0, $base, $dir, $ext);
+    }
+
+    $cmd =~ s/\$/$filename/g;
+    return ($cmd, $base, $dir, $ext);
+}
+
+1;

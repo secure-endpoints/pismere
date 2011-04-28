@@ -108,7 +108,7 @@ main(argc, argv)
 
     progname = GET_PROGNAME(argv[0]);
 
-    dynamic_load(&got_k4, &got_k5);
+    dynamic_load(&got_k4, &got_k5, NULL);
 
     while ((c = getopt(argc, argv, "54qc:")) != -1) {
 	switch (c) {

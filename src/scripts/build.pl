@@ -16,6 +16,7 @@ $0 = fileparse($0);
 my $OPT = { logfile => 'build.pl.log' };
 my $DIR_TOP = File::Spec->catfile($FindBin::Bin, '..');
 
+
 my $DIR_ATHENA = File::Spec->catfile($DIR_TOP, 'athena');
 my $DIR_ATHENA_INC = File::Spec->catfile($DIR_TOP, 'athena', 'include');
 my $DIR_SCRIPTS = File::Spec->catfile($DIR_TOP, 'scripts');
@@ -87,6 +88,7 @@ sub main
     $ENV{BUILD_MAKEFILE_INC} = File::Spec->catfile($DIR_INC, 'Makefile.inc');
     $ENV{BINPLACE_CMD} = makescript('binplace.pl');
     $ENV{WHICH_CMD} = makescript('which.pl');
+    
     $ENV{BUILD_INCLUDE} = join(';',
 			       pismere_dirify($DIR_ATHENA_INC),
 			       (-d $DIR_SITE) ? pismere_dirify($DIR_SITE) :(),

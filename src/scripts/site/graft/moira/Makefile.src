@@ -1,0 +1,39 @@
+TARGETTYPE=NONE
+
+AWK = gawk
+EH  = util/et/et_h.awk
+EC  = util/et/et_c.awk
+
+# Make sure to use forward slashes so awk deals:
+# Make sure these match with the _FILES below:
+H_DIR=include
+C_DIR=lib
+ET_DIR=lib
+
+ET_FILES=$(ET_DIR)/krb_et.et $(ET_DIR)/mr_et.et $(ET_DIR)/ureg_err.et
+C_FILES=$(ET_FILES:.et=.c)
+C_FILES=$(C_FILES:lib/=lib/)
+H_FILES=$(ET_FILES:.et=.h)
+H_FILES=$(H_FILES:lib/=include/)
+
+{$(ET_DIR)/}.et{$(H_DIR)/}.h:
+	$(AWK) -f $(EH) outfile=$@ $<
+
+{$(ET_DIR)/}.et{$(C_DIR)/}.c:
+	$(AWK) -f $(EC) outfile=$@ $<
+
+.SUFFIXES: .et
+
+awk-check:
+	@echo Checking for existence of $(AWK)...
+	@$(WHICH_CMD) $(AWK)
+	@echo $(AWK) found...
+
+all:: awk-check $(H_FILES) $(C_FILES)
+
+# Convert to backslashes for shell:
+clean::
+	-del $(H_FILES:/=\) $(C_FILES:/=\)
+
+$(H_FILES): $(EH)
+$(C_FILES): $(EC)

@@ -145,7 +145,11 @@ void CLeashProperties::OnCheckUseKrb4()
 
 void CLeashProperties::OnHelp() 
 {
+#ifdef CALL_HTMLHELP
+    AfxGetApp()->HtmlHelp(HID_LEASH_PROPERTIES_COMMAND); 	
+#else
     AfxGetApp()->WinHelp(HID_LEASH_PROPERTIES_COMMAND); 	
+#endif
 }
 
 void CLeashProperties::OnButtonResetDefaults()

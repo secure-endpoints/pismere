@@ -1,0 +1,21 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=mrcomerr
+TARGETTYPE=LIB
+TARGETSS=console
+
+OBJS= \
+	$(O)\com_err.obj \
+	$(O)\error_message.obj \
+	$(O)\et_name.obj \
+	$(O)\init_et.obj
+
+USE_DEFAULTLIB=1
+
+INCLUDES=..\..\include
+
+USE_LIBC_DLL=1
+
+NO_PLACE=1

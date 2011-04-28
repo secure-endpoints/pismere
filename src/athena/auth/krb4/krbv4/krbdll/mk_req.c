@@ -126,10 +126,14 @@ krb_mk_req(authent,service,instance,realm,checksum)
   	if (krb_ap_req_debug){
   	    kdebug_ap("problem with krb_get_tf_realm, %ld \n", retval);
   	}
-        return(retval);
+		if (retval == NO_TKT_FIL)
+			retval = RET_NOTKT;
+		else
+			return(retval);
     }
     
-    retval = krb_get_cred(service,instance,realm,&cr);
+	if (retval == KSUCCESS)
+		retval = krb_get_cred(service,instance,realm,&cr);
     
     if (retval == RET_NOTKT ) {
   	if (retval = get_ad_tkt(service,instance,realm,lifetime)){

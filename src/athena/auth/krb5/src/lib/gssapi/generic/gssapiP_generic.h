@@ -24,7 +24,7 @@
 #define _GSSAPIP_GENERIC_H_
 
 /*
- * $Id: gssapiP_generic.h,v 1.34 2003/03/06 20:26:39 lxs Exp $
+ * $Id: gssapiP_generic.h,v 1.34.2.1 2003/12/16 02:56:16 tlyu Exp $
  */
 
 #if defined(_WIN32)
@@ -39,6 +39,9 @@
 
 #include "gssapi_err_generic.h"
 #include <errno.h>
+
+#include "k5-platform.h"
+typedef UINT64_TYPE gssint_uint64;
 
 /** helper macros **/
 
@@ -159,8 +162,9 @@ void g_make_token_header (gss_OID mech, unsigned int body_size,
 			  unsigned char **buf, int tok_type);
 
 gss_int32 g_verify_token_header (gss_OID mech, unsigned int *body_size,
-			  unsigned char **buf, int tok_type, 
-				 unsigned int toksize_in);
+				 unsigned char **buf, int tok_type, 
+				 unsigned int toksize_in,
+				 int wrapper_required);
 
 OM_uint32 g_display_major_status (OM_uint32 *minor_status,
 				 OM_uint32 status_value,
@@ -171,10 +175,10 @@ OM_uint32 g_display_com_err_status (OM_uint32 *minor_status,
 				   OM_uint32 status_value,
 				   gss_buffer_t status_string);
 
-gss_int32 g_order_init (void **queue, OM_uint32 seqnum,
-				  int do_replay, int do_sequence);
+gss_int32 g_order_init (void **queue, gssint_uint64 seqnum,
+				  int do_replay, int do_sequence, int wide);
 
-gss_int32 g_order_check (void **queue, OM_uint32 seqnum);
+gss_int32 g_order_check (void **queue, gssint_uint64 seqnum);
 
 void g_order_free (void **queue);
 

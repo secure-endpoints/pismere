@@ -82,10 +82,14 @@ HINSTANCE  m_hKrb5DLL = 0;
 
 DECL_FUNC_PTR(Leash_kinit) = 0;
 DECL_FUNC_PTR(Leash_get_default_lifetime) = 0;
+DECL_FUNC_PTR(Leash_changepwd_dlg_ex) = 0;
+DECL_FUNC_PTR(Leash_kinit_dlg_ex) = 0;
 
 FUNC_INFO leash_fi[] = {
     MAKE_FUNC_INFO(Leash_kinit),
     MAKE_FUNC_INFO(Leash_get_default_lifetime),
+    MAKE_FUNC_INFO(Leash_changepwd_dlg_ex),
+    MAKE_FUNC_INFO(Leash_kinit_dlg_ex),
     END_FUNC_INFO
 };
 
@@ -1057,6 +1061,45 @@ GTGTPrivate(
 	
     if ((lKerror) || (bExpired == TRUE)) 
     {
+        if ( pLeash_kinit_dlg_ex && getenv("KERBEROSLOGIN_NEVER_PROMPT") == NULL ) {
+            LSH_DLGINFO_EX dlginfo;
+
+            GRAB_KERBEROS();
+
+            // copy in the existing username and realm
+            pTmp = calloc(1, strlen(szUserName) + strlen(szUserInst) + 2);
+            strcpy(pTmp, szUserName);
+            if (szUserName[0] != 0 && szUserInst[0] != 0)
+            {
+                strcat(pTmp, "/");
+                strcat(pTmp, szUserInst);
+            }
+
+            memset(&dlginfo, 0, sizeof(LSH_DLGINFO_EX));
+            dlginfo.size = sizeof(LSH_DLGINFO_EX);
+            dlginfo.dlgtype = DLGTYPE_PASSWD;
+            dlginfo.title = "KClient - Obtain Tickets";
+            dlginfo.username = pTmp;
+            dlginfo.realm = szRealm;
+            dlginfo.use_defaults = 1;
+
+            if (pLeash_kinit_dlg_ex(GetDesktopWindow(), &dlginfo)) {
+                // copy out the new username and realm
+                char * p = strchr(dlginfo.out.username, '/');
+                if ( p ) {
+                    *p++ = 0;
+                    strncpy(szUserInst, p, INST_SZ);
+                    szUserInst[INST_SZ-1] = 0;
+                }
+                strncpy(szUserName, dlginfo.out.username, ANAME_SZ);
+                szUserName[ANAME_SZ-1] = 0;
+                strncpy(szRealm, dlginfo.out.realm, REALM_SZ);
+                szRealm[REALM_SZ-1] = 0;
+            }
+
+            free(pTmp);
+            RELEASE_KERBEROS();
+        } else 
         // no credentials, or they have expired
         // loop if any error getting tgt (this may change)
         // but user can still cancel out
@@ -1977,50 +2020,87 @@ ChangePassword(
 
     if (GTGTPrivate(0) == TRUE) // get a TGT
     {
-        if (DialogBox(hInst, MAKEINTRESOURCE(IDD_CHANGEPASS), 
-                      NULL, ChangePasswordDialog) == TRUE)
-        {
-            // actually change the kerberos password
-            GRAB_KERBEROS();	
-            lKerror = lsh_changepwd((LPSTR)szNetID, (LPSTR)szPass, 
-                                    (LPSTR)szNewPass, (LPSTR)&hKadm_info);
-            RELEASE_KERBEROS();	
-            if (hKadm_info != 0)
+
+        if ( pLeash_changepwd_dlg_ex ) {
+            LSH_DLGINFO_EX dlginfo;
+            char    *pTmp;
+
+            GRAB_KERBEROS();
+
+            // copy in the existing username and realm
+            pTmp = calloc(1, strlen(szUserName) + strlen(szUserInst) + 2);
+            strcpy(pTmp, szUserName);
+            if (szUserInst[0] != 0)
             {
-                // It's a long story.
-                // we have to do this due to the way Leash is made.
-                GlobalUnlock (hKadm_info);
-                GlobalFree (hKadm_info) ;
+                strcat(pTmp, "/");
+                strcat(pTmp, szUserInst);
             }
-            if (lKerror)
-            {
-                // in case it bombed in krbv4win.dll
-                // XXX - what error is this???
-                if (lKerror == 11004)
-                {
-                    SetOSErrFromKError(lKerror);
-                    LoadString(hInst, IDS_PASSDOMAIN, szTemp, 255);
-                    MessageBox(NULL, (LPSTR)szTemp, (LPSTR)lpszMsgBoxTitle,
-                               MB_OK | MB_ICONEXCLAMATION);
-                }
-                else
-                    ErrorMsg (lKerror) ;
-                PassError (IDS_PASSNOTCHANGED);
+
+            memset(&dlginfo, 0, sizeof(LSH_DLGINFO_EX));
+            dlginfo.size = sizeof(LSH_DLGINFO_EX);
+            dlginfo.dlgtype = DLGTYPE_CHPASSWD;
+            dlginfo.title = "KClient - Change Password";
+            dlginfo.username = pTmp;
+            dlginfo.realm = szRealm;
+            dlginfo.use_defaults = 1;
+
+            if (pLeash_changepwd_dlg_ex(NULL, &dlginfo)) {
+                RELEASE_KERBEROS();
+                free(pTmp);
+                // success!!!
+                DASPrivate();
+                // hose all tickets
                 UNLOCK_REENTRY;
-                return (FALSE);
+                return (TRUE) ;
             }
-            // success!!!
-            DASPrivate();
-            // hose all tickets
-	    MessageBox(NULL, (LPSTR)"Your password has been changed.", 
-		       (LPSTR)"Password", MB_OK | MB_ICONINFORMATION);
-	    // erase passwords
-	    strset(szPass, '\0');
-	    strset(szNewPass, '\0');
-	    strset(szConfirmPass, '\0');
-	    UNLOCK_REENTRY;
-	    return (TRUE) ;
-	}
+            free(pTmp);
+            RELEASE_KERBEROS();
+        } else {
+            if (DialogBox(hInst, MAKEINTRESOURCE(IDD_CHANGEPASS), 
+                           NULL, ChangePasswordDialog) == TRUE)
+            {
+                // actually change the kerberos password
+                GRAB_KERBEROS();	
+                lKerror = lsh_changepwd((LPSTR)szNetID, (LPSTR)szPass, 
+                                         (LPSTR)szNewPass, (LPSTR)&hKadm_info);
+                RELEASE_KERBEROS();	
+                if (hKadm_info != 0)
+                {
+                    // It's a long story.
+                    // we have to do this due to the way Leash is made.
+                    GlobalUnlock (hKadm_info);
+                    GlobalFree (hKadm_info) ;
+                }
+                if (lKerror)
+                {
+                    // in case it bombed in krbv4win.dll
+                    // XXX - what error is this???
+                    if (lKerror == 11004)
+                    {
+                        SetOSErrFromKError(lKerror);
+                        LoadString(hInst, IDS_PASSDOMAIN, szTemp, 255);
+                        MessageBox(NULL, (LPSTR)szTemp, (LPSTR)lpszMsgBoxTitle,
+                                    MB_OK | MB_ICONEXCLAMATION);
+                    }
+                    else
+                        ErrorMsg (lKerror) ;
+                    PassError (IDS_PASSNOTCHANGED);
+                    UNLOCK_REENTRY;
+                    return (FALSE);
+                }
+                // success!!!
+                DASPrivate();
+                // hose all tickets
+                MessageBox(NULL, (LPSTR)"Your password has been changed.", 
+                            (LPSTR)"Password", MB_OK | MB_ICONINFORMATION);
+                // erase passwords
+                strset(szPass, '\0');
+                strset(szNewPass, '\0');
+                strset(szConfirmPass, '\0');
+                UNLOCK_REENTRY;
+                return (TRUE) ;
+            }
+        }
     }
 
     // error if we made it this far		

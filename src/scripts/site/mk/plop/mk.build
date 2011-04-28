@@ -1,0 +1,43 @@
+#!perl -w
+
+sub mk_build_do
+{
+    my $top = shift || die;
+
+    push(@ARGV, "--softdirs");
+    push(@ARGV, "BETA=1");
+    push(@ARGV, "BUILD_OFFICIAL=1");
+    print <<DATA;
+To build this, you need the KfW 2.1 SDK.
+You can get KfW 2.1 distributions via http://web.mit.edu/kerberos/.
+
+Once you have these, set the KFW_SDK environment variable to point to
+the base directory of the KFW 2.1 SDK (i.e., KFW_SDK=somepath\\kfw-2.1-sdk).
+This will get used to set the proper INCLUDE and LIB paths.  The INCLUDE path
+will have to have krb5, gssapi, and wshelper headers.
+
+You will also need MSVC++ 6.0 and Perl to build.
+DATA
+    if (!$ENV{KFW_SDK}) {
+	die "Need to define the KFW_SDK variable to point to the KfW 2.1 SDK.\n";
+    }
+    $ENV{INCLUDE}="$ENV{KFW_SDK}\\inc\\krb5;$ENV{KFW_SDK}\\inc\\krb5\\gssapi;$ENV{KFW_SDK}\\inc\\wshelper;$ENV{INCLUDE}";
+    $ENV{LIB}="$ENV{KFW_SDK}\\lib\\i386;$ENV{LIB}";
+    print <<DATA;
+
+Here are the settings detected:
+
+KFW_SDK=$ENV{KFW_SDK}
+
+Here are the resulting INCLUDE and LIB paths:
+
+INCLUDE=$ENV{INCLUDE}
+LIB=$ENV{LIB}
+
+If anything is wrong, press CTRL-C to abort, otherwise
+DATA
+    my_pause;
+    return "$top/athena";
+}
+
+1;

@@ -388,7 +388,7 @@ char *tkt_string();
 
 int gettimeofday(struct timeval *tv, struct timezone *tz);
 
-int PASCAL krb_sendauth(long, int, KTEXT_FP, char *, char *, char *,
+int PASCAL krb_sendauth(long, int, KTEXT, char *, char *, char *,
                         unsigned long, MSG_DAT *, CREDENTIALS *, 
                         Key_schedule *, struct sockaddr_in *, 
                         struct sockaddr_in FAR *, char *);

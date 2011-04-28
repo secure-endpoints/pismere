@@ -1,0 +1,17 @@
+TARGETTYPE=NONE
+
+!ifdef NODEBUG
+VCDBG=Release
+!else
+VCDBG=Debug
+!endif
+
+MAKECMD=$(MAKE) -$(MAKEFLAGS)
+
+all::
+	$(MAKECMD) all
+
+clean::
+	$(MAKECMD) clean
+
+PLACE=src\librpc\obj\$(VCDBG)\oncrpc.dll src\portmap\obj\$(VCDBG)\portmap.exe

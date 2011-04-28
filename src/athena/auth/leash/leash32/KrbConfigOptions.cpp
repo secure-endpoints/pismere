@@ -142,15 +142,15 @@ krb_get_krbhst(char* h, char* r, int n)
 
 BOOL CKrbConfigOptions::OnInitDialog() 
 {
-        m_initDefaultRealm = _T("");
-        m_newDefaultRealm = _T("");
-        m_noKrbFileError = FALSE;
-        m_noKrbhostWarning = FALSE;
-        m_dupEntriesError = FALSE;
-        m_profileError	= FALSE;
-        m_noRealm = FALSE;
+    m_initDefaultRealm = _T("");
+    m_newDefaultRealm = _T("");
+    m_noKrbFileError = FALSE;
+    m_noKrbhostWarning = FALSE;
+    m_dupEntriesError = FALSE;
+    m_profileError	= FALSE;
+    m_noRealm = FALSE;
 
-        CPropertyPage::OnInitDialog();
+    CPropertyPage::OnInitDialog();
 	
 	if (CLeashApp::m_hKrb4DLL && !CLeashApp::m_hKrb5DLL)
 	{  // Krb4 NOT krb5	
@@ -173,25 +173,15 @@ BOOL CKrbConfigOptions::OnInitDialog()
 			{
 				SetDlgItemText(IDC_EDIT_DEFAULT_REALM, KRB_REALM);
 				SetDlgItemText(IDC_EDIT_REALM_HOSTNAME, KRB_MASTER);
-				//CheckRadioButton(IDC_RADIO_ADMIN_SERVER, IDC_RADIO_NO_ADMIN_SERVER, IDC_RADIO_NO_ADMIN_SERVER);
 				m_initDefaultRealm = m_newDefaultRealm = KRB_REALM;
 			}
 			else
-			{ // check for Host
-				// don't use - would have to re-logon, on file location change, to use this function
-				//if (KFAILURE == pkrb_get_lrealm(krbRealm, 0))
-				//{
-				//	MessageBox("OnInitDialog::Can't locate Default Local Realm!", 
-				//		       "Error", MB_OK);
-				//}
-				//	
-		 
+			{ 
 				*(krbRealm + strlen(krbRealm) - 1) = 0;  
 				LPSTR pSpace = strchr(krbRealm, ' ');
 				if (pSpace)
 				  *pSpace = 0;
 				
-				//GetDlgItem(IDC_EDIT_DEFAULT_REALM)->SetWindowText(krbRealm);
 				m_initDefaultRealm = m_newDefaultRealm = krbRealm;
 					
 				memset(krbhst, '\0', sizeof(krbhst));
@@ -292,6 +282,44 @@ BOOL CKrbConfigOptions::OnInitDialog()
                 pprofile_init(filenames, &CLeashApp::m_krbv5_profile);
             }
 	    }
+
+        CHAR selRealm[REALM_SZ];
+        strcpy(selRealm, m_newDefaultRealm);
+        const char*  Section[] = {"realms", selRealm, "kdc", NULL}; 
+        const char** section = Section;	
+        char **values = NULL; 
+        char * value  = NULL;
+		
+        long retval = pprofile_get_values(CLeashApp::m_krbv5_profile, 
+                                           section, &values);
+	
+        if (!retval && values)
+            m_hostServer = *values;
+        else {
+            int dns_in_use = 0;
+            // Determine if we are using DNS for KDC lookups
+            retval = pprofile_get_string(CLeashApp::m_krbv5_profile, "libdefaults",
+                                          "dns_lookup_kdc", 0, 0, &value);
+            if (value == 0 && retval == 0)
+                retval = pprofile_get_string(CLeashApp::m_krbv5_profile, "libdefaults",
+                                              "dns_fallback", 0, 0, &value);
+            if (value == 0) {
+#if KRB5_DNS_LOOKUP_KDC
+                dns_in_use = 1;
+#else
+                dns_in_use = 0;
+#endif
+            } else {
+                dns_in_use = config_boolean_to_int(value);
+                pprofile_release_string(value);
+            }
+            if (dns_in_use)
+                m_hostServer = "DNS SRV record lookups will be used to find KDC";
+            else {
+                m_hostServer = "No KDC information available";
+            }
+        }
+        SetDlgItemText(IDC_EDIT_REALM_HOSTNAME, m_hostServer);
     }
 
 	// Set host and domain names in their Edit Boxes, respectively.
@@ -377,18 +405,13 @@ BOOL CKrbConfigOptions::OnApply()
 		const char*  Names[] = {"libdefaults", "default_realm", NULL}; 
 		const char** names = Names;	
 		
-		CHAR orgRealm[REALM_SZ];
-		CHAR selRealm[REALM_SZ];
-		GetDlgItemText(IDC_EDIT_DEFAULT_REALM, selRealm, sizeof(selRealm));
-		strcpy(orgRealm, m_initDefaultRealm);
-		
 		long retval = pprofile_update_relation(CLeashApp::m_krbv5_profile, 
-							names, orgRealm, selRealm);
+							names, m_initDefaultRealm, m_newDefaultRealm);
 	
 		if (retval) 
 		{
-			MessageBox("OnApply::There is on error, profile will not be saved!!!\
-                        \nIf this error persist, contact your administrator.", 
+			MessageBox("OnApply::The previous value cannot be found, the profile will not be saved!!!\
+                        \nIf this error persists after restarting Leash, contact your administrator.", 
 					   "Leash", MB_OK);
 			return TRUE;
 		}
@@ -415,20 +438,36 @@ void CKrbConfigOptions::OnSelchangeEditDefaultRealm()
 			const char*  Section[] = {"realms", selRealm, "kdc", NULL}; 
 			const char** section = Section;	
 			char **values = NULL; 
+			char * value  = NULL;
 		
 			long retval = pprofile_get_values(CLeashApp::m_krbv5_profile, 
 											   section, &values);
 	
-			if (retval)
-			{
-				MessageBox("OnSelchangeEditDefaultRealm::There is an error, profile will not be saved!!!\
-                            \nIf this error persist, contact your administrator.", 
-						   "Leash", MB_OK);
-				return;
-			}
-
-			if (values)
+			if (!retval && values)
 			  SetDlgItemText(IDC_EDIT_REALM_HOSTNAME, *values);
+			else {
+				int dns_in_use = 0;
+				// Determine if we are using DNS for KDC lookups
+				retval = pprofile_get_string(CLeashApp::m_krbv5_profile, "libdefaults",
+							                 "dns_lookup_kdc", 0, 0, &value);
+				if (value == 0 && retval == 0)
+					retval = pprofile_get_string(CLeashApp::m_krbv5_profile, "libdefaults",
+								                 "dns_fallback", 0, 0, &value);
+				if (value == 0) {
+#if KRB5_DNS_LOOKUP_KDC
+			        dns_in_use = 1;
+#else
+					dns_in_use = 0;
+#endif
+				} else {
+					dns_in_use = config_boolean_to_int(value);
+					pprofile_release_string(value);
+				}
+				if (dns_in_use)
+					SetDlgItemText(IDC_EDIT_REALM_HOSTNAME, "DNS SRV record lookups will be used to find KDC");
+				else
+					SetDlgItemText(IDC_EDIT_REALM_HOSTNAME, "No KDC information available");
+			}
 		}
 		else
 		{
@@ -507,7 +546,9 @@ void CKrbConfigOptions::ResetDefaultRealmComboBox()
 	
 	if (retval)
 	{
-		// This is not a fatal error if DNS KDC Lookup is being used.
+        m_hostServer = _T("");
+
+        // This is not a fatal error if DNS KDC Lookup is being used.
         // Determine the starting value for DNS KDC Lookup Checkbox
         if ( dns )
             return;
@@ -549,18 +590,14 @@ void CKrbConfigOptions::ResetDefaultRealmComboBox()
 		retval = pprofile_get_values(CLeashApp::m_krbv5_profile, 
 					     section, &values);
 
-		if (retval) 
-		{
-			m_hostServer = _T("");
-            if ( dns )
-                return;
-            m_profileError = TRUE;
-		}
-	
-		if (values)
-		{
-			m_hostServer = *values;
-			::SetDlgItemText(::GetForegroundWindow(), IDC_EDIT_REALM_HOSTNAME, m_hostServer);
+        if (!retval && values)
+            m_hostServer = *values;
+        else {
+            if (dns)
+                m_hostServer = "DNS SRV record lookups will be used to find KDC";
+            else {
+                m_hostServer = "No KDC information available";
+            }
 		}
 	}
 }

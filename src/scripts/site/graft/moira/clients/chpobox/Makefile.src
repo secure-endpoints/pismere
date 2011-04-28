@@ -1,0 +1,22 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=chpobox
+TARGETTYPE=EXE
+TARGETSS=console
+
+OBJS= \
+	$(O)\chpobox.obj
+
+DEP_LIBS=..\..\util\et\$(O)\mrcomerr.lib ..\..\lib\$(O)\libmoira.lib ..\lib\$(O)\libmrclient.lib
+
+USE_DEFAULTLIB=1
+LIBS=$(DEP_LIBS) krbv4w32.lib wshelp32.lib ws2_32.lib shlwapi.lib getopt.lib
+
+LIB_PATHS=$(PISMERE)\athena\auth\krb4\krbv4\krbdll\$(O);$(PISMERE)\athena\wshelper\wshelper\$(O);$(PISMERE)\athena\util\lib\getopt\$(O)
+INCLUDES=..\..\include;..\..\util\et;$(PISMERE)\athena\util\lib\getopt
+
+USE_LIBC_DLL=1
+
+C_DEFINE=-DHAVE_GETOPT_H

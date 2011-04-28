@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include "conf.h"
 
-// Private Inlclude files
+// Private Include files
 #include "leashdll.h"
 #include <krb.h>
 #include <leashwin.h>

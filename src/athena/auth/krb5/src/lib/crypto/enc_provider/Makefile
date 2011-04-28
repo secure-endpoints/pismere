@@ -116,13 +116,17 @@ DNSLIBS=
 DNSFLAGS=
 !endif
 
+!if defined(KRB5_KFW_COMPILE)
+KFWFLAGS=-DUSE_LEASH=1
+!endif
+
 #
 # The name of the C compiler for the target
 #
 CC=cl
 
 PDB_OPTS=-Fd$(OUTPRE)\ -FD
-CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1
+CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1 $(KFWFLAGS)
 CCOPTS=-nologo /W3 $(PDB_OPTS) $(DLL_FILE_DEF)
 LOPTS=-nologo -incremental:no
 
@@ -265,28 +269,30 @@ clean-unix:: clean-libobjs
 #
 des.so des.po $(OUTPRE)des.$(OBJEXT): des.c $(SRCTOP)/include/k5-int.h \
   $(BUILDTOP)/include/krb5/osconf.h $(BUILDTOP)/include/krb5/autoconf.h \
-  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
-  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
-  $(SRCTOP)/include/krb5/kdb.h $(srcdir)/../des/des_int.h \
-  $(SRCTOP)/include/kerberosIV/des.h enc_provider.h
+  $(SRCTOP)/include/k5-platform.h $(BUILDTOP)/include/krb5.h \
+  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
+  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
+  $(srcdir)/../des/des_int.h $(SRCTOP)/include/kerberosIV/des.h \
+  enc_provider.h
 des3.so des3.po $(OUTPRE)des3.$(OBJEXT): des3.c $(SRCTOP)/include/k5-int.h \
   $(BUILDTOP)/include/krb5/osconf.h $(BUILDTOP)/include/krb5/autoconf.h \
-  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
-  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
-  $(SRCTOP)/include/krb5/kdb.h $(srcdir)/../des/des_int.h \
-  $(SRCTOP)/include/kerberosIV/des.h
+  $(SRCTOP)/include/k5-platform.h $(BUILDTOP)/include/krb5.h \
+  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
+  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
+  $(srcdir)/../des/des_int.h $(SRCTOP)/include/kerberosIV/des.h
 aes.so aes.po $(OUTPRE)aes.$(OBJEXT): aes.c $(SRCTOP)/include/k5-int.h \
   $(BUILDTOP)/include/krb5/osconf.h $(BUILDTOP)/include/krb5/autoconf.h \
-  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
-  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
-  $(SRCTOP)/include/krb5/kdb.h enc_provider.h $(srcdir)/../aes/aes.h \
-  $(srcdir)/../aes/uitypes.h
+  $(SRCTOP)/include/k5-platform.h $(BUILDTOP)/include/krb5.h \
+  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
+  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
+  enc_provider.h $(srcdir)/../aes/aes.h $(srcdir)/../aes/uitypes.h
 arcfour.so arcfour.po $(OUTPRE)arcfour.$(OBJEXT): arcfour.c $(SRCTOP)/include/k5-int.h \
   $(BUILDTOP)/include/krb5/osconf.h $(BUILDTOP)/include/krb5/autoconf.h \
-  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
-  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
-  $(SRCTOP)/include/krb5/kdb.h $(srcdir)/../arcfour/arcfour-int.h \
-  $(srcdir)/../arcfour/arcfour.h enc_provider.h
+  $(SRCTOP)/include/k5-platform.h $(BUILDTOP)/include/krb5.h \
+  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
+  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
+  $(srcdir)/../arcfour/arcfour-int.h $(srcdir)/../arcfour/arcfour.h \
+  enc_provider.h
 
 #
 # Start of Win32 post-config lines (config/win-post.in)

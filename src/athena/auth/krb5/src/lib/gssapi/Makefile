@@ -116,13 +116,17 @@ DNSLIBS=
 DNSFLAGS=
 !endif
 
+!if defined(KRB5_KFW_COMPILE)
+KFWFLAGS=-DUSE_LEASH=1
+!endif
+
 #
 # The name of the C compiler for the target
 #
 CC=cl
 
 PDB_OPTS=-Fd$(OUTPRE)\ -FD
-CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1
+CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1 $(KFWFLAGS)
 CCOPTS=-nologo /W3 $(PDB_OPTS) $(DLL_FILE_DEF)
 LOPTS=-nologo -incremental:no
 
@@ -340,6 +344,7 @@ gss_libinit.so gss_libinit.po $(OUTPRE)gss_libinit.$(OBJEXT): gss_libinit.c gene
   $(COM_ERR_DEPS) krb5/gssapi_err_krb5.h $(srcdir)/krb5/gssapiP_krb5.h \
   $(BUILDTOP)/include/krb5.h $(srcdir)/generic/gssapiP_generic.h \
   $(srcdir)/generic/gssapi_generic.h $(BUILDTOP)/include/gssapi/gssapi.h \
+  $(SRCTOP)/include/k5-platform.h $(BUILDTOP)/include/krb5/autoconf.h \
   $(srcdir)/krb5/gssapi_krb5.h gss_libinit.h generic/gssapi.h
 
 #

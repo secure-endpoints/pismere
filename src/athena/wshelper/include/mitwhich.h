@@ -29,7 +29,11 @@ about the domain or the nameservers.
 	
 #define MS_OS_WIN 1
 #define MS_OS_95 2
-#define MS_OS_NT 3
+#define MS_OS_NT 4
+#define MS_OS_2000 12
+#define MS_OS_XP 28
+#define MS_OS_2003 60
+#define MS_OS_NT_UNKNOWN 124
 #define MS_OS_UNKNOWN 0
 	
 #define STACK_UNKNOWN 0

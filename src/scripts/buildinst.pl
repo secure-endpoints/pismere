@@ -15,6 +15,15 @@ use File::stat;
 
 $0 = fileparse($0);
 
+
+my $BUILDXML = 0; #If set to 0, buildinst will not support XML installers.  To enable, change value to 1.
+
+if (defined($ENV{"BUILDINSTALLER"}) && lc($ENV{"BUILDINSTALLER"}) eq "xml")
+{
+	$BUILDXML = 1;
+}
+
+
 my $PROGID = 'WfWI.Document';
 my $MAKE='wfwi';
 my $WRAP='guiwrap';
@@ -782,6 +791,11 @@ sub get_target_dir
     return ".\\obj\\$CPU\\$TARGET_DIR\\";
 }
 
+
+
+
+
+
 sub buildinst
 {
     my $prevdir = shift;
@@ -791,9 +805,36 @@ sub buildinst
     # build each configuration in Makefile.inst
     my @temp = split(' ', $Flags->{"TYPE"}->{value});
     foreach my $t (@temp) {
+
+
+	my $target_dir = get_target_dir($t);
+
+	if ($t eq "xml" and $BUILDXML)
+	{
+		
+		my $NAME = get_output_filename();
+		system "perl $DIR_SCRIPTS\\BuildXML.pl $NAME $target";
+		#Copy the file from the current dir to the target dir, then delete the original MSI
+
+		if (! -d $target_dir) {
+			    mkpath($target_dir, $verbose) || die "$!";
+		}
+
+
+		system "copy $NAME.msi $target_dir";
+		system "copy $NAME.msi $DIR_PISMERE_MSI_TARGET";
+		system "del $NAME.msi";
+		next;
+		
+
+	}
+	if ($t eq "xml" and !$BUILDXML)
+	{
+		next;
+	}
+
 	next if ($target eq 'module' && $t ne 'wsm'); # skip installers if target is module
 	my $output_file = get_output_filename().'.'.$Flags->{"TYPE"}->{$t};
-	my $target_dir = get_target_dir($t);
 	my $output_file_path = $target_dir.$output_file;
 	my $del;
 	$del = (-e $output_file_path) ?

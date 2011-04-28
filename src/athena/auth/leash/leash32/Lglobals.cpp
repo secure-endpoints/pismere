@@ -18,10 +18,7 @@
 #include <direct.h>
 #include "lglobals.h"
 
-TICKETINFO ticketinfo;
-TICKETINFO ticketinfoKrb4;
-TICKETINFO ticketinfoKrb5;
-
+TicketInfoWrapper ticketinfo;
 
 static const char *const conf_yes[] = {
     "y", "yes", "true", "t", "1", "on",

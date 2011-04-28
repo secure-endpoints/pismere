@@ -1,0 +1,21 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=libmrclient
+TARGETTYPE=LIB
+TARGETSS=console
+
+OBJS= \
+	$(O)\pobox.obj \
+	$(O)\utils.obj \
+	$(O)\error.obj \
+	$(O)\member.obj \
+	$(O)\mail.obj
+
+USE_DEFAULTLIB=1
+INCLUDES=..\..\include;..\..\util\et;$(PISMERE)\athena\auth\krb4\include
+
+USE_LIBC_DLL=1
+
+C_DEFINE=-DHAVE_HESIOD

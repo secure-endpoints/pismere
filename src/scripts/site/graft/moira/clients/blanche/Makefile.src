@@ -1,0 +1,20 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=blanche
+TARGETTYPE=EXE
+TARGETSS=console
+
+OBJS= \
+	$(O)\blanche.obj
+
+DEP_LIBS=..\..\util\et\$(O)\mrcomerr.lib ..\..\lib\$(O)\libmoira.lib ..\lib\$(O)\libmrclient.lib
+
+USE_DEFAULTLIB=1
+LIBS=$(DEP_LIBS) krbv4w32.lib wshelp32.lib ws2_32.lib shlwapi.lib
+
+LIB_PATHS=$(PISMERE)\athena\auth\krb4\krbv4\krbdll\$(O);$(PISMERE)\athena\wshelper\wshelper\$(O)
+INCLUDES=..\..\include;..\..\util\et
+
+USE_LIBC_DLL=1

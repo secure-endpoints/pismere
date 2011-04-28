@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "leashdll.h"
+#include <leashwin.h>
+
+#include "tlhelp32.h"
+
 #define MIT_PWD_DLL_CLASS "MITPasswordWndDLL"
 
 BOOL
@@ -27,6 +32,11 @@ int DoNiftyErrorReport(long errnum, LPSTR what);
 LONG Leash_timesync(int);
 BOOL Leash_ms2mit(BOOL);
 
+#ifndef NO_AFS
+int      not_an_API_LeashAFSGetToken(TICKETINFO * ticketinfo, TicketList** ticketList, char * kprinc);
+long FAR not_an_API_LeashFreeTicketList(TicketList** ticketList) ;
+#endif
+
 // Crap...
 #include <krb5.h>
 
@@ -41,7 +51,24 @@ Leash_int_kinit_ex(
     int proxiable,
     int renew_life,
     int addressless,
-    unsigned long publicIP
+    unsigned long publicIP,
+    int displayErrors
+    );
+
+long
+Leash_int_checkpwd(
+    char * principal,
+    char * password,
+    int    displayErrors
+    );
+
+long
+Leash_int_changepwd(
+    char * principal, 
+    char * password, 
+    char * newpassword,
+    char** result_string,
+    int    displayErrors
     );
 
 int
@@ -128,10 +155,61 @@ config_boolean_to_int(
     const char *s
     );
 
-
-
+#ifndef NO_KRB5
+int Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName, 
+                     int FreeContextFlag, krb5_context *ctx,
+                     krb5_ccache *cache);
+int Leash_krb5_initialize(krb5_context *, krb5_ccache *);
+#endif /* NO_KRB5 */
 
 LPSTR err_describe(LPSTR buf, long code);
+
+// toolhelp functions
+TYPEDEF_FUNC(
+    HANDLE,
+    WINAPI,
+    CreateToolhelp32Snapshot,
+    (DWORD, DWORD)
+    );
+TYPEDEF_FUNC(
+    BOOL,
+    WINAPI,
+    Module32First,
+    (HANDLE, LPMODULEENTRY32)
+    );
+TYPEDEF_FUNC(
+    BOOL,
+    WINAPI,
+    Module32Next,
+    (HANDLE, LPMODULEENTRY32)
+    );
+
+// psapi functions
+TYPEDEF_FUNC(
+    DWORD,
+    WINAPI,
+    GetModuleFileNameExA,
+    (HANDLE, HMODULE, LPSTR, DWORD)
+    );
+TYPEDEF_FUNC(
+    BOOL,
+    WINAPI,
+    EnumProcessModules,
+    (HANDLE, HMODULE*, DWORD, LPDWORD)
+    );
+
+#define pGetModuleFileNameEx pGetModuleFileNameExA
+#define TOOLHELPDLL "kernel32.dll"
+#define PSAPIDLL "psapi.dll"
+
+// psapi functions
+extern DECL_FUNC_PTR(GetModuleFileNameExA);
+extern DECL_FUNC_PTR(EnumProcessModules);
+
+// toolhelp functions
+extern DECL_FUNC_PTR(CreateToolhelp32Snapshot);
+extern DECL_FUNC_PTR(Module32First);
+extern DECL_FUNC_PTR(Module32Next);
 
 /* The following definitions are summarized from KRB4, KRB5, Leash32, and 
  * Leashw32 modules.  They are current as of KfW 2.5 Beta 4.  There is no
@@ -178,7 +256,6 @@ LPSTR err_describe(LPSTR buf, long code);
 #define KRB5_REGISTRY_KEY_NAME "Software\\MIT\\Kerberos5"
 #define KRB5_REGISTRY_VALUE_CCNAME      "ccname"
 #define KRB5_REGISTRY_VALUE_CONFIGFILE  "config"
-#define KRB5_REGISTRY_VALUE_TICKETFILE  "ticketfile"
 
 /* must match values used within wshelper.dll */
 #define WSHELP_REGISTRY_KEY_NAME  "Software\\MIT\\WsHelper"

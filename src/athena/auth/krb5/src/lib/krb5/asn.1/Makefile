@@ -116,13 +116,17 @@ DNSLIBS=
 DNSFLAGS=
 !endif
 
+!if defined(KRB5_KFW_COMPILE)
+KFWFLAGS=-DUSE_LEASH=1
+!endif
+
 #
 # The name of the C compiler for the target
 #
 CC=cl
 
 PDB_OPTS=-Fd$(OUTPRE)\ -FD
-CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1
+CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1 $(KFWFLAGS)
 CCOPTS=-nologo /W3 $(PDB_OPTS) $(DLL_FILE_DEF)
 LOPTS=-nologo -incremental:no
 
@@ -279,63 +283,68 @@ clean-unix:: clean-libobjs
 #
 asn1_decode.so asn1_decode.po $(OUTPRE)asn1_decode.$(OBJEXT): asn1_decode.c asn1_decode.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  krbasn1.h asn1buf.h asn1_get.h
-asn1_k_decode.so asn1_k_decode.po $(OUTPRE)asn1_k_decode.$(OBJEXT): asn1_k_decode.c asn1_k_decode.h \
-  $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  krbasn1.h asn1buf.h asn1_decode.h asn1_get.h asn1_misc.h
-asn1_encode.so asn1_encode.po $(OUTPRE)asn1_encode.$(OBJEXT): asn1_encode.c asn1_encode.h \
-  $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  krbasn1.h asn1buf.h asn1_make.h
-asn1_get.so asn1_get.po $(OUTPRE)asn1_get.$(OBJEXT): asn1_get.c asn1_get.h \
-  $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  krbasn1.h asn1buf.h
-asn1_make.so asn1_make.po $(OUTPRE)asn1_make.$(OBJEXT): asn1_make.c asn1_make.h \
-  $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  krbasn1.h asn1buf.h
-asn1buf.so asn1buf.po $(OUTPRE)asn1buf.$(OBJEXT): asn1buf.c asn1buf.h $(SRCTOP)/include/k5-int.h \
-  $(BUILDTOP)/include/krb5/osconf.h $(BUILDTOP)/include/krb5/autoconf.h \
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
   $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
   $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
-  $(SRCTOP)/include/krb5/kdb.h krbasn1.h asn1_get.h
+  $(SRCTOP)/include/krb5/kdb.h krbasn1.h asn1buf.h asn1_get.h
+asn1_k_decode.so asn1_k_decode.po $(OUTPRE)asn1_k_decode.$(OBJEXT): asn1_k_decode.c asn1_k_decode.h \
+  $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h krbasn1.h asn1buf.h asn1_decode.h \
+  asn1_get.h asn1_misc.h
+asn1_encode.so asn1_encode.po $(OUTPRE)asn1_encode.$(OBJEXT): asn1_encode.c asn1_encode.h \
+  $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h krbasn1.h asn1buf.h asn1_make.h
+asn1_get.so asn1_get.po $(OUTPRE)asn1_get.$(OBJEXT): asn1_get.c asn1_get.h \
+  $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h krbasn1.h asn1buf.h
+asn1_make.so asn1_make.po $(OUTPRE)asn1_make.$(OBJEXT): asn1_make.c asn1_make.h \
+  $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h krbasn1.h asn1buf.h
+asn1buf.so asn1buf.po $(OUTPRE)asn1buf.$(OBJEXT): asn1buf.c asn1buf.h $(SRCTOP)/include/k5-int.h \
+  $(BUILDTOP)/include/krb5/osconf.h $(BUILDTOP)/include/krb5/autoconf.h \
+  $(SRCTOP)/include/k5-platform.h $(BUILDTOP)/include/krb5.h \
+  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
+  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
+  krbasn1.h asn1_get.h
 krb5_decode.so krb5_decode.po $(OUTPRE)krb5_decode.$(OBJEXT): krb5_decode.c $(BUILDTOP)/include/krb5.h \
   $(COM_ERR_DEPS) krbasn1.h $(SRCTOP)/include/k5-int.h \
   $(BUILDTOP)/include/krb5/osconf.h $(BUILDTOP)/include/krb5/autoconf.h \
-  $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  asn1_k_decode.h asn1buf.h asn1_decode.h asn1_get.h
+  $(SRCTOP)/include/k5-platform.h $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h asn1_k_decode.h asn1buf.h \
+  asn1_decode.h asn1_get.h
 krb5_encode.so krb5_encode.po $(OUTPRE)krb5_encode.$(OBJEXT): krb5_encode.c $(BUILDTOP)/include/krb5.h \
   $(COM_ERR_DEPS) asn1_k_encode.h $(SRCTOP)/include/k5-int.h \
   $(BUILDTOP)/include/krb5/osconf.h $(BUILDTOP)/include/krb5/autoconf.h \
-  $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  asn1buf.h krbasn1.h asn1_encode.h asn1_make.h
+  $(SRCTOP)/include/k5-platform.h $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h asn1buf.h krbasn1.h asn1_encode.h \
+  asn1_make.h
 asn1_k_encode.so asn1_k_encode.po $(OUTPRE)asn1_k_encode.$(OBJEXT): asn1_k_encode.c asn1_k_encode.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  asn1buf.h krbasn1.h asn1_make.h asn1_encode.h
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h asn1buf.h krbasn1.h asn1_make.h \
+  asn1_encode.h
 asn1_misc.so asn1_misc.po $(OUTPRE)asn1_misc.$(OBJEXT): asn1_misc.c asn1_misc.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  krbasn1.h
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h krbasn1.h
 
 #
 # Start of Win32 post-config lines (config/win-post.in)

@@ -146,7 +146,7 @@ static ncptr const text[] = {
 	"KRB5 error code 125",
 	"KRB5 error code 126",
 	"KRB5 error code 127",
-	"$Id: krb5_err.et,v 5.72.2.1 2003/06/06 21:00:59 tlyu Exp $",
+	"$Id: krb5_err.et,v 5.72.2.3 2004/01/07 22:17:36 tlyu Exp $",
 	"Invalid flag for file lock mode",
 	"Cannot read password",
 	"Password mismatch",
@@ -264,12 +264,14 @@ static ncptr const text[] = {
 	"Cannot determine realm for numeric host address",
 	"Invalid key generation parameters from KDC",
 	"service not available",
+	"Ccache function not supported: read-only ccache type",
+	"Ccache function not supported: not implemented",
     0
 };
 
 #include <com_err.h>
 
-const struct error_table et_krb5_error_table = { text, -1765328384L, 246 };
+const struct error_table et_krb5_error_table = { text, -1765328384L, 248 };
 
 #if !defined(_WIN32)
 void initialize_krb5_error_table (void)

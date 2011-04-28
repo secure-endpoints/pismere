@@ -476,12 +476,14 @@ DECL_FUNC_PTR(com_err) = fake_com_err;
 void
 dynamic_load(
     int * pgot_k4,
-    int * pgot_k5
+    int * pgot_k5,
+    int * pgot_cc
     )
 {
     int got_com_err = 0;
     int got_k5 = 0;
     int got_k4 = 0;
+    int got_cc = 0;
 
     DelayLoadDlls_handle_t hDlls = DelayLoadDllsLoad(NULL);
     if (!hDlls)
@@ -489,12 +491,14 @@ dynamic_load(
 	got_com_err = 0;
 	got_k5 = 0;
 	got_k4 = 0;
+    got_cc = 0;
     }
     else
     {
 	got_com_err = DelayLoadDllsLoadedDllAll(hDlls, COMERR_DLL, NULL);
 	got_k4 = DelayLoadDllsLoadedDllAll(hDlls, KRB4_DLL, NULL);
 	got_k5 = DelayLoadDllsLoadedDllAll(hDlls, KRB5_DLL, NULL);
+    got_cc = DelayLoadDllsLoadedDllAll(hDlls, CCAPI_DLL, NULL);
     }
 
     if (got_com_err)
@@ -509,6 +513,10 @@ dynamic_load(
 	pkrb5_read_password = krb5_read_password;
     }
 
-    *pgot_k4 = got_k4;
-    *pgot_k5 = got_k5;
+    if ( pgot_k4 )
+        *pgot_k4 = got_k4;
+    if ( pgot_k5 )
+        *pgot_k5 = got_k5;
+    if ( pgot_cc )
+        *pgot_cc = got_cc;
 }

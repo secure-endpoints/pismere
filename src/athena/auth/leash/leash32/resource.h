@@ -76,6 +76,17 @@
 #define IDI_TOOLBAR_PASSWORD_DISABLED   251
 #define IDI_TOOLBAR_REFRESH_DISABLED    252
 #define IDI_TOOLBAR_SYNC_DISABLED       253
+#define MENU_TRAYICON                   254
+#define ID_LEASH_RESTORE                255
+#define IDD_FRAMEOWNER                  256
+#define ID_LEASH_MINIMIZE               257
+#define IDI_LEASH_TRAY_GOOD             258
+#define IDI_LEASH_TRAY_LOW              259
+#define IDI_LEASH_TRAY_EXPIRED          260
+#define IDI_LEASH_TRAY_NONE             261
+#define IDI_LEASH_TICKET_ADDRESS        262
+#define IDI_LEASH_TICKET_SESSION        263
+#define IDI_LEASH_TICKET_ENCRYPTION     264
 
 #define IDC_PROGRESS1                   1000
 #define IDC_TRACKBAR1                   1001
@@ -306,6 +317,7 @@
 #define ID_IMPORT_TICKET                32806
 #define ID_INIT_TICKET                  32807
 #define ID_AUTO_RENEW                   32808
+#define ID_OBTAIN_TGT_WITH_LPARAM       32809
 
 // Next default values for new objects
 // 
@@ -313,7 +325,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        241
-#define _APS_NEXT_COMMAND_VALUE         32824
+#define _APS_NEXT_COMMAND_VALUE         32810
 #define _APS_NEXT_CONTROL_VALUE         1201
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

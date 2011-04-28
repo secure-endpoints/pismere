@@ -27,9 +27,9 @@
 // Help
 #define HID_GET_TICKETS_COMMAND			98312
 #define HID_DESTROY_TICKETS_COMMAND     98313
-#define HID_SCNCHRONIZE_TIME_OPTION     98314
+#define HID_SYNCHRONIZE_TIME_OPTION     98314
 #define HID_CHANGE_PASSWORD_COMMAND		98315
-#define HID_UPDATE_DISPLAY_CAMMAND      98316
+#define HID_UPDATE_DISPLAY_COMMAND      98316
 #define HID_DEBUG_WINDOW_OPTION			98317
 #define HID_LEASH_PROGRAM               98319
 #define HID_ABOUT_KERBEROS              98320
@@ -47,7 +47,7 @@
 #define HID_HELP_CONTENTS               98340
 #define HID_WHY_USE_LEASH32				98341
 
-#define HID_ABOUT_LEASH32_COMAND        123200
+#define HID_ABOUT_LEASH32_COMMAND       123200
 #define HID_EXIT_COMMAND                123201
 #define HID_TOOLBAR_OPTION				124928
 #define HID_STATUS_BAR_OPTION           124929
@@ -68,7 +68,13 @@
 #define HID_KERBEROS_PROPERTIES_EDITHOST 131271
 #define HID_KERBEROS_PROPERTIES_LISTDOM 131279
 
+#define USE_HTMLHELP
 
+#ifdef USE_HTMLHELP
+#if _MSC_VER >= 1300
+#define CALL_HTMLHELP
+#endif
+#endif
 
 #include "resource.h"       // main symbols
 #include "lglobals.h"
@@ -83,6 +89,7 @@ class CLeashApp : public CWinApp
 private:
 	CString		m_leashDLL;
 	CString		m_krbDLL;
+    CString     m_helpFile;
 	CString		m_msgError;	 
 
 	BOOL		InitDLLs();
@@ -104,24 +111,36 @@ public:
 	CLeashApp();
 	virtual ~CLeashApp();
 
-    static BOOL GetProfileFile(LPSTR confname, UINT szConfname);
-    static BOOL GetKrb4ConFile(LPSTR confname, UINT szConfname);
-    static BOOL GetKrb4RealmFile(LPSTR confname, UINT szConfname);
-    static void ValidateConfigFiles();
+    static BOOL  GetProfileFile(LPSTR confname, UINT szConfname);
+    static BOOL  GetKrb4ConFile(LPSTR confname, UINT szConfname);
+    static BOOL  GetKrb4RealmFile(LPSTR confname, UINT szConfname);
+    static void  ValidateConfigFiles();
+    static void  ObtainTicketsViaUserIfNeeded(HWND hWnd);
+    static DWORD GetNumOfIpAddrs(void);
+    static UINT  IpAddrChangeMonitor(void *);
+           DWORD IpAddrChangeMonitorInit(HWND hWnd);
+    static BOOL  ProbeKDC(void);
+    static UINT  InitWorker(void *);
 
 	// Overrides
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CLeashApp)
 	public:
 	virtual BOOL InitInstance();
-	//}}AFX_VIRTUAL
+#ifdef USE_HTMLHELP
+#if _MSC_VER < 1300
+    virtual void WinHelp(DWORD dwData, UINT nCmd);
+#endif
+#endif
+    //}}AFX_VIRTUAL
 
-virtual void ParseParam (LPCTSTR lpszParam,BOOL bFlag,BOOL bLast );
-	
+    virtual void ParseParam (LPCTSTR lpszParam,BOOL bFlag,BOOL bLast );
+
+  protected:
 // Implementation
 
 	//{{AFX_MSG(CLeashApp)
-	//}}AFX_MSG
+    //}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
 

@@ -70,6 +70,7 @@ sub set_map
        msc => $DIR->{BIN},
        htm => $DIR->{BIN},
        html => $DIR->{BIN},
+       chm  => $DIR->{BIN},
        conf => $DIR->{BIN},
        cmd => $DIR->{BIN},
        pl => $DIR->{BIN},

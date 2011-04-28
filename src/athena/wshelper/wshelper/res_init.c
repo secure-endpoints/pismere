@@ -391,8 +391,8 @@ res_init()
     }
 #endif /* !_WIN32 */
     
-    /* no reliable source or local domain or name servers */
-    if (_res.defdname[0] == 0 || /*!havens ||*/ !nserv ){
+    /* no reliable source of name servers */
+    if (!nserv ){
 
         // We output this to any attached debugger.
         // You can get a free debug message viewer from www.sysinternals.com
@@ -418,7 +418,6 @@ res_init()
                 _res.nsaddr_list[0].sin_family = AF_INET;
                 _res.nsaddr_list[0].sin_port = htons(NAMESERVER_PORT);
                 nserv++;
-                /*havens++;*/
             }
         }
         if(LoadString(this_module(), IDS_DEF_DNS2, 
@@ -430,7 +429,6 @@ res_init()
                 _res.nsaddr_list[1].sin_family = AF_INET;
                 _res.nsaddr_list[1].sin_port = htons(NAMESERVER_PORT);
                 nserv++;
-                /*havens++;*/
             }
 
         }
@@ -443,11 +441,11 @@ res_init()
                 _res.nsaddr_list[2].sin_family = AF_INET;
                 _res.nsaddr_list[2].sin_port = htons(NAMESERVER_PORT);
                 nserv++;
-                /*havens++;*/
             }
         }
     }
 
+    /* no reliable source of a domain name */
     if (_res.defdname[0] == 0) {
         if (gethostname(buf, sizeof(_res.defdname)) == 0 &&
             (cp = /*index*/ strrchr (buf, '.')))
@@ -801,6 +799,10 @@ What we really want to figure out is the access method.
   @flag MS_OS_WIN     (1) | The application is running under Windows or WFWG
   @flag	MS_OS_95      (2) | The application is running under Windows 95
   @flag	MS_OS_NT      (3) | The application is running under Windows NT
+  @flag	MS_OS_2000    (4) | The application is running under Windows 2000
+  @flag	MS_OS_XP      (5) | The application is running under Windows XP
+  @flag	MS_OS_2003    (6) | The application is running under Windows 2003
+  @flag	MS_OS_NT_UNKNOWN (7) | The application is running under Windows NT family beyond 2003
   @flag	MS_OS_UNKNOWN (0) | It looks like Windows but not any version that 
                             we know of.
 
@@ -830,6 +832,13 @@ WhichOS(
 
     int checkStack = 0;
     int checkOS = 0;
+    static DWORD dwCheck = 0xFFFFFFFF;
+
+    if ( dwCheck != 0xFFFFFFFF ) {
+        if ( check )
+            *check = dwCheck;
+        return dwCheck;
+    }
 
     // first get the information from WSAStartup because it may give
     // more consistent information than Microsoft APIs.
@@ -984,8 +993,17 @@ WhichOS(
             if( checkStack == STACK_UNKNOWN ){
                 checkStack = UNKNOWN_32_UNDER_32;
             }
-            checkOS = MS_OS_NT;
-            wsprintf( debstr, "Microsoft Windows NT %d.%d (Build %d)\n",
+            if ( osvi.dwMajorVersion <= 4 )
+                checkOS = MS_OS_NT;
+            else if ( osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0 )
+                checkOS = MS_OS_2000;
+            else if ( osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 1 )
+                checkOS = MS_OS_XP;
+            else if ( osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 2 )
+                checkOS = MS_OS_2003;
+            else
+                checkOS = MS_OS_NT_UNKNOWN;
+            wsprintf( debstr, "Microsoft Windows NT family %d.%d (Build %d)\n",
                       osvi.dwMajorVersion,
                       osvi.dwMinorVersion,
                       osvi.dwBuildNumber & 0xFFFF );
@@ -1001,8 +1019,10 @@ WhichOS(
     // At this point we should know the OS.
     // We should also know the subsystem but not always the stack.
 
-    *check = MAKELONG(checkOS, checkStack);
-    return( *check );
+    dwCheck = MAKELONG(checkOS, checkStack);
+    if ( check )
+        *check = dwCheck;
+    return( dwCheck );
 }
 
 
@@ -1037,7 +1057,11 @@ get_nt5_adapter_param(
 
     while (*p) {
         q = strstr(p, DEVICE_STR);
-        if (!q) return FALSE; // assert?
+        if (!q) {
+            while (*p) p++;
+            p++;
+            continue;
+        }
         q += DEVICE_LEN;
         p = q;
         while (*p) p++;
@@ -1252,6 +1276,14 @@ wsh_getdomainname(char* name, int size)
     // if that fails will we look at the registry.
     struct hostent * host = NULL;
     if (!name) return -1;
+    
+    /* try to get local domain from IP Helper API */ 
+    if (load_iphelper() && ipinfo->DomainName[0])
+    {
+        strncpy(name, ipinfo->DomainName, size);
+        return 0;
+    }
+
     host = gethostbyname(NULL);
     if (host) {
         char * cp;
@@ -1271,13 +1303,6 @@ wsh_getdomainname(char* name, int size)
             name[size-1] = '\0';
             return(0);
         }
-    }
-
-    /* try to get local domain from IP Helper API */ 
-    if (load_iphelper() && ipinfo->DomainName[0])
-    {
-        strncpy(name, ipinfo->DomainName, size);
-        return 0;
     }
 
     /* try to get local domain from the registry */

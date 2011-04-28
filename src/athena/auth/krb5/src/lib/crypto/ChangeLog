@@ -1,3 +1,22 @@
+2004-02-13  Ken Raeburn  <raeburn@mit.edu>
+
+	* t_encrypt.c (compare_results): New function.
+	(main): Use it to check decryption results against the original
+	plaintext.  When testing with cipher state, encrypt and then
+	decrypt (and verify) two messages.
+	* Makefile.in (t_encrypt$(EXEEXT)): Depend on CRYPTO_DEPLIB.
+
+2004-02-09  Ken Raeburn  <raeburn@mit.edu>
+
+	* t_cts.c (test_cts): Process encryption and decryption IVs
+	separately, make sure they match, and display the value.
+
+2003-12-13  Ken Raeburn  <raeburn@mit.edu>
+
+	* etypes.c (krb5_enctypes_list): Fill in required_ctype field.
+	* mandatory_sumtype.c: New file.
+	* Makefile.in (SRCS, OBJS, STLIBOBJS): Build it.
+
 2003-07-13  Kenneth Raeburn  <raeburn@mit.edu>
 
 	* pbkdf2.c (foo): Never call com_err.

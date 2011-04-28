@@ -116,13 +116,17 @@ DNSLIBS=
 DNSFLAGS=
 !endif
 
+!if defined(KRB5_KFW_COMPILE)
+KFWFLAGS=-DUSE_LEASH=1
+!endif
+
 #
 # The name of the C compiler for the target
 #
 CC=cl
 
 PDB_OPTS=-Fd$(OUTPRE)\ -FD
-CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1
+CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1 $(KFWFLAGS)
 CCOPTS=-nologo /W3 $(PDB_OPTS) $(DLL_FILE_DEF)
 LOPTS=-nologo -incremental:no
 
@@ -270,7 +274,7 @@ KRB5RC = krb5.rc
 VERSIONRC = $(BUILDTOP)\windows\version.rc
 
 WINLIBS = kernel32.lib ws2_32.lib user32.lib shell32.lib oldnames.lib \
-	version.lib advapi32.lib gdi32.lib
+	version.lib secur32.lib advapi32.lib gdi32.lib
 WINDLLFLAGS = $(DLL_LINKOPTS) -base:0x1c000000
 
 NO_GLUE=$(OUTPRE)no_glue.obj

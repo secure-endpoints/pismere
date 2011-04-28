@@ -116,13 +116,17 @@ DNSLIBS=
 DNSFLAGS=
 !endif
 
+!if defined(KRB5_KFW_COMPILE)
+KFWFLAGS=-DUSE_LEASH=1
+!endif
+
 #
 # The name of the C compiler for the target
 #
 CC=cl
 
 PDB_OPTS=-Fd$(OUTPRE)\ -FD
-CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1
+CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1 $(KFWFLAGS)
 CCOPTS=-nologo /W3 $(PDB_OPTS) $(DLL_FILE_DEF)
 LOPTS=-nologo -incremental:no
 
@@ -326,19 +330,20 @@ $(OUTPRE)conv_princ.$(OBJEXT): conv_princ.c $(BUILDTOP)/include/krb5.h \
   $(BUILDTOP)/include/profile.h
 $(OUTPRE)cnv_tkt_skey.$(OBJEXT): cnv_tkt_skey.c $(SRCTOP)/include/k5-int.h \
   $(BUILDTOP)/include/krb5/osconf.h $(BUILDTOP)/include/krb5/autoconf.h \
-  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
-  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
-  $(SRCTOP)/include/krb5/kdb.h $(SRCTOP)/include/kerberosIV/krb.h \
-  $(SRCTOP)/include/kerberosIV/des.h $(KRB_ERR_H_DEP) \
-  krb524d.h
+  $(SRCTOP)/include/k5-platform.h $(BUILDTOP)/include/krb5.h \
+  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
+  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
+  $(SRCTOP)/include/kerberosIV/krb.h $(SRCTOP)/include/kerberosIV/des.h \
+  $(KRB_ERR_H_DEP) krb524d.h
 $(OUTPRE)libinit.$(OBJEXT): libinit.c
 $(OUTPRE)krb524.$(OBJEXT): krb524.c
 $(OUTPRE)test.$(OBJEXT): test.c $(SRCTOP)/include/k5-int.h \
   $(BUILDTOP)/include/krb5/osconf.h $(BUILDTOP)/include/krb5/autoconf.h \
-  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
-  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
-  $(SRCTOP)/include/krb5/kdb.h $(SRCTOP)/include/kerberosIV/des.h \
-  $(SRCTOP)/include/kerberosIV/krb.h $(KRB_ERR_H_DEP)
+  $(SRCTOP)/include/k5-platform.h $(BUILDTOP)/include/krb5.h \
+  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
+  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
+  $(SRCTOP)/include/kerberosIV/des.h $(SRCTOP)/include/kerberosIV/krb.h \
+  $(KRB_ERR_H_DEP)
 $(OUTPRE)k524init.$(OBJEXT): k524init.c $(BUILDTOP)/include/krb5.h \
   $(COM_ERR_DEPS) $(SRCTOP)/include/kerberosIV/krb.h \
   $(SRCTOP)/include/kerberosIV/des.h $(KRB_ERR_H_DEP) \
@@ -350,13 +355,13 @@ $(OUTPRE)krb524d.$(OBJEXT): krb524d.c $(BUILDTOP)/include/krb5.h \
   $(BUILDTOP)/include/gssrpc/rpc_msg.h $(BUILDTOP)/include/gssrpc/auth_unix.h \
   $(BUILDTOP)/include/gssrpc/svc_auth.h $(BUILDTOP)/include/gssrpc/svc.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/profile.h \
-  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
-  $(SRCTOP)/include/krb5/kdb.h $(BUILDTOP)/include/kadm5/kadm_err.h \
-  $(BUILDTOP)/include/kadm5/adb_err.h $(BUILDTOP)/include/kadm5/chpass_util_strings.h \
-  $(SRCTOP)/include/krb5/adm_proto.h $(SRCTOP)/include/kerberosIV/krb.h \
-  $(SRCTOP)/include/kerberosIV/des.h $(KRB_ERR_H_DEP) \
-  krb524d.h
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
+  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
+  $(BUILDTOP)/include/kadm5/kadm_err.h $(BUILDTOP)/include/kadm5/adb_err.h \
+  $(BUILDTOP)/include/kadm5/chpass_util_strings.h $(SRCTOP)/include/krb5/adm_proto.h \
+  $(SRCTOP)/include/kerberosIV/krb.h $(SRCTOP)/include/kerberosIV/des.h \
+  $(KRB_ERR_H_DEP) krb524d.h
 
 #
 # Start of Win32 post-config lines (config/win-post.in)

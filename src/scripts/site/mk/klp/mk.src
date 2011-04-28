@@ -1,0 +1,65 @@
+#!perl -w
+
+sub mk_src_do
+{
+    my $OPT = shift || die;
+    my $origdir = shift || die;
+    my $tag = shift || die;
+    my $zdir = shift || die;
+
+    my $core =
+      [
+       'pismere/scripts/build.pl',
+       'pismere/scripts/binplace.pl',
+       'pismere/scripts/tee.pl',
+       'pismere/scripts/Logger.pm',
+       'pismere/scripts/build',
+       'pismere/scripts/site/graft.pl',
+       'pismere/scripts/site/graft.conf',
+       'pismere/scripts/site/mk.pl',
+       'pismere/scripts/site/mk.pm',
+       'pismere/scripts/site/mk/klp',
+       '-l pismere/athena',
+       '-l pismere/athena/util',
+       '-l pismere/athena/util/lib',
+       'pismere/athena/util/lib/about',
+       'pismere/athena/util/lib/atcompat',
+       'pismere/athena/util/lib/getopt',
+       'pismere/athena/util/lib/uniansi',
+       'pismere/athena/util/loadfuncs/loadfuncs.h',
+       'pismere/athena/util/loadfuncs/loadfuncs-krb.h',
+       'pismere/athena/util/loadfuncs/loadfuncs-wshelper.h',
+       'pismere/athena/auth/krb4/include/conf.h',
+       'pismere/athena/auth/krb4/include/conf-pc.h',
+       'pismere/athena/auth/krb4/include/des.h',
+       'pismere/athena/auth/krb4/include/krb.h',
+       'pismere/athena/auth/krb4/include/mit_copy.h',
+       'pismere/athena/auth/krb4/include/osconf.h',
+       'pismere/athena/wshelper/include',
+       '-l pismere/athena/print',
+       'pismere/athena/print/addmon',
+       'pismere/athena/print/delmon',
+       'pismere/athena/print/fix-ppd',
+       'pismere/athena/print/printinfo',
+      ];
+
+    my $site =
+      [
+       'pismere/athena/print/klp',
+      ];
+
+    foreach my $m (@$core) {
+	my_system("cvs -d :kserver:cvs.mit.edu:/cvs/pismere co -r $tag $m")
+	  || die;
+    }
+
+    my_system("perl -w pismere/scripts/site/graft.pl -r $tag klp") || die;
+
+    my_move("pismere", $zdir) || die;
+    for my $i (0..$#{$site}) {
+	$$site[$i] =~ s/^pismere/$zdir/;
+    }
+    return $site;
+}
+
+1;

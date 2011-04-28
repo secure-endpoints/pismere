@@ -198,9 +198,13 @@ _resolve(LPSTR name, int class, int type, retransXretry_t patience)
     register int res_retrans = _res.retrans;
     register int res_retry = _res.retry;
 #else
+#ifdef DEBUG
+    DWORD res_options = _res.options;
+#else
 #ifdef LWP
     DWORD res_options;
     DWORD old_res_options;
+#endif
 #endif
 #endif /* WINDOWS */
 
@@ -217,6 +221,7 @@ _resolve(LPSTR name, int class, int type, retransXretry_t patience)
 	printf("_resolve: class = %d, type = %d\n", class, type);
 #else
     {
+        char debstr[256];
         wsprintf(debstr, "_resolve: class = %d, type = %d\n", class, type);
         OutputDebugString(debstr);
     }
@@ -248,11 +253,7 @@ _resolve(LPSTR name, int class, int type, retransXretry_t patience)
     _res.retry = (patience.retry ? patience.retry : DEF_RETRY);
 #endif /* WINDOWS */
 
-//#ifndef WINDOWS
     n = res_send(qbuf, n, abuf, sizeof(abuf));
-//#else
-//    n = res_send((LPSTR) qbuf, n, (LPSTR) abuf, sizeof(abuf));
-//#endif
 
 #ifndef WINDOWS
     _res.options = res_options;

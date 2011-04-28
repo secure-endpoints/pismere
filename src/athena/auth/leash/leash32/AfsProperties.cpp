@@ -45,6 +45,7 @@ BEGIN_MESSAGE_MAP(CAfsProperties, CDialog)
     ON_BN_CLICKED(IDC_BUTTON_AFS_PROPERTIES, OnButtonAfsProperties)
     ON_BN_CLICKED(IDC_RADIO_AFS_ENABLED, OnRadioAfsEnabled)
     ON_BN_CLICKED(IDC_RADIO_AFS_DISABLED, OnRadioAfsDisabled)
+    ON_COMMAND(ID_HELP, OnHelp)
     //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -111,3 +112,14 @@ void CAfsProperties::OnRadioAfsDisabled()
 {
    	m_newAfsStatus = 0;
 }
+
+void CAfsProperties::OnHelp()
+{
+#ifdef CALL_HTMLHELP
+    AfxGetApp()->HtmlHelp(HID_AFS_PROPERTIES_COMMAND); 	
+#else
+    AfxGetApp()->WinHelp(HID_AFS_PROPERTIES_COMMAND); 	
+#endif
+}
+
+

@@ -23,8 +23,7 @@
 #include <winkrbid.h>
 
 #include <leashwin.h>
-
-// #include <krblayer.h>
+#define KRBERR(code) (code + krb_err_base)
 
 static char FAR *err_context;  
 

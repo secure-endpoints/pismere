@@ -116,13 +116,17 @@ DNSLIBS=
 DNSFLAGS=
 !endif
 
+!if defined(KRB5_KFW_COMPILE)
+KFWFLAGS=-DUSE_LEASH=1
+!endif
+
 #
 # The name of the C compiler for the target
 #
 CC=cl
 
 PDB_OPTS=-Fd$(OUTPRE)\ -FD
-CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1
+CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1 $(KFWFLAGS)
 CCOPTS=-nologo /W3 $(PDB_OPTS) $(DLL_FILE_DEF)
 LOPTS=-nologo -incremental:no
 
@@ -365,40 +369,52 @@ depend:: $(ETSRCS)
 #
 disp_com_err_status.so disp_com_err_status.po $(OUTPRE)disp_com_err_status.$(OBJEXT): disp_com_err_status.c \
   gssapiP_generic.h gssapi_generic.h $(BUILDTOP)/include/gssapi/gssapi.h \
-  gssapi_err_generic.h $(COM_ERR_DEPS)
+  gssapi_err_generic.h $(COM_ERR_DEPS) $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5/autoconf.h
 disp_major_status.so disp_major_status.po $(OUTPRE)disp_major_status.$(OBJEXT): disp_major_status.c \
   gssapiP_generic.h gssapi_generic.h $(BUILDTOP)/include/gssapi/gssapi.h \
-  gssapi_err_generic.h $(COM_ERR_DEPS)
+  gssapi_err_generic.h $(COM_ERR_DEPS) $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5/autoconf.h
 gssapi_generic.so gssapi_generic.po $(OUTPRE)gssapi_generic.$(OBJEXT): gssapi_generic.c \
   gssapiP_generic.h gssapi_generic.h $(BUILDTOP)/include/gssapi/gssapi.h \
-  gssapi_err_generic.h $(COM_ERR_DEPS)
+  gssapi_err_generic.h $(COM_ERR_DEPS) $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5/autoconf.h
 oid_ops.so oid_ops.po $(OUTPRE)oid_ops.$(OBJEXT): oid_ops.c gssapiP_generic.h \
   gssapi_generic.h $(BUILDTOP)/include/gssapi/gssapi.h \
-  gssapi_err_generic.h $(COM_ERR_DEPS)
+  gssapi_err_generic.h $(COM_ERR_DEPS) $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5/autoconf.h
 rel_buffer.so rel_buffer.po $(OUTPRE)rel_buffer.$(OBJEXT): rel_buffer.c gssapiP_generic.h \
   gssapi_generic.h $(BUILDTOP)/include/gssapi/gssapi.h \
-  gssapi_err_generic.h $(COM_ERR_DEPS)
+  gssapi_err_generic.h $(COM_ERR_DEPS) $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5/autoconf.h
 rel_oid_set.so rel_oid_set.po $(OUTPRE)rel_oid_set.$(OBJEXT): rel_oid_set.c gssapiP_generic.h \
   gssapi_generic.h $(BUILDTOP)/include/gssapi/gssapi.h \
-  gssapi_err_generic.h $(COM_ERR_DEPS)
+  gssapi_err_generic.h $(COM_ERR_DEPS) $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5/autoconf.h
 util_buffer.so util_buffer.po $(OUTPRE)util_buffer.$(OBJEXT): util_buffer.c gssapiP_generic.h \
   gssapi_generic.h $(BUILDTOP)/include/gssapi/gssapi.h \
-  gssapi_err_generic.h $(COM_ERR_DEPS)
+  gssapi_err_generic.h $(COM_ERR_DEPS) $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5/autoconf.h
 util_oid.so util_oid.po $(OUTPRE)util_oid.$(OBJEXT): util_oid.c gssapiP_generic.h \
   gssapi_generic.h $(BUILDTOP)/include/gssapi/gssapi.h \
-  gssapi_err_generic.h $(COM_ERR_DEPS)
+  gssapi_err_generic.h $(COM_ERR_DEPS) $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5/autoconf.h
 util_ordering.so util_ordering.po $(OUTPRE)util_ordering.$(OBJEXT): util_ordering.c gssapiP_generic.h \
   gssapi_generic.h $(BUILDTOP)/include/gssapi/gssapi.h \
-  gssapi_err_generic.h $(COM_ERR_DEPS)
+  gssapi_err_generic.h $(COM_ERR_DEPS) $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5/autoconf.h
 util_set.so util_set.po $(OUTPRE)util_set.$(OBJEXT): util_set.c gssapiP_generic.h \
   gssapi_generic.h $(BUILDTOP)/include/gssapi/gssapi.h \
-  gssapi_err_generic.h $(COM_ERR_DEPS)
+  gssapi_err_generic.h $(COM_ERR_DEPS) $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5/autoconf.h
 util_token.so util_token.po $(OUTPRE)util_token.$(OBJEXT): util_token.c gssapiP_generic.h \
   gssapi_generic.h $(BUILDTOP)/include/gssapi/gssapi.h \
-  gssapi_err_generic.h $(COM_ERR_DEPS)
+  gssapi_err_generic.h $(COM_ERR_DEPS) $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5/autoconf.h
 util_validate.so util_validate.po $(OUTPRE)util_validate.$(OBJEXT): util_validate.c gssapiP_generic.h \
   gssapi_generic.h $(BUILDTOP)/include/gssapi/gssapi.h \
-  gssapi_err_generic.h $(COM_ERR_DEPS)
+  gssapi_err_generic.h $(COM_ERR_DEPS) $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5/autoconf.h
 gssapi_err_generic.so gssapi_err_generic.po $(OUTPRE)gssapi_err_generic.$(OBJEXT): gssapi_err_generic.c \
   $(COM_ERR_DEPS)
 

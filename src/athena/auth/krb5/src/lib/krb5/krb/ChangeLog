@@ -1,3 +1,48 @@
+2004-02-06  Sam Hartman  <hartmans@avalanche-breakdown.mit.edu>
+
+	* init_ctx.c (DEFAULT_ETYPE_LIST): Include aes128-cts
+
+2003-12-13  Ken Raeburn  <raeburn@mit.edu>
+
+	* mk_req_ext.c (krb5int_generate_and_save_subkey): New function,
+	split out from krb5_mk_req_extended.
+	(krb5_mk_req_extended): Call it.
+	* mk_rep.c (krb5_mk_rep): If KRB5_AUTH_CONTEXT_USE_SUBKEY flag is
+	set, call krb5int_generate_and_save_subkey to set up a new subkey
+	to send to the client.
+
+	* serialize.c (krb5_ser_pack_int64, krb5_ser_unpack_int64): New
+	functions.
+
+2003-10-30  Tom Yu  <tlyu@mit.edu>
+
+	* gen_seqnum.c (krb5_generate_seq_number): Fix mask; was short by
+	4 bits.
+
+2003-10-08  Tom Yu  <tlyu@mit.edu>
+
+	* rd_safe.c (krb5_rd_safe_basic): Save the encoded KRB-SAFE-BODY
+	to avoid trouble caused by re-encoding.  Also, handle correctly
+	implemented RFC 1510 KRB-SAFE, i.e., checksummed over
+	KRB-SAFE-BODY only.
+
+2003-09-02  Tom Yu  <tlyu@mit.edu>
+
+	* conv_creds.c (krb524_convert_creds_plain): Apply patch from
+	Cesar Garcia to fix lifetime computation.
+
+2003-08-19  SamHartman  <hartmans@avalanche-breakdown.mit.edu>
+
+	* rd_cred.c (decrypt_credencdata): Don't double free credentials.
+
+2003-08-08  Tom Yu  <tlyu@mit.edu>
+
+	* gic_pwd.c (krb5_get_init_creds_password): If DNS SRV support is
+	turned off, the second call to get_init_creds() will fail with
+	KRB5_REALM_UNKNOWN under certain circumstances.  If that happens,
+	return the error from the first call to get_init_creds(), which
+	will be more useful to the user.
+
 2003-07-22  Sam Hartman  <hartmans@avalanche-breakdown.mit.edu>
 
 	* preauth2.c (krb5_do_preauth): Use the etype_info2 decoder for decoding etype_info2

@@ -25,7 +25,7 @@ TYPEDEF_FUNC(
     int,
     PASCAL,
     krb_sendauth,
-    (long, int, KTEXT_FP, char *, char *, char *,
+    (long, int, KTEXT, char *, char *, char *,
      unsigned long, MSG_DAT *, CREDENTIALS *, 
      Key_schedule *, struct sockaddr_in *, 
      struct sockaddr_in FAR *, char *)
@@ -302,5 +302,16 @@ TYPEDEF_FUNC(
     lsh_LoadKrb4LeashErrorTables,
     (HMODULE hLeashDll, INT useCallBackFunction)
     );
-
+TYPEDEF_FUNC(
+    int,
+    CALLCONV_C,
+    krb_life_to_time,
+    (int start, int life)
+    );
+TYPEDEF_FUNC(
+    int,
+    CALLCONV_C,
+    krb_time_to_life,
+    (int start, int end)
+    );
 #endif /* __LOADFUNCS_KRB_H__ */

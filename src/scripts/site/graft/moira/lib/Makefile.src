@@ -1,0 +1,34 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=libmoira
+TARGETTYPE=LIB
+TARGETSS=console
+
+OBJS= \
+#	$(O)\critical.obj \
+	$(O)\fixhost.obj \
+	$(O)\fixname.obj \
+	$(O)\hash.obj \
+	$(O)\kname_unparse.obj \
+	$(O)\krb_et.obj \
+	$(O)\mr_access.obj \
+	$(O)\mr_auth.obj \
+	$(O)\mr_call.obj \
+	$(O)\mr_connect.obj \
+	$(O)\mr_et.obj \
+	$(O)\mr_init.obj \
+	$(O)\mr_ops.obj \
+	$(O)\mr_query.obj \
+	$(O)\nfsparttype.obj \
+	$(O)\sq.obj \
+	$(O)\strs.obj \
+	$(O)\ureg_err.obj
+
+USE_DEFAULTLIB=1
+INCLUDES=..\util\et;..\include;$(PISMERE)\athena\auth\krb4\include;$(PISMERE)\athena\wshelper\include
+
+USE_LIBC_DLL=1
+
+C_DEFINE=-DHAVE_HESIOD

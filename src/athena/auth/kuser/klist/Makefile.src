@@ -9,13 +9,14 @@ TARGETSS=console
 OBJS= \
 	$(O)\klist.obj
 
-DELAY_DLLS=comerr32.dll,krb5_32.dll,krbv4w32.dll
+DELAY_DLLS=comerr32.dll,krb5_32.dll,krbv4w32.dll,krbcc32.dll
 
 DEP_LIBS=..\$(O)\kuser.lib \
 	$(PISMERE)\target\lib\$(T)\getopt.lib \
 	$(PISMERE)\target\lib\$(T)\krb5_32.lib \
 	$(PISMERE)\target\lib\$(T)\krbv4w32.lib \
-	$(PISMERE)\target\lib\$(T)\comerr32.lib
+	$(PISMERE)\target\lib\$(T)\comerr32.lib \
+    $(PISMERE)\target\lib\$(T)\krbcc32.lib
 
 LIBS=advapi32.lib wsock32.lib $(DEP_LIBS)
 

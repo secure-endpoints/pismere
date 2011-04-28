@@ -210,6 +210,18 @@ krb_get_pw_in_tkt(
     LPSTR password
     )
 {
+    /* In spite of the comments above, we don't allow that path here,
+       to simplify coding the non-UNIX clients. The only code that now
+       depends on this behavior is the preauth support, which has a
+       seperate function without this trap. Strictly speaking, this 
+       is an API change. 
+     
+       Imported from krb5 tree for kfw 2.6.
+     */
+
+    if (password == 0)
+    	return INTK_PW_NULL;
+
     return(krb_get_in_tkt(user,instance,realm,service,sinstance,life,
                           passwd_to_key, (int(*))NULL, password));
 }
@@ -255,6 +267,15 @@ krb_get_pw_in_tkt_preauth(user,instance,realm,service,sinstance,life,password)
    char *preauth_p=NULL;
    int   preauth_len=0;
    int   ret_st=0;
+
+    /* On non-Unix systems, we can't handle a null password, because
+       passwd_to_key can't handle prompting for the password.  
+     
+       Imported from krb5 tree for kfw 2.6.
+     */
+    if (password == 0)
+        return INTK_PW_NULL;
+
 
    krb_mk_preauth(&preauth_p, &preauth_len, (key_proc_type)passwd_to_key,
 		  user, instance, realm, password, old_key);

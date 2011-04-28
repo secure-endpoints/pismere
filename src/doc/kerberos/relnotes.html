@@ -1,24 +1,24 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-  <title>Release Notes for Kerberos for Windows 2.5 Beta 5</title>
-  <meta name="author" content="Jeffrey Altman &lt;jaltman@mit.edu&gt;">
+  <title>Release Notes for Kerberos for Windows 2.6</title>
+  <meta content="Jeffrey Altman &lt;jaltman@mit.edu&gt;" name="author">
 </head>
 <body>
 <center>
-<h1>Kerberos for Windows 2.5 Beta 5<br>
+<h1>Kerberos for Windows 2.6<br>
 </h1>
 <p>
 </p>
 <h2>Release Notes</h2>
 <p>
 </p>
-<h3>3 August 2003</h3>
+<h3>21 March 2004</h3>
 </center>
 <h3>Table of Contents</h3>
 <ul type="disc">
   <li><a href="#intro">Overview</a> </li>
-  <li><a href="#whatsnew">What's New in KfW 2.5</a> </li>
+  <li><a href="#whatsnew">What's New in KfW 2.6</a> </li>
   <li><a href="#requirements">System Requirements</a> </li>
   <li><a href="#config">Installation and Configuration</a>
     <ul>
@@ -41,15 +41,32 @@ Configuration</a> </li>
       <li><a href="#config_services">Services File</a> </li>
       <li><a href="#config_cache">Ticket Cache</a> </li>
       <li><a href="#config_time">Date and Time Issues</a></li>
-      <li><a href="relnotes.html#leashw32_api">Leashw32 API</a></li>
-      <li><a
- href="file:///C:/src/kerberos/mit-cvs/pismere/doc/kerberos/relnotes.html#devnotes_registry">Registry
-and Environment Settings</a></li>
     </ul>
   </li>
-  <li><a href="#command_line">Command Line Options</a> </li>
-  <li><a href="#build">Building from Sources</a> </li>
-  <li><a href="#issues">Known Issues</a> </li>
+  <li><a href="#command_line">Command Line Options</a></li>
+  <ul>
+    <li><a href="#leash32">leash32.exe</a></li>
+    <li><a href="#kinit">kinit.exe</a></li>
+    <li><a href="#klist">klist.exe</a></li>
+    <li><a href="#kdestroy">kdestroy.exe</a></li>
+    <li><a href="#aklog">aklog.exe</a><br>
+    </li>
+  </ul>
+  <li><a href="#build">Building from Sources</a></li>
+  <li><a href="#installer_notes">Notes on the NSIS Installer Scripts</a><br>
+  </li>
+  <li><a
+ href="file:///C:/src/kerberos/mit-cvs/pismere/doc/kerberos/relnotes.html#leashw32_api">Leashw32
+API</a></li>
+  <li><a
+ href="file:///C:/src/kerberos/mit-cvs/pismere/doc/kerberos/relnotes.html#devnotes_registry">Registry
+and Environment Settings</a></li>
+  <li><a
+ href="file:///C:/src/kerberos/mit-cvs/pismere/doc/kerberos/relnotes.html#mslsa">Integration
+with Microsoft Kerberos LSA</a></li>
+  <li><a href="#gss-client">GSS Sample Client</a><br>
+  </li>
+  <li><a href="#issues">Known Issues</a></li>
   <li><a href="#history">Release History</a> </li>
   <li><a href="#todo">To Do</a> </li>
   <li><a href="#devnotes">Developer Notes</a>
@@ -69,11 +86,12 @@ releases...</a> </li>
 <p>MIT Kerberos for Windows (<em>KfW</em>) is an integrated <a
  href="http://web.mit.edu/kerberos/">Kerberos</a> release
 for Microsoft Windows operating systems. It includes the Kerberos v4
-library, Kerberos v5 library version 1.3.1, Kerberos v5 GSS API
+library, Kerberos v5 library version 1.3.2, Kerberos v5 GSS API
 library,
 Kerberos 524 library, KClient
-library, Leash API library, Leash GUI credentials manager,
-kinit/klist/kdestroy/krb524init command-line credentials managers, and
+API library, Leash API library, Leash GUI credentials manager,
+kinit/klist/kdestroy/krb524init/aklog command-line credentials
+managers, and
 an in-memory credentials cache.
 </p>
 <h3>Terminology</h3>
@@ -88,8 +106,87 @@ same thing.
 <!-- http://www.geek.com/glossary/glossary_search.cgi?protocol --><!-- http://www.m-w.com/cgi-bin/dictionary?protocol --><!-- http://www.whatis.com/WhatIs_Definition_Page/0,4152,212839,00.html --><!-- ---------------------------------------------------------------------- --></p>
 <p></p>
 <hr><a name="whatsnew"></a>
-<h2>What's New since Kerberos for Windows 2.1<br>
-</h2>
+<h2>What's New in Kerberos for Windows 2.6</h2>
+<ul>
+  <li>Leash has been turned into a System Tray application</li>
+</ul>
+<ul>
+  <li>Leash implements IP address change detection which is used in
+conjunction with KDC Probing to determine when ticket getting dialogs
+should be displayed to the end user</li>
+</ul>
+<ul>
+  <li>Leash API functions no longer display dialogs to the end user on
+failure</li>
+</ul>
+<ul>
+  <li>Kerberos 5 Credential Cache Name changes are now functional</li>
+</ul>
+<ul>
+  <li>aklog support for Kerberos 5 credentials has been added [-5
+switch]</li>
+</ul>
+<ul>
+  <li>krb5_cc api support for accessing the Microsoft Kerberos LSA
+cache in read-only mode.&nbsp; Use a ccache name of "MSLSA:".<br>
+  </li>
+</ul>
+<ul>
+  <li>Kerberos 5 library updated to release 1.3.2<br>
+  </li>
+</ul>
+<ul>
+  <li>KClient and GSSAPI libraries will now automatically display the
+Leash Obtain Ticket Getting Tickets dialog box when a request for
+service tickets is made and no TGTs exist.&nbsp; This can be disabled
+by defining the environment variable <span style="font-weight: bold;">KERBEROSLOGIN_NEVER_PROMPT</span>.<br>
+  </li>
+</ul>
+<ul>
+  <li>The Leash online help functionality has been updated.&nbsp; The
+HtmlHelp engine is now used instead of WinHelp.&nbsp; All content has
+been updated.</li>
+</ul>
+<ul>
+  <li>A new installer based on the open source NullSoft Installation
+System is provided.&nbsp; Source is provided as part of the SDK to
+allow for customization.</li>
+</ul>
+<ul>
+  <li>A new GSS Sample Application client has been added to the
+distribution which is compatible with the Unix gss-server sample
+service.</li>
+</ul>
+<ul>
+  <li>Improvements to the Winsock Helper Library (WSHELP32.DLL) to
+avoid several problems related to initializing the list of DNS
+servers.&nbsp; Whenever possible the operating system versions of
+resolver functions are used instead of the internal versions.<br>
+  </li>
+</ul>
+<h3>What's New since Kerberos for Windows 2.5<br>
+</h3>
+<ul>
+  <li>The order of Kerberos 5 and Kerberos 4 tickets in the Leash
+credential tree are reversed</li>
+</ul>
+<ul>
+  <li>Status Bar string formatting corrected for AFS Token lifetimes</li>
+</ul>
+<ul>
+  <li>Automatic Ticket Renewals performed on AFS Token expiration</li>
+</ul>
+<ul>
+  <li>Error dialogs are suppressed for when using Leash API calls for
+check password, kinit, and change password</li>
+</ul>
+<ul>
+  <li>AFS Tokens are obtained via a krb524 of a Kerberos 5 AFS ticket
+in preference to obtaining a Kerberos 4 AFS Ticket<br>
+  </li>
+</ul>
+<h3>What's New since Kerberos for Windows 2.1<br>
+</h3>
 <ul>
   <p> </p>
   <li>Kerberos v5 support is from MIT Kerberos v5 Release 1.3.1. In
@@ -138,7 +235,7 @@ of the KRB5.INI file.</li>
     </ul>
     <br>
   </li>
-  <li>Leash Credential Manager improvements</li>
+  <li>Leash Credential Manager improvements:</li>
   <ul>
     <li>Leash behaves nicely with missing or incomplete configuration
 files</li>
@@ -274,7 +371,13 @@ Maximize and Normal window creation</li>
 <ul>
   <ul>
     <li>Ticket Encryption Types and Addresses are displayed for
-Kerberos 5 tickets<br>
+Kerberos 5 tickets</li>
+  </ul>
+</ul>
+<ul>
+  <ul>
+    <li>Andrew File System token retrieval (if either OpenAFS or
+IBM <b>AFS</b>® Version 3.6 are installed.)<br>
     </li>
   </ul>
   <ul>
@@ -282,11 +385,13 @@ Kerberos 5 tickets<br>
   </ul>
   <li>Leashw32 API expanded to provide access to the new Ticket
 Initialization and Change Passwords dialogs; and get/set/reset
-functions to alter Leash and Kerberos behavior<br>
+functions to alter Leash and Kerberos behavior</li>
+  <br>
+  <li>New Leash End User documentation provided in PDF format<br>
   </li>
 </ul>
 See the README file for Kerberos 5 for details of the changes in the
-Kerberos 5 version 1.3.1 distribution.<!-- ---------------------------------------------------------------------- -->
+Kerberos 5 version 1.3.2 distribution.<!-- ---------------------------------------------------------------------- -->
 <p></p>
 <hr><a name="requirements"></a>
 <h2>System Requirements</h2>
@@ -320,7 +425,9 @@ Socket 2 Update for Windows 95 page</a>.
 </p>
 <h3>Microsoft Redistributable DLLs</h3>
 <p>The following versions or newer of several freely redistributable
-Microsoft DLLs are required:
+Microsoft DLLs are required depending on the compiler release used to
+build the distribution.&nbsp; The MIT distribution is built using the
+Microsoft Visual Studio .NET 2003 C/C++ compiler:
 </p>
 <p>
 <table border="0" width="100%">
@@ -333,6 +440,90 @@ Microsoft DLLs are required:
       <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
       <td><b>Description</b> </td>
     </tr>
+    <tr>
+      <td style="vertical-align: top;">*<br>
+      </td>
+      <td style="vertical-align: top;">mfc71.dll<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">7.10.3077.0<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">MSVS.NET 2003 MFCDLL Shared
+Library - Retail Version</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">*<br>
+      </td>
+      <td style="vertical-align: top;">msvcr71.dll<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">7.10.3052.4<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">MSVS.NET 2003 Microsoft (R) C
+Runtime Library</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">*<br>
+      </td>
+      <td style="vertical-align: top;">msvcp71.dll<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">7.10.3077.0<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">MSVS.NET 2003 Microsoft (R) C
+Runtime Library</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">mfc70.dll<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">7.00.9466.0<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">MSVS.NET MFCDLL Shared Library -
+Retail Version</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">msvcr70.dll<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">7.00.9466.0<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">MSVS.NET Microsoft (R) C Runtime
+Library</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">msvcp70.dll<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">7.00.9466.0<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">MSVS.NET Microsoft (R) C Runtime
+Library</td>
+    </tr>
     <tr valign="top">
       <td><br>
       </td>
@@ -342,7 +533,7 @@ Microsoft DLLs are required:
       <td>6.0.8665.0</td>
       <td><br>
       </td>
-      <td>MFCDLL Shared Library - Retail Version </td>
+      <td>MSVC++ 6.0 MFCDLL Shared Library - Retail Version </td>
     </tr>
     <tr valign="top">
       <td><br>
@@ -353,7 +544,7 @@ Microsoft DLLs are required:
       <td>6.0.8168.0</td>
       <td><br>
       </td>
-      <td>Microsoft (R) C Runtime Library </td>
+      <td>MSVC++ 6.0 Microsoft (R) C Runtime Library </td>
     </tr>
     <tr valign="top">
       <td><br>
@@ -364,10 +555,10 @@ Microsoft DLLs are required:
       <td>6.0.8168.0</td>
       <td><br>
       </td>
-      <td>Microsoft (R) C++ Runtime Library </td>
+      <td>MSVC++ 6.0 Microsoft (R) C++ Runtime Library </td>
     </tr>
     <tr valign="top">
-      <td><br>
+      <td>*<br>
       </td>
       <td>psapi.dll</td>
       <td><br>
@@ -386,13 +577,13 @@ msvcp60 - 98SE and higher
 psapi - NT 4, 2000, XP (not needed on 9x/Me)
 -->
 </p>
+<p>The <em>KfW Installer</em> will install the DLLs marked by an
+asterisk.
+</p>
 <p>To see what Microsoft products ship with which version of these
 DLLs, you can use the <a
  href="http://support.microsoft.com/servicedesks/fileversion/dllinfo.asp">DLL
 Help Database</a>.
-</p>
-<p>The <em>KfW Installer</em> will install any of these DLLs that are
-missing.
 </p>
 <p>If you are not using the installer and you are missing some of
 these DLLs, you can download the <em>Microsoft Redistributable
@@ -422,6 +613,17 @@ difficult to do.
       <td><b>Filename</b></td>
       <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
       <td><b>Description</b> </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">aklog.exe<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">command-line app to retrieve AFS
+tokens using Kerberos 4 tickets<br>
+      </td>
     </tr>
     <tr valign="top">
       <td><br>
@@ -583,25 +785,30 @@ credentials into the MIT Kerberos v5 credentials cache. </td>
 <p>It is recommended that all binaries be installed into
 a
 single directory in the user's PATH. Make sure that you do not have
-other Kerberos binaries in your PATH.
-<!-- ---------------------------------------------------------------------- --><a
+other Kerberos binaries in your PATH.<br>
+</p>
+<p><!-- ---------------------------------------------------------------------- --><a
  name="config_locate"></a></p>
 <h3>Locating Kerberos Configuration Files</h3>
 <p>
 The simplest configuration is to put the <code>krb5.ini</code>,
 <code>krb.con</code>, and <code>krbrealm.con</code> configuration
-files in the same directory as the Kerberos DLLs or in the Windows
-directory.
-<!-- ---------------------------------------------------------------------- --><a
+files in the Windows
+directory (or in the same directory as the Kerberos DLLs).&nbsp; The
+NSIS installer looks for configuration files only in the Windows
+directory.<br>
+</p>
+<p><!-- ---------------------------------------------------------------------- --><a
  name="config_locate_krb5"></a></p>
 <h4>Kerberos 5</h4>
 <p>
 Kerberos 5 needs a single configuration file: <code>krb5.ini</code>.
-You can put it in the same directory as the DLL and everything will
-work fine. You can also put it in the Windows directory. You can
-even point to an arbitrary file by setting the
-<code>KRB5_CONFIG</code> environment variable.
-<!-- ---------------------------------------------------------------------- --><a
+You can put it in the Windows directory;&nbsp; or you can put it in the
+same directory as the DLL; or you can point to an arbitrary file by
+setting the
+<code>KRB5_CONFIG</code> environment variable.<br>
+</p>
+<p><!-- ---------------------------------------------------------------------- --><a
  name="config_locate_krb4"></a></p>
 <h4>Kerberos 4</h4>
 <p>
@@ -629,8 +836,9 @@ where Kerberos 4 will search:
 (<a name="c1"><b>*</b></a>) Note: If you put the files in the DLL's
 directory, this part of the search is what will take you there. If
 you have another config file earlier in the search, that will take
-precedence, so be careful.
-<!-- ---------------------------------------------------------------------- --><a
+precedence, so be careful.<br>
+</p>
+<p><!-- ---------------------------------------------------------------------- --><a
  name="config_modify"></a></p>
 <h3>Modifying Kerberos Configuration Files</h3>
 <p><b>IMPORTANT</b>: Leash can be used to manage the Kerberos 5 and
@@ -639,8 +847,9 @@ configuration files. Leash enforces a requirement that the Realm, KDC,
 and Realm/DNS mapping information is equivalent for both Kerberos 4 and
 Kerberos 5.&nbsp; If this is not true for your Realms, you should not
 use Leash to manage the configuration files.&nbsp; Instead use a text
-editor such as Notepad.
-<!-- ---------------------------------------------------------------------- --><a
+editor such as Notepad.<br>
+</p>
+<p><!-- ---------------------------------------------------------------------- --><a
  name="config_modify_krb5"></a></p>
 <h4>Kerberos 5</h4>
 <p>
@@ -652,7 +861,9 @@ website)</a>section in the <a
 v5 System
 Administrator's Guide</a> <a
  href="http://web.mit.edu/kerberos/www/krb5-1.3/krb5-1.3/doc/krb5-admin.html">(MIT
-website)</a>. <a name="config_modify_krb4"></a></p>
+website)</a>.<br>
+</p>
+<p><a name="config_modify_krb4"></a></p>
 <h4>Kerberos 4</h4>
 <p>
 It is anticipated that most sites using Kerberos version 4 on Windows
@@ -703,8 +914,9 @@ the corresponding realm is the realm of the host.
 <p>If no translation entry applies, the host's realm is considered to
 be
 the hostname's domain portion converted to uppercase.
-<!-- ---------------------------------------------------------------------- --><a
- name="config_dns">
+<!-- ---------------------------------------------------------------------- --><br>
+<br>
+<a name="config_dns">
 <h3>Using DNS Lookups for Kerberos Configuration</h3>
 </a>
 </p>
@@ -763,11 +975,7 @@ Example records are:
 <p>A DNS SRV record which specifies a port of "0" and a hostname of "."
 indicates that the requested service is not available in the requested
 realm. <br>
-<br>
 </p>
-<blockquote>
-  <pre><br><br><br></pre>
-</blockquote>
 <!-- ---------------------------------------------------------------------- -->
 <a name="config_services"></a>
 <h3>Services File</h3>
@@ -780,8 +988,9 @@ also has proper defaults (port 88 with a fallback to 750) in case the
 services file is missing the entries for kerberos and kerberos-sec.
 </p>
 <p>If your site uses non-standard ports, you will still need a services
-file appropriate for your site.
-<!-- ---------------------------------------------------------------------- --><a
+file appropriate for your site.<br>
+</p>
+<p><!-- ---------------------------------------------------------------------- --><a
  name="config_cache"></a></p>
 <h3>Ticket Cache</h3>
 <p>
@@ -802,8 +1011,9 @@ values by playing with these settings in HKLM.
 </p>
 <p>Kerberos 5 does support using file-based tickets, but their use is
 not
-recommend, as they are potentially less secure.
-<!-- ---------------------------------------------------------------------- --><a
+recommend, as they are potentially less secure.<br>
+</p>
+<p>&nbsp;<!-- ---------------------------------------------------------------------- --><a
  name="config_time"></a></p>
 <h3>Date and Time Issues</h3>
 <p>
@@ -842,20 +1052,21 @@ configured, NTP program on your machine.
 <p></p>
 <hr><a name="command_line"></a>
 <h2>Command Line Options</h2>
-<h3>leash32</h3>
+<h3><a name="leash32"></a>leash32</h3>
 <p>
 The command line options for <b>leash32</b> are:
 </p>
-<pre>	-kinit, -i		only perform a kinit and then exit Leash<br>	-ms2mit, -import, -m	only perform a ms2mit import and then exit Leash<br>	-renew, -r		only perform a credential renewal and then exit Leash<br>	-destroy, -d		only perform a kdestroy and then exit Leash<br>	-autoinit, -a		perform a kinit if credential cache is empty<br></pre>
-<h3></h3>
-<h3>kinit, klist, kdestroy</h3>
-<p>
-The options for kinit, klist, and kdestroy can be viewed by typing the
-name of the utility followed by <code>-?</code> (e.g., <code>kinit
--?</code>).
-<!----------------------------------------------------------------------------></p>
-<p></p>
-<hr><a name="build">
+<pre style="margin-left: 40px;">-kinit, -i		only perform a kinit and then exit Leash<br>-ms2mit, -import, -m	only perform a ms2mit import and then exit Leash<br>-renew, -r		only perform a credential renewal and then exit Leash<br>-destroy, -d		only perform a kdestroy and then exit Leash<br>-autoinit, -a		perform a kinit if credential cache is empty<br></pre>
+<h3 style="margin-left: 40px;"></h3>
+<h3><a name="kinit"></a>kinit</h3>
+<pre style="margin-left: 40px;">Usage: kinit [-5] [-4] [-V] [-l lifetime] [-s start_time]<br>        [-r renewable_life] [-f | -F | --forwardable | --noforwardable]<br>        [-p | -P | --proxiable | --noproxiable]<br>        [-A | --addresses | --noaddresses]<br>        [-v] [-R] [-k [-t keytab_file]]<br>        [-c cachename] [-S service_name] [principal]<br><br>    options:                                          valid with Kerberos:<br>	-5 Kerberos 5 (available)<br>	-4 Kerberos 4 (available)<br>	   (Default behavior is to try Kerberos 5 and Kerberos 4)<br>	-V verbose                                        Either 4 or 5<br>	-l lifetime                                       Either 4 or 5<br>	-s start time                                     5<br>	-r renewable lifetime                             5<br>	-f forwardable                                    5<br>	-F not forwardable                                5<br>	-p proxiable                                      5<br>	-P not proxiable                                  5<br>	-A do not include addresses                       5<br>	-v validate                                       5<br>	-R renew                                          5, or both 5 and 4<br>	-k use keytab                                     5, or both 5 and 4<br>	-t filename of keytab to use                      5, or both 5 and 4<br>	-c Kerberos 5 cache name                          5<br>	-S service                                        5, or both 5 and 4<br></pre>
+<h3><a name="klist"></a>klist</h3>
+<pre style="margin-left: 40px;"><span style="font-family: sans-serif;">Usage: klist.exe [-5] [-4] [-e] [[-c] [-C] [-f] [-s] [-a [-n]]] [-k [-t] [-K]] [name]<br><br>        -5 Kerberos 5 (available)<br>        -4 Kerberos 4 (available)<br>           (Default is Kerberos 5 and Kerberos 4)<br>        -c specifies credentials cache<br>	-C enumerates all credentials caches<br>        -k specifies keytab<br>           (Default is credentials cache)<br>        -e shows the encryption type<br>        options for credential caches:<br>                -f shows credentials flags<br>                -s sets exit status based on valid tgt existence<br>                -a displays the address list<br>                        -n do not reverse-resolve<br>        options for keytabs:<br>                -t shows keytab entry timestamps<br>                -K shows keytab entry DES keys</span><br></pre>
+<h3><a name="kdestroy"></a>kdestroy</h3>
+<pre style="margin-left: 40px;">Usage: kdestroy.exe [-5] [-4] [-q] [-c cache_name]<br>        -5 Kerberos 5 (available)<br>        -4 Kerberos 4 (available)<br>           (Default is Kerberos 5 and Kerberos 4)<br>        -q quiet mode<br>        -c specify name of credentials cache<br></pre>
+<h3><a name="aklog"></a>aklog</h3>
+<pre style="margin-left: 40px;">Usage: aklog [-d] [[-cell | -c] cell [-k krb_realm]] [[-p | -path] pathname]<br>    [-noprdb] [-force] [-5 | -4]<br><br>    -d gives debugging information.<br>    krb_realm is the kerberos realm of a cell.<br>    pathname is the name of a directory to which you wish to authenticate.<br>    -noprdb means don't try to determine AFS ID.<br>    -5 or -4 selects whether to use Kerberos V or Kerberos IV<br>    No commandline arguments means authenticate to the local cell.<br></pre>
+<hr style="margin-left: 40px;"><a name="build">
 <h2>Building from Sources</h2>
 </a>
 <p>Building KfW is supported on Windows NT 4.0, Windows 2000, and
@@ -904,8 +1115,302 @@ the <code>athena</code> directory. You can go into
 <code>target\bin\i386\dbg</code> (replacing <code>i386</code> with the
 right CPU and <code>dbg</code> with <code>rel</code> if building
 release targets), and run the binaries. The debug symbols for the
-debug build also get placed there in case you need to debug.
-<!-- ---------------------------------------------------------------------- --></p>
+debug build also get placed there in case you need to debug.<br>
+</p>
+<hr style="width: 100%; height: 2px;"><a name="installer_notes"></a>
+<h2>Notes on the NSIS Installer scripts</h2>
+The Kerberos for Windows installer is built using the <a
+ href="http://nsis.sourceforge.net/site/index.php">Nullsoft Scriptable
+Installation System</a> Version 2.0.&nbsp; The source files for the
+installer script are included as part of the KfW SDK component.&nbsp;
+These
+include:<br>
+<table style="text-align: left; width: 699px; height: 271px;" border="1"
+ cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;">Edit<br>
+      </td>
+      <td style="vertical-align: top; width: 20%;"><span
+ style="text-decoration: underline;">File Name</span><br>
+      </td>
+      <td style="vertical-align: top;"><span
+ style="text-decoration: underline;">Description</span><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; text-align: center;">N<br>
+      </td>
+      <td style="vertical-align: top; width: 20%;">kfw.nsi<br>
+      </td>
+      <td style="vertical-align: top;">Top level install script<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; text-align: center;">N<br>
+      </td>
+      <td style="vertical-align: top; width: 20%;">kfw-fixed.nsi<br>
+      </td>
+      <td style="vertical-align: top;">script containing kfw install
+functions<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; text-align: center;">N<br>
+      </td>
+      <td style="vertical-align: top; width: 20%;">utils.nsi<br>
+      </td>
+      <td style="vertical-align: top;">script containing general
+purpose nsis functions useful to other installers<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; text-align: center;">Y<br>
+      </td>
+      <td style="vertical-align: top; width: 20%;">site-local.nsi<br>
+      </td>
+      <td style="vertical-align: top;">script containing site local
+definitions detailing how the distribution was compiled and where the
+source binaries are to be found<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; text-align: center;">N<br>
+      </td>
+      <td style="vertical-align: top; width: 20%;">KfWConfigPage.ini<br>
+      </td>
+      <td style="vertical-align: top;">page layout information for the
+first configuration page<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; text-align: center;">N<br>
+      </td>
+      <td style="vertical-align: top; width: 20%;">KfWConfigPage2.ini<br>
+      </td>
+      <td style="vertical-align: top;">page layout information for the
+second configuration page<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; text-align: center;">N<br>
+      </td>
+      <td style="vertical-align: top; width: 20%;">licenses.rtf<br>
+      </td>
+      <td style="vertical-align: top;">Kerberos 5 and Kerberos for
+Windows License text <br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; text-align: center;">N<br>
+      </td>
+      <td style="vertical-align: top; width: 20%;">kfw.ico<br>
+      </td>
+      <td style="vertical-align: top;">Kerberos for Windows icon file<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top; text-align: center;">N<br>
+      </td>
+      <td style="vertical-align: top; width: 20%;">killer.cpp<br>
+      </td>
+      <td style="vertical-align: top;">Source code to executable used
+to terminate running programs during uninstall<br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+To build an installer the site-local.nsi file must be modified to
+specify the appropriate values for the source files and type of
+installer you wish to build. <br>
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+ cellspacing="2">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;">Name<br>
+      </td>
+      <td style="vertical-align: top;">Default Value<br>
+      </td>
+      <td style="vertical-align: top;">Description<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">KFW_TARGETDIR<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">path to directory containing the
+subdirectories (bin\i386, lib\i386, doc, inc, install) where the target
+files may be found<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">KFW_CONFIG_DIR<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">path to directory containing
+config files (krb5.ini, krb.con, krbrealm.con) to be bundled with
+installer<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">KFW_MAJORVERSION<br>
+      </td>
+      <td style="vertical-align: top;">2<br>
+      </td>
+      <td style="vertical-align: top;">Major Version number of the
+installed files<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">KFW_MINORVERSION<br>
+      </td>
+      <td style="vertical-align: top;">6<br>
+      </td>
+      <td style="vertical-align: top;">Minor Version number of the
+installed files<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">KFW_PATCHLEVEL<br>
+      </td>
+      <td style="vertical-align: top;">0000<br>
+      </td>
+      <td style="vertical-align: top;">Four digit patchlevel of the
+installed files<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">SAMPLE_CONFIG_REALM<br>
+      </td>
+      <td style="vertical-align: top;">ATHENA.MIT.EDU<br>
+      </td>
+      <td style="vertical-align: top;">Default realm specified in the
+bundled configuration files<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">HTTP_CONFIG_URL<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">Default URL for obtaining config
+files via HTTP<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">must define one of:<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">CL_1200<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">Indicator that MSVC 6.0 was used
+to build the binaries<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">CL_1300<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">Indicator that MSVS .NET was
+used to build the binaries<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">CL_1310<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">Indicator that MSVS .NET 2003
+was used to build the binaries<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">define at most one of:<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">if neither are specified, a time
+stamped installer containing release versions of the runtime components.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">RELEASE<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">Indicates that a release
+installer is being built.&nbsp; Installer includes release versions of
+the runtime components.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">DEBUG<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">Indicates that a debug installer
+is being built.&nbsp; Installer includes debug versions of runtime
+components.<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">optional defines:<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">BETA<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">A numeric beta version number<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">OLDHELP<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">Specifies the use of the old
+leash32.hlp file instead of the new leash32.chm file<br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+To build an installer execute the following steps:<br>
+<ul>
+  <li>cl.exe killer.cpp advapi32.lib</li>
+  <li>"c:\program files\nsis\makensis.exe" kfw.nsi</li>
+</ul>
+It is worth noting that the "makensis.exe" used to build the MIT
+distributed installer was built from the NSIS sources with two
+modifications to the NSIS\Source\exehead\config.h file:<br>
+<ul>
+  <li>NSIS_MAX_STRLEN is defined to be 4096 to support systems with
+very long PATH environment variables</li>
+  <li>NSIS_CONFIG_LOG is defined</li>
+  <li>NSIS_CONFIG_LOG_ODS is defined<br>
+  </li>
+</ul>
+The installer constructs the following registry keys for maintaining
+version and module specific information:<br>
+<pre style="margin-left: 40px;">Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/15/2004 - 9:59 PM<br>Value 0<br>  Name:            InstallDir<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 1<br>  Name:            Installer Language<br>  Type:            REG_SZ<br>  Data:            1033<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Client<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Client\2.6<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br>Value 8<br>  Name:            AllowTGTSessionKeyBackup<br>  Type:            REG_DWORD<br>  Data:            0x1<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Client\CurrentVersion<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Documentation<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Documentation\2.6<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\Documentation\CurrentVersion<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\SDK<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\SDK\2.6<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0<br><br><br>Key Name:          HKEY_LOCAL_MACHINE\SOFTWARE\MIT\Kerberos\SDK\CurrentVersion<br>Class Name:        &lt;NO CLASS&gt;<br>Last Write Time:   1/31/2004 - 3:47 AM<br>Value 0<br>  Name:            VersionString<br>  Type:            REG_SZ<br>  Data:            2.6<br><br>Value 1<br>  Name:            Title<br>  Type:            REG_SZ<br>  Data:            KfW<br><br>Value 2<br>  Name:            Description<br>  Type:            REG_SZ<br>  Data:            Kerberos for Windows<br><br>Value 3<br>  Name:            PathName<br>  Type:            REG_SZ<br>  Data:            C:\Program Files\MIT\Kerberos<br><br>Value 4<br>  Name:            Software Type<br>  Type:            REG_SZ<br>  Data:            Authentication<br><br>Value 5<br>  Name:            MajorVersion<br>  Type:            REG_DWORD<br>  Data:            0x2<br><br>Value 6<br>  Name:            MinorVersion<br>  Type:            REG_DWORD<br>  Data:            0x6<br><br>Value 7<br>  Name:            PatchLevel<br>  Type:            REG_DWORD<br>  Data:            0x0</pre>
+<br>
 <p></p>
 <hr><a name="issues"></a>
 <h2>Known Issues</h2>
@@ -995,9 +1500,15 @@ or in the SDK at <span style="font-weight: bold;">inc/leash/leashwin.h</span>.<b
 <a name="devnotes_registry"></a>
 <h2>Registry and Environment Settings</h2>
 <h3>Leash GUI</h3>
+<h4>afs token retrieval ( 0 or 1 )<br>
+</h4>
+<pre>   1. Use value from registry <br>      (HKCU\Software\MIT\Leash32\Settings,AfsStatus) if present.<br>   2. Otherwise, use value from registry <br>      (HKLM\Software\MIT\Leash32\Settings,AfsStatus) if present.<br>   3. Otherwise, use resource string if present.<br>   4. Otherwise, default to 1.<br></pre>
 <h4>automatic generation of missing configuration files ( 0 or 1 )<br>
 </h4>
 <pre>   1. Use value from registry <br>      (HKCU\Software\MIT\Leash32\Settings,createmissingconfig) if present.<br>   2. Otherwise, use value from registry <br>      (HKLM\Software\MIT\Leash32\Settings,createmissingconfig) if present.<br>   3. Otherwise, use resource string if present.<br>   4. Otherwise, default to 0.<br></pre>
+<h4>automatic ticket renewal ( 0 or 1 )<br>
+</h4>
+<pre>   1. Use value from registry <br>      (HKCU\Software\MIT\Leash32\Settings,AutoRenewTickets) if present.<br>   2. Otherwise, use value from registry <br>      (HKLM\Software\MIT\Leash32\Settings,AutoRenewTickets) if present.<br>   3. Otherwise, use resource string if present.<br>   4. Otherwise, default to 1.<br></pre>
 <h4>lock configuration files location ( 0 or 1 )<br>
 </h4>
 <pre>   1. Use value from registry <br>      (HKCU\Software\MIT\Leash,lock_file_locations) if present.<br>   2. Otherwise, use value from registry <br>      (HKLM\Software\MIT\Leash,lock_file_locations) if present.<br>   3. Otherwise, use resource string if present.<br>   4. Otherwise, default to 0.<br></pre>
@@ -1014,7 +1525,7 @@ or in the SDK at <span style="font-weight: bold;">inc/leash/leashwin.h</span>.<b
 <pre>   1. Use RENEWABLE environment value if defined.<br>   2. Otherwise, use value from registry <br>      (HKCU\Software\MIT\Leash,renewable) if present.<br>   3. Otherwise, use value from registry <br>      (HKLM\Software\MIT\Leash,renewable) if present.<br>   4. Otherwise, use Kerberos 5 profile if present<br>   5. Otherwise, use resource string if present.<br>   6. Otherwise, default to 0.<br></pre>
 <h4>default forwardable tickets setting ( 0 or 1 )<br>
 </h4>
-<pre>   1. Use FORWARDABLE environment value if defined.<br>   2. Otherwise, use value from registry <br>      (HKCU\Software\MIT\Leash,forwardable) if present.<br>   3. Otherwise, use value from registry <br>      (HKLM\Software\MIT\Leash,forwardable) if present.<br>   4. Otherwise, use Kerberos 5 profile if present<br>   5. Otherwise, use resource string if present.<br>   6. Otherwise, default to 0.<br></pre>
+<pre>   1. Use FORWARDABLE environment value if defined.<br>   2. Otherwise, use value from registry <br>      (HKCU\Software\MIT\Leash,forwardable) if present.<br>   3. Otherwise, use value from registry <br>      (HKLM\Software\MIT\Leash,forwardable) if present.<br>   4. Otherwise, use Kerberos 5 profile if present<br>   5. Otherwise, use resource string if present.<br>   6. Otherwise, default to 1.<br></pre>
 <h4>default addressless tickets setting ( 0 or 1 )<br>
 </h4>
 <pre>   1. Use Kerberos 5 profile setting (or default) if TRUE.<br>   2. Otherwise, use NOADDRESSES environment value if defined.<br>   3. Otherwise, use value from registry<br>      (HKCU\Software\MIT\Leash,noaddresses) if present.<br>  &nbsp;4. Otherwise, use value from registry <br>      (HKLM\Software\MIT\Leash,noaddresses) if present.<br>   5. Otherwise, use resource string if present.<br>   6. Otherwise, default to 1.<br></pre>
@@ -1053,9 +1564,290 @@ or in the SDK at <span style="font-weight: bold;">inc/leash/leashwin.h</span>.<b
 <pre>   1. %KRBTKFILE% if defined<br>   2. Registry setting, if setting is present<br>      (HKCU\MIT\Kerberos4,ticketfile)<br>   3. Registry setting, if setting is present<br>      (HKLM\MIT\Kerberos4,ticketfile)<br>   4. Otherwise, "API:krb4cc".<br>  (<br>   If a file-based cache is ever supported for Kerberos 4, code should do this:<br>   4. %TEMP%\ticket.krb, if var defined and dir exists<br>   5. %TMP%\ticket.krb, if var defined and dir exists<br>   6. c:\temp\ticket.krb if c:\temp exists<br>   7. c:\tmp\ticket.krb if c:\tmp exists<br>   8. GetWindowsDirectory()\ticket.krb as a last-ditch default?  It's<br>      either that or c:\ticket.krb!<br>   )<br><br></pre>
 <h3>Kerberos 5:</h3>
 <h4>A. location of krb5.ini:</h4>
-<pre>   1. %KRB5_CONFIG% if defined<br>   2. (HKCU\Software\MIT\kerberos5,config) if defined<br>   3. (HKCU\Software\MIT\kerberos5,config) if defined<br>   4. Otherwise, use GetWindowsDirectory()\krb5.ini<br>   (do this instead of OpenFile to make things more explicit/simple)<br><br></pre>
-<h4>B. credentials cache</h4>
+<pre>   1. %KRB5_CONFIG% if defined<br>   2. (HKCU\Software\MIT\kerberos5,config) if defined<br>   3. (HKCU\Software\MIT\kerberos5,config) if defined<br>   4. Otherwise, use GetWindowsDirectory()\krb5.ini<br><br></pre>
+<h4>B. Default credentials cache name<br>
+</h4>
 <pre>   1. %KRB5CCNAME% if defined<br>   2. (HKCU\Software\MIT\kerberos5,ccname) if defined<br>   3. (HKLM\Software\MIT\kerberos5,ccname) if defined<br>   4. If RegKRB5CCNAME is set under [Files] in kerberos.ini,<br>      look at that path in the registry (code already in krb5 for compat<br>      with Gradient DCE installations, I believe).<br>   5. Otherwise, if using CCAPI, default to "API:krb5cc".<br>                 if no CCAPI, use "FILE:" with:<br>      a. %TEMP%\krb5cc, if var defined and dir exists<br>      b. %TMP%\krb5cc, if var defined and dir exists<br>      c. c:\temp\krb5cc if c:\temp exists<br>      d. c:\tmp\krb5cc if c:\tmp exists<br>      e. GetWindowsDirectory()\krb5cc as a last-ditch default?<br>         it's either that or c:\krb5cc!<br></pre>
+<h4>C. MSLSA: credential cache client principal identity generation</h4>
+<pre>   1. (HKCU\Software\MIT\Kerberos5,PreserveInitialTicketIdentity) if defined<br>   2. (HKLM\Software\MIT\Kerberos5,PreserveInitialTicketIdentity) if defined<br>   3. Default is 1.<br></pre>
+<br>
+<hr style="width: 100%; height: 2px;">
+<pre><a name="mslsa"></a><br></pre>
+<h2>Integration with Microsoft Kerberos LSA</h2>
+As of the 1.3.2 release, a new cache type, MSLSA:, has been added for<br>
+use in accessing the Microsoft Kerberos Logon Session credentials<br>
+cache.&nbsp; The MSLSA: cache is available when the user logon is
+performed<br>
+using Kerberos either to an Active Directory Domain or a non-Microsoft<br>
+KDC.<br>
+<br>
+A user is able to logon to Windows using the Kerberos LSA if the machine<br>
+is part of a Windows 2000 or Windows 2003 Active Directory domain or<br>
+if the machine has been configured to authenticate to a non-Microsoft
+KDC<br>
+such as MIT.&nbsp; The instructions for configuring a Windows 2000 XP<br>
+workstation to authenticate to a non-Microsoft KDC are documented<br>
+in TechNet somewhere.&nbsp; In brief:<br>
+<ol>
+  <li>Install the Windows 2000 or XP support tools in order to obtain
+the tools: KSETUP.EXE and KTPASS.EXE.</li>
+  <li>Install the Windows 2000 or XP Resource Kit to obtain the tools
+KERBTRAY.EXE and KLIST.EXE</li>
+  <li>Add Realms and associated KDCs with: <span
+ style="font-weight: bold;">KSETUP /AddKdc &lt;realm&gt;
+[&lt;kdcname&gt;]</span>.&nbsp; If you leave off the &lt;kdcname&gt;
+DNS SRV records will be used.</li>
+  <li>Specify the password change service host for the realm with: <span
+ style="font-weight: bold;">KSETUP /AddKpasswd &lt;realm&gt;
+&lt;Kpwdhost&gt;</span></li>
+  <li>Assign the realm of the local machine with: <span
+ style="font-weight: bold;">KSETUP /SetRealm &lt;realm&gt;</span> where
+realm must be all upper case.</li>
+  <li>Assign the local machine's password with: <span
+ style="font-weight: bold;">KSETUP /SetComputerPassword &lt;Password&gt;</span></li>
+  <li>Specify the capabilities of the Realm KDC with: <span
+ style="font-weight: bold;">KSETUP /SetRealmFlags &lt;realm&gt;
+&lt;flag&gt; [&lt;flag&gt; ...]</span> where flags may be <span
+ style="font-weight: bold;">None, SendAddress, TcpSupported, Delegate,
+or NcSupported</span>,</li>
+  <li>Map principal names to local accounts with: <span
+ style="font-weight: bold;">KSETUP /MapUser &lt;principal&gt;
+&lt;account&gt;</span></li>
+</ol>
+On the MIT KDC, you must then create service principals using the
+"Password"<br>
+assigned to the machine.&nbsp; So far the minimum list of principals
+required appear<br>
+to be for a machine named "mymachine" in the realm "EXAMPLE.COM" with a<br>
+domain name of "example.com":<br>
+<ul>
+  <li>host/mymachine@EXAMPLE.COM</li>
+  <li>host/mymachine.example.com@EXAMPLE.COM</li>
+  <li>cifs/mymachine@EXAMPLE.COM</li>
+  <li>cifs/mymachine.example.com@EXAMPLE.COM</li>
+</ul>
+There may very well be other serivces for which principals must be
+created depending<br>
+on what services are being executed on the machine.<br>
+<br>
+It is very important to note that while you can successfully log into a
+Windows<br>
+workstation by authenticating to the KDC without creating a host key;
+the logon<br>
+session you receive will not be a Kerberos Logon Session.&nbsp; There
+will be no Kerberos<br>
+principal and no LSA cache to access.<br>
+<br>
+The result of a real KSETUP configuration looks like this:<br>
+<br>
+<pre>&nbsp;&nbsp; [C:\4\4NT]ksetup</pre>
+<pre>&nbsp;&nbsp; default realm = KRB5.COLUMBIA.EDU (external)</pre>
+<pre>&nbsp;&nbsp; ATHENA.MIT.EDU:</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; kdc = kerberos.mit.edu</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; kdc = kerberos-1.mit.edu</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; kdc = kerberos-2.mit.edu</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; kdc = kerberos-3.mit.edu</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Realm Flags = 0x0 none</pre>
+<pre>&nbsp;&nbsp; CC.COLUMBIA.EDU:</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; kdc = kerberos.cc.columbia.edu</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Realm Flags = 0x0 none</pre>
+<pre>&nbsp;&nbsp; GRAND.CENTRAL.ORG:</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; kdc = penn.central.org</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; kdc = grand-opening.mit.edu</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Realm Flags = 0x0 none</pre>
+<pre>&nbsp;&nbsp; KRB5.COLUMBIA.EDU:</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; kdc = yclept.kermit.columbia.edu</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Realm Flags = 0x0 none</pre>
+<pre>&nbsp;&nbsp; OPENAFS.ORG:</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; kdc = virtue.openafs.org</pre>
+<pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Realm Flags = 0x0 none</pre>
+<pre>&nbsp;&nbsp; Mapping jaltman@KRB5.COLUMBIA.EDU to jaltman.</pre>
+<pre>&nbsp;&nbsp; Mapping jaltman@CC.COLUMBIA.EDU to jaltman.</pre>
+<pre>&nbsp;&nbsp; Mapping jaltman@ATHENA.MIT.EDU to jaltman.</pre>
+<pre>&nbsp;&nbsp; Mapping all users (*) to a local account by the same name (*).<br><br></pre>
+The MSLSA: credential cache relies on the ability to extract the entire<br>
+Kerberos ticket including the session key from the Kerberos LSA.&nbsp;
+In an<br>
+attempt to increase security Microsoft has begun to implement a feature<br>
+by which they no longer export the session keys for Ticket Getting
+Tickets.<br>
+This has the side effect of making them useless to the MIT krb5 library<br>
+when attempting to request additional service tickets.<br>
+<br>
+This new feature has been seen in Windows 2003 Server, Windows 2000
+Server SP4,<br>
+and Windows XP SP2 Beta.&nbsp; We assume that it will be implemented in
+all future<br>
+Microsoft operating systems supporting the Kerberos SSPI.&nbsp;
+Microsoft does work<br>
+closely with MIT and has provided a registry key to disable this new
+feature.<br>
+<br>
+&nbsp; HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters<br>
+&nbsp;&nbsp;&nbsp; AllowTGTSessionKey = 0x01 (DWORD)<br>
+<br>
+On Windows XP SP2 Beta 1 the key was specified as <br>
+<br>
+&nbsp; HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos<br>
+&nbsp;&nbsp;&nbsp; AllowTGTSessionKey = 0x01 (DWORD)<br>
+<br>
+However, we anticipate that this will be changed to match the Server
+platforms <br>
+in time for SP2 RC1.<br>
+<br>
+It has been noted that the Microsoft Kerberos LSA does not provide
+enough <br>
+information within its KERB_EXTERNAL_TICKET structure to properly
+construct<br>
+the Client Principal simply by examining a single ticket. From the MSDN<br>
+Library:<br>
+<br>
+&nbsp; <span style="font-weight: bold;">ClientName </span><br>
+&nbsp;&nbsp;&nbsp; KERB_EXTERNAL_NAME structure that contains the
+client name in the ticket. <br>
+&nbsp;&nbsp;&nbsp; This name is relative to the current domain. <br>
+<br>
+&nbsp; <span style="font-weight: bold;">DomainName </span><br>
+&nbsp;&nbsp;&nbsp; UNICODE_STRING that contains the name of the domain
+that corresponds to <br>
+&nbsp;&nbsp;&nbsp; the ServiceName member. This is the domain that
+issued the ticket. <br>
+<br>
+&nbsp; <span style="font-weight: bold;">TargetDomainName</span> <br>
+&nbsp;&nbsp;&nbsp; UNICODE_STRING that contains the name of the domain
+in which the ticket is<br>
+&nbsp;&nbsp;&nbsp; valid. For an interdomain ticket, this is the
+destination domain. <br>
+<br>
+&nbsp; <span style="font-weight: bold;">AltTargetDomainName</span> <br>
+&nbsp;&nbsp;&nbsp; UNICODE_STRING that contains a synonym for the
+destination domain. Every <br>
+&nbsp;&nbsp;&nbsp; domain has two names: a DNS name and a NetBIOS name.
+If the name returned <br>
+&nbsp;&nbsp;&nbsp; in the ticket is different from the name used to
+request the ticket (the <br>
+&nbsp;&nbsp;&nbsp; Kerberos Key Distribution Center (KDC) may do name
+mapping), this string <br>
+&nbsp;&nbsp;&nbsp; contains the original name. <br>
+<br>
+Unfortunately, there is no field here which contains the domain of the
+client.<br>
+In order for the krb5_ccache to properly report the client principal
+name, the <br>
+client principal name is constructed by utilizing the ClientName and
+DomainName<br>
+fields of the Initial TGT associated with the Kerberos LSA credential
+cache.<br>
+To disable the use of the TGT info and instead simply use the
+"DomainName" field<br>
+of the current ticket define one of the following registry keys
+depending on<br>
+whether the change should be system global or just for the current user.<br>
+<br>
+&nbsp;&nbsp; HKLM\Software\MIT\Kerberos5\<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PreserveInitialTicketIdentity = 0x0
+(DWORD)<br>
+<br>
+&nbsp;&nbsp; HKCU\Software\MIT\Kerberos5\<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; PreserveInitialTicketIdentity = 0x0
+(DWORD)<br>
+<br>
+<hr style="width: 100%; height: 2px;"><a name="gss-client"></a>
+<h2>GSSAPI Sample Client (gss.exe):</h2>
+The GSS API Sample Client provided in this distribution is compatible
+with the<br>
+gss-server application built on Unix/Linux systems.&nbsp; This client
+is not compatible<br>
+with the Platform SDK/Samples/Security/SSPI/GSS/ samples which
+Microsoft has been<br>
+shipping as of January 2004.&nbsp; Revised versions of these samples
+are available upon <br>
+request to krbdev@mit.edu.&nbsp; Microsoft is committed to distribute
+revised samples<br>
+which are compatible with the MIT distributed tools in a future SDK and
+via MSDN.<br>
+<br>
+The following configuration options may be set for testing GSSAPI
+connections with a compatible server:<br>
+<ul>
+  <li><span style="font-weight: bold;">Hostname</span>&nbsp; The fully
+qualified domain name of the host on which the GSS Sample Server is
+running.&nbsp; The previous ten hostnames used will be preserved
+between invocations.</li>
+  <li><span style="font-weight: bold;">Port</span>&nbsp; The port
+number on the host at which the GSS Sample Server is listening.&nbsp; A
+value of 0 means use the default or port 4444.</li>
+  <li><span style="font-weight: bold;">GSS Service Name</span>&nbsp;
+This is the GSS formatted name of the service.&nbsp; This is not a
+Kerberos 5 principal.&nbsp; The format is <span
+ style="font-style: italic;">service-name@fqdn</span> which will be
+converted to the Kerberos 5 principal <span style="font-style: italic;">service-name/fqdn@REALM</span>
+where REALM is derived from the fully qualified domain name by use of
+the domain to REALM mapping table in the KRB5.INI file.&nbsp; The
+previous ten GSS Service Names will be preserved between invocations.<br>
+  </li>
+  <li><span style="font-weight: bold;">Test Message</span>&nbsp; A
+string of up to 256 characters in length which will be used as a test
+message to send to the GSS Sample Server.&nbsp; The previous ten Test
+Messages will be preserved between invocations.</li>
+  <li><span style="font-weight: bold;">CCache Name</span>&nbsp; The
+name of the Kerberos 5 Credentials Cache which contains the client
+principal's credentials for use with this GSS session.&nbsp; A blank
+entry means to use the default credential cache as specified by the
+KRB5CCNAME environment variable or the registry.&nbsp; The drop down
+list is populated with the names of the existing Kerberos 5 credential
+caches.&nbsp; To use a new credential cache which does not already
+exist, simply enter the name in the text field.</li>
+  <li><span style="font-weight: bold;">Mechanism (OID)</span>&nbsp; An
+Object Identifier is used to specify which GSS Mechanism should be used
+when negotiating the connection.&nbsp; In all cases it should not be
+necessary for an OID to be specified or even known by the application
+developer.&nbsp; This field is therefore only to be used by developers
+of gssapi implementations.</li>
+  <li><span style="font-weight: bold;">Verbose Output</span>&nbsp;
+Generate lots of messages into the output window.&nbsp; Unchecking this
+option will significantly reduce the amount of information output.</li>
+  <li><span style="font-weight: bold;">Delegation</span>&nbsp; Checking
+this box will cause the GSS API to delegate (or in Kerberos speak,
+forward) its user credentials (a TGT) to the GSS Sample Server.&nbsp;
+You must have acquired forwardable TGTs for this to work.&nbsp;
+(default is off)<br>
+  </li>
+  <li><span style="font-weight: bold;">Mutual</span>&nbsp; This option
+specifies whether or not mutual authentication will be requested.&nbsp;
+(default is on)</li>
+  <li><span style="font-weight: bold;">Reply</span>&nbsp; This option
+specifies whether or not replay detection will be requested. (default
+is on)</li>
+  <li><span style="font-weight: bold;">Sequence</span>&nbsp; This
+option specifies whether or not message sequencing will be
+requested.&nbsp; (default is off)<br>
+  </li>
+  <li><span style="font-weight: bold;">Version 1</span>&nbsp; This
+option is for use only with very old versions of the MIT Kerberos 5 GSS
+Sample Server.&nbsp; Certainly anything post the Krb5 1.2 release does
+not use Version 1 protocol.</li>
+  <li><span style="font-weight: bold;">No Auth</span>&nbsp; Do not
+negotiate any form of authentication.&nbsp; Just send the test
+message.&nbsp; Without authentication GSS Wrap, GSS Encrypt, and GSS
+Mic operations are not available.</li>
+  <li><span style="font-weight: bold;">No Wrap</span>&nbsp; Do not
+perform GSS Wrap operations on the test messages.</li>
+  <li><span style="font-weight: bold;">No Encrypt</span>&nbsp; Do not
+preform GSS Encrypt operations on the test messages.</li>
+  <li><span style="font-weight: bold;">No Mic</span>&nbsp; Do not
+perform GSS Mic operations on the test messages.</li>
+  <li><span style="font-weight: bold;">Call Count</span>&nbsp; How many
+times should a connection to the GSS Server be established?</li>
+  <li><span style="font-weight: bold;">Message Count</span>&nbsp; For
+each connection, how many copies of the test message should be sent?</li>
+</ul>
+The Output window is a read-only text edit field which will allow text
+to be selected and copied to the clipboard with Ctrl-C.<br>
+<br>
+Press the <span style="font-weight: bold;">Test</span> button to begin
+a test and the <span style="font-weight: bold;">Exit</span> button to
+quit the application.<br>
 <!-- -->
 <!-- ---------------------------------------------------------------------- -->
 <p></p>
@@ -1073,6 +1865,8 @@ looking at its release history.
   <li>Significant enhancements to Leash GUI application functionality</li>
   <li>Leashw32 API enhanced</li>
   <li>Numerous new registry settings are supported</li>
+  <li>Leash End user documentation provided in PDF format<br>
+  </li>
 </ul>
 <h3>KfW 2.2</h3>
 <ul>

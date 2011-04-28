@@ -310,7 +310,11 @@ VOID CKrb4ConfigFileLocation::OnCancel()
 
 void CKrb4ConfigFileLocation::OnHelp()
 {
+#ifdef CALL_HTMLHELP
+    AfxGetApp()->HtmlHelp(HID_KRB4_PROPERTIES_COMMAND); 	
+#else
     AfxGetApp()->WinHelp(HID_KRB4_PROPERTIES_COMMAND); 	
+#endif
 }
 
 BOOL CKrb4ConfigFileLocation::PreTranslateMessage(MSG* pMsg) 

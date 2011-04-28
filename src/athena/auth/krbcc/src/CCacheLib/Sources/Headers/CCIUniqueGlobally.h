@@ -79,7 +79,7 @@ class CCIUniqueGlobally:
 template <class T>
 T*
 CCIUniqueGlobally <T>::Resolve (
-	const 	CCIUniqueGlobally <T>::UniqueID&	inID) {
+	const typename CCIUniqueGlobally <T>::UniqueID&	inID) {
 	
 	StReadLock	lock;
 	CCIUniqueGlobally::ObjectMap::iterator	location =

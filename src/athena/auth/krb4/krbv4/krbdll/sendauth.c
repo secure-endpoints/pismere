@@ -110,7 +110,7 @@ extern char *krb_get_phost();
 int FAR PASCAL
 krb_sendauth(long options,         /* bit-pattern of options             */
     SOCKET fd,                     /* file descriptor to write onto      */
-    KTEXT_FP ticket,               /* where to put ticket (return); or   */
+    KTEXT ticket,               /* where to put ticket (return); or   */
 				   /* supplied in case of                */
 				   /* KOPT_DONT_MK_REQ                   */
     LPSTR service, LPSTR inst, 

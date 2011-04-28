@@ -1074,7 +1074,7 @@ main(argc, argv)
       This is where we would put in code to dynamically load Kerberos
       libraries.  Currenlty, we just get them implicitly.
     */
-    dynamic_load(&got_k4, &got_k5);
+    dynamic_load(&got_k4, &got_k5, NULL);
 
     memset(&opts, 0, sizeof(opts));
     opts.action = INIT_PW;

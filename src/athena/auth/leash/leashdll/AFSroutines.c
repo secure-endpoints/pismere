@@ -9,11 +9,11 @@
 #include <leasherr.h>
 #include <krb.h>
 #include "leashdll.h"
+#include <leashwin.h>
 
 #ifndef NO_AFS
 #include "afscompat.h"
 #endif
-
 #include "leash-int.h"
 
 #define MAXCELLCHARS   64
@@ -31,7 +31,7 @@ typedef struct {
 
 DWORD   AfsOnLine = 1;
 
-int not_an_API_LeashAFSGetToken(TicketList** ticketList);
+int not_an_API_LeashAFSGetToken(TICKETINFO * ticketinfo, TicketList** ticketList, char * kprinc);
 DWORD GetServiceStatus(LPSTR lpszMachineName, LPSTR lpszServiceName, DWORD *lpdwCurrentState);
 BOOL SetAfsStatus(DWORD AfsStatus);
 BOOL GetAfsStatus(DWORD *AfsStatus);
@@ -76,7 +76,9 @@ Leash_afs_unlog(
 
 int
 not_an_API_LeashAFSGetToken(
-    TicketList** ticketList
+    TICKETINFO * ticketinfo, 
+    TicketList** ticketList,
+    char * kerberosPrincipal
     )
 {
 #ifdef NO_AFS
@@ -105,6 +107,12 @@ not_an_API_LeashAFSGetToken(
 
 
     TicketList* list = NULL; 
+    if ( ticketinfo ) {
+        ticketinfo->btickets = NO_TICKETS; 
+        ticketinfo->principal[0] = '\0';
+    }
+    if ( !kerberosPrincipal )
+        kerberosPrincipal = "";
 
     if (GetAfsStatus(&AfsOnLine) && !AfsOnLine)
         return(0);
@@ -124,24 +132,18 @@ not_an_API_LeashAFSGetToken(
         if (rc = ktc_ListTokens(cellNum, &cellNum, &aserver))
         {
             if (rc != KTC_NOENT)
-            {
-                AfsOnLine = 0;
-                SetAfsStatus(AfsOnLine);
-                break;
-            }
+                return(0);
+
             if (BreakAtEnd == 1)
                 break;
         }
         BreakAtEnd = 1;
         memset(&atoken, '\0', sizeof(atoken));
-	if (rc = ktc_GetToken(&aserver, &atoken, sizeof(atoken), &aclient))
+        if (rc = ktc_GetToken(&aserver, &atoken, sizeof(atoken), &aclient))
         {
             if (rc == KTC_ERROR)
-            {
-                AfsOnLine = 0;
-                SetAfsStatus(AfsOnLine);
-                break;
-            }
+                return(0);
+
             continue;
         }
 
@@ -166,11 +168,11 @@ not_an_API_LeashAFSGetToken(
         memset(CellName, '\0', sizeof(CellName));
         strcpy(CellName, aclient.cell);
 	
+        memset(InstanceName, '\0', sizeof(InstanceName));
+        strcpy(InstanceName, aclient.instance);
+	
         memset(ServiceName, '\0', sizeof(ServiceName));
         strcpy(ServiceName, aserver.name);
-	
-        memset(InstanceName, '\0', sizeof(InstanceName));
-        strcpy(InstanceName, aserver.instance);
 	
         memset(TokenStatus, '\0', sizeof(TokenStatus));
 
@@ -180,15 +182,14 @@ not_an_API_LeashAFSGetToken(
 
         sprintf(EndTime, "%02d:%02d:%02d", newtime->tm_hour, newtime->tm_min, newtime->tm_sec);
 
-        sprintf(Buffer,"                               %s %02d %s      %s%s%s@%s  %s",		 
+        sprintf(Buffer,"                          %s %02d %s      %s%s%s@%s  %s",		 
                 Months[EndMonth - 1], EndDay, EndTime,
-                ServiceName,
+                UserName,
                 InstanceName[0] ? "." : "",
                 InstanceName,
                 CellName,
                 TokenStatus);
-			
-         
+	
         list->theTicket = (char*) calloc(1, sizeof(Buffer));
         if (!list->theTicket)
         {
@@ -197,8 +198,25 @@ not_an_API_LeashAFSGetToken(
         }       
         
         strcpy(list->theTicket, Buffer);
+        list->name = strdup(aclient.name);
+        list->inst = aclient.instance[0] ? strdup(aclient.instance) : NULL;
+        list->realm = strdup(aclient.cell);
+        list->tktEncType = NULL;
+        list->keyEncType = NULL;
+        list->addrCount = 0;
+        list->addrList = NULL;
+
+        if ( ticketinfo ) {
+            sprintf(Buffer,"%s@%s",UserName,CellName);
+            if (!ticketinfo->principal[0] || !stricmp(Buffer,kerberosPrincipal)) {
+                strcpy(ticketinfo->principal, Buffer);
+                ticketinfo->btickets = GOOD_TICKETS;
+                ticketinfo->issue_date = 0;
+                ticketinfo->lifetime = atoken.endTime;
+                ticketinfo->renew_till = 0;
+            }
+        }
     }
-	
     return(0);
 #endif
 }
@@ -233,9 +251,22 @@ Leash_afs_klog(
     char	ServiceName[128];
     DWORD       CurrentState;
     char        HostName[64];
+    BOOL        try_krb5 = 0;
+#ifndef NO_KRB5
+    krb5_context  context = 0;
+    krb5_ccache  _krb425_ccache = 0;
+    krb5_creds increds;
+    krb5_creds * k5creds = 0;
+    krb5_error_code r;
+    krb5_principal client_principal = 0;
+#endif /* NO_KRB5 */
 
     if (GetAfsStatus(&AfsOnLine) && !AfsOnLine)
         return(0);
+
+    if ( !realm ) realm = "";
+    if ( !cell )  cell = "";
+    if ( !service ) service = "";
 
     CurrentState = 0;
     memset(HostName, '\0', sizeof(HostName));
@@ -253,21 +284,40 @@ Leash_afs_klog(
     memset(Dmycell, '\0', sizeof(Dmycell));
 
     // NULL or empty cell returns information on local cell
-    if (rc = get_cellconfig(Dmycell, &ak_cellconfig, local_cell))
+    if (cell && cell[0])
+        strcpy(Dmycell, cell);
+    rc = get_cellconfig(Dmycell, &ak_cellconfig, local_cell);
+    if (rc && cell && cell[0]) {
+        memset(Dmycell, '\0', sizeof(Dmycell));
+        rc = get_cellconfig(Dmycell, &ak_cellconfig, local_cell);
+    }
+    if (rc)
     {
         Leash_afs_error(rc, "get_cellconfig()");
-        AfsOnLine = 0;
-        SetAfsStatus(AfsOnLine);
         return(rc);
     }
 
-    if ((rc = (*pkrb_get_tf_realm)((*ptkt_string)(), realm_of_user)) != KSUCCESS)
-        {
-        AfsOnLine = 0;
-        SetAfsStatus(AfsOnLine);
-        return(rc);
-        }
+#ifndef NO_KRB5
+    if (!(r = Leash_krb5_initialize(&context, &_krb425_ccache))) {
+        int i;
 
+        memset((char *)&increds, 0, sizeof(increds));
+
+        (*pkrb5_cc_get_principal)(context, _krb425_ccache, &client_principal);
+        i = krb5_princ_realm(context, client_principal)->length;
+        if (i > REALM_SZ-1) 
+            i = REALM_SZ-1;
+        strncpy(realm_of_user,krb5_princ_realm(context, client_principal)->data,i);
+        realm_of_user[i] = 0;
+        try_krb5 = 1;
+    }
+#endif /* NO_KRB5 */
+    if ( !try_krb5 || !realm_of_user[0] ) {
+        if ((rc = (*pkrb_get_tf_realm)((*ptkt_string)(), realm_of_user)) != KSUCCESS)
+        {
+            return(rc);
+        }
+    }
     strcpy(realm_of_cell, afs_realm_of_cell(&ak_cellconfig));
 
     if (strlen(service) == 0)
@@ -286,30 +336,97 @@ Leash_afs_klog(
         strcpy(RealmName, realm);
 
     memset(&creds, '\0', sizeof(creds));
-    rc = (*pkrb_get_cred)(ServiceName, CellName, RealmName, &creds);
+
+#ifndef NO_KRB5
+    if ( try_krb5 ) {
+        /* First try Service/Cell@REALM */
+        if (r = (*pkrb5_build_principal)(context, &increds.server,
+                                      strlen(RealmName),
+                                      RealmName,
+                                      ServiceName,
+                                      CellName,
+                                      0)) 
+        {
+            try_krb5 = 0;
+            goto use_krb4;
+        }
+
+        increds.client = client_principal;
+        increds.times.endtime = 0;
+        /* Ask for DES since that is what V4 understands */
+        increds.keyblock.enctype = ENCTYPE_DES_CBC_CRC;
+
+        r = (*pkrb5_get_credentials)(context, 0, _krb425_ccache, &increds, &k5creds);
+        if (r == KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN ||
+			r == KRB5KRB_ERR_GENERIC /* Heimdal */) {
+            /* Next try Service@REALM */
+            pkrb5_free_principal(context, increds.server);
+            r = (*pkrb5_build_principal)(context, &increds.server,
+                                         strlen(RealmName),
+                                          RealmName,
+                                          ServiceName,
+                                          0);
+            if (r == 0)
+                r = (*pkrb5_get_credentials)(context, 0, _krb425_ccache, &increds, &k5creds);
+        }
+        pkrb5_free_principal(context, increds.server);
+		pkrb5_free_principal(context, client_principal);
+        (void) pkrb5_cc_close(context, _krb425_ccache);
+        _krb425_ccache = 0;
+
+        if (r) {
+			pkrb5_free_context(context);
+            try_krb5 = 0;
+            goto use_krb4;
+        }
+
+        /* This requires krb524d to be running with the KDC */
+        r = pkrb524_convert_creds_kdc(context, k5creds, &creds);
+        pkrb5_free_creds(context, k5creds);
+		pkrb5_free_context(context);
+        if (r) {
+            try_krb5 = 0;
+            goto use_krb4;
+        }
+        rc = KSUCCESS;
+    } else 
+#endif /* NO_KRB5 */
+    {
+      use_krb4:
+        rc = (*pkrb_get_cred)(ServiceName, CellName, RealmName, &creds);
+		if (rc == NO_TKT_FIL) {
+			// if the problem is that we have no krb4 tickets
+			// do not attempt to continue
+            return(rc);
+		}
+        if (rc != KSUCCESS)
+            rc = (*pkrb_get_cred)(ServiceName, "", RealmName, &creds);
+    }
     if (rc != KSUCCESS)
     {
         if ((rc = (*pkrb_mk_req)(&ticket, ServiceName, CellName, RealmName, 0)) == KSUCCESS)
         {
             if ((rc = (*pkrb_get_cred)(ServiceName, CellName, RealmName, &creds)) != KSUCCESS)
             {
-                Leash_afs_error(rc, "krb_get_cred()");
-                AfsOnLine = 0;
-                SetAfsStatus(AfsOnLine);
+                return(rc);
+            }
+        }
+        else if ((rc = (*pkrb_mk_req)(&ticket, ServiceName, "", RealmName, 0)) == KSUCCESS)
+        {
+            if ((rc = (*pkrb_get_cred)(ServiceName, "", RealmName, &creds)) != KSUCCESS)
+            {
                 return(rc);
             }
         }
         else
         {
-            AfsOnLine = 0;
-            SetAfsStatus(AfsOnLine);
             return(rc);
         }
     }
 
-    memset(&aserver, '\0', sizeof(aserver));
-    strncpy(aserver.name, creds.service, strlen(creds.service));
-    strncpy(aserver.cell, creds.instance, strlen(creds.instance));
+	memset(&aserver, '\0', sizeof(aserver));
+    strncpy(aserver.name, ServiceName, MAXKTCNAMELEN - 1);
+    strncpy(aserver.cell, CellName, MAXKTCNAMELEN - 1);
 
     strcpy(username, creds.pname);
     if (creds.pinst[0]) 
@@ -321,7 +438,7 @@ Leash_afs_klog(
     memset(&atoken, '\0', sizeof(atoken));
     atoken.kvno = creds.kvno;
     atoken.startTime = creds.issue_date;
-    atoken.endTime = creds.issue_date + (LifeTime * 300);
+    atoken.endTime = (*pkrb_life_to_time)(creds.issue_date,creds.lifetime);
     memcpy(&atoken.sessionKey, creds.session, 8);
     atoken.ticketLen = creds.ticket_st.length;
     memcpy(atoken.ticket, creds.ticket_st.dat, atoken.ticketLen);
@@ -332,8 +449,6 @@ Leash_afs_klog(
         !memcmp(&atoken.sessionKey, &btoken.sessionKey, sizeof(atoken.sessionKey)) &&
         !memcmp(atoken.ticket, btoken.ticket, atoken.ticketLen)) 
     {
-        AfsOnLine = 0;
-        SetAfsStatus(AfsOnLine);
         return(0);
     }
 
@@ -353,8 +468,6 @@ Leash_afs_klog(
     if (rc = ktc_SetToken(&aserver, &atoken, &aclient, 0))
     {
         Leash_afs_error(rc, "ktc_SetToken()");
-        AfsOnLine = 0;
-        SetAfsStatus(AfsOnLine);
         return(rc);
     }
 
@@ -370,14 +483,36 @@ static char *afs_realm_of_cell(afsconf_cell *cellconfig)
 #ifdef NO_AFS
     return(0);
 #else
-    char krbhst[MAX_HSTNM];
-    static char krbrlm[REALM_SZ+1];
+    char krbhst[MAX_HSTNM]="";
+    static char krbrlm[REALM_SZ+1]="";
+#ifndef NO_KRB5
+    krb5_context  ctx = 0;
+    char ** realmlist=NULL;
+    krb5_error_code r;
+#endif /* NO_KRB5 */
 
     if (!cellconfig)
         return 0;
 
-    strcpy(krbrlm, (char *)(*pkrb_realmofhost)(cellconfig->hostName[0]));
-    if ((*pkrb_get_krbhst)(krbhst, krbrlm, 1) != KSUCCESS)
+#ifndef NO_KRB5
+    r = pkrb5_init_context(&ctx); 
+    if ( !r )
+        r = pkrb5_get_host_realm(ctx, cellconfig->hostName[0], &realmlist);
+    if ( !r && realmlist && realmlist[0] ) {
+        strcpy(krbrlm, realmlist[0]);
+        pkrb5_free_host_realm(ctx, realmlist);
+    }
+    if (ctx)
+        pkrb5_free_context(ctx);
+#endif /* NO_KRB5 */
+
+    if ( !krbrlm[0] ) {
+        strcpy(krbrlm, (char *)(*pkrb_realmofhost)(cellconfig->hostName[0]));
+        if ((*pkrb_get_krbhst)(krbhst, krbrlm, 1) != KSUCCESS)
+            krbrlm[0] = '\0';
+    }
+
+    if ( !krbrlm[0] )
     {
         char *s = krbrlm;
         char *t = cellconfig->name;
@@ -419,9 +554,11 @@ static int get_cellconfig(char *cell, afsconf_cell *cellconfig, char *local_cell
     /* WIN32: cm_SearchCellFile(cell, pcallback, pdata) */
     strcpy(cellconfig->name, cell);
 
+#ifdef COMMENT
     return cm_SearchCellFile(cell, get_cellconfig_callback, (void*)cellconfig);
-
-
+#else
+    return cm_SearchCell(cell, get_cellconfig_callback, NULL, (void*)cellconfig);
+#endif
 #endif
 }
 

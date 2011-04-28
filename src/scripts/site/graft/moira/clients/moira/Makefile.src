@@ -1,0 +1,38 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=moira
+TARGETTYPE=EXE
+TARGETSS=console
+
+OBJS= \
+	$(O)\attach.obj \
+	$(O)\cluster.obj \
+	$(O)\dcmmaint.obj \
+	$(O)\delete.obj \
+	$(O)\globals.obj \
+	$(O)\lists.obj \
+	$(O)\main.obj \
+	$(O)\menu.obj \
+	$(O)\menus.obj \
+	$(O)\misc.obj \
+	$(O)\nfs.obj \
+	$(O)\pobox.obj \
+	$(O)\printer.obj \
+	$(O)\quota.obj \
+	$(O)\user.obj \
+	$(O)\acl.obj \
+	$(O)\utils.obj \
+	$(O)\zephyr.obj
+
+DEP_LIBS=..\..\util\et\$(O)\mrcomerr.lib ..\..\lib\$(O)\libmoira.lib ..\lib\$(O)\libmrclient.lib
+
+USE_DEFAULTLIB=1
+LIBS=$(DEP_LIBS) krbv4w32.lib wshelp32.lib ws2_32.lib
+
+LIB_PATHS=$(PISMERE)\athena\auth\krb4\krbv4\krbdll\$(O);$(PISMERE)\athena\wshelper\wshelper\$(O)
+INCLUDES=..\..\include;..\..\util\et;$(PISMERE)\athena\auth\krb4\include
+
+USE_LIBC_DLL=1
+C_DEFINE=-DATHENA

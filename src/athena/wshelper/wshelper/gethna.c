@@ -67,6 +67,10 @@ static char sccsid[] = "@(#)gethostnamadr.c	6.48 (Berkeley) 1/10/93";
 
 #include "u-compat.h"
 
+#ifdef _WIN32
+#include <mitwhich.h>
+#endif
+
 #define MAXALIASES      35
 #define MAXADDRS        35
 
@@ -118,7 +122,9 @@ int h_errno;
 #endif
 
 #ifdef _DEBUG
+#ifndef DEBUG
 #define DEBUG
+#endif
 #endif
 
 #ifndef _PATH_HOSTS
@@ -131,7 +137,7 @@ int h_errno;
 
 extern int WINAPI hes_error( void );
 
-#if (defined (_WINDLL) || defined (_WIN32) )&& defined(_DEBUG)
+#if (defined (_WINDLL) || defined (_WIN32) )&& defined(DEBUG)
 /* For debugging output */
 char debstr[80];
 #endif
@@ -149,7 +155,6 @@ getanswer(querybuf *answer, int anslen, int iquery)
     char **hap;
 
 #if defined (_WINDLL) || defined (_WIN32)
-    int WINAPI rdn_expand(u_char *, u_char *, u_char *, u_char *, int);
     int __dn_skipname(const u_char *, const u_char *);
 #endif  
 
@@ -353,6 +358,24 @@ rgethostbyname(const char *name)
 #ifdef _WINDLL
     unsigned long WINAPI inet_aton(register const char *, struct in_addr *);
 #endif
+#ifdef _WIN32
+    DWORD version;
+
+    if (WhichOS(&version))
+    {
+        switch ( HIWORD(version) ) {
+        case MS_OS_2000:
+        case MS_OS_XP:
+        case MS_OS_2003:
+        case MS_OS_NT_UNKNOWN:
+            /* use the Windows version of gethostbyname() */
+            return gethostbyname(name);
+        default:
+            break;
+        }
+    }
+#endif
+
     /*
      * disallow names consisting only of digits/dots, unless
      * they end in a dot.
@@ -460,6 +483,23 @@ rgethostbyaddr(const char *addr, int len, int type)
 #ifdef _WINDLL
     int WINAPI res_query(char *, int, int, u_char *, int);
 #endif
+#ifdef _WIN32
+    DWORD version;
+
+    if (WhichOS(&version))
+    {
+        switch ( HIWORD(version) ) {
+        case MS_OS_2000:
+        case MS_OS_XP:
+        case MS_OS_2003:
+        case MS_OS_NT_UNKNOWN:
+            /* use the Windows version of gethostbyaddr() */
+            return gethostbyaddr(addr,len,type);
+        default:
+            break;
+        }
+    }
+#endif
 
     if (type != AF_INET)
         return ((struct hostent *) NULL);
@@ -529,10 +569,6 @@ dbgetanswer(querybuf *answer, int anslen, int iquery, LPSTR FAR *info)
 #endif
     int h_length = -1;
     int mxcount = 0;    
-
-#ifdef _WINDLL
-    int WINAPI rdn_expand(u_char *, u_char *, u_char *, u_char *, int);
-#endif
 
     eom = answer->buf + anslen;
     /*

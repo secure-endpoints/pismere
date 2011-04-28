@@ -48,7 +48,7 @@ USE_MFC=1           # gives us _AFXDLL!
 USE_CPP_EH=1        # gives us GX
 PCH_FILE=stdafx.h   # uses a PCH file
 
-LIBS=$(STD_LIBS) wshelp32.lib version.lib loadfuncs.lib \
+LIBS=$(STD_LIBS) wshelp32.lib version.lib loadfuncs.lib iphlpapi.lib htmlhelp.lib \
 !ifdef MIT_ONLY
 	afscompat.lib
 !endif

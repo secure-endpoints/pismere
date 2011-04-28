@@ -1155,6 +1155,7 @@ typedef struct _krb5_pwd_data {
 #define KRB5_AUTH_CONTEXT_DO_SEQUENCE	0x00000004
 #define KRB5_AUTH_CONTEXT_RET_SEQUENCE	0x00000008
 #define KRB5_AUTH_CONTEXT_PERMIT_ALL	0x00000010
+#define KRB5_AUTH_CONTEXT_USE_SUBKEY	0x00000020
  
 typedef struct krb5_replay_data { 
     krb5_timestamp	timestamp; 
@@ -1169,7 +1170,7 @@ typedef struct krb5_replay_data {
 #define KRB5_AUTH_CONTEXT_GENERATE_REMOTE_FULL_ADDR	0x00000008
 
 /* type of function used as a callback to generate checksum data for
-	* mk_req*/
+ * mk_req */
 
 typedef krb5_error_code 
 (KRB5_CALLCONV * krb5_mk_req_checksum_func) (krb5_context, krb5_auth_context , void *,
@@ -2847,6 +2848,8 @@ KRB5INT_END_DECLS
 #define KRB5_ERR_NUMERIC_REALM                   (-1765328141L)
 #define KRB5_ERR_BAD_S2K_PARAMS                  (-1765328140L)
 #define KRB5_ERR_NO_SERVICE                      (-1765328139L)
+#define KRB5_CC_READONLY                         (-1765328138L)
+#define KRB5_CC_NOSUPP                           (-1765328137L)
 #define ERROR_TABLE_BASE_krb5 (-1765328384L)
 
 extern const struct error_table et_krb5_error_table;

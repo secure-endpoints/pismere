@@ -230,9 +230,9 @@ BOOL CKrb5ConfigFileLocation::OnApply()
     // Ticket file
     if (0 != m_initTicketFile.CompareNoCase(m_newTicketFile))	  
     {
-        if (getenv("KRB5_CONFIG"))
+        if (getenv("KRB5_ENV_CCNAME"))
         {
-            // Just in case they set (somehow) KRBTKFILE while this box is up
+            // Just in case they set (somehow) KRB5_ENV_CCNAME while this box is up
             MessageBox("OnApply::Ticket file is set in your System's"
                        "Environment!\nYou must first remove it.", 
                        "Error", MB_OK);
@@ -241,11 +241,13 @@ BOOL CKrb5ConfigFileLocation::OnApply()
         }
 
         // Commit changes
-        if (SetRegistryVariable("ticketfile", m_newTicketFile, 
+        if (SetRegistryVariable("ccname", m_newTicketFile, 
                                 "Software\\MIT\\Kerberos5"))
         {
-            MessageBox("Failed to set \"ticketfile\"!", "Error", MB_OK);
+            MessageBox("Failed to set \"ccname\"!", "Error", MB_OK);
         }
+        if ( CLeashApp::m_krbv5_context )
+            pkrb5_cc_set_default_name(CLeashApp::m_krbv5_context,m_newTicketFile);
 
         m_initTicketFile = m_newTicketFile;
     }
@@ -623,7 +625,11 @@ CKrb5Properties::~CKrb5Properties()
 
 void CKrb5Properties::OnHelp()
 {
-    AfxGetApp()->WinHelp(HID_KRB5_PROPERTIES_COMMAND); 	
+#ifdef CALL_HTMLHELP
+    AfxGetApp()->HtmlHelp(HID_KRB5_PROPERTIES_COMMAND);
+#else
+    AfxGetApp()->WinHelp(HID_KRB5_PROPERTIES_COMMAND);
+#endif
 }
 
 

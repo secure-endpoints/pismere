@@ -16,6 +16,8 @@ HINSTANCE hAfsConf = 0;
 HINSTANCE hComErr = 0;
 HINSTANCE hService = 0;
 HINSTANCE hProfile = 0;
+HINSTANCE hPsapi = 0; 
+HINSTANCE hToolHelp32 = 0; 
 
 // krb4 functions
 DECL_FUNC_PTR(get_krb_err_txt_entry);
@@ -48,6 +50,7 @@ DECL_FUNC_PTR(krb_save_credentials);
 DECL_FUNC_PTR(krb5_free_addresses);
 DECL_FUNC_PTR(krb_get_krbconf2);
 DECL_FUNC_PTR(krb_get_krbrealm2);
+DECL_FUNC_PTR(krb_life_to_time);
 
 // krb5 functions
 DECL_FUNC_PTR(krb5_change_password);
@@ -67,6 +70,7 @@ DECL_FUNC_PTR(krb5_cc_initialize);
 DECL_FUNC_PTR(krb5_cc_destroy);
 DECL_FUNC_PTR(krb5_cc_close);
 DECL_FUNC_PTR(krb5_cc_store_cred);
+DECL_FUNC_PTR(krb5_cc_copy_creds);
 // DECL_FUNC_PTR(krb5_cc_retrieve_cred);
 DECL_FUNC_PTR(krb5_cc_get_principal);
 DECL_FUNC_PTR(krb5_cc_start_seq_get);
@@ -103,6 +107,9 @@ DECL_FUNC_PTR(krb5_free_config_files);
 DECL_FUNC_PTR(krb5_get_default_realm);
 DECL_FUNC_PTR(krb5_free_ticket);
 DECL_FUNC_PTR(krb5_decode_ticket);
+DECL_FUNC_PTR(krb5_get_host_realm);
+DECL_FUNC_PTR(krb5_free_host_realm);
+DECL_FUNC_PTR(krb5_c_random_make_octets);
 
 // Krb524 functions
 DECL_FUNC_PTR(krb524_init_ets);
@@ -134,6 +141,7 @@ DECL_FUNC_PTR(LsaCallAuthenticationPackage);
 DECL_FUNC_PTR(LsaFreeReturnBuffer);
 DECL_FUNC_PTR(LsaGetLogonSessionData);
 
+
 FUNC_INFO k4_fi[] = {
     MAKE_FUNC_INFO(get_krb_err_txt_entry),
     MAKE_FUNC_INFO(k_isinst),
@@ -164,6 +172,7 @@ FUNC_INFO k4_fi[] = {
     MAKE_FUNC_INFO(krb_save_credentials),
 	MAKE_FUNC_INFO(krb_get_krbconf2),
 	MAKE_FUNC_INFO(krb_get_krbrealm2),
+    MAKE_FUNC_INFO(krb_life_to_time),
     END_FUNC_INFO
 };
 
@@ -184,6 +193,7 @@ FUNC_INFO k5_fi[] = {
     MAKE_FUNC_INFO(krb5_cc_initialize),
     MAKE_FUNC_INFO(krb5_cc_destroy),
     MAKE_FUNC_INFO(krb5_cc_close),
+    MAKE_FUNC_INFO(krb5_cc_copy_creds),
     MAKE_FUNC_INFO(krb5_cc_store_cred),
 // MAKE_FUNC_INFO(krb5_cc_retrieve_cred),
     MAKE_FUNC_INFO(krb5_cc_get_principal),
@@ -222,6 +232,9 @@ FUNC_INFO k5_fi[] = {
 	MAKE_FUNC_INFO(krb5_get_default_realm),
     MAKE_FUNC_INFO(krb5_free_ticket),
     MAKE_FUNC_INFO(krb5_decode_ticket),
+    MAKE_FUNC_INFO(krb5_get_host_realm),
+    MAKE_FUNC_INFO(krb5_free_host_realm),
+    MAKE_FUNC_INFO(krb5_c_random_make_octets),
 	END_FUNC_INFO
 };
 
@@ -265,6 +278,28 @@ FUNC_INFO lsa_fi[] = {
     END_FUNC_INFO
 };
 
+// psapi functions
+DECL_FUNC_PTR(GetModuleFileNameExA);
+DECL_FUNC_PTR(EnumProcessModules);
+
+FUNC_INFO psapi_fi[] = {
+    MAKE_FUNC_INFO(GetModuleFileNameExA),
+    MAKE_FUNC_INFO(EnumProcessModules),
+    END_FUNC_INFO
+};
+
+// toolhelp functions
+DECL_FUNC_PTR(CreateToolhelp32Snapshot);
+DECL_FUNC_PTR(Module32First);
+DECL_FUNC_PTR(Module32Next);
+
+FUNC_INFO toolhelp_fi[] = {
+    MAKE_FUNC_INFO(CreateToolhelp32Snapshot),
+    MAKE_FUNC_INFO(Module32First),
+    MAKE_FUNC_INFO(Module32Next),
+    END_FUNC_INFO
+};
+
 BOOL WINAPI
 DllMain(
     HANDLE hinstDLL,
@@ -278,6 +313,7 @@ DllMain(
     {
     case DLL_PROCESS_ATTACH:
     {
+        OSVERSIONINFO osvi;
         LoadFuncs(KRB4_DLL, k4_fi, &hKrb4, 0, 1, 0, 0);
         LoadFuncs(KRB5_DLL, k5_fi, &hKrb5, 0, 1, 0, 0);
         LoadFuncs(COMERR_DLL, ce_fi, &hComErr, 0, 0, 1, 0);
@@ -285,6 +321,29 @@ DllMain(
         LoadFuncs(SECUR32_DLL, lsa_fi, &hSecur32, 0, 1, 1, 1);
         LoadFuncs(KRB524_DLL, k524_fi, &hKrb524, 0, 1, 1, 1);
 		LoadFuncs(PROFILE_DLL, profile_fi, &hProfile, 0, 1, 0, 0);
+
+        memset(&osvi, 0, sizeof(OSVERSIONINFO));
+        osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+        GetVersionEx(&osvi);
+
+        // XXX: We should really use feature testing, first
+        // checking for CreateToolhelp32Snapshot.  If that's
+        // not around, we try the psapi stuff.
+        //
+        // Only load LSA functions if on NT/2000/XP
+        if(osvi.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
+        {
+            // Windows 9x
+            LoadFuncs(TOOLHELPDLL, toolhelp_fi, &hToolHelp32, 0, 1, 0, 0);
+            hPsapi = 0;
+        }             
+        else if(osvi.dwPlatformId == VER_PLATFORM_WIN32_NT)
+        {
+            // Windows NT
+            LoadFuncs(PSAPIDLL, psapi_fi, &hPsapi, 0, 1, 0, 0);
+            hToolHelp32 = 0;
+        }
+
 
         /*
          * Register window class for the MITPasswordControl that
@@ -322,6 +381,10 @@ DllMain(
             FreeLibrary(hSecur32);
         if (hKrb524)
             FreeLibrary(hKrb524);
+        if (hPsapi)
+            FreeLibrary(hPsapi);
+        if (hToolHelp32)
+            FreeLibrary(hToolHelp32);
 #ifndef NO_AFS
 	afscompat_close();
 #endif

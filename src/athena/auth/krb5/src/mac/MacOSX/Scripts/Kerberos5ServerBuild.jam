@@ -8,9 +8,9 @@ Makefile = "$(IntermediateBuild)/Makefile" ;
 MakeStamp = "$(IntermediateBuild)/make.stamp" ;
 
 if $(KerberosCFLAGS) != "" { 
-    KerberosCFLAGS = "CFLAGS=$(CFLAGS) -fno-common -include /usr/include/TargetConditionals.h" ; 
+    KerberosCFLAGS = "CFLAGS=$(CFLAGS) -fno-common -include /usr/include/TargetConditionals.h -DUSE_PASSWORD_SERVER" ; 
 } else {
-    KerberosCFLAGS = "CFLAGS=-fno-common -include /usr/include/TargetConditionals.h" ;
+    KerberosCFLAGS = "CFLAGS=-fno-common -include /usr/include/TargetConditionals.h -DUSE_PASSWORD_SERVER" ;
 }
 
 if $(KerberosLDFLAGS) != "" { 
@@ -92,8 +92,6 @@ Make "$(MakeStamp)" : "$(Makefile)" ;
 InstallProgram "$(DSTROOT)/usr/sbin/kadmin"          : "$(IntermediateBuild)/kadmin/cli/kadmin" ;
 InstallProgram "$(DSTROOT)/usr/sbin/kadmin.local"    : "$(IntermediateBuild)/kadmin/cli/kadmin.local" ;
 InstallProgram "$(DSTROOT)/usr/sbin/kadmind"         : "$(IntermediateBuild)/kadmin/server/kadmind" ;
-InstallProgram "$(DSTROOT)/usr/sbin/kadmind4"        : "$(IntermediateBuild)/kadmin/v4server/kadmind4" ;
-InstallProgram "$(DSTROOT)/usr/sbin/v5passwdd"       : "$(IntermediateBuild)/kadmin/v5passwdd/v5passwdd" ;
 InstallProgram "$(DSTROOT)/usr/sbin/ktutil"          : "$(IntermediateBuild)/kadmin/ktutil/ktutil" ;
 InstallProgram "$(DSTROOT)/usr/sbin/kdb5_util"       : "$(IntermediateBuild)/kadmin/dbutil/kdb5_util" ;
 InstallProgram "$(DSTROOT)/usr/sbin/kprop"           : "$(IntermediateBuild)/slave/kprop" ;
@@ -120,14 +118,12 @@ DEPENDS install : all
                   "$(DSTROOT)/usr/sbin/kadmin"
                   "$(DSTROOT)/usr/sbin/kadmin.local"
                   "$(DSTROOT)/usr/sbin/kadmind"
-                  "$(DSTROOT)/usr/sbin/kadmind4"
                   "$(DSTROOT)/usr/sbin/kdb5_util"
                   "$(DSTROOT)/usr/sbin/kprop"
                   "$(DSTROOT)/usr/sbin/kpropd"
                   "$(DSTROOT)/usr/sbin/krb524d"
                   "$(DSTROOT)/usr/sbin/krb5kdc"
                   "$(DSTROOT)/usr/sbin/ktutil"
-                  "$(DSTROOT)/usr/sbin/v5passwdd"
                   
                   "$(DSTROOT)/usr/share/man/man1/kerberos.1"
                   "$(DSTROOT)/usr/share/man/man5/kdc.conf.5"

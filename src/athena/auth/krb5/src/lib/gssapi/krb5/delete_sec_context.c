@@ -23,7 +23,7 @@
 #include "gssapiP_krb5.h"
 
 /*
- * $Id: delete_sec_context.c,v 1.15 1998/10/30 02:54:17 marc Exp $
+ * $Id: delete_sec_context.c,v 1.15.14.1 2003/12/16 02:56:17 tlyu Exp $
  */
 
 OM_uint32
@@ -92,6 +92,8 @@ krb5_gss_delete_sec_context(minor_status, context_handle, output_token)
       krb5_free_principal(context, ctx->there);
    if (ctx->subkey)
       krb5_free_keyblock(context, ctx->subkey);
+   if (ctx->acceptor_subkey)
+       krb5_free_keyblock(context, ctx->acceptor_subkey);
 
    if (ctx->auth_context) {
        (void)krb5_auth_con_setrcache(context, ctx->auth_context, NULL);
@@ -101,9 +103,6 @@ krb5_gss_delete_sec_context(minor_status, context_handle, output_token)
    if (ctx->mech_used)
        gss_release_oid(minor_status, &ctx->mech_used);
    
-   if (ctx->ctypes)
-       xfree(ctx->ctypes);
-
    /* Zero out context */
    memset(ctx, 0, sizeof(*ctx));
    xfree(ctx);

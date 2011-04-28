@@ -155,7 +155,7 @@ DNS_LIB=$(PISMERE)/athena/wshelper/wshload/$(OUTDIR)/wshload.lib
 KRB4_USE_DNS=1
 KRB5_USE_DNS=1
 KRB5_USE_DNS_KDC=1
-
+KRB5_KFW_COMPILE=1
 
 
 #--------------------------------------------------------

@@ -302,17 +302,42 @@
 	
 
 .\Leash.rc : \
-	".\res\clock00.ico"\
-	".\res\clockexp.ico"\
-	".\res\clocktkt.ico"\
-	".\res\clocktkt3.ico"\
-	".\res\clocktky.ico"\
-	".\res\Leash.ico"\
 	".\res\Leash.rc2"\
-	".\res\Leash2.ico"\
-	".\res\LeashDoc.ico"\
-	".\res\tktgray.ico"\
-	".\res\toolbar1.bmp"\
+	".\res\Leash.ico"\
+	".\res\Leash_Doc.ico"\
+	".\res\Leash_user_green.ico"\
+	".\res\Leash_user_orange.ico"\
+	".\res\Leash_user_red.ico"\
+	".\res\Leash_user_out.ico"\
+	".\res\Leash_tickets_green.ico"\
+	".\res\Leash_tickets_orange.ico"\
+	".\res\Leash_tickets_red.ico"\
+	".\res\Leash_tickets_out.ico"\
+	".\res\Leash_tkt_green.ico"\
+	".\res\Leash_tkt_orange.ico"\
+	".\res\Leash_tkt_red.ico"\
+	".\res\doghead_green.ico"\
+	".\res\doghead_orange.ico"\
+	".\res\doghead_grey.ico"\
+	".\res\doghead_red.ico"\
+	".\res\address.ico"\
+	".\res\key.ico"\
+	".\res\encryption.ico"\
+	".\res\new.ico"\
+	".\res\renew.ico"\
+	".\res\import.ico"\
+	".\res\destroy.ico"\
+	".\res\password.ico"\
+	".\res\refresh.ico"\
+	".\res\sync.ico"\
+	".\res\new_disabled.ico"\
+	".\res\renew_disabled.ico"\
+	".\res\import_disabled.ico"\
+	".\res\destroy_disabled.ico"\
+	".\res\password_disabled.ico"\
+	".\res\refresh_disabled.ico"\
+	".\res\sync_disabled.ico"\
+	".\res\Leash_toolbar.bmp"\
 	
 
 .\LeashAboutBox.cpp : \

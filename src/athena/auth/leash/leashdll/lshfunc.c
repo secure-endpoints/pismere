@@ -3,25 +3,19 @@
 #include <sys/types.h>
 #include <winsock.h>
 #include "leashdll.h"
-#include <krb.h>
+#include <KerberosIV/krb.h>
 #include <prot.h>
 #include <time.h>
 
+#include <leashwin.h>
 #include "leasherr.h"
 #include "leash-int.h"
 #include "leashids.h"
 
-#include <leashwin.h>
 #include <mitwhich.h>
 
 #include <winkrbid.h>
 #include "reminder.h"
-
-#define NO_TICKETS 0    // Don't change this value
-#define EXPD_TICKETS 2  // Don't change this value
-#define GOOD_TICKETS 1  // Don't change this value
-#define KRBERR(code) (code + krb_err_base)
-#define LSHERR(code) (code + lsh_err_base) 
 
 static char FAR *err_context;
 
@@ -76,7 +70,8 @@ leash_error_message(
     int rc4,
     int rc5,
     int rcA,
-    char* result_string
+    char* result_string,
+    int  displayMB
     )
 {
     char message[2048];
@@ -131,10 +126,12 @@ leash_error_message(
         p += n;
         size -= n;
     }
-    MessageBox(NULL, message, "Leash", MB_OK | MB_ICONERROR | MB_TASKMODAL | 
-               MB_SETFOREGROUND);
-    if (rc4) return rc4;
+    if ( displayMB )
+        MessageBox(NULL, message, "Leash", MB_OK | MB_ICONERROR | MB_TASKMODAL | 
+                    MB_SETFOREGROUND);
+
     if (rc5) return rc5;
+    if (rc4) return rc4;
     if (rcL) return rcL;
     return 0;
 }
@@ -282,6 +279,16 @@ Leash_checkpwd(
     char *password
     )
 {
+    return Leash_int_checkpwd(principal, password, 0);
+}
+
+long 
+Leash_int_checkpwd(
+    char * principal,
+    char * password,
+    int    displayErrors
+    )
+{
     long rc = 0;
 	krb5_context ctx = 0;	// statically allocated in make_temp_cache_v5
     // XXX - we ignore errors in make_temp_cache_v?  This is BAD!!!
@@ -290,7 +297,8 @@ Leash_checkpwd(
     rc = Leash_int_kinit_ex( ctx, 0,
 							 principal, password, 0, 0, 0, 0,
 							 Leash_get_default_noaddresses(),
-							 Leash_get_default_publicip()
+							 Leash_get_default_publicip(),
+                             displayErrors
 							 );
     make_temp_cache_v4(0);
     make_temp_cache_v5(0, &ctx);
@@ -438,6 +446,18 @@ Leash_changepwd(
     char** result_string
     )
 {
+    return Leash_int_changepwd(principal, password, newpassword, result_string, 0);
+}
+
+long
+Leash_int_changepwd(
+    char * principal, 
+    char * password, 
+    char * newpassword,
+    char** result_string,
+    int    displayErrors
+    )
+{
     char* v5_error_str = 0;
     char* v4_error_str = 0;
     char* error_str = 0;
@@ -491,7 +511,9 @@ Leash_changepwd(
         }
     }
     return leash_error_message("Error while changing password.", 
-                               rc4, rc4, rc5, 0, error_str);
+                               rc4, rc4, rc5, 0, error_str, 
+                               displayErrors
+                               );
 }
 
 int (*Lcom_err)(LPSTR,long,LPSTR,...);
@@ -514,7 +536,8 @@ Leash_kinit(
                                Leash_get_default_proxiable(),
                                Leash_get_default_renew_till(),
                                Leash_get_default_noaddresses(),
-                               Leash_get_default_publicip()
+                               Leash_get_default_publicip(),
+                               0
                                );
 }
 
@@ -539,7 +562,8 @@ Leash_kinit_ex(
 							   proxiable,
 							   renew_life,
 							   addressless,
-							   publicip
+							   publicip,
+                               0
 							   );
 }
 
@@ -554,7 +578,8 @@ Leash_int_kinit_ex(
     int proxiable,
     int renew_life,
     int addressless,
-    unsigned long publicip
+    unsigned long publicip,
+    int displayErrors
     )
 {
     LPCSTR  functionName; 
@@ -657,8 +682,9 @@ Leash_int_kinit_ex(
 							publicip
 							);
 	if ( Leash_get_default_use_krb4() ) {
-		if ( !rc5 && Leash_convert524(ctx) ) {
-			rcA = Leash_afs_klog("", "", "", lifetime);
+		if ( !rc5 ) {
+            if (!Leash_convert524(ctx))
+                rc4 = KFAILURE;
 		} else {
 			if (pkname_parse == NULL)
 			{
@@ -697,12 +723,9 @@ Leash_int_kinit_ex(
 			}
 
 			err_context = "fetching ticket";	
-			if (!(rc4 = (*pkrb_get_pw_in_tkt)(aname, inst, realm, "krbtgt", realm, 
-											   lifetime, password)))
-			{
-				rcA = Leash_afs_klog("", "", "", lifetime);
-			}
-			else if (rc4) /* XXX: do we want: && (rc != NO_TKT_FIL) as well? */
+			rc4 = (*pkrb_get_pw_in_tkt)(aname, inst, realm, "krbtgt", realm, 
+											   lifetime, password);
+			if (rc4) /* XXX: do we want: && (rc != NO_TKT_FIL) as well? */
 			{ 
 				functionName = "krb_get_pw_in_tkt()";
 				rcL = KRBERR(rc4);
@@ -710,49 +733,108 @@ Leash_int_kinit_ex(
 			}
 		}
 	}
-    return 0;
+
+#ifndef NO_AFS
+    if ( !rc5 || (Leash_get_default_use_krb4() && !rc4) ) {
+        char c;
+        char *r;
+        char *t;
+        for ( r=realm, t=temp; c=*r; r++,t++ )
+            *t = isupper(c) ? tolower(c) : c;
+        *t = '\0';
+
+        rcA = Leash_afs_klog("afs", temp, realm, lifetime);
+        if (rcA)
+            rcA = Leash_afs_klog("afs", "", realm, lifetime);
+    }
+#endif /* NO_AFS */
 
  cleanup:
     return leash_error_message("Ticket initialization failed.", 
-                               rcL, rc4?KRBERR(rc4):0, rc5, rcA, 0);
-
-#pragma message(Reminder "Are we returning the right thing?")
+                               rcL, (rc5 && rc4)?KRBERR(rc4):0, rc5, rcA, 0,
+                               displayErrors);
 }
 
-long
+long FAR
 Leash_renew(void)
 {
     if ( hKrb5 && !LeashKRB5_renew() ) {
-		if (hKrb4 && Leash_get_default_use_krb4()) {
-			if ( Leash_convert524(0) ) {
-                int lifetime;
-				lifetime = Leash_get_default_lifetime();
-				Leash_afs_klog("", "", "", lifetime);
-			}
-			else 
-				return 0;
-		}
+        int lifetime;
+        lifetime = Leash_get_default_lifetime() / 5;
+		if (hKrb4 && Leash_get_default_use_krb4())
+			Leash_convert524(0);
+#ifndef NO_AFS
+        {
+            TicketList * list = NULL, * token;
+            not_an_API_LeashAFSGetToken(NULL,&list,NULL);
+            for ( token = list ; token ; token = token->next )
+                Leash_afs_klog("afs", token->realm, "", lifetime);
+            not_an_API_LeashFreeTicketList(&list);
+        }
+#endif /* NO_AFS */
         return 1;
     }
     return 0;
 }
 
-long
+long FAR
 Leash_importable(void)
 {
     return Leash_ms2mit(0);
 }
 
-long 
+long FAR
 Leash_import(void)
 {
     if ( Leash_ms2mit(1) ) {
-		if (Leash_get_default_use_krb4()) {
-			if ( Leash_convert524(0) ) {
-				int lifetime = Leash_get_default_lifetime();
-				Leash_afs_klog("", "", "", lifetime);
-			}
-		}
+        int lifetime;
+        lifetime = Leash_get_default_lifetime() / 5;
+		if (hKrb4 && Leash_get_default_use_krb4())
+			Leash_convert524(0);
+#ifndef NO_AFS
+        {
+            char c;
+            char *r;
+            char *t;
+            char  cell[256];
+            char  realm[256];
+            int   i = 0;
+            int   rcA = 0;
+
+            krb5_context ctx = 0;
+            krb5_error_code code = 0;
+            krb5_ccache cc = 0;
+            krb5_principal me = 0;
+
+            code = pkrb5_init_context(&ctx);
+            if (code) goto cleanup;
+
+            code = pkrb5_cc_default(ctx, &cc);
+            if (code) goto cleanup;
+
+            if (code = pkrb5_cc_get_principal(ctx, cc, &me))
+                goto cleanup;
+
+            for ( r=realm, t=cell, i=0; i<krb5_princ_realm(ctx, me)->length; r++,t++,i++ ) {
+                c = krb5_princ_realm(ctx, me)->data[i];
+                *r = c;
+                *t = isupper(c) ? tolower(c) : c;
+            }
+            *r = *t = '\0';
+
+            rcA = Leash_afs_klog("afs", cell, realm, lifetime);
+            if (rcA)
+                rcA = Leash_afs_klog("afs", "", realm, lifetime);
+
+          cleanup:
+            if (me) 
+                pkrb5_free_principal(ctx, me);
+            if (cc)
+                pkrb5_cc_close(ctx, cc);
+            if (ctx) 
+                pkrb5_free_context(ctx);
+        }
+#endif /* NO_AFS */
         return 1;
     }
     return 0;
@@ -809,7 +891,7 @@ int com_addr(void)
     return 0;
 } 
 
-long 
+long FAR
 not_an_API_LeashFreeTicketList(TicketList** ticketList) 
 {
     TicketList* tempList = *ticketList, *killList; 
@@ -828,15 +910,24 @@ not_an_API_LeashFreeTicketList(TicketList** ticketList)
         if (killList->keyEncType)
             free(killList->keyEncType);
         if (killList->addrCount) {
-
+            int n;
+            for ( n=0; n<killList->addrCount; n++) {
+                if (killList->addrList[n])
+                    free(killList->addrList[n]);
+            }
         }
         if (killList->addrList)
             free(killList->addrList);
+        if (killList->name)
+            free(killList->name);
+        if (killList->inst)
+            free(killList->inst);
+        if (killList->realm)
+            free(killList->realm);
         free(killList);
     }
 
     *ticketList = NULL;
-
     return 0;
 }
 
@@ -859,6 +950,10 @@ not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo,
     int open = 0;
 
     TicketList* list = NULL;
+    if ( ticketinfo ) {
+        ticketinfo->btickets = NO_TICKETS; 
+        ticketinfo->principal[0] = '\0';
+    }
 
     // Since krb_get_tf_realm will return a ticket_file error,
     // we will call tf_init and tf_close first to filter out
@@ -966,6 +1061,9 @@ not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo,
         }       
 
         strcpy(list->theTicket, buf);
+        list->name = NULL;
+        list->inst = NULL;
+        list->realm = NULL;
         list->tktEncType = NULL;
         list->keyEncType = NULL;
         list->addrCount = 0;
@@ -1425,7 +1523,7 @@ Leash_get_default_lifetime(
         {
             profile_t profile;
             const char *filenames[2];
-            char *value;
+            char *value=0;
             long retval;
             filenames[0] = confname;
             filenames[1] = NULL;        
@@ -1531,7 +1629,7 @@ Leash_get_default_renew_till(
         {
             profile_t profile;
             const char *filenames[2];
-            char *value;
+            char *value=0;
             long retval;
             filenames[0] = confname;
             filenames[1] = NULL;        
@@ -1637,7 +1735,7 @@ Leash_get_default_forwardable(
         {
             profile_t profile;
             const char *filenames[2];
-            char *value;
+            char *value=0;
             long retval;
             filenames[0] = confname;
             filenames[1] = NULL;        
@@ -1743,7 +1841,7 @@ Leash_get_default_renewable(
         {
             profile_t profile;
             const char *filenames[2];
-            char *value;
+            char *value=0;
             long retval;
             filenames[0] = confname;
             filenames[1] = NULL;        
@@ -1842,7 +1940,7 @@ Leash_get_default_noaddresses(
         {
             profile_t profile;
             const char *filenames[2];
-            char *value;
+            char *value=0;
             long retval;
             filenames[0] = confname;
             filenames[1] = NULL;        
@@ -1961,7 +2059,7 @@ Leash_get_default_proxiable(
         {
             profile_t profile;
             const char *filenames[2];
-            char *value;
+            char *value=0;
             long retval;
             filenames[0] = confname;
             filenames[1] = NULL;        
@@ -2718,3 +2816,125 @@ Leash_reset_defaults(void)
 	Leash_reset_default_uppercaserealm();
 }
 
+static BOOL CALLBACK 
+EnumChildProc(HWND hwnd, LPARAM lParam)
+{
+    HWND * h = (HWND *)lParam;
+    *h = hwnd;
+    return FALSE;
+}
+
+
+static HWND
+FindFirstChildWindow(HWND parent)
+{
+    HWND hFirstChild = 0;
+    EnumChildWindows(parent, EnumChildProc, (LPARAM) &hFirstChild);
+	return hFirstChild;
+}
+
+void FAR
+not_an_API_Leash_AcquireInitialTicketsIfNeeded(krb5_context context, krb5_principal desiredKrb5Principal) 
+{
+    krb5_error_code 	err;
+    LSH_DLGINFO_EX      dlginfo;
+    HGLOBAL hData;
+    HWND    hLeash;
+    HWND    hForeground;
+    char		        *desiredName = 0;
+    char                *desiredRealm = 0;
+    char                *p;
+    TicketList * list = NULL;
+    TICKETINFO   ticketinfo;
+    krb5_context        ctx;
+    char newenv[256];
+    char * env = 0;
+
+    if ( getenv("KERBEROSLOGIN_NEVER_PROMPT") ) 
+        return;
+
+    ctx = context;
+    env = getenv("KRB5CCNAME");
+    if ( !env && context ) {
+        sprintf(newenv,"KRB5CCNAME=%s",pkrb5_cc_default_name(ctx));
+        env = (char *)putenv(newenv);
+    }
+
+    not_an_API_LeashKRB5GetTickets(&ticketinfo,&list,&ctx);
+    not_an_API_LeashFreeTicketList(&list);
+
+    if ( ticketinfo.btickets != GOOD_TICKETS && Leash_importable() ) {
+        Leash_import();
+        not_an_API_LeashKRB5GetTickets(&ticketinfo,&list,&ctx);
+        not_an_API_LeashFreeTicketList(&list);
+    }
+
+    if ( ticketinfo.btickets != GOOD_TICKETS ) 
+    {
+        /* do we want a specific client principal? */
+        if (desiredKrb5Principal != NULL) {
+            err = pkrb5_unparse_name (ctx, desiredKrb5Principal, &desiredName);
+            if (!err) {
+                dlginfo.username = desiredName;
+                for (p = desiredName; *p && *p != '@'; p++);
+                if ( *p == '@' ) {
+                    *p = '\0';
+                    dlginfo.realm = ++p;
+                }
+            }
+        }
+		
+#ifdef COMMENT
+        memset(&dlginfo, 0, sizeof(LSH_DLGINFO_EX));
+        dlginfo.size = sizeof(LSH_DLGINFO_EX);
+        dlginfo.dlgtype = DLGTYPE_PASSWD;
+        dlginfo.title = "Obtain Kerberos Ticket Getting Tickets";
+        dlginfo.use_defaults = 1;
+
+        err = Leash_kinit_dlg_ex(NULL, &dlginfo);
+#else
+        /* construct a marshalling of data
+         *   <title><principal><realm>
+         * then send to Leash
+         */
+
+        hData = GlobalAlloc( GHND, 4096 );
+        hForeground = GetForegroundWindow();
+        hLeash = FindWindow("LEASH.0WNDCLASS", NULL);
+        SetForegroundWindow(hLeash);
+        hLeash = FindFirstChildWindow(hLeash);
+        if ( hData && hLeash ) {
+            char * strs = GlobalLock( hData );
+            if ( strs ) {
+                strcpy(strs, "Obtain Kerberos Ticket Getting Tickets");
+                strs += strlen(strs) + 1;
+                if ( desiredName ) {
+                    strcpy(strs, desiredName);
+                    strs += strlen(strs) + 1;
+                    strcpy(strs, desiredRealm);
+                    strs += strlen(strs) + 1;
+                } else {
+                    *strs = 0;
+                    strs++;
+                    *strs = 0;
+                    strs++;
+                }
+
+                GlobalUnlock( hData );
+                SendMessage(hLeash, 32809, 0, (LPARAM) hData);
+            }
+
+            GlobalFree( hData );
+        }
+        SetForegroundWindow(hForeground);
+#endif
+        if (desiredName != NULL)
+            pkrb5_free_unparsed_name(ctx, desiredName);
+    }
+
+    if ( !env && context )
+        putenv("KRB5CCNAME",NULL);
+
+    if ( !context )
+        pkrb5_free_context(ctx);
+}

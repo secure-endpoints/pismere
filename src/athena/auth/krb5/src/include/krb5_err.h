@@ -251,6 +251,8 @@
 #define KRB5_ERR_NUMERIC_REALM                   (-1765328141L)
 #define KRB5_ERR_BAD_S2K_PARAMS                  (-1765328140L)
 #define KRB5_ERR_NO_SERVICE                      (-1765328139L)
+#define KRB5_CC_READONLY                         (-1765328138L)
+#define KRB5_CC_NOSUPP                           (-1765328137L)
 #define ERROR_TABLE_BASE_krb5 (-1765328384L)
 
 extern const struct error_table et_krb5_error_table;

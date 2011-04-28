@@ -71,6 +71,7 @@ static char sccsid[] = "@(#)res_send.c	6.27 (Berkeley) 2/24/91";
 #endif
 
 #ifdef IS_WINDOWS
+#define USE_SENDTO 1
 #define IS_BAD_SOCKET(x) ((x) == INVALID_SOCKET)
 #define GET_SOCKET_ERROR WSAGetLastError()
 #define PRINT_STRING OutputDebugString
@@ -189,17 +190,18 @@ res_send(const char *buf, int buflen, char *answer, int anslen)
         __p_query(buf);
     }
 #endif /* DEBUG */
-    if (!(_res.options & RES_INIT))
+    if (!(_res.options & RES_INIT)) {
         if (res_init() == -1) {
             return(-1);
         }
+    }
     v_circuit = (_res.options & RES_USEVC) || buflen > PACKETSZ;
     id = hp->id;
     /*
      * Send request, RETRY times, or until successful
      */
-    for (try = 0; try < _res.retry; try++) {
-        for (ns = 0; ns < _res.nscount; ns++) {
+    for (try = 0; try < _res.retry && !gotsomewhere; try++) {
+        for (ns = 0; ns < _res.nscount && !gotsomewhere; ns++) {
 #ifdef DEBUG
             if (_res.options & RES_DEBUG) {
                 wsprintf(debstr, "Querying server (# %d) address = %s\n",
@@ -209,9 +211,9 @@ res_send(const char *buf, int buflen, char *answer, int anslen)
 #endif /* DEBUG */
 
             if( !_res.nsaddr_list[ns].sin_addr.S_un.S_addr )
-		continue;	/* address of DNS server is 0.0.0.0 don't make a call XXX 11/20/96 */
+                continue;	/* address of DNS server is 0.0.0.0 don't make a call XXX 11/20/96 */
 
-	usevc:
+          usevc:
             if (v_circuit) {
                 int truncated = 0;
 
@@ -243,7 +245,7 @@ res_send(const char *buf, int buflen, char *answer, int anslen)
                         (void) closesocket(s);
                         s = INVALID_SOCKET;
                         continue;
-                    }
+					}
                 }
                 /*
                  * Send length & message
@@ -318,8 +320,9 @@ res_send(const char *buf, int buflen, char *answer, int anslen)
 #endif /* DEBUG */
                     len = anslen;
                     truncated = 1;
-                } else
+                } else {
                     len = resplen;
+                }
                 while (len != 0 &&
                        (n = READ_SOCKET(s, (char *)cp, (int)len)) > 0) {
                     cp += n;
@@ -365,20 +368,20 @@ res_send(const char *buf, int buflen, char *answer, int anslen)
 #endif /* DEBUG */
                         continue;
                     }
-//#define USE_SENDTO
+
 #ifndef USE_SENDTO
-                    if (IS_BAD_SOCKET(connect(s, (struct sockaddr *)
-                                                &(_res.nsaddr_list[ns]),
-                                                sizeof(struct sockaddr)))) {
-                        terrno = GET_SOCKET_ERROR;
+                        if (IS_BAD_SOCKET(connect(s, (struct sockaddr *)
+                                                   &(_res.nsaddr_list[ns]),
+                                                   sizeof(struct sockaddr)))) {
+                            terrno = GET_SOCKET_ERROR;
 #ifdef DEBUG
-                        if (_res.options & RES_DEBUG)
-                            PERROR("connect failed");
+                            if (_res.options & RES_DEBUG)
+                                PERROR("connect failed");
 #endif /* DEBUG */
-                        (void) closesocket(s);
-                        s = INVALID_SOCKET;
-                        continue;
-                    }
+                            (void) closesocket(s);
+                            s = INVALID_SOCKET;
+                            continue;
+                        }
 #endif /* USE_SENDTO */
                 }
 #if BSD >= 43
@@ -398,14 +401,14 @@ res_send(const char *buf, int buflen, char *answer, int anslen)
                  * as we wish to receive answers from the first
                  * server to respond.
                  */
-                if (_res.nscount == 1 || (try == 0 && ns == 0)) {
+                if (_res.nscount == 1 || (try == 0 && ns == 0) ) {
                     /*
                      * Don't use connect if we might
                      * still receive a response
                      * from another server.
                      */
                     if (connected == 0) {
-			if (IS_BAD_SOCKET(connect(s, (struct sockaddr *)
+                        if (IS_BAD_SOCKET(connect(s, (struct sockaddr *)
                                                     &_res.nsaddr_list[ns],
                                                     sizeof(struct sockaddr)))){
 #ifdef DEBUG
@@ -424,6 +427,7 @@ res_send(const char *buf, int buflen, char *answer, int anslen)
                         continue;
                     }
                 } else {
+#endif /* BSD */
                     /*
                      * Disconnect if we want to listen
                      * for responses from more than one server.
@@ -433,7 +437,6 @@ res_send(const char *buf, int buflen, char *answer, int anslen)
                                        sizeof(no_addr));
                         connected = 0;
                     }
-#endif /* BSD */
                     if (
 #ifdef USE_SENDTO
                         (sendto(s, buf, buflen, 0,
@@ -452,7 +455,6 @@ res_send(const char *buf, int buflen, char *answer, int anslen)
 #if BSD >= 43
                 }
 #endif
-
                 /*
                  * Wait for reply
                  */
@@ -462,11 +464,11 @@ res_send(const char *buf, int buflen, char *answer, int anslen)
                 if (timeout.tv_sec <= 0)
                     timeout.tv_sec = 1;
                 timeout.tv_usec = 0;
-wait:
+              wait:
                 FD_ZERO(&dsmask);
                 FD_SET(s, &dsmask);
                 n = select(s+1, &dsmask, (fd_set *)NULL,
-                           (fd_set *)NULL, &timeout);
+                            (fd_set *)NULL, &timeout);
                 if (n < 0) {
 #ifdef DEBUG
                     if (_res.options & RES_DEBUG)
@@ -475,14 +477,14 @@ wait:
 #ifndef USE_SENDTO
                     closesocket(s);
                     s = INVALID_SOCKET;
-#endif
+#endif  
                     continue;
                 }
                 if (n == 0) {
                     /*
                      * timeout
                      */
-#ifdef DEBUG
+#ifdef DEBUG    
                     if (_res.options & RES_DEBUG)
                         PRINT_STRING("timeout\n");
 #endif /* DEBUG */
@@ -492,7 +494,7 @@ wait:
 #ifndef USE_SENDTO
                     closesocket(s);
                     s = INVALID_SOCKET;
-#endif
+#endif      
                     continue;
                 }
 
@@ -504,7 +506,7 @@ wait:
 #ifndef USE_SENDTO
                     closesocket(s);
                     s = INVALID_SOCKET;
-#endif
+#endif      
                     continue;
                 }
                 gotsomewhere = 1;
@@ -512,7 +514,7 @@ wait:
                     /*
                      * response from old query, ignore it
                      */
-#ifdef DEBUG
+#ifdef DEBUG    
                     if (_res.options & RES_DEBUG) {
                         PRINT_STRING("old answer:\n");
                         __p_query(answer);
@@ -525,16 +527,17 @@ wait:
                      * get rest of answer;
                      * use TCP with same server.
                      */
-#ifdef DEBUG
+#ifdef DEBUG    
                     if (_res.options & RES_DEBUG)
                         PRINT_STRING("truncated answer\n");
-#endif /* DEBUG */
+#endif /* DEBUG */      
                     (void) closesocket(s);
                     s = INVALID_SOCKET;
                     v_circuit = 1;
                     goto usevc;
                 }
             }
+
 #ifdef DEBUG
             if (_res.options & RES_DEBUG) {
                 PRINT_STRING("got answer:\n");
@@ -550,8 +553,8 @@ wait:
              * close the socket.
              */
             if ((v_circuit &&
-                 ((_res.options & RES_USEVC) == 0 || ns != 0)) ||
-                (_res.options & RES_STAYOPEN) == 0) {
+                  ((_res.options & RES_USEVC) == 0 || ns != 0)) ||
+                 (_res.options & RES_STAYOPEN) == 0) {
                 (void) closesocket(s);
                 s = INVALID_SOCKET;
             }

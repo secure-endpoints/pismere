@@ -1,6 +1,6 @@
 /*
  * $Source: /cvs/pismere/pismere/athena/auth/krb4/krbv4/krbdll/getadtkt.c,v $
- * $Author: dalmeida $
+ * $Author: jaltman $
  
  *
  * Copyright 1986, 1987, 1988 by the Massachusetts Institute
@@ -102,14 +102,22 @@ int     lifetime;
     unsigned long kdc_time;   /* KDC time */
     
     if ((kerror = krb_get_tf_realm(TKT_FILE, lrealm)) != KSUCCESS) {
- 
-   	if (krb_debug){
+        if (kerror == GC_NOTKT || kerror == NO_TKT_FIL) {
+            /* No tickets... call krb_get_cred (KLL will prompt) and try again. */
+            if ((kerror = krb_get_cred ("krbtgt", realm, realm, &cr)) == KSUCCESS) {
+                /* Now get the realm again. */
+                kerror = krb_get_tf_realm (TKT_FILE, lrealm);
+				goto have_lrealm;
+            }
+        }
+
+        if (krb_debug) {
             kdebug("Problem with krb_get_tf_realm. \n");
-   	}
-   
+        }
         return(kerror);
     }
     
+have_lrealm:
     /* Create skeleton of packet to be sent */
     (void) gettimeofday(&tt_local,(struct timezone *) 0);
     

@@ -1,0 +1,15 @@
+#!perl -w
+
+sub mk_build_do
+{
+    my $OPT = shift || die;
+    my $top = shift || die;
+
+    push(@ARGV, "--softdirs");
+    if ($OPT->{official}) {
+        push(@ARGV, "BUILD_OFFICIAL=1");
+    }
+    return "$top/athena";
+}
+
+1;

@@ -29,6 +29,8 @@ private:
 	int m_winRectTop;
 	int m_winRectRight;
 	int m_winRectBottom;
+    BOOL m_bOwnerCreated;
+    CDialog m_MainFrameOwner;
 
 protected: // create from serialization only
 	CMainFrame();
@@ -52,6 +54,7 @@ public:
 	public:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
 	virtual void RecalcLayout(BOOL bNotify = TRUE);
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	protected:
 	virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);
 	//}}AFX_VIRTUAL
@@ -63,6 +66,7 @@ public:
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
+    BOOL ShowTaskBarButton(BOOL bVisible);
 
 protected:  // control bar embedded members
 
@@ -74,6 +78,7 @@ protected:
 	afx_msg void OnResetWindowSize();
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 	afx_msg void OnGetMinMaxInfo(MINMAXINFO FAR* lpMMI);
+    afx_msg void OnClose(void);
     //afx_msg void OnContextHelp();
     //}}AFX_MSG
 	DECLARE_MESSAGE_MAP()

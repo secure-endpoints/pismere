@@ -1,0 +1,63 @@
+#!perl -w
+
+sub mk_build_do
+{
+    my $OPT = shift || die;
+    my $top = shift || die;
+
+    push(@ARGV, "--softdirs");
+    push(@ARGV, "NO_EXTERNAL_DEPS=1");
+    if ($OPT->{official}) {
+	push(@ARGV, "BUILD_OFFICIAL=1");
+	push(@ARGV, "BUILD_WINZEPHYR=1");
+    }
+
+    print <<DATA;
+
+To build this, you need to get the et_h.awk and et_c.awk scripts (both
+can be found in the the KfW 2.1 source distribution under
+kfw-2.1/athena/auth/krb5/src/util/et).  You also need the KfW 2.1 SDK.
+You can get KfW 2.1 distributions via http://web.mit.edu/kerberos/.
+
+Once you have these, set the AH environment variable to point to
+et_h.awk and AC to point to et_c.awk (both are under
+athena/auth/krb5/src/util/et in the KfW 2.1 source distribution).
+
+Also set KFW_SDK to point to the base directory of the KFW 2.1 SDK
+(i.e., KFW_SDK=somepath\\kfw-2.1-sdk).  This will get used to set the
+proper INCLUDE and LIB paths.  The INCLUDE path will have to have
+krb5, krb4, and wshelper headers in that order.
+
+You will also need MSVC++ 6.0, Perl, and gawk to build.
+DATA
+    if (!$ENV{AH}) {
+	die "Need to define AH environment variable to point to et_h.awk\n";
+    }
+    if (!$ENV{AC}) {
+	die "Need to define AC environment variable to point to et_c.awk\n";
+    }
+    if (!$ENV{KFW_SDK}) {
+	die "Need to define the KFW_SDK variable to point to the KfW 2.1 SDK.\n";
+    }
+    $ENV{INCLUDE}="$ENV{KFW_SDK}\\inc\\krb5;$ENV{KFW_SDK}\\inc\\krb4;$ENV{KFW_SDK}\\inc\\wshelper;$ENV{INCLUDE}";
+    $ENV{LIB}="$ENV{KFW_SDK}\\lib\\i386;$ENV{LIB}";
+    print <<DATA;
+
+Here are the settings detected:
+
+AH=$ENV{AH}
+AC=$ENV{AC}
+KFW_SDK=$ENV{KFW_SDK}
+
+Here are the resulting INCLUDE and LIB paths:
+
+INCLUDE=$ENV{INCLUDE}
+LIB=$ENV{LIB}
+
+If anything is wrong, press CTRL-C to abort, otherwise
+DATA
+    my_pause() if !$OPT->{nopause};
+    return "$top/athena";
+}
+
+1;

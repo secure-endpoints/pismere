@@ -16,6 +16,8 @@
 #if !defined(AFX_LeashVIEW_H__6F45AD99_561B_11D0_8FCF_00C04FC2A0C2__INCLUDED_)
 #define AFX_LeashVIEW_H__6F45AD99_561B_11D0_8FCF_00C04FC2A0C2__INCLUDED_
 
+#include <afxmt.h>
+
 #if _MSC_VER >= 1000
 #pragma once
 #endif // _MSC_VER >= 1000
@@ -40,7 +42,14 @@
 #define LOW_PARENT_NODE       8
 #define EXPIRED_PARENT_NODE   9
 #define NONE_PARENT_NODE      10
-#define IMAGE_COUNT           11
+#define LOW_TRAY_ICON         11
+#define EXPIRED_TRAY_ICON     12
+#define ACTIVE_TRAY_ICON      13
+#define NONE_TRAY_ICON        14
+#define TKT_ADDRESS           15
+#define TKT_SESSION           16
+#define TKT_ENCRYPTION        17
+#define IMAGE_COUNT           18
 
 #define NODE_IS_EXPANDED 2
 
@@ -50,6 +59,8 @@
 #ifdef NO_TICKETS
 #undef NO_TICKETS // XXX - this is evil but necessary thanks to silliness...
 #endif
+
+#define WM_TRAYICON (WM_USER+100)
 
 enum ticketTimeLeft{NO_TICKETS, ZERO_MINUTES_LEFT, FIVE_MINUTES_LEFT, TEN_MINUTES_LEFT, 
 					FIFTEEN_MINUTES_LEFT, TWENTY_MINUTES_LEFT, PLENTY_OF_TIME, 
@@ -63,7 +74,7 @@ class CLeashView : public CFormView
 private:
     TicketList*         m_listKrb4; 
     TicketList*         m_listKrb5; 
-    TicketList*         m_listAFS;
+    TicketList*         m_listAfs;
     CLeashDebugWindow*	m_pDebugWindow;
 	CImageList			m_imageList;
 	CImageList			*m_pImageList; 
@@ -76,12 +87,10 @@ private:
 	HTREEITEM			m_hAFS; 
 	TV_INSERTSTRUCT		m_tvinsert;
 	HMENU				m_hMenu; 
-    BOOL                m_afsNoTokens; 
     BOOL				m_startup;
 	BOOL				m_isMinimum;
 	BOOL				m_debugStartUp;	
 	BOOL				m_alreadyPlayed;
-    BOOL                m_importedTickets;
     INT					m_upperCaseRealm;
 	INT					m_destroyTicketsOnExit;
 	INT					m_debugWindow;
@@ -91,21 +100,26 @@ private:
 	INT					m_hKerb4State;
 	INT					m_hKerb5State;
 	INT					m_hAFSState; 
+    BOOL                m_bIconAdded;
+    BOOL                m_bIconDeleted;
 
     static INT		   	m_autoRenewTickets;
+    static INT          m_ticketStatusAfs; 
     static INT          m_ticketStatusKrb4; 
     static INT          m_ticketStatusKrb5; 
     static INT          m_autoRenewalAttempted;
+	static INT			m_warningOfTicketTimeLeftAfs;
 	static INT			m_warningOfTicketTimeLeftKrb4;
 	static INT			m_warningOfTicketTimeLeftKrb5;
+    static INT			m_warningOfTicketTimeLeftLockAfs;
     static INT			m_warningOfTicketTimeLeftLockKrb4;
     static INT			m_warningOfTicketTimeLeftLockKrb5;
     static INT			m_updateDisplayCount;
     static INT	        m_alreadyPlayedDisplayCount; 
     static LONG			m_ticketTimeLeft;    
 	static BOOL			m_lowTicketAlarmSound;
-    static BOOL         m_gotAfsTokens;
-
+    static CCriticalSection    m_tgsReqCriticalSection;
+    static LONG         m_timerMsgNotInProgress;
 
 	VOID ResetTreeNodes();
     VOID ApplicationInfoMissingMsg();
@@ -125,16 +139,25 @@ private:
 	static INT	GetLowTicketStatus(int);
 	static LONG	LeashTime();
 
+    void   SetTrayIcon(int nim, int state=0);
+    void   SetTrayText(int nim, CString tip);
+
+    BOOL   UpdateDisplay();
+    static UINT InitTicket(void *);
+	static UINT RenewTicket(void *);
+	static UINT ImportTicket(void *);
+
 protected: // create from serialization only
 	DECLARE_DYNCREATE(CLeashView)
 
 // Attributes
 public:
-	static INT m_forwardableTicket; 
-	static INT m_proxiableTicket; 
-    static INT m_renewableTicket;
-    static INT m_noaddressTicket;
+	static INT   m_forwardableTicket; 
+	static INT   m_proxiableTicket; 
+    static INT   m_renewableTicket;
+    static INT   m_noaddressTicket;
     static DWORD m_publicIPAddress;
+    static BOOL  m_importedTickets;
 
     CLeashView();
 	//LeashDoc* GetDocument();
@@ -174,6 +197,7 @@ protected:
     afx_msg VOID OnItemexpandedTreeview(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg INT OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg VOID OnShowWindow(BOOL bShow, UINT nStatus);
+    afx_msg VOID OnClose(void);
 	afx_msg VOID OnInitTicket();
 	afx_msg VOID OnRenewTicket();
 	afx_msg VOID OnImportTicket();
@@ -197,6 +221,8 @@ protected:
 	afx_msg VOID OnKrb4Properties();
 	afx_msg VOID OnKrb5Properties();
 	afx_msg void OnLeashProperties();
+	afx_msg void OnLeashRestore();
+	afx_msg void OnLeashMinimize();
 	afx_msg void OnLowTicketAlarm();
 	afx_msg void OnUpdateKrb4Properties(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateKrb5Properties(CCmdUI* pCmdUI);
@@ -209,6 +235,8 @@ protected:
     afx_msg void OnSysColorChange();
     afx_msg void OnAutoRenew();
 	afx_msg LRESULT OnGoodbye(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnTrayIcon(WPARAM wParam, LPARAM lParam);
+    afx_msg LRESULT OnObtainTGTWithParam(WPARAM wParam, LPARAM lParam);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

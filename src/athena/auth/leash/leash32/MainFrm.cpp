@@ -48,7 +48,9 @@ BEGIN_MESSAGE_MAP(CMainFrame, CLeashFrame)
 	ON_WM_CREATE()
 	ON_COMMAND(ID_RESET_WINDOW_SIZE, OnResetWindowSize)
 	ON_WM_SIZING()
+    ON_WM_CLOSE()
 	ON_WM_GETMINMAXINFO()
+    ON_COMMAND(ID_APP_EXIT, OnClose)
 	//}}AFX_MSG_MAP
 	// Global help commands
 	ON_COMMAND(ID_HELP_LEASH_, CMainFrame::OnHelpFinder)
@@ -60,8 +62,10 @@ static UINT indicators[] =
 {
 	ID_SEPARATOR,           // status line indicator
 	ID_SEPARATOR,
+    ID_SEPARATOR,
     ID_SEPARATOR
 };
+
 
 /////////////////////////////////////////////////////////////////////////////
 // CMainFrame construction/destruction
@@ -75,6 +79,7 @@ CMainFrame::CMainFrame()
 	m_whatSide = RESET_MINSIZE;
 	m_isMinimum = FALSE;
     m_isBeingResized = FALSE;
+    m_bOwnerCreated = FALSE;
 }
 
 CMainFrame::~CMainFrame()
@@ -86,7 +91,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (CLeashFrame::OnCreate(lpCreateStruct) == -1)
 		return -1;
 	
-    // ShowWindow(SW_HIDE);
+    ShowWindow(SW_HIDE);
         
 /* NT4 and NT5 aren't shipped with a version of MFC that supports 
 // 'CreateEx()' as of 2/1/99
@@ -183,7 +188,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	if (!m_wndStatusBar.Create(this) ||
 		!m_wndStatusBar.SetIndicators(indicators,
-		  sizeof(indicators)/sizeof(UINT)))
+		  (CLeashApp::m_hAfsDLL ? 4 : 3)))
 	{
 		MessageBox("There is problem creating the Leash Status Bar!", 
                    "Error", MB_OK);
@@ -204,11 +209,24 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	return 0;
 }
 
+BOOL CMainFrame::PreTranslateMessage(MSG* pMsg)
+{
+    if ( pMsg->message == WM_SYSCOMMAND && (pMsg->wParam & 0xfff0) == SC_CLOSE )
+    {
+        return TRUE;
+    }
+    return CLeashFrame::PreTranslateMessage(pMsg);
+}
+
 BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 {
 	// Use the specific class name we established earlier
-
-    cs.dwExStyle |= WS_EX_APPWINDOW | WS_EX_OVERLAPPEDWINDOW ; 
+    // Remove the Minimize and Maximize buttons
+    cs.style &= ~WS_MINIMIZEBOX;
+    cs.style &= ~WS_MAXIMIZEBOX;
+    // Initialize the extended window style to display a TaskBar entry with WS_EX_APPWINDOW
+    cs.dwExStyle |= WS_EX_APPWINDOW;
+    cs.dwExStyle |= WS_EX_OVERLAPPEDWINDOW ;
 	cs.lpszClass = _T("LEASH.0WNDCLASS");
     cs.lpszName = _T("Leash32");
 
@@ -227,6 +245,15 @@ BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
         cs.y = rect.top;
         cs.cx = rect.right - rect.left;
         cs.cy = rect.bottom - rect.top;
+
+        if ( cs.x < 0 )
+            cs.x = CW_USEDEFAULT;
+        if ( cs.y < 0 )
+            cs.y = CW_USEDEFAULT;
+        if ( cs.cx <= 0 )
+            cs.cx = CLeashFrame::s_rectDefault.right;
+        if ( cs.cy <= 0 )
+            cs.cy = CLeashFrame::s_rectDefault.bottom;
     }
     else 
     {
@@ -238,8 +265,41 @@ BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 
     // Change the following line to call
 	// CLeashFrame::PreCreateWindow(cs) if this is an SDI application.
-	return CLeashFrame::PreCreateWindow(cs);
+	if (!CLeashFrame::PreCreateWindow(cs))
+        return FALSE;
+
+    // We create a parent window for our application to ensure that
+    // it has an owner.  This way we can disable the TaskBar entry
+    // by removing the WS_EX_APPWINDOW style later on.
+    if ( !m_bOwnerCreated )
+    {
+        m_bOwnerCreated = m_MainFrameOwner.Create(IDD_FRAMEOWNER);
+        if ( m_bOwnerCreated )
+            m_MainFrameOwner.ShowWindow(SW_HIDE);
+    }
+    if ( m_bOwnerCreated )
+        cs.hwndParent = m_MainFrameOwner.GetSafeHwnd();
+
+    return TRUE;
 }
+
+
+BOOL CMainFrame::ShowTaskBarButton(BOOL bVisible)
+{
+    if (!m_bOwnerCreated) 
+        return FALSE;
+
+    if (bVisible) {
+        ShowWindow(SW_HIDE);
+        ModifyStyleEx(0, WS_EX_APPWINDOW);
+        ShowWindow(SW_SHOW);
+    } else {
+        ShowWindow(SW_HIDE);
+        ModifyStyleEx(WS_EX_APPWINDOW, 0);
+        ShowWindow(SW_SHOW);
+    }
+    return TRUE;
+} 
 
 /////////////////////////////////////////////////////////////////////////////
 // CMainFrame diagnostics
@@ -358,22 +418,36 @@ void CMainFrame::OnGetMinMaxInfo(MINMAXINFO FAR* lpMMI)
 	CLeashFrame::OnGetMinMaxInfo(lpMMI);
 }
 
+void CMainFrame::OnClose(void)
+{
+    CLeashFrame::OnClose();
+}
+
 LRESULT CMainFrame::WindowProc(UINT message, WPARAM wParam, LPARAM lParam) 
 {
+    BOOL oldMin = m_isMinimum;
  	switch(message)
 	{
-		case WM_SYSCOMMAND: 
-			if (SC_MINIMIZE == (wParam & 0xfff0))
-			  m_isMinimum = TRUE;	
-			else if (SC_MAXIMIZE == (wParam & 0xfff0)) 
- 			  m_isMinimum = FALSE;	
-			else if (SC_RESTORE == (wParam & 0xfff0)) 
- 			  m_isMinimum = FALSE;	
-		
-			break;
+    case WM_SIZE:
+        switch ( wParam ) {
+        case SIZE_MINIMIZED:
+            m_isMinimum = TRUE;
+            break;
+        case SIZE_MAXIMIZED:
+        case SIZE_RESTORED:
+            m_isMinimum = FALSE;
+            break;
+        }
+        break;
 	}
-	
-	return CLeashFrame::WindowProc(message, wParam, lParam);
+
+    if ( oldMin != m_isMinimum ) {
+        if ( m_isMinimum ) {
+            ShowTaskBarButton(FALSE);
+            ShowWindow(SW_HIDE);
+        }
+    }
+    return CLeashFrame::WindowProc(message, wParam, lParam);
 }
 
 /*

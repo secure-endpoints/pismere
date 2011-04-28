@@ -21,6 +21,7 @@
 */
 
 /* Standard Include files */
+#include <windows.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -41,10 +42,6 @@
 static long lsh_errno;
 static char *err_context;       /* error context */
 extern HINSTANCE hLeashInst;
-extern int (*Lcom_err)(LPSTR,long,LPSTR,...);
-extern LPSTR (*Lerror_message)(long);
-extern LPSTR (*Lerror_table_name)(long);
-
 extern HINSTANCE hKrb4;
 extern HINSTANCE hKrb5;
 
@@ -84,8 +81,20 @@ long Leash_get_lsh_errno(LONG *err_val)
 
 /*/////// ******** API Calls follow here.   ******** /////////*/
 
+#define LEASH_DLG_MUTEX_NAME  TEXT("Leash_Dialog_Mutex")
 int Leash_kinit_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo)
 {
+    int rc;
+    HANDLE hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
+    if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
+        if ( WaitForSingleObject( hMutex, INFINITE ) != WAIT_OBJECT_0 ) {
+            return -1;
+        }
+        ReleaseMutex(hMutex);
+        CloseHandle(hMutex);
+        return 1;   /* pretend the dialog was displayed and succeeded */
+    }
+
     lpdlginfo->dlgtype = DLGTYPE_PASSWD;
 
     /* set the help file */
@@ -93,13 +102,28 @@ int Leash_kinit_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo)
 
     /* Call the Dialog box with the DLL's Password Callback and the
        DLL's instance handle. */
-    return DialogBoxParam(hLeashInst, "EnterPasswordDlg", hParent,
+    rc =  DialogBoxParam(hLeashInst, "EnterPasswordDlg", hParent,
                           PasswordProc, (LPARAM)lpdlginfo);
+
+    ReleaseMutex(hMutex);
+    CloseHandle(hMutex);
+    return rc;
 }
 
 
 int Leash_kinit_dlg_ex(HWND hParent, LPLSH_DLGINFO_EX lpdlginfo)
 {
+    int rc;
+    HANDLE hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
+    if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
+        if ( WaitForSingleObject( hMutex, INFINITE ) != WAIT_OBJECT_0 ) {
+            return -1;
+        }
+        ReleaseMutex(hMutex);
+        CloseHandle(hMutex);
+        return 1;   /* pretend the dialog was displayed and succeeded */
+    }
+
     lpdlginfo->dlgtype = DLGTYPE_PASSWD;
 
     /* set the help file */
@@ -107,31 +131,60 @@ int Leash_kinit_dlg_ex(HWND hParent, LPLSH_DLGINFO_EX lpdlginfo)
 
     /* Call the Dialog box with the DLL's Password Callback and the
        DLL's instance handle. */
-    return DialogBoxParam(hLeashInst, MAKEINTRESOURCE(IDD_AUTHENTICATE), hParent,
+    rc = DialogBoxParam(hLeashInst, MAKEINTRESOURCE(IDD_AUTHENTICATE), hParent,
                           AuthenticateProc, (LPARAM)lpdlginfo);
+    ReleaseMutex(hMutex);
+    CloseHandle(hMutex);
+    return rc;
 }
 
 
 int Leash_changepwd_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo)
 {
+    int rc;
+    HANDLE hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
+    if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
+        if ( WaitForSingleObject( hMutex, INFINITE ) != WAIT_OBJECT_0 ) {
+            return -1;
+        }
+        ReleaseMutex(hMutex);
+        CloseHandle(hMutex);
+        return 1;   /* pretend the dialog was displayed and succeeded */
+    }
 
     lpdlginfo->dlgtype = DLGTYPE_CHPASSWD;
 
     /* Call the Dialog box with the DLL's Password Callback and the
        DLL's instance handle. */
-    return DialogBoxParam(hLeashInst, "CHANGEPASSWORDDLG", hParent,
+    rc = DialogBoxParam(hLeashInst, "CHANGEPASSWORDDLG", hParent,
                           PasswordProc, (LPARAM)lpdlginfo);
+    ReleaseMutex(hMutex);
+    CloseHandle(hMutex);
+    return rc;
 }
 
 int Leash_changepwd_dlg_ex(HWND hParent, LPLSH_DLGINFO_EX lpdlginfo)
 {
+    int rc;
+    HANDLE hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
+    if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
+        if ( WaitForSingleObject( hMutex, INFINITE ) != WAIT_OBJECT_0 ) {
+            return -1;
+        }
+        ReleaseMutex(hMutex);
+        CloseHandle(hMutex);
+        return 1;   /* pretend the dialog was displayed and succeeded */
+    }
 
     lpdlginfo->dlgtype = DLGTYPE_CHPASSWD;
 
     /* Call the Dialog box with the DLL's Password Callback and the
        DLL's instance handle. */
-    return DialogBoxParam(hLeashInst, MAKEINTRESOURCE(IDD_PASSWORD), hParent,
+    rc = DialogBoxParam(hLeashInst, MAKEINTRESOURCE(IDD_PASSWORD), hParent,
                           NewPasswordProc, (LPARAM)lpdlginfo);
+    ReleaseMutex(hMutex);
+    CloseHandle(hMutex);
+    return rc;
 }
 
 
@@ -350,6 +403,7 @@ PasswordProc(
             RemoveProp(hDialog, "HANDLES_HELP");
             state = STATE_CLOSED;
             EndDialog(hDialog, (int)lParam);
+        return TRUE;
 	}
 	break;
         case ID_DURATION:
@@ -445,12 +499,12 @@ PasswordProc(
             {
                 if (!principal[0])
                 {
-                    MessageBox(hDialog, "You are not allowed to enter a "
-                               "blank principal.",
+                    MessageBox(hDialog, 
+                                "You are not allowed to enter a blank principal.",
                                "Invalid Principal",
                                MB_OK | MB_ICONSTOP);
-		    NEXTSTATE(STATE_PRINCIPAL);
-		    return TRUE;
+                    NEXTSTATE(STATE_PRINCIPAL);
+                    return TRUE;
                 }
 
 	        // Change 'principal' to upper case after checking
@@ -473,14 +527,25 @@ PasswordProc(
                                "blank password.",
                                "Invalid Password",
                                MB_OK | MB_ICONSTOP);
-		    NEXTSTATE(STATE_OLDPWD);
-		    return TRUE;
+                    NEXTSTATE(STATE_OLDPWD);
+                    return TRUE;
                 }
                 if (lpdi->dlgtype == DLGTYPE_CHPASSWD)
-                    lsh_errno = Leash_checkpwd(principal, oldpassword);
+                    lsh_errno = Leash_int_checkpwd(principal, oldpassword, 1);
                 else
                 {
-                    lsh_errno = Leash_kinit(principal, oldpassword, duration);
+                    lsh_errno = Leash_int_kinit_ex( 0,
+                                                    hDialog,
+                                                    principal,
+                                                    oldpassword, 
+                                                    duration,
+                                                    Leash_get_default_forwardable(),
+                                                    Leash_get_default_proxiable(),
+                                                    Leash_get_default_renew_till(),
+                                                    Leash_get_default_noaddresses(),
+                                                    Leash_get_default_publicip(),
+                                                    1
+                                                    );
                 }
 		if (lsh_errno != 0)
                 {
@@ -539,30 +604,45 @@ PasswordProc(
             break;
 	    case STATE_NEWPWD1:
             {
-		int i = 0;
-		for( i = 0; i < 255; i++ ){
+                int i = 0;
+                int bit8 = 0;
+
+                for( i = 0; i < 255; i++ ){
                     if( newpassword[i] == '\0' ){
+                        if ( bit8 ) {
+                            MessageBox(hDialog, 
+                                        "Passwords should not contain non-ASCII characters.",
+                                        "Internationalization Warning",
+                                        MB_OK | MB_ICONINFORMATION);
+                        }
                         i = 255;
                         break;
                     } else if( !isprint(newpassword[i]) ){
                         memset(newpassword, '\0', 255);
                         /* I claim these passwords in the name of planet '\0'... */
-                        Lcom_err("Leash", LSH_BADCHARS, "");
+                        MessageBox(hDialog, 
+                                   "Passwords may not contain non-printable characters.",
+                                    "Invalid Password",
+                                    MB_OK | MB_ICONSTOP);
                         NEXTSTATE(STATE_NEWPWD1);
                         return TRUE;
-                    }
-		}
+                    } else if ( newpassword[i] > 127 )
+                        bit8 = 1;
+                }
             }
             break;
 	    case STATE_NEWPWD2:
                 if (lstrcmp(newpassword, newpassword2))
-		{
+                {
                     NEXTSTATE(STATE_NEWPWD1);
-                    Lcom_err("Leash", LSH_NOMATCH, "");
+                    MessageBox(hDialog, 
+                                "The new password was not entered the same way twice.",
+                                "Password validation error",
+                                MB_OK | MB_ICONSTOP);
                     return TRUE;
-		}
+                }
                 else
-		{
+                {
                     /* make them type both pwds again if error */
                     int next_state = STATE_NEWPWD1;
                     int capslock;
@@ -573,18 +653,18 @@ PasswordProc(
                        toggled; if so, warn user since there's
                        been an error. */
                     if (capslock & 1)
-		    {
+                    {
                         lstrcpy((LPSTR)gbuf, (LPSTR)err_context);
                         cp = gbuf + lstrlen((LPSTR)gbuf);
                         if (cp != gbuf)
                             *cp++ = ' ';
                         lstrcpy(cp, "(This may be because your CAPS LOCK key is down.)");
                         err_context = gbuf;
-		    }
+                    }
 
                     if ((lsh_errno =
-                         Leash_changepwd(principal, oldpassword,
-                                         newpassword, 0))
+                         Leash_int_changepwd(principal, oldpassword,
+                                         newpassword, 0, 1))
                         == 0){
                         CloseMe(TRUE);
                     }
@@ -764,6 +844,74 @@ GetKrb4RealmFile(
     return FALSE;
 }
 
+static BOOL
+FindDLLName(CHAR * filename, UINT len)
+{
+    if ( !filename || len == 0 )
+        return 0;
+
+    filename[0] = 0;
+
+    if ( pEnumProcessModules ) {
+        char checkName[1024];
+        HMODULE hMods[1024];
+        HANDLE hProcess;
+        DWORD cbNeeded;
+        unsigned int i;
+
+        /* Get a list of all the modules in this process. */
+        hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, GetCurrentProcessId());
+
+        if (pEnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded))
+        {
+            for (i = 0; i < (cbNeeded / sizeof(HMODULE)); i++)
+            {
+                char szModName[2048];
+
+                /* Get the full path to the module's file. */
+                if (pGetModuleFileNameEx(hProcess, hMods[i], szModName, sizeof(szModName)))
+                {
+                    lstrcpyn(checkName, szModName, sizeof(checkName));
+                    strupr(checkName);
+
+                    if (strstr(checkName, "LEASHW32")) {
+                        lstrcpyn(filename, checkName, len);
+                        break;
+                    }
+                }
+            }
+        }   
+
+        CloseHandle(hProcess);
+    } else if (pCreateToolhelp32Snapshot && pModule32First && pModule32Next ) {
+        char checkName[1024];
+        MODULEENTRY32 me32 = {0};
+        HANDLE hProcessSnap = NULL;
+
+        hProcessSnap = pCreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetCurrentProcessId());
+        if (hProcessSnap == (HANDLE)-1)
+            return FALSE;
+
+        me32.dwSize = sizeof(MODULEENTRY32);
+        if (pModule32First(hProcessSnap, &me32))
+        {
+            do
+            {
+                lstrcpyn(checkName, me32.szExePath, sizeof(checkName));
+                strupr(checkName);
+
+                if (strstr(checkName, "LEASHW32")) {
+                    lstrcpyn(filename, checkName, len);
+                    break;
+                }
+            }
+            while (pModule32Next(hProcessSnap, &me32));
+        }
+    }
+
+    return filename[0] ? 1 : 0;
+}   
+
 static DWORD
 SetVersionInfo(
     HWND hDialog,
@@ -788,7 +936,7 @@ SetVersionInfo(
     CHAR * cp = szVerQ;
     DWORD size;
 
-    if (!GetModuleFileName(NULL, filename, sizeof(filename)))
+    if (!FindDLLName(filename, sizeof(filename)))
         return GetLastError();
 
     size = GetFileVersionInfoSize(filename, &dwVersionHandle);
@@ -1103,8 +1251,8 @@ AuthenticateProc(
     )
 {
     static POINT Position = { -1, -1 };
-    static char username[64]="";
-	static char realm[192]="";
+    static char username[LEASH_USERNAME_SZ]="";
+	static char realm[LEASH_REALM_SZ]="";
 	static char password[256]="";
 	static int  lifetime=0;
 	static int  renew_till=0;
@@ -1134,14 +1282,20 @@ AuthenticateProc(
 
         *( (LPLSH_DLGINFO_EX far *)(&lpdi) ) = (LPLSH_DLGINFO_EX)(LPSTR)lParam;
 
-		if (lpdi->size != sizeof(LSH_DLGINFO_EX) ||
-			 lpdi->dlgtype != DLGTYPE_PASSWD) {
+		if ((lpdi->size != LSH_DLGINFO_EX_V1_SZ && 
+             lpdi->size != sizeof(LSH_DLGINFO_EX)) ||
+			lpdi->dlgtype != DLGTYPE_PASSWD) {
 
 			MessageBox(hDialog, "An incorrect initialization data structure was provided.",
 						"AuthenticateProc()",
 						MB_OK | MB_ICONSTOP);
 			return FALSE;
 		}
+
+        if ( lpdi->size == sizeof(LSH_DLGINFO_EX) ) {
+            lpdi->out.username[0] = 0;
+            lpdi->out.realm[0] = 0;
+        }
 
         SetWindowText(hDialog, lpdi->title);
 
@@ -1348,10 +1502,21 @@ AuthenticateProc(
         if (Position.x > 0 && Position.y > 0 &&
             Position.x < GetSystemMetrics(SM_CXSCREEN) &&
             Position.y < GetSystemMetrics(SM_CYSCREEN))
-            SetWindowPos(hDialog, 0, Position.x, Position.y, 0, 0, 
-                         SWP_NOSIZE | SWP_NOZORDER);
+            SetWindowPos(hDialog, HWND_TOP, Position.x, Position.y, 0, 0, SWP_NOSIZE);
+        else /* Center the window on the desktop */
+            SetWindowPos(hDialog, HWND_TOP, 
+                         (GetSystemMetrics(SM_CXSCREEN) - dlgRect.right + dlgRect.left)/2, 
+                         (GetSystemMetrics(SM_CYSCREEN) - dlgRect.bottom + dlgRect.top)/2, 
+                         0, 0,
+                         SWP_NOSIZE);
 
-        /* set window pos to last saved window pos */
+        /* Take keyboard focus */
+        SetActiveWindow(hDialog);
+        SetForegroundWindow(hDialog);
+        if (GetDlgCtrlID((HWND) wParam) != IDC_EDIT_PRINCIPAL) 
+        { 
+            SetFocus(GetDlgItem(hDialog, IDC_EDIT_PRINCIPAL));
+        } 
         break;
 
 	case WM_HSCROLL:
@@ -1432,6 +1597,7 @@ AuthenticateProc(
 				memset(password,0,sizeof(password));
 				RemoveProp(hDialog, "HANDLES_HELP");
 				EndDialog(hDialog, (int)lParam);
+                return TRUE;
 			}
 			break;
         case IDOK:
@@ -1444,16 +1610,16 @@ AuthenticateProc(
 
 				if (!username[0])
 				{
-					MessageBox(hDialog, "You are not allowed to enter a "
-								"blank username.",
+					MessageBox(hDialog, 
+                                "You are not allowed to enter a blank username.",
 								"Invalid Principal",
 								MB_OK | MB_ICONSTOP);
 					return TRUE;
 				}
 				if (!realm[0])
 				{
-					MessageBox(hDialog, "You are not allowed to enter a "
-								"blank realm.",
+					MessageBox(hDialog, 
+                                "You are not allowed to enter a blank realm.",
 								"Invalid Principal",
 								MB_OK | MB_ICONSTOP);
 					return TRUE;
@@ -1467,8 +1633,8 @@ AuthenticateProc(
 				
 				if (!password[0])
 				{
-					MessageBox(hDialog, "You are not allowed to enter a "
-								"blank password.",
+					MessageBox(hDialog, 
+                                "You are not allowed to enter a blank password.",
 								"Invalid Password",
 								MB_OK | MB_ICONSTOP);
 					return TRUE;
@@ -1492,7 +1658,8 @@ AuthenticateProc(
 											   proxiable,
 											   renew_till,
 											   noaddresses,
-											   publicip
+											   publicip,
+                                               1
 											   );
 				if (lsh_errno != 0)
 				{
@@ -1505,8 +1672,13 @@ AuthenticateProc(
 					{
 					case LSH_INVPRINCIPAL:
 					case LSH_INVINSTANCE:
+                    case KRBERR(KDC_PR_UNKNOWN):
+                        CSendDlgItemMessage(hDialog, IDC_EDIT_PRINCIPAL, EM_SETSEL, 0, 256);
+                        SetFocus(GetDlgItem(hDialog,IDC_EDIT_PRINCIPAL));
+                        break;
 					case LSH_INVREALM:
-					case KRBERR(KDC_PR_UNKNOWN):
+                        CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, EM_SETSEL, 0, 256);
+                        SetFocus(GetDlgItem(hDialog,IDC_COMBO_REALM));
 						break;
 					case KRBERR(RD_AP_TIME):
 					case KRBERR(KDC_SERVICE_EXP):
@@ -1519,9 +1691,12 @@ AuthenticateProc(
 							return(TRUE);
 						}
 						break;
-					default:
-						CloseMe(FALSE);
+                    default:
+                        CSendDlgItemMessage(hDialog, IDC_EDIT_PASSWORD, EM_SETSEL, 0, 256);
+                        SetFocus(GetDlgItem(hDialog,IDC_EDIT_PASSWORD));
+						return(TRUE);
 					}
+#ifdef COMMENT
 					capslock = lsh_getkeystate(VK_CAPITAL);
 					/* low-order bit means caps lock is
 					toggled; if so, warn user since there's
@@ -1538,9 +1713,19 @@ AuthenticateProc(
 
 					// XXX		    DoNiftyErrorReport(lsh_errno, ISCHPASSWD ? ""
 					// XXX				       : "Ticket initialization failed.");
+#endif /* COMMENT */
 					return TRUE;
 				}
-				CloseMe(TRUE); /* success */
+
+                if ( lpdi->size == sizeof(LSH_DLGINFO_EX) ) {
+                    strncpy(lpdi->out.username, username, LEASH_USERNAME_SZ);
+                    lpdi->out.username[LEASH_USERNAME_SZ-1] = 0;
+                    strncpy(lpdi->out.realm, realm, LEASH_REALM_SZ);
+                    lpdi->out.realm[LEASH_REALM_SZ-1] = 0;
+                }
+				
+                CloseMe(TRUE); /* success */
+                return FALSE;
 			}
 			break;
         case IDCANCEL:
@@ -1574,8 +1759,8 @@ NewPasswordProc(
     )
 {
     static POINT Position = { -1, -1 };
-    static char username[64]="";
-	static char realm[192]="";
+    static char username[LEASH_USERNAME_SZ]="";
+	static char realm[LEASH_REALM_SZ]="";
 	static char password[256]="";
 	static char password2[256]="";
 	static char password3[256]="";
@@ -1594,7 +1779,8 @@ NewPasswordProc(
 
         *( (LPLSH_DLGINFO_EX far *)(&lpdi) ) = (LPLSH_DLGINFO_EX)(LPSTR)lParam;
 
-		if (lpdi->size != sizeof(LSH_DLGINFO_EX) ||
+		if ((lpdi->size != sizeof(LSH_DLGINFO_EX) && 
+             lpdi->size != LSH_DLGINFO_EX_V1_SZ) ||
 			 lpdi->dlgtype != DLGTYPE_CHPASSWD) {
 
 			MessageBox(hDialog, "An incorrect initialization data structure was provided.",
@@ -1602,6 +1788,11 @@ NewPasswordProc(
 						MB_OK | MB_ICONSTOP);
 			return FALSE;
 		}
+
+        if ( lpdi->size == sizeof(LSH_DLGINFO_EX) ) {
+            lpdi->out.username[0] = 0;
+            lpdi->out.realm[0] = 0;
+        }
 
         SetWindowText(hDialog, lpdi->title);
 
@@ -1720,7 +1911,15 @@ NewPasswordProc(
             Position.y < GetSystemMetrics(SM_CYSCREEN))
             SetWindowPos(hDialog, 0, Position.x, Position.y, 0, 0, 
                          SWP_NOSIZE | SWP_NOZORDER);
-
+        else { /* Center the window on the desktop */
+            RECT dlgRect;
+            GetWindowRect( hDialog, &dlgRect );
+            SetWindowPos(hDialog, 0, 
+                         (GetSystemMetrics(SM_CXSCREEN) - dlgRect.right + dlgRect.left)/2, 
+                         (GetSystemMetrics(SM_CYSCREEN) - dlgRect.bottom + dlgRect.top)/2, 
+                         0, 0,
+                         SWP_NOSIZE | SWP_NOZORDER);
+        }
         /* set window pos to last saved window pos */
         break;
 
@@ -1740,12 +1939,14 @@ NewPasswordProc(
 				memset(password3,0,sizeof(password3));
 				RemoveProp(hDialog, "HANDLES_HELP");
 				EndDialog(hDialog, (int)lParam);
+                return TRUE;
 			}
 			break;
         case IDOK:
 			{
 				DWORD value = 0;
 				int i = 0;
+                int bit8 = 0;
 
 				CGetDlgItemText(hDialog, IDC_EDIT_PRINCIPAL, username, sizeof(username));
 				CGetDlgItemText(hDialog, IDC_EDIT_PASSWORD, password, sizeof(password));
@@ -1787,28 +1988,41 @@ NewPasswordProc(
 
 				for( i = 0; i < 255; i++ ){
                     if( password2[i] == '\0' ){
+                        if ( bit8 ) {
+                            MessageBox(hDialog, 
+                                        "Passwords should not contain non-ASCII characters.",
+                                        "Internationalization Warning",
+                                        MB_OK | MB_ICONINFORMATION);
+                        }
                         i = 255;
                         break;
                     } else if( !isprint(password2[i]) ){
                         memset(password2, '\0', sizeof(password2));
                         memset(password3, '\0', sizeof(password3));
                         /* I claim these passwords in the name of planet '\0'... */
-                        Lcom_err("Leash", LSH_BADCHARS, "");
+                        MessageBox(hDialog, 
+                                   "Passwords may not contain non-printable characters.",
+                                    "Invalid Password",
+                                    MB_OK | MB_ICONSTOP);
                         return TRUE;
-                    }
+                    } else if ( password2[i] > 127 )
+                        bit8 = 1;
 				}
 
 				if (lstrcmp(password2, password3))
 				{
-                    Lcom_err("Leash", LSH_NOMATCH, "");
+                    MessageBox(hDialog, 
+                                "The new password was not entered the same way twice.",
+                                "Password validation error",
+                                MB_OK | MB_ICONSTOP);
                     return TRUE;
 				}
 
 				sprintf(principal,"%s@%s",username,realm);
 
-				lsh_errno = Leash_checkpwd(principal, password);
+				lsh_errno = Leash_int_checkpwd(principal, password, 1);
 				if (lsh_errno == 0)
-					lsh_errno = Leash_changepwd( principal, password, password2, 0);
+					lsh_errno = Leash_int_changepwd( principal, password, password2, 0, 1);
 				if (lsh_errno != 0)
 				{
 					int capslock;
@@ -1837,6 +2051,7 @@ NewPasswordProc(
 					default:
 						return(TRUE);
 					}
+#ifdef COMMENT
 					capslock = lsh_getkeystate(VK_CAPITAL);
 					/* low-order bit means caps lock is
 					toggled; if so, warn user since there's
@@ -1853,9 +2068,18 @@ NewPasswordProc(
 
 					// XXX		    DoNiftyErrorReport(lsh_errno, ISCHPASSWD ? ""
 					// XXX				       : "Ticket initialization failed.");
-					return TRUE;
+#endif /* COMMENT */              
+                    return TRUE;
 				}
-				CloseMe(TRUE); /* success */
+
+                if ( lpdi->size == sizeof(LSH_DLGINFO_EX) ) {
+                    strncpy(lpdi->out.username, username, LEASH_USERNAME_SZ);
+                    lpdi->out.username[LEASH_USERNAME_SZ-1] = 0;
+                    strncpy(lpdi->out.realm, realm, LEASH_REALM_SZ);
+                    lpdi->out.realm[LEASH_REALM_SZ-1] = 0;
+                }
+
+                CloseMe(TRUE); /* success */
 			}
 			break;
         case IDCANCEL:

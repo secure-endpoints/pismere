@@ -116,13 +116,17 @@ DNSLIBS=
 DNSFLAGS=
 !endif
 
+!if defined(KRB5_KFW_COMPILE)
+KFWFLAGS=-DUSE_LEASH=1
+!endif
+
 #
 # The name of the C compiler for the target
 #
 CC=cl
 
 PDB_OPTS=-Fd$(OUTPRE)\ -FD
-CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1
+CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1 $(KFWFLAGS)
 CCOPTS=-nologo /W3 $(PDB_OPTS) $(DLL_FILE_DEF)
 LOPTS=-nologo -incremental:no
 
@@ -337,87 +341,88 @@ install-unix:: install-libs
 #
 cksum.so cksum.po $(OUTPRE)cksum.$(OBJEXT): cksum.c $(srcdir)/../crypto/des/des_int.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  $(SRCTOP)/include/kerberosIV/des.h
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h $(SRCTOP)/include/kerberosIV/des.h
 des.so des.po $(OUTPRE)des.$(OBJEXT): des.c $(srcdir)/../crypto/des/des_int.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  $(SRCTOP)/include/kerberosIV/des.h
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h $(SRCTOP)/include/kerberosIV/des.h
 enc_dec.so enc_dec.po $(OUTPRE)enc_dec.$(OBJEXT): enc_dec.c $(srcdir)/../crypto/des/des_int.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  $(SRCTOP)/include/kerberosIV/des.h
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h $(SRCTOP)/include/kerberosIV/des.h
 key_parity.so key_parity.po $(OUTPRE)key_parity.$(OBJEXT): key_parity.c $(srcdir)/../crypto/des/des_int.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  $(SRCTOP)/include/kerberosIV/des.h
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h $(SRCTOP)/include/kerberosIV/des.h
 key_sched.so key_sched.po $(OUTPRE)key_sched.$(OBJEXT): key_sched.c $(srcdir)/../crypto/des/des_int.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  $(SRCTOP)/include/kerberosIV/des.h
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h $(SRCTOP)/include/kerberosIV/des.h
 new_rnd_key.so new_rnd_key.po $(OUTPRE)new_rnd_key.$(OBJEXT): new_rnd_key.c $(srcdir)/../crypto/des/des_int.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  $(SRCTOP)/include/kerberosIV/des.h
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h $(SRCTOP)/include/kerberosIV/des.h
 pcbc_encrypt.so pcbc_encrypt.po $(OUTPRE)pcbc_encrypt.$(OBJEXT): pcbc_encrypt.c $(srcdir)/../crypto/des/des_int.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  $(SRCTOP)/include/kerberosIV/des.h $(srcdir)/../crypto/des/f_tables.h
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h $(SRCTOP)/include/kerberosIV/des.h \
+  $(srcdir)/../crypto/des/f_tables.h
 quad_cksum.so quad_cksum.po $(OUTPRE)quad_cksum.$(OBJEXT): quad_cksum.c $(srcdir)/../crypto/des/des_int.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  $(SRCTOP)/include/kerberosIV/des.h
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h $(SRCTOP)/include/kerberosIV/des.h
 random_key.so random_key.po $(OUTPRE)random_key.$(OBJEXT): random_key.c $(srcdir)/../crypto/des/des_int.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  $(SRCTOP)/include/kerberosIV/des.h
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h $(SRCTOP)/include/kerberosIV/des.h
 read_passwd.so read_passwd.po $(OUTPRE)read_passwd.$(OBJEXT): read_passwd.c $(srcdir)/../crypto/des/des_int.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  $(SRCTOP)/include/kerberosIV/des.h
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h $(SRCTOP)/include/kerberosIV/des.h
 str_to_key.so str_to_key.po $(OUTPRE)str_to_key.$(OBJEXT): str_to_key.c $(srcdir)/../crypto/des/des_int.h \
   $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
-  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
-  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  $(SRCTOP)/include/kerberosIV/des.h
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h $(SRCTOP)/include/kerberosIV/des.h
 unix_time.so unix_time.po $(OUTPRE)unix_time.$(OBJEXT): unix_time.c $(SRCTOP)/include/k5-int.h \
   $(BUILDTOP)/include/krb5/osconf.h $(BUILDTOP)/include/krb5/autoconf.h \
-  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
-  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
-  $(SRCTOP)/include/krb5/kdb.h
+  $(SRCTOP)/include/k5-platform.h $(BUILDTOP)/include/krb5.h \
+  $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
+  $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h
 util.so util.po $(OUTPRE)util.$(OBJEXT): util.c $(SRCTOP)/include/k5-int.h \
   $(BUILDTOP)/include/krb5/osconf.h $(BUILDTOP)/include/krb5/autoconf.h \
-  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
-  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
-  $(SRCTOP)/include/krb5/kdb.h $(srcdir)/../crypto/des/des_int.h \
-  $(SRCTOP)/include/kerberosIV/des.h
-weak_key.so weak_key.po $(OUTPRE)weak_key.$(OBJEXT): weak_key.c $(srcdir)/../crypto/des/des_int.h \
-  $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
-  $(BUILDTOP)/include/krb5/autoconf.h $(BUILDTOP)/include/krb5.h \
+  $(SRCTOP)/include/k5-platform.h $(BUILDTOP)/include/krb5.h \
   $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h $(SRCTOP)/include/port-sockets.h \
   $(SRCTOP)/include/socket-utils.h $(SRCTOP)/include/krb5/kdb.h \
-  $(SRCTOP)/include/kerberosIV/des.h
+  $(srcdir)/../crypto/des/des_int.h $(SRCTOP)/include/kerberosIV/des.h
+weak_key.so weak_key.po $(OUTPRE)weak_key.$(OBJEXT): weak_key.c $(srcdir)/../crypto/des/des_int.h \
+  $(SRCTOP)/include/k5-int.h $(BUILDTOP)/include/krb5/osconf.h \
+  $(BUILDTOP)/include/krb5/autoconf.h $(SRCTOP)/include/k5-platform.h \
+  $(BUILDTOP)/include/krb5.h $(COM_ERR_DEPS) $(BUILDTOP)/include/profile.h \
+  $(SRCTOP)/include/port-sockets.h $(SRCTOP)/include/socket-utils.h \
+  $(SRCTOP)/include/krb5/kdb.h $(SRCTOP)/include/kerberosIV/des.h
 
 #
 # Start of Win32 post-config lines (config/win-post.in)

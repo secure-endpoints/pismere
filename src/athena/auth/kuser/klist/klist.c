@@ -61,6 +61,7 @@ extern int optind;
 
 int show_flags = 0, show_time = 0, status_only = 0, show_keys = 0;
 int show_etype = 0, show_addresses = 0, no_resolve = 0;
+int all_ccaches = 0;
 char *defname;
 char *progname;
 krb5_int32 now;
@@ -71,6 +72,7 @@ krb5_context kcontext;
 char * etype_string (krb5_enctype );
 void show_credential (char *, krb5_context, krb5_creds *);
 	
+void do_all_ccache (void);
 void do_ccache (char *);
 void do_keytab (char *);
 void printtime (time_t);
@@ -92,7 +94,8 @@ void do_v4_ccache (char *);
  */
 
 static int got_k5 = 0; 
-static int got_k4 = 0;
+static int got_k4 = 0;          
+static int got_cc = 0;
 
 static int default_k5 = 1;
 #ifdef KRB5_KRB4_COMPAT
@@ -101,11 +104,13 @@ static int default_k4 = 1;
 static int default_k4 = 0;
 #endif
 
+static int	exit_status = 0;
+
 void usage()
 {
 #define KRB_AVAIL_STRING(x) ((x)?"available":"not available")
 
-    fprintf(stderr, "Usage: %s [-5] [-4] [-e] [[-c] [-f] [-s] [-a [-n]]] "
+    fprintf(stderr, "Usage: %s [-5] [-4] [-e] [[-c] [-f] [-s] [-a [-n]] [-u]] "
 	     "[-k [-t] [-K]] [name]\n", progname); 
     fprintf(stderr, "\t-5 Kerberos 5 (%s)\n", KRB_AVAIL_STRING(got_k5));
     fprintf(stderr, "\t-4 Kerberos 4 (%s)\n", KRB_AVAIL_STRING(got_k4));
@@ -115,6 +120,7 @@ void usage()
 	    default_k4?"Kerberos 4":"",
 	    (!default_k5 && !default_k4)?"neither":"");
     fprintf(stderr, "\t-c specifies credentials cache\n");
+    fprintf(stderr, "\t-C specifies and enumerates all credentials caches\n");
     fprintf(stderr, "\t-k specifies keytab\n");
     fprintf(stderr, "\t   (Default is credentials cache)\n");
     fprintf(stderr, "\t-e shows the encryption type\n");
@@ -139,13 +145,13 @@ main(argc, argv)
     int mode;
     int use_k5 = 0, use_k4 = 0;
 
-    dynamic_load(&got_k4, &got_k5);
+    dynamic_load(&got_k4, &got_k5, &got_cc);
 
     progname = GET_PROGNAME(argv[0]);
 
     name = NULL;
     mode = DEFAULT;
-    while ((c = getopt(argc, argv, "fetKsnack45")) != -1) {
+    while ((c = getopt(argc, argv, "fetKsnack45C")) != -1) {
 	switch (c) {
 	case 'f':
 	    show_flags = 1;
@@ -168,6 +174,9 @@ main(argc, argv)
 	case 'a':
 	    show_addresses = 1;
 	    break;
+    case 'C':
+        all_ccaches = 1;
+        /* fall-through */
 	case 'c':
 	    if (mode != DEFAULT) usage();
 	    mode = CCACHE;
@@ -203,35 +212,35 @@ main(argc, argv)
     }
 
     if (no_resolve && !show_addresses) {
-	usage();
+        usage();
     }
 
     if (mode == DEFAULT || mode == CCACHE) {
-	if (show_time || show_keys)
-	    usage();
+        if (show_time || show_keys)
+            usage();
     } else {
-	if (show_flags || status_only || show_addresses)
-	    usage();
+        if (show_flags || status_only || show_addresses)
+            usage();
     }
 
     if (argc - optind > 1) {
-	fprintf(stderr, "Extra arguments (starting with \"%s\").\n",
-		argv[optind+1]);
-	usage();
+        fprintf(stderr, "Extra arguments (starting with \"%s\").\n",
+                 argv[optind+1]);
+        usage();
     }
 
     name = (optind == argc-1) ? argv[optind] : 0;
 
     if (!use_k5 && !use_k4)
     {
-	use_k5 = default_k5;
-	use_k4 = default_k4;
+        use_k5 = default_k5;
+        use_k4 = default_k4;
     }
 
     if (!use_k5)
-	got_k5 = 0;
+        got_k5 = 0;
     if (!use_k4)
-	got_k4 = 0;
+        got_k4 = 0;
 
     now = time(0);
     {
@@ -247,28 +256,33 @@ main(argc, argv)
 
     if (got_k5)
     {
-	krb5_error_code retval;
-	retval = krb5_init_context(&kcontext);
-	if (retval) {
-	    com_err(progname, retval, "while initializing krb5");
-	    exit(1);
-	}
+        krb5_error_code retval;
+        retval = krb5_init_context(&kcontext);
+        if (retval) {
+            com_err(progname, retval, "while initializing krb5");
+            exit(1);
+        }
 
-	if (mode == DEFAULT || mode == CCACHE)
-	    do_ccache(name);
-	else
-	    do_keytab(name);
+        if (mode == DEFAULT || mode == CCACHE) { 
+            if ( got_cc && all_ccaches && !name ) {
+                do_all_ccache();
+            } else {
+                do_ccache(name);
+            }
+        } else {
+            do_keytab(name);
+        }
     } else {
 #ifdef KRB5_KRB4_COMPAT
-	if (mode == DEFAULT || mode == CCACHE)
-	    do_v4_ccache(name);
-	else {
-	    /* We may want to add v4 srvtab support */
-	    fprintf(stderr, 
-		    "%s: srvtab option not supported for Kerberos 4\n", 
-		    progname);
-	    exit(1);
-	}
+        if (mode == DEFAULT || mode == CCACHE)
+            do_v4_ccache(name);
+        else {
+            /* We may want to add v4 srvtab support */
+            fprintf(stderr, 
+                     "%s: srvtab option not supported for Kerberos 4\n", 
+                     progname);
+            exit(1);
+        }
 #endif /* KRB4_KRB5_COMPAT */
     }
 
@@ -359,6 +373,49 @@ void do_keytab(name)
      }
      exit(0);
 }
+
+void do_all_ccache(void)
+{
+    krb5_error_code retval;
+    apiCB * cc_ctx = 0;
+    struct _infoNC ** pNCi = 0;
+    int i;
+
+    retval = cc_initialize(&cc_ctx, CC_API_VER_2, NULL, NULL);
+    if (retval) {
+        com_err(progname, retval, "while initializing ccapiv2");
+        exit(1);
+    }
+
+    retval = cc_get_NC_info(cc_ctx, &pNCi);
+    if (retval) {
+        com_err(progname, retval, "while obtaining named cache info");
+        exit(1);
+    }
+
+    for ( i=0; pNCi[i]; i++ ) {
+        switch (pNCi[i]->vers) {
+        case CC_CRED_V5:
+			if (got_k5)
+				do_ccache(pNCi[i]->name);
+            break;
+#ifdef KRB5_KRB4_COMPAT
+        case CC_CRED_V4:
+			if (got_k4)
+				do_v4_ccache(pNCi[i]->name);
+            break;
+        }
+#endif /* KRB5_KRB4_COMPAT */
+		printf("\n\n");
+    }
+
+    if (pNCi)
+        cc_free_NC_info(cc_ctx, &pNCi);
+    if (cc_ctx)
+        cc_shutdown(&cc_ctx);
+    exit(exit_status);
+}
+
 void do_ccache(name)
    char *name;
 {
@@ -368,7 +425,6 @@ void do_ccache(name)
     krb5_principal princ;
     krb5_flags flags;
     krb5_error_code code;
-    int	exit_status = 0;
 	    
     if (status_only)
 	/* exit_status is set back to 0 if a valid tgt is found */
@@ -463,11 +519,13 @@ void do_ccache(name)
 		com_err(progname, code, "while closing ccache");
 	    exit(1);
 	}
+    if (!(got_cc && all_ccaches)) {
 #ifdef KRB5_KRB4_COMPAT
-	if (name == NULL && !status_only)
-	    do_v4_ccache(0);
+        if (name == NULL && !status_only)
+            do_v4_ccache(0);
 #endif
-	exit(exit_status);
+    	exit(exit_status);
+    }
     } else {
 	if (!status_only)
 	    com_err(progname, code, "while retrieving a ticket");

@@ -11,7 +11,7 @@
 #include "windows.h"
 #undef APSTUDIO_HIDDEN_SYMBOLS
 #include "leashids.h"
-#include "ver.h"
+#include "winver.h"
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
@@ -40,7 +40,6 @@ LOGOBITMAP              BITMAP  DISCARDABLE     "res\\islogo.bmp"
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 LEASHICON               ICON    DISCARDABLE     "res\\leash.ico"
-// LEASHICON               ICON    DISCARDABLE     "new\\leash32.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -224,13 +223,13 @@ BEGIN
     LSH_TIME_HOST           "time"
     LSH_DEFAULT_TICKET_LIFE "600"
     LSH_DEFAULT_TICKET_RENEW_TILL "10080"
-    LSH_DEFAULT_TICKET_FORWARD "0"
+    LSH_DEFAULT_TICKET_FORWARD "1"
     LSH_DEFAULT_TICKET_NOADDRESS "1"
     LSH_DEFAULT_TICKET_PROXIABLE "0"
     LSH_DEFAULT_TICKET_PUBLICIP "0"
     LSH_DEFAULT_TICKET_USEKRB4 "1"
     LSH_DEFAULT_DIALOG_KINIT_OPT "1"
-    LSH_DEFAULT_DIALOG_LIFE_MIN "5"
+    LSH_DEFAULT_DIALOG_LIFE_MIN "30"
     LSH_DEFAULT_DIALOG_LIFE_MAX "1440"
     LSH_DEFAULT_DIALOG_RENEW_MIN "600"
     LSH_DEFAULT_DIALOG_RENEW_MAX "43200"

@@ -42,9 +42,10 @@ static CHAR THIS_FILE[] = __FILE__;
 IMPLEMENT_DYNCREATE(CLeashView, CFormView)
 
 BEGIN_MESSAGE_MAP(CLeashView, CFormView)
-	ON_MESSAGE(WM_GOODBYE, OnGoodbye)
 	//{{AFX_MSG_MAP(CLeashView)
-	ON_NOTIFY(TVN_ITEMEXPANDED, IDC_TREEVIEW, OnItemexpandedTreeview)
+	ON_MESSAGE(WM_GOODBYE, OnGoodbye)
+    ON_MESSAGE(WM_TRAYICON, OnTrayIcon)
+    ON_NOTIFY(TVN_ITEMEXPANDED, IDC_TREEVIEW, OnItemexpandedTreeview)
 	ON_WM_CREATE()
 	ON_WM_SHOWWINDOW()
 	ON_COMMAND(ID_INIT_TICKET, OnInitTicket)
@@ -70,6 +71,8 @@ BEGIN_MESSAGE_MAP(CLeashView, CFormView)
 	ON_COMMAND(ID_KRB4_PROPERTIES, OnKrb4Properties)
 	ON_COMMAND(ID_KRB5_PROPERTIES, OnKrb5Properties)
 	ON_COMMAND(ID_LEASH_PROPERTIES, OnLeashProperties)
+    ON_COMMAND(ID_LEASH_RESTORE, OnLeashRestore)
+    ON_COMMAND(ID_LEASH_MINIMIZE, OnLeashMinimize)
 	ON_COMMAND(ID_LOW_TICKET_ALARM, OnLowTicketAlarm)
 	ON_COMMAND(ID_AUTO_RENEW, OnAutoRenew)
 	ON_UPDATE_COMMAND_UI(ID_KRB4_PROPERTIES, OnUpdateKrb4Properties)
@@ -85,8 +88,9 @@ BEGIN_MESSAGE_MAP(CLeashView, CFormView)
 	ON_WM_CLOSE()
 	ON_WM_HSCROLL()
 	ON_WM_VSCROLL()
+    ON_WM_SYSCOLORCHANGE()
+    ON_MESSAGE(ID_OBTAIN_TGT_WITH_LPARAM, OnObtainTGTWithParam)
 	//}}AFX_MSG_MAP
-        ON_WM_SYSCOLORCHANGE()
 
 END_MESSAGE_MAP()
 
@@ -97,17 +101,23 @@ INT  CLeashView::m_proxiableTicket = 0;
 INT  CLeashView::m_renewableTicket = 0;
 INT  CLeashView::m_noaddressTicket = 0;
 DWORD CLeashView::m_publicIPAddress = 0;
+INT  CLeashView::m_ticketStatusAfs = 0; // Defense Condition: are we low on tickets?
 INT  CLeashView::m_ticketStatusKrb4 = 0; // Defense Condition: are we low on tickets?
 INT  CLeashView::m_ticketStatusKrb5 = 0; // Defense Condition: are we low on tickets?
+INT  CLeashView::m_warningOfTicketTimeLeftAfs = 0; // Prevents warning box from coming up repeatively
 INT  CLeashView::m_warningOfTicketTimeLeftKrb4 = 0; // Prevents warning box from coming up repeatively
 INT  CLeashView::m_warningOfTicketTimeLeftKrb5 = 0; // Prevents warning box from coming up repeatively
+INT  CLeashView::m_warningOfTicketTimeLeftLockAfs = 0;
 INT  CLeashView::m_warningOfTicketTimeLeftLockKrb4 = 0;
 INT  CLeashView::m_warningOfTicketTimeLeftLockKrb5 = 0;
 INT  CLeashView::m_updateDisplayCount;
 INT  CLeashView::m_alreadyPlayedDisplayCount;
 INT  CLeashView::m_autoRenewTickets = 0;
 BOOL CLeashView::m_lowTicketAlarmSound;
-BOOL CLeashView::m_gotAfsTokens;
+INT  CLeashView::m_autoRenewalAttempted = 0;
+BOOL CLeashView::m_importedTickets = 0;
+CCriticalSection  CLeashView::m_tgsReqCriticalSection;
+LONG CLeashView::m_timerMsgNotInProgress = 1;
 
 bool change_icon_size = true;
 
@@ -118,10 +128,9 @@ bool change_icon_size = true;
 CLeashView::CLeashView():
 CFormView(CLeashView::IDD)
 {
-    m_afsNoTokens = TRUE;
     m_listKrb4 = NULL;
     m_listKrb5 = NULL;
-    m_listAFS = NULL;
+    m_listAfs = NULL;
     m_startup = TRUE;
     m_warningOfTicketTimeLeftKrb4 = 0;
     m_warningOfTicketTimeLeftKrb5 = 0;
@@ -138,8 +147,8 @@ CFormView(CLeashView::IDD)
     m_pDebugWindow = new CLeashDebugWindow(this);
     if (!m_pDebugWindow)
     {
-        MessageBox("There is a problem with the Leash Debug Window!", 
-                   "Error", MB_OK);
+        AfxMessageBox("There is a problem with the Leash Debug Window!", 
+                   MB_OK|MB_ICONSTOP);
     }
     
     m_debugStartUp = TRUE;
@@ -157,6 +166,10 @@ CFormView(CLeashView::IDD)
     m_noaddressTicket = 0;
     m_publicIPAddress = 0;
     m_autoRenewTickets = 0;
+    m_autoRenewalAttempted = 0;
+
+    m_bIconAdded = FALSE;
+    m_bIconDeleted = FALSE;
 }
 
 
@@ -216,6 +229,11 @@ INT CLeashView::OnCreate(LPCREATESTRUCT lpCreateStruct)
     return 0;
 }
 
+VOID CLeashView::OnClose(void)
+{
+    printf("OnClose\n");
+}
+
 LONG CLeashView::LeashTime()
 {
     _tzset();
@@ -224,7 +242,15 @@ LONG CLeashView::LeashTime()
 
 INT CLeashView::GetLowTicketStatus(int ver)
 {
-    if ((ver == 4 && !ticketinfoKrb4.btickets) || (ver == 5 && !ticketinfoKrb5.btickets))
+    CSingleLock lock(&ticketinfo.lockObj);
+
+    lock.Lock();
+    BOOL b_notix = (ver == 4 && !ticketinfo.Krb4.btickets) || 
+                   (ver == 5 && !ticketinfo.Krb5.btickets) ||
+                   (ver == 1 && !ticketinfo.Afs.btickets);
+    lock.Unlock();
+
+    if (b_notix)
         return NO_TICKETS;
 
     if (m_ticketTimeLeft <= 0L)
@@ -237,19 +263,19 @@ INT CLeashView::GetLowTicketStatus(int ver)
     return PLENTY_OF_TIME;
 }
 
-VOID CLeashView::UpdateTicketTime(TICKETINFO& ticketinfo)
+VOID CLeashView::UpdateTicketTime(TICKETINFO& ti)
 {
-    if (!ticketinfo.btickets)
+    if (!ti.btickets)
     {
         m_ticketTimeLeft = 0L;
         return;
     }
 
-    m_ticketTimeLeft = ticketinfo.issue_date + ticketinfo.lifetime -
+    m_ticketTimeLeft = ti.issue_date + ti.lifetime -
         LeashTime();
 
     if (m_ticketTimeLeft <= 0L)
-        ticketinfo.btickets = EXPIRED_TICKETS;
+        ti.btickets = EXPIRED_TICKETS;
 }
 
 
@@ -262,12 +288,14 @@ VOID CALLBACK EXPORT CLeashView::TimerProc(HWND hWnd, UINT nMsg,
 
 VOID  CLeashView::ApplicationInfoMissingMsg()
 { 
-    MessageBox("There is a problem finding Leash application information!", 
-               "Error", MB_OK);
+    AfxMessageBox("There is a problem finding Leash application information!", 
+               MB_OK|MB_ICONSTOP);
 }
 
 VOID CLeashView::OnShowWindow(BOOL bShow, UINT nStatus)
 {
+    CFormView::OnShowWindow(bShow, nStatus);
+
     // Get State of Icons Size
     m_pApp = AfxGetApp();
     if (!m_pApp)
@@ -276,17 +304,16 @@ VOID CLeashView::OnShowWindow(BOOL bShow, UINT nStatus)
     }
     else
     {
-        m_largeIcons = m_pApp->GetProfileInt("Settings", "LargeIcons", TRUE_FLAG);
+        m_largeIcons = m_pApp->GetProfileInt("Settings", "LargeIcons", ON);
 
         // Get State of Destroy Tickets On Exit
-        m_destroyTicketsOnExit = m_pApp->GetProfileInt("Settings", "DestroyTicketsOnExit",
-                                                       FALSE_FLAG);
+        m_destroyTicketsOnExit = m_pApp->GetProfileInt("Settings", "DestroyTicketsOnExit", OFF);
 
         // Get State of Low Ticket Alarm
         m_lowTicketAlarm = m_pApp->GetProfileInt("Settings", "LowTicketAlarm", ON);
 
         // Get State of Auto Renew Tickets
-        m_autoRenewTickets = m_pApp->GetProfileInt("Settings", "AutoRenewTickets", OFF);
+        m_autoRenewTickets = m_pApp->GetProfileInt("Settings", "AutoRenewTickets", ON);
 
         // Get State of Upper Case Realm
         m_upperCaseRealm = pLeash_get_default_uppercaserealm();
@@ -313,10 +340,10 @@ VOID CLeashView::OnShowWindow(BOOL bShow, UINT nStatus)
 
     if (!CLeashApp::m_hKrb4DLL && !CLeashApp::m_hKrb5DLL && !CLeashApp::m_hAfsDLL)
     {
-        MessageBox("Neither Kerberos Four, Kerberos Five nor AFS is loaded!!!"
+        AfxMessageBox("Neither Kerberos Four, Kerberos Five nor AFS is loaded!!!"
                    "\r\nYou will not be able to retrieve tickets and/or "
                    "tokens.",
-                   "Warning", MB_OK);
+                   MB_OK|MB_ICONWARNING);
     }
 
     if (!CLeashApp::m_hAfsDLL)
@@ -324,40 +351,45 @@ VOID CLeashView::OnShowWindow(BOOL bShow, UINT nStatus)
         // No AFS installed
         SetDlgItemText(IDC_LABEL_KERB_TICKETS, 
                        "Your Kerberos Tickets (Issued/Expires/[Renew]/Principal)");
+    } else 
+    {
+        // AFS installed
+        SetDlgItemText(IDC_LABEL_KERB_TICKETS, 
+                       "Your Kerberos Tickets and AFS Tokens (Issued/Expires/[Renew]/Principal)");
+
     }
 
-    CLeashApp::m_krbv5_context = NULL;
+    // CLeashApp::m_krbv5_context = NULL;
 }
 
 VOID CLeashView::OnInitTicket()
 {
-    m_importedTickets = 0;
-#ifdef OLD_DLG
-    LSH_DLGINFO ldi;
-
-    ldi.principal = ticketinfoKrb4.principal;
-    if (!*ldi.principal)
-        ldi.principal = ticketinfoKrb5.principal;
-
-    ldi.dlgtype = DLGTYPE_PASSWD;
-    ldi.title = "Initialize Ticket";
-
-	if (!m_hWnd)
-    {
-        MessageBox("There is a problem finding the Leash Window!", 
-                   "Error", MB_OK);
-        return;
+    CSingleLock lock(&m_tgsReqCriticalSection);
+    lock.Lock(250);
+    if ( lock.IsLocked() ) {
+        InitTicket(m_hWnd);
+        lock.Unlock();
+    } else {
+        AfxMessageBox("Ticket Getting operation already in progress", MB_OK, 0);
     }
+}
 
-    int result = pLeash_kinit_dlg(m_hWnd, &ldi);
-#else
-	LSH_DLGINFO_EX ldi;
+UINT CLeashView::InitTicket(void * hWnd)
+{
+    CSingleLock tgs_lock(&m_tgsReqCriticalSection);
+    tgs_lock.Lock();
+    m_importedTickets = 0;
+
+    LSH_DLGINFO_EX ldi;
 	char username[64];
 	char realm[192];
-	char * principal = ticketinfoKrb4.principal;
-	if (!*principal)
-		principal = ticketinfoKrb5.principal;
 	int i=0, j=0;
+    CSingleLock lock(&ticketinfo.lockObj);
+
+    lock.Lock();
+	char * principal = ticketinfo.Krb5.principal;
+	if (!*principal)
+		principal = ticketinfo.Krb4.principal;
 	for (; principal[i] && principal[i] != '@'; i++)
 	{
 		username[i] = principal[i];
@@ -370,6 +402,8 @@ VOID CLeashView::OnInitTicket()
 		}
 	}
 	realm[j] = '\0';
+    lock.Unlock();
+
 	ldi.size = sizeof(ldi);
 	ldi.dlgtype = DLGTYPE_PASSWD;
 	ldi.title = "Initialize Ticket";
@@ -378,114 +412,246 @@ VOID CLeashView::OnInitTicket()
 	ldi.dlgtype = DLGTYPE_PASSWD;
 	ldi.use_defaults = 1;
 
-	if (!m_hWnd)
+	if (!hWnd)
     {
-        MessageBox("There is a problem finding the Leash Window!", 
-                   "Error", MB_OK);
-        return;
+        AfxMessageBox("There is a problem finding the Leash Window!", 
+                   MB_OK|MB_ICONSTOP);
+        tgs_lock.Unlock();
+        return 0;
     }
 
-    int result = pLeash_kinit_dlg_ex(m_hWnd, &ldi);
-#endif /* OLD_DLG */
+    int result = pLeash_kinit_dlg_ex((HWND)hWnd, &ldi);
+    
     if (-1 == result)
     {
-        MessageBox("There is a problem getting tickets!", 
-                   "Error", MB_OK);
+        AfxMessageBox("There is a problem getting tickets!", 
+                   MB_OK|MB_ICONSTOP);
     }
-    else
+    else if ( result )
     {
-		ticketinfoKrb4.btickets = GOOD_TICKETS;
+        lock.Lock();
+		ticketinfo.Krb4.btickets = GOOD_TICKETS;
 		m_warningOfTicketTimeLeftKrb4 = 0;
         m_warningOfTicketTimeLeftKrb5 = 0;
         m_ticketStatusKrb4 = 0;
         m_ticketStatusKrb5 = 0;
-        OnUpdateDisplay();
+        lock.Unlock();
+        m_autoRenewalAttempted = 0;
+        ::SendMessage((HWND)hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
     }
+    tgs_lock.Unlock();
+    return 0;
 }
 
 VOID CLeashView::OnImportTicket()
 {
-    int import = 0;
+    CSingleLock lock(&m_tgsReqCriticalSection);
+    lock.Lock(250);
+    if ( lock.IsLocked() ) {
+        ImportTicket(m_hWnd);
+        lock.Unlock();
+    } else {
+        AfxMessageBox("Ticket Getting operation already in progress", MB_OK|MB_ICONWARNING, 0);
+    }
+}
 
-    if (ticketinfoKrb4.btickets || ticketinfoKrb5.btickets || !m_afsNoTokens) 
-    {
-        INT whatToDo;
-		
-        if (!CLeashApp::m_hAfsDLL || !CLeashApp::m_hKrb4DLL)
-            whatToDo = AfxMessageBox("You are about to replace your existing ticket(s)\n"
-                                      "with a ticket imported from the Windows credential cache!",
-                                     MB_OKCANCEL, 0);
-        else	
-            whatToDo = AfxMessageBox("You are about to replace your existing ticket(s)/token(s)"
-                                     "with ticket imported from the Windows credential cache!",
-                                     MB_OKCANCEL, 0);
-		
-        if (whatToDo == IDOK)
+UINT CLeashView::ImportTicket(void * hWnd)
+{
+    CSingleLock tgs_lock(&m_tgsReqCriticalSection);
+    tgs_lock.Lock();
+
+    int import = 0;
+    int warning = 0;
+    CSingleLock lock(&ticketinfo.lockObj);
+
+    krb5_error_code code;
+    krb5_ccache mslsa_ccache=0;
+    krb5_principal princ = 0;
+    char * pname = 0;
+    LONG krb5Error = 0;
+    TicketList * tlist = NULL;
+
+    if (code = pkrb5_cc_resolve(CLeashApp::m_krbv5_context, "MSLSA:", &mslsa_ccache))
+        goto cleanup;
+
+    if (code = pkrb5_cc_get_principal(CLeashApp::m_krbv5_context, mslsa_ccache, &princ))
+        goto cleanup;
+
+    if (code = pkrb5_unparse_name(CLeashApp::m_krbv5_context, princ, &pname))
+        goto cleanup;
+
+    lock.Lock();
+    krb5Error = pLeashKRB5GetTickets( &ticketinfo.Krb5, &tlist,
+                                      &CLeashApp::m_krbv5_context);
+    warning = strcmp(ticketinfo.Krb5.principal, pname) && ticketinfo.Krb5.btickets;
+    lock.Unlock();
+    if ( tlist )
+        pLeashFreeTicketList(&tlist);
+
+  cleanup:
+    if (pname)
+        pkrb5_free_unparsed_name(CLeashApp::m_krbv5_context, pname);
+
+    if (princ)
+        pkrb5_free_principal(CLeashApp::m_krbv5_context, princ);
+    
+    if (mslsa_ccache)
+        pkrb5_cc_close(CLeashApp::m_krbv5_context, mslsa_ccache);
+
+
+    if ( code == 0 ) {
+        if (warning) 
         {
-            pLeash_kdestroy();
+            INT whatToDo;
+		
+            if (!CLeashApp::m_hAfsDLL || !CLeashApp::m_hKrb4DLL)
+                whatToDo = AfxMessageBox("You are about to replace your existing ticket(s)\n"
+                                          "with a ticket imported from the Windows credential cache!",
+                                          MB_OKCANCEL, 0);
+            else	
+                whatToDo = AfxMessageBox("You are about to replace your existing ticket(s)/token(s)"
+                                          "with ticket imported from the Windows credential cache!",
+                                          MB_OKCANCEL, 0);
+
+            if (whatToDo == IDOK)
+            {
+                pLeash_kdestroy();
+                import = 1;
+            }
+        } else {
             import = 1;
         }
-    } else {
-        import = 1;
-    }
 
-    if ( import ) {
-        int result = pLeash_import();
-        if (-1 == result)
-        {
-            MessageBox("There is a problem importing tickets!", 
-                        "Error", MB_OK);
-            OnUpdateDisplay();
-            m_importedTickets = 0;
-        }
-        else
-        {
-            ticketinfoKrb4.btickets = GOOD_TICKETS;
-            ticketinfoKrb5.btickets = GOOD_TICKETS;
-            m_warningOfTicketTimeLeftKrb4 = 0;
-            m_warningOfTicketTimeLeftKrb5 = 0;
-            m_ticketStatusKrb4 = 0;
-            m_ticketStatusKrb5 = 0;
-            OnUpdateDisplay();
+        if ( import ) {
+            int result = pLeash_import();
+            if (-1 == result)
+            {
+                AfxMessageBox("There is a problem importing tickets!", 
+                               MB_OK|MB_ICONSTOP);
+                ::SendMessage((HWND)hWnd,WM_COMMAND, ID_UPDATE_DISPLAY, 0);
+                m_importedTickets = 0;
+            }
+            else
+            {
+                lock.Lock();
+                ticketinfo.Krb4.btickets = GOOD_TICKETS;
+                ticketinfo.Krb5.btickets = GOOD_TICKETS;
+                m_warningOfTicketTimeLeftKrb4 = 0;
+                m_warningOfTicketTimeLeftKrb5 = 0;
+                m_ticketStatusKrb4 = 0;
+                m_ticketStatusKrb5 = 0;
+                lock.Unlock();
 
-            if (ticketinfoKrb5.btickets != GOOD_TICKETS) {
-                OnInitTicket();
-            } else {
-                m_importedTickets = 1;
+                ::SendMessage((HWND)hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
+
+                lock.Lock();
+                if (ticketinfo.Krb5.btickets != GOOD_TICKETS) {
+                    lock.Unlock();
+                    AfxBeginThread(InitTicket,hWnd);
+                } else {
+                    lock.Unlock();
+                    m_importedTickets = 1;
+                    m_autoRenewalAttempted = 0;
+                }
             }
         }
     }
-
+    tgs_lock.Unlock();
+    return 0;
 }
 
 VOID CLeashView::OnRenewTicket()
 {
-    // Try to renew
-    if ( pLeash_renew() ) {
-        ticketinfoKrb4.btickets = GOOD_TICKETS;
-        m_warningOfTicketTimeLeftKrb4 = 0;
-        m_warningOfTicketTimeLeftKrb5 = 0;
-        m_ticketStatusKrb4 = 0;
-        m_ticketStatusKrb5 = 0;
-        OnUpdateDisplay();
-        return;
+    CSingleLock lock(&m_tgsReqCriticalSection);
+    lock.Lock(250);
+    if ( lock.IsLocked() ) {
+        RenewTicket(m_hWnd);
+        lock.Unlock();
+    } else {
+        AfxMessageBox("Ticket Getting operation already in progress", MB_OK|MB_ICONWARNING, 0);
     }
+}
+
+UINT CLeashView::RenewTicket(void * hWnd)
+{
+    CSingleLock tgs_lock(&m_tgsReqCriticalSection);
+    tgs_lock.Lock(250);
+    CSingleLock lock(&ticketinfo.lockObj);
+
+    // Try to renew
+    BOOL b_renewed = pLeash_renew();
+    TicketList * tlist = NULL;
+    lock.Lock();
+    LONG krb5Error = pLeashKRB5GetTickets(&ticketinfo.Krb5, &tlist,
+                                           &CLeashApp::m_krbv5_context);
+    pLeashFreeTicketList(&tlist);
+    if ( b_renewed ) {
+        if (!krb5Error && ticketinfo.Krb5.btickets == GOOD_TICKETS) {
+            ticketinfo.Krb4.btickets = GOOD_TICKETS;
+            m_warningOfTicketTimeLeftKrb4 = 0;
+            m_warningOfTicketTimeLeftKrb5 = 0;
+            m_ticketStatusKrb4 = 0;
+            m_ticketStatusKrb5 = 0;
+            lock.Unlock();
+            m_autoRenewalAttempted = 0;
+            ::SendMessage((HWND)hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
+            tgs_lock.Unlock();
+            return 0;
+        }
+    }
+
+    krb5_error_code code;
+    krb5_ccache mslsa_ccache=0;
+    krb5_principal princ = 0;
+    char * pname = 0;
+
+    if (code = pkrb5_cc_resolve(CLeashApp::m_krbv5_context, "MSLSA:", &mslsa_ccache))
+        goto cleanup;
+
+    if (code = pkrb5_cc_get_principal(CLeashApp::m_krbv5_context, mslsa_ccache, &princ))
+        goto cleanup;
+
+    if (code = pkrb5_unparse_name(CLeashApp::m_krbv5_context, princ, &pname))
+        goto cleanup;
+
+    if ( !strcmp(ticketinfo.Krb5.principal, pname) )
+        m_importedTickets = 1;
+    
+  cleanup:
+    lock.Unlock();
+
+    if (pname)
+        pkrb5_free_unparsed_name(CLeashApp::m_krbv5_context, pname);
+
+    if (princ)
+        pkrb5_free_principal(CLeashApp::m_krbv5_context, princ);
+    
+    if (mslsa_ccache)
+        pkrb5_cc_close(CLeashApp::m_krbv5_context, mslsa_ccache);
 
     // If imported from Kerberos LSA, re-import
     // Otherwise, init the tickets
     if ( m_importedTickets )
-        OnImportTicket();
+        AfxBeginThread(ImportTicket,hWnd);
     else
-        OnInitTicket();
+        AfxBeginThread(InitTicket,hWnd);
+
+    tgs_lock.Unlock();
+    return 0;
 }
 
 VOID CLeashView::OnDestroyTicket()
 {
-    if (ticketinfoKrb4.btickets || ticketinfoKrb5.btickets || !m_afsNoTokens) 
+    CSingleLock lock(&ticketinfo.lockObj);
+    lock.Lock();
+    BOOL b_destroy =ticketinfo.Krb4.btickets || ticketinfo.Krb5.btickets || ticketinfo.Afs.btickets;
+    lock.Unlock();
+
+    if (b_destroy) 
     {
         INT whatToDo;
 		
-        if (!CLeashApp::m_hAfsDLL || !CLeashApp::m_hKrb4DLL)
+        if (!CLeashApp::m_hAfsDLL)
             whatToDo = AfxMessageBox("You are about to destroy your ticket(s)!", 
                                      MB_OKCANCEL, 0);
         else	
@@ -496,28 +662,30 @@ VOID CLeashView::OnDestroyTicket()
         {
             pLeash_kdestroy();
             ResetTreeNodes();
-            OnUpdateDisplay();
-            m_afsNoTokens = TRUE;
+            SendMessage(WM_COMMAND, ID_UPDATE_DISPLAY, 0);
         }
     }
     m_importedTickets = 0;
+    m_autoRenewalAttempted = 0;
 }
 
 VOID CLeashView::OnChangePassword() 
 {
     if (!m_hWnd)
     {
-        MessageBox("There is a problem finding the Leash Window!", 
-                   "Error", MB_OK);
+        AfxMessageBox("There is a problem finding the Leash Window!", 
+                   MB_OK|MB_ICONSTOP);
         return;
     }
     
     LSH_DLGINFO_EX ldi;
 	char username[64];
 	char realm[192];
-	char * principal = ticketinfoKrb4.principal;
+    CSingleLock lock(&ticketinfo.lockObj);
+    lock.Lock();
+	char * principal = ticketinfo.Krb5.principal;
 	if (!*principal)
-		principal = ticketinfoKrb5.principal;
+		principal = ticketinfo.Krb4.principal;
 	int i=0, j=0;
 	for (; principal[i] && principal[i] != '@'; i++)
 	{
@@ -531,6 +699,8 @@ VOID CLeashView::OnChangePassword()
 		}
 	}
 	realm[j] = '\0';
+    lock.Unlock();
+
 	ldi.size = sizeof(ldi);
 	ldi.dlgtype = DLGTYPE_CHPASSWD;
 	ldi.title = "Change Password";
@@ -541,26 +711,28 @@ VOID CLeashView::OnChangePassword()
     int result = pLeash_changepwd_dlg_ex(m_hWnd, &ldi);
     if (-1 == result)
     {
-        MessageBox("There is a problem changing password!", 
-                   "Error", MB_OK);
+        AfxMessageBox("There is a problem changing password!", 
+                   MB_OK|MB_ICONSTOP);
     }
 }
 
 VOID CLeashView::OnUpdateDisplay()
 {
+    BOOL AfsEnabled = m_pApp->GetProfileInt("Settings", "AfsStatus", 1);
+
     m_pTree = (CTreeCtrl*) GetDlgItem(IDC_TREEVIEW);
     if (!m_pTree)
     {
-        MessageBox("There is a problem finding the Ticket Tree!", 
-                    "Error", MB_OK);
+        AfxMessageBox("There is a problem finding the Ticket Tree!", 
+                    MB_OK|MB_ICONSTOP);
         return;
     }
 
     m_pImageList = &m_imageList;
     if (!m_pImageList)
     {
-        MessageBox("There is a problem finding images for the Ticket Tree!", 
-                   "Error", MB_OK);
+        AfxMessageBox("There is a problem finding images for the Ticket Tree!", 
+                   MB_OK|MB_ICONSTOP);
         return;
     }
 
@@ -576,22 +748,22 @@ VOID CLeashView::OnUpdateDisplay()
     INT ticketIconStatus_SelectedKrb5;
     INT iconStatusKrb5;
 
+    INT ticketIconStatusAfs;
+    INT ticketIconStatus_SelectedAfs;
+    INT iconStatusAfs;
+
     LONG krb4Error;
     LONG krb5Error;
-    //LONG afsError;
+    LONG afsError;
+
+    CSingleLock lock(&ticketinfo.lockObj);
+    lock.Lock();
 
     // Get Kerb 4 tickets in list
-    krb4Error = pLeashKRB4GetTickets(&ticketinfoKrb4, &m_listKrb4);
+    krb4Error = pLeashKRB4GetTickets(&ticketinfo.Krb4, &m_listKrb4);
 
     // Get Kerb 5 tickets in list
-    if (CLeashApp::m_hKrb5DLL && CLeashApp::m_krbv5_context)
-    { // need 'm_krbv5_context' for the profile data it contains
-        pkrb5_free_context(CLeashApp::m_krbv5_context);
-        CLeashApp::m_krbv5_context = NULL;
-    }
-
-  
-    krb5Error = pLeashKRB5GetTickets(&ticketinfoKrb5, &m_listKrb5,
+    krb5Error = pLeashKRB5GetTickets(&ticketinfo.Krb5, &m_listKrb5,
                                      &CLeashApp::m_krbv5_context);
     if (!krb5Error || krb5Error == KRB5_FCC_NOFILE)
     {
@@ -600,8 +772,8 @@ VOID CLeashView::OnUpdateDisplay()
             CHAR confname[MAX_PATH];
             if (CLeashApp::GetProfileFile(confname, sizeof(confname)))
             {
-                MessageBox("Can't locate Kerberos Five Config. file!", 
-                           "Error", MB_OK);
+                AfxMessageBox("Can't locate Kerberos Five Config. file!", 
+                           MB_OK|MB_ICONSTOP);
             }
 
             const char *filenames[2];
@@ -612,13 +784,16 @@ VOID CLeashView::OnUpdateDisplay()
     }
 
     // Get AFS Tokens in list
-    if (CLeashApp::m_hAfsDLL)
-        pLeashAFSGetToken(&m_listAFS);
-    
-    if (!m_listAFS)
-        m_afsNoTokens = TRUE;
-    else
-        m_afsNoTokens = FALSE;
+    if (CLeashApp::m_hAfsDLL) {
+        char * principal;
+        if ( ticketinfo.Krb5.principal[0] )
+            principal = ticketinfo.Krb5.principal;
+        else if ( ticketinfo.Krb4.principal[0] )
+            principal = ticketinfo.Krb4.principal;
+        else
+            principal = "";
+        afsError = pLeashAFSGetToken(&ticketinfo.Afs, &m_listAfs, principal);
+    }
     
     /* 
      * Update Ticket Status for Krb4 and Krb5 so that we may use their state
@@ -626,16 +801,16 @@ VOID CLeashView::OnUpdateDisplay()
      */
 
     /* Krb4 */
-    UpdateTicketTime(ticketinfoKrb4);
+    UpdateTicketTime(ticketinfo.Krb4);
     m_ticketStatusKrb4 = GetLowTicketStatus(4);
-    if (!m_listKrb4 || EXPIRED_TICKETS == ticketinfoKrb4.btickets ||
+    if (!m_listKrb4 || EXPIRED_TICKETS == ticketinfo.Krb4.btickets ||
          m_ticketStatusKrb4 == ZERO_MINUTES_LEFT)
     {
         ticketIconStatusKrb4 = EXPIRED_CLOCK;
         ticketIconStatus_SelectedKrb4 = EXPIRED_CLOCK;
         iconStatusKrb4 = EXPIRED_TICKET;
     }
-    else if (TICKETS_LOW == ticketinfoKrb4.btickets ||
+    else if (TICKETS_LOW == ticketinfo.Krb4.btickets ||
              m_ticketStatusKrb4 == FIVE_MINUTES_LEFT ||
              m_ticketStatusKrb4 == TEN_MINUTES_LEFT ||
              m_ticketStatusKrb4 == FIFTEEN_MINUTES_LEFT)
@@ -644,24 +819,28 @@ VOID CLeashView::OnUpdateDisplay()
         ticketIconStatus_SelectedKrb4 = LOW_CLOCK;
         iconStatusKrb4 = LOW_TICKET;
     }
-    else
+    else if ( CLeashApp::m_hKrb4DLL )
     {
         ticketIconStatusKrb4 = ACTIVE_CLOCK;
         ticketIconStatus_SelectedKrb4 = ACTIVE_CLOCK;
         iconStatusKrb4 = ACTIVE_TICKET;
+    } else {
+        ticketIconStatusKrb4 = EXPIRED_CLOCK;
+        ticketIconStatus_SelectedKrb4 = EXPIRED_CLOCK;
+        iconStatusKrb4 = TICKET_NOT_INSTALLED;
     }
 
     /* Krb5 */
-    UpdateTicketTime(ticketinfoKrb5);
+    UpdateTicketTime(ticketinfo.Krb5);
     m_ticketStatusKrb5 = GetLowTicketStatus(5);
-    if (!m_listKrb5 || EXPIRED_TICKETS == ticketinfoKrb5.btickets ||
+    if (!m_listKrb5 || EXPIRED_TICKETS == ticketinfo.Krb5.btickets ||
          m_ticketStatusKrb5 == ZERO_MINUTES_LEFT)
     {
         ticketIconStatusKrb5 = EXPIRED_CLOCK;
         ticketIconStatus_SelectedKrb5 = EXPIRED_CLOCK;
         iconStatusKrb5 = EXPIRED_TICKET;
     }
-    else if (TICKETS_LOW == ticketinfoKrb5.btickets ||
+    else if (TICKETS_LOW == ticketinfo.Krb5.btickets ||
              m_ticketStatusKrb5 == FIVE_MINUTES_LEFT ||
              m_ticketStatusKrb5 == TEN_MINUTES_LEFT ||
              m_ticketStatusKrb5 == FIFTEEN_MINUTES_LEFT)
@@ -670,13 +849,49 @@ VOID CLeashView::OnUpdateDisplay()
         ticketIconStatus_SelectedKrb5 = LOW_CLOCK;
         iconStatusKrb5 = LOW_TICKET;
     }
-    else
+    else if ( CLeashApp::m_hKrb5DLL )
     {
         ticketIconStatusKrb5 = ACTIVE_CLOCK;
         ticketIconStatus_SelectedKrb5 = ACTIVE_CLOCK;
         iconStatusKrb5 = ACTIVE_TICKET;
+    } else 
+    {
+        ticketIconStatusKrb5 = EXPIRED_CLOCK;
+        ticketIconStatus_SelectedKrb5 = EXPIRED_CLOCK;
+        iconStatusKrb5 = TICKET_NOT_INSTALLED;
     }
 
+    /* Afs */
+    UpdateTicketTime(ticketinfo.Afs);
+    m_ticketStatusAfs = GetLowTicketStatus(1);
+    if (!m_listAfs || EXPIRED_TICKETS == ticketinfo.Afs.btickets ||
+         m_ticketStatusAfs == ZERO_MINUTES_LEFT)
+    {
+        ticketIconStatusAfs = EXPIRED_CLOCK;
+        ticketIconStatus_SelectedAfs = EXPIRED_CLOCK;
+        iconStatusAfs = EXPIRED_TICKET;
+    }
+    else if (TICKETS_LOW == ticketinfo.Afs.btickets ||
+             m_ticketStatusAfs == FIVE_MINUTES_LEFT ||
+             m_ticketStatusAfs == TEN_MINUTES_LEFT ||
+             m_ticketStatusAfs == FIFTEEN_MINUTES_LEFT)
+    {
+        ticketIconStatusAfs = LOW_CLOCK;
+        ticketIconStatus_SelectedAfs = LOW_CLOCK;
+        iconStatusAfs = LOW_TICKET;
+    }
+    else if ( CLeashApp::m_hAfsDLL )
+    {
+        ticketIconStatusAfs = ACTIVE_CLOCK;
+        ticketIconStatus_SelectedAfs = ACTIVE_CLOCK;
+        iconStatusAfs = ACTIVE_TICKET;
+    } else 
+    {
+        ticketIconStatusAfs = EXPIRED_CLOCK;
+        ticketIconStatus_SelectedAfs = EXPIRED_CLOCK;
+        iconStatusAfs = TICKET_NOT_INSTALLED;
+    }
+    
     // Tree Structure common values
     m_pTree->DeleteAllItems();
 
@@ -689,7 +904,7 @@ VOID CLeashView::OnUpdateDisplay()
     m_tvinsert.item.cchTextMax = 6;
 
     if (CLeashApp::m_hKrb5DLL && m_listKrb5) {
-        m_tvinsert.item.pszText = ticketinfoKrb5.principal;
+        m_tvinsert.item.pszText = ticketinfo.Krb5.principal;
         switch ( iconStatusKrb5 ) {
         case ACTIVE_TICKET:
             m_tvinsert.item.iSelectedImage = ACTIVE_PARENT_NODE;
@@ -702,7 +917,7 @@ VOID CLeashView::OnUpdateDisplay()
             break;
         }
     } else if (CLeashApp::m_hKrb4DLL && m_listKrb4) {
-        m_tvinsert.item.pszText = ticketinfoKrb4.principal;
+        m_tvinsert.item.pszText = ticketinfo.Krb4.principal;
         switch ( iconStatusKrb4 ) {
         case ACTIVE_TICKET:
             m_tvinsert.item.iSelectedImage = ACTIVE_PARENT_NODE;
@@ -723,45 +938,7 @@ VOID CLeashView::OnUpdateDisplay()
     m_tvinsert.hParent = NULL;
     m_hPrincipal = m_pTree->InsertItem(&m_tvinsert);
 
-    // Krb4
-    m_tvinsert.hParent = m_hPrincipal;
-
-    if (CLeashApp::m_hKrb4DLL)
-    {
-        m_tvinsert.item.pszText = "Kerberos Four Tickets";
-        m_tvinsert.item.iImage = iconStatusKrb4;
-        m_tvinsert.item.iSelectedImage = iconStatusKrb4;
-    }
-    else
-    {
-        ticketinfoKrb4.btickets = NO_TICKETS;
-        m_tvinsert.item.pszText = "Kerberos Four Tickets (Not Available)";
-        m_tvinsert.item.iImage = TICKET_NOT_INSTALLED;
-        m_tvinsert.item.iSelectedImage = TICKET_NOT_INSTALLED;
-    }
-
-    m_hKerb4 = m_pTree ->InsertItem(&m_tvinsert);
-
-    if (m_hPrincipalState == NODE_IS_EXPANDED)
-        m_pTree->Expand(m_hPrincipal, TVE_EXPAND);
-
-    m_tvinsert.hParent = m_hKerb4;
-    m_tvinsert.item.iImage = ticketIconStatusKrb4;
-    m_tvinsert.item.iSelectedImage = ticketIconStatus_SelectedKrb4;
-
-    TicketList* tempList = m_listKrb4, *killList;
-    while (tempList)
-    {
-        m_tvinsert.item.pszText = tempList->theTicket;
-        m_pTree->InsertItem(&m_tvinsert);
-        tempList = tempList->next;
-    }
-
-    pLeashFreeTicketList(&m_listKrb4);
-
-    if (m_hKerb4State == NODE_IS_EXPANDED)
-        m_pTree->Expand(m_hKerb4, TVE_EXPAND);
-
+    SetTrayIcon(NIM_MODIFY, m_tvinsert.item.iImage);
 
     // Krb5
     m_tvinsert.hParent = m_hPrincipal;
@@ -776,7 +953,7 @@ VOID CLeashView::OnUpdateDisplay()
     else
     {
         // kerb5 not installed
-        ticketinfoKrb5.btickets = NO_TICKETS;
+        ticketinfo.Krb5.btickets = NO_TICKETS;
         m_tvinsert.item.pszText = "Kerberos Five Tickets (Not Available)";
         m_tvinsert.item.iImage = TICKET_NOT_INSTALLED;
         m_tvinsert.item.iSelectedImage = TICKET_NOT_INSTALLED;
@@ -784,7 +961,7 @@ VOID CLeashView::OnUpdateDisplay()
 
     m_hKerb5 = m_pTree->InsertItem(&m_tvinsert);
 
-    tempList = m_listKrb5, *killList;
+    TicketList* tempList = m_listKrb5, *killList;
     while (tempList)
     {
         m_tvinsert.hParent = m_hKerb5;
@@ -795,15 +972,15 @@ VOID CLeashView::OnUpdateDisplay()
 
         if ( tempList->tktEncType ) {
             m_tvinsert.hParent = m_hk5tkt;
-            m_tvinsert.item.iImage = -1;
-            m_tvinsert.item.iSelectedImage = -1;
+            m_tvinsert.item.iImage = TKT_ENCRYPTION;
+            m_tvinsert.item.iSelectedImage = TKT_ENCRYPTION;
             m_tvinsert.item.pszText = tempList->tktEncType;
             m_pTree->InsertItem(&m_tvinsert);
         }
         if ( tempList->keyEncType ) {
             m_tvinsert.hParent = m_hk5tkt;
-            m_tvinsert.item.iImage = -1;
-            m_tvinsert.item.iSelectedImage = -1;
+            m_tvinsert.item.iImage = TKT_SESSION;
+            m_tvinsert.item.iSelectedImage = TKT_SESSION;
             m_tvinsert.item.pszText = tempList->keyEncType;
             m_pTree->InsertItem(&m_tvinsert);
         }
@@ -811,8 +988,8 @@ VOID CLeashView::OnUpdateDisplay()
         if ( tempList->addrCount && tempList->addrList ) {
             for ( int n=0; n<tempList->addrCount; n++ ) {
                 m_tvinsert.hParent = m_hk5tkt;
-                m_tvinsert.item.iImage = -1;
-                m_tvinsert.item.iSelectedImage = -1;
+                m_tvinsert.item.iImage = TKT_ADDRESS;
+                m_tvinsert.item.iSelectedImage = TKT_ADDRESS;
                 m_tvinsert.item.pszText = tempList->addrList[n];
                 m_pTree->InsertItem(&m_tvinsert);
             }
@@ -825,36 +1002,68 @@ VOID CLeashView::OnUpdateDisplay()
     if (m_hKerb5State == NODE_IS_EXPANDED)
         m_pTree->Expand(m_hKerb5, TVE_EXPAND);
 
+    // Krb4
+    m_tvinsert.hParent = m_hPrincipal;
+
+    if (CLeashApp::m_hKrb4DLL)
+    {
+        m_tvinsert.item.pszText = "Kerberos Four Tickets";
+        m_tvinsert.item.iImage = iconStatusKrb4;
+        m_tvinsert.item.iSelectedImage = iconStatusKrb4;
+    }
+    else
+    {
+        ticketinfo.Krb4.btickets = NO_TICKETS;
+        m_tvinsert.item.pszText = "Kerberos Four Tickets (Not Available)";
+        m_tvinsert.item.iImage = TICKET_NOT_INSTALLED;
+        m_tvinsert.item.iSelectedImage = TICKET_NOT_INSTALLED;
+    }
+
+    m_hKerb4 = m_pTree ->InsertItem(&m_tvinsert);
+
+    if (m_hPrincipalState == NODE_IS_EXPANDED)
+        m_pTree->Expand(m_hPrincipal, TVE_EXPAND);
+
+    m_tvinsert.hParent = m_hKerb4;
+    m_tvinsert.item.iImage = ticketIconStatusKrb4;
+    m_tvinsert.item.iSelectedImage = ticketIconStatus_SelectedKrb4;
+
+    tempList = m_listKrb4, *killList;
+    while (tempList)
+    {
+        m_tvinsert.item.pszText = tempList->theTicket;
+        m_pTree->InsertItem(&m_tvinsert);
+        tempList = tempList->next;
+    }
+
+    pLeashFreeTicketList(&m_listKrb4);
+
+    if (m_hKerb4State == NODE_IS_EXPANDED)
+        m_pTree->Expand(m_hKerb4, TVE_EXPAND);
+
 
     // AFS
     m_tvinsert.hParent = m_hPrincipal;
 
-    /*
-    if (!krb4Error && CLeashApp::m_hAfsDLL && CLeashApp::m_hKrb4DLL &&
-        m_tvinsert.item.pszText && m_afsNoTokens)
+    if (!CLeashApp::m_hAfsDLL)
     { // AFS service not started or just no tickets
-        m_gotAfsTokens = FALSE;
         m_tvinsert.item.pszText = "AFS Tokens (Not Available)";
         m_tvinsert.item.iImage = TICKET_NOT_INSTALLED;
         m_tvinsert.item.iSelectedImage = TICKET_NOT_INSTALLED;
     }
-    */
     
-    if (!krb4Error && CLeashApp::m_hAfsDLL && CLeashApp::m_hKrb4DLL &&
-        m_tvinsert.item.pszText)
+    if (!afsError && CLeashApp::m_hAfsDLL && m_tvinsert.item.pszText)
     { // AFS installed
 
-        if (!m_afsNoTokens)
+        if (AfsEnabled)
         {
-            m_gotAfsTokens = TRUE;
             m_tvinsert.item.pszText = "AFS Tokens";
-            m_tvinsert.item.iImage = iconStatusKrb4;
-            m_tvinsert.item.iSelectedImage = iconStatusKrb4;
+            m_tvinsert.item.iImage = iconStatusAfs;
+            m_tvinsert.item.iSelectedImage = iconStatusAfs;
         }
     	else
         {
-            m_gotAfsTokens = FALSE;
-            m_tvinsert.item.pszText = "AFS Tokens (Not Available)";
+            m_tvinsert.item.pszText = "AFS Tokens (Disabled)";
             m_tvinsert.item.iImage = TICKET_NOT_INSTALLED;
             m_tvinsert.item.iSelectedImage = TICKET_NOT_INSTALLED;
         }
@@ -862,10 +1071,10 @@ VOID CLeashView::OnUpdateDisplay()
         m_hAFS = m_pTree->InsertItem(&m_tvinsert);
 
         m_tvinsert.hParent = m_hAFS;
-        m_tvinsert.item.iImage = ticketIconStatusKrb4;
-        m_tvinsert.item.iSelectedImage = ticketIconStatus_SelectedKrb4;
+        m_tvinsert.item.iImage = ticketIconStatusAfs;
+        m_tvinsert.item.iSelectedImage = ticketIconStatus_SelectedAfs;
 
-        tempList = m_listAFS, *killList;
+        tempList = m_listAfs, *killList;
         while (tempList)
         {
             m_tvinsert.item.pszText = tempList->theTicket;
@@ -873,15 +1082,13 @@ VOID CLeashView::OnUpdateDisplay()
             tempList = tempList->next;
         }
 
-        pLeashFreeTicketList(&m_listAFS);
+        pLeashFreeTicketList(&m_listAfs);
 
         if (m_hAFSState == NODE_IS_EXPANDED)
             m_pTree->Expand(m_hAFS, TVE_EXPAND);
     }
-    else if (!krb4Error && CLeashApp::m_hAfsDLL && CLeashApp::m_hKrb4DLL &&
-             !m_tvinsert.item.pszText)
+    else if (!afsError && CLeashApp::m_hAfsDLL && !m_tvinsert.item.pszText)
     {
-        m_gotAfsTokens = FALSE;
         m_tvinsert.item.pszText = "AFS Tokens";
         m_tvinsert.item.iImage = EXPIRED_TICKET;;
         m_tvinsert.item.iSelectedImage = EXPIRED_TICKET;
@@ -890,20 +1097,19 @@ VOID CLeashView::OnUpdateDisplay()
     if (m_startup)
     {
         //m_startup = FALSE;
-        UpdateTicketTime(ticketinfoKrb4);
+        UpdateTicketTime(ticketinfo.Krb4);
     }
 
-    CString sPrincipal = ticketinfoKrb5.principal;
+    CString sPrincipal = ticketinfo.Krb5.principal;
     if (sPrincipal.IsEmpty())
-        sPrincipal = ticketinfoKrb4.principal;
+        sPrincipal = ticketinfo.Krb4.principal;
 
 	// if no tickets
-	if (!ticketinfoKrb4.btickets && !ticketinfoKrb5.btickets)
+	if (!ticketinfo.Krb4.btickets && !ticketinfo.Krb5.btickets)
 		sPrincipal = " No Tickets ";
-    
 
 	// if no tickets and tokens
-    if (!ticketinfoKrb4.btickets && !ticketinfoKrb5.btickets && m_afsNoTokens) //&& sPrincipal.IsEmpty())
+    if (!ticketinfo.Krb4.btickets && !ticketinfo.Krb5.btickets && !ticketinfo.Afs.btickets) //&& sPrincipal.IsEmpty())
     {
         // No tickets
         m_pTree->DeleteAllItems();
@@ -925,8 +1131,8 @@ VOID CLeashView::OnUpdateDisplay()
             }
             else
             {
-                MessageBox("There is a problem with the Leash Toolbar!", "Error", 
-                           MB_OK);
+                AfxMessageBox("There is a problem with the Leash Toolbar!",
+                           MB_OK|MB_ICONSTOP);
             }
         }
     }
@@ -946,10 +1152,11 @@ VOID CLeashView::OnUpdateDisplay()
             }
             else
             {
-                MessageBox("There is a problem with the Leash Toolbar!", "Error", MB_OK);
+                AfxMessageBox("There is a problem with the Leash Toolbar!", MB_OK|MB_ICONSTOP);
             }
         }
     }
+    lock.Unlock();
 }
 
 VOID CLeashView::OnSynTime()
@@ -981,8 +1188,8 @@ VOID CLeashView::OnActivateView(BOOL bActivate, CView* pActivateView,
     }
     if( m_hMenu == NULL )
     {
-        MessageBox("There is a problem finding the Leash main menu!", 
-                   "Error", MB_OK);
+        AfxMessageBox("There is a problem finding the Leash main menu!", 
+                   MB_OK|MB_ICONSTOP);
         return;
     }
     if (!m_largeIcons)
@@ -1061,7 +1268,7 @@ VOID CLeashView::OnActivateView(BOOL bActivate, CView* pActivateView,
     m_alreadyPlayed = TRUE;
 
     if (!CKrbProperties::KrbPropertiesOn)
-        OnUpdateDisplay(); 
+        SendMessage(WM_COMMAND, ID_UPDATE_DISPLAY, 0);
 
     if (m_debugStartUp)
     {
@@ -1080,8 +1287,8 @@ VOID CLeashView::OnDebugMode()
 	
     if (!m_pDebugWindow)
     {
-        MessageBox("There is a problem with the Leash Debug Window!", 
-                   "Error", MB_OK);
+        AfxMessageBox("There is a problem with the Leash Debug Window!", 
+                   MB_OK|MB_ICONSTOP);
         return;
     }
   
@@ -1219,6 +1426,10 @@ VOID CLeashView::OnLargeIcons()
     m_imageList.Create(x, y, ilcColor | ILC_MASK, IMAGE_COUNT, 1);
     m_imageList.SetBkColor(GetSysColor(COLOR_WINDOW));
 
+    hIcon[ACTIVE_TRAY_ICON] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_GOOD); 
+    hIcon[LOW_TRAY_ICON] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_LOW); 
+    hIcon[EXPIRED_TRAY_ICON] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_EXPIRED); 
+    hIcon[NONE_TRAY_ICON]  = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_NONE); 
     hIcon[ACTIVE_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_PRINCIPAL_GOOD); 
     hIcon[LOW_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_PRINCIPAL_LOW); 
     hIcon[EXPIRED_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_PRINCIPAL_EXPIRED); 
@@ -1230,12 +1441,15 @@ VOID CLeashView::OnLargeIcons()
     hIcon[ACTIVE_CLOCK] = AfxGetApp()->LoadIcon(IDI_TICKET_GOOD);
     hIcon[LOW_CLOCK] = AfxGetApp()->LoadIcon(IDI_TICKET_LOW);
     hIcon[EXPIRED_CLOCK] = AfxGetApp()->LoadIcon(IDI_TICKET_EXPIRED);
+    hIcon[TKT_ADDRESS] = AfxGetApp()->LoadIcon(IDI_LEASH_TICKET_ADDRESS);
+    hIcon[TKT_SESSION] = AfxGetApp()->LoadIcon(IDI_LEASH_TICKET_SESSION);
+    hIcon[TKT_ENCRYPTION] = AfxGetApp()->LoadIcon(IDI_LEASH_TICKET_ENCRYPTION);
 	
     for (n = 0; n < IMAGE_COUNT; n++)
     {
         if ( !hIcon[n] ) {
-            MessageBox("Can't find one or more images in the Leash Ticket Tree!",
-                        "Error", MB_OK);
+            AfxMessageBox("Can't find one or more images in the Leash Ticket Tree!",
+                        MB_OK|MB_ICONSTOP);
             return;
         }
         m_imageList.Add(hIcon[n]);
@@ -1245,7 +1459,7 @@ VOID CLeashView::OnLargeIcons()
     m_pTree->SetItemHeight(y+2);
 
     if (!m_startup)
-        OnUpdateDisplay();
+        SendMessage(WM_COMMAND, ID_UPDATE_DISPLAY, 0);
 }
 
 VOID CLeashView::OnKillTixOnExit()
@@ -1262,8 +1476,8 @@ VOID CLeashView::OnKillTixOnExit()
             if (m_hMenu)
                 CheckMenuItem(m_hMenu, ID_KILL_TIX_ONEXIT, MF_UNCHECKED); 
 		    
-            MessageBox("Tickets will be not be destroyed upon exiting Leash!!!", 
-                       "Warning", MB_OK);
+            AfxMessageBox("Tickets will be not be destroyed upon exiting Leash!!!", 
+                       MB_OK|MB_ICONWARNING);
             m_pApp->WriteProfileInt("Settings", "DestroyTicketsOnExit", 
                                     FALSE_FLAG);			
         }
@@ -1272,8 +1486,8 @@ VOID CLeashView::OnKillTixOnExit()
             if (m_hMenu)
                 CheckMenuItem(m_hMenu, ID_KILL_TIX_ONEXIT, MF_CHECKED); 
 		    
-            MessageBox("All tickets/tokens will be destroyed upon exiting Leash!!!", 
-                       "Warning", MB_OK);
+            AfxMessageBox("All tickets/tokens will be destroyed upon exiting Leash!!!", 
+                       MB_OK|MB_ICONWARNING);
             m_pApp->WriteProfileInt("Settings", "DestroyTicketsOnExit", TRUE_FLAG);
         }
     }
@@ -1320,25 +1534,37 @@ VOID CLeashView::ResetTreeNodes()
 
 VOID CLeashView::OnDestroy()
 {
+    SetTrayIcon(NIM_DELETE);
+
     CFormView::OnDestroy();
-    if (m_destroyTicketsOnExit && (ticketinfoKrb4.btickets || ticketinfoKrb5.btickets))
+    CSingleLock lock(&ticketinfo.lockObj);
+    lock.Lock();
+    BOOL b_destroy = m_destroyTicketsOnExit && (ticketinfo.Krb4.btickets || ticketinfo.Krb5.btickets);
+    lock.Unlock();
+
+    if (b_destroy)
     {
         if (pLeash_kdestroy())
         {
-            MessageBox("There is a problem destroying tickets!", 
-                       "Error", MB_OK);
+            AfxMessageBox("There is a problem destroying tickets!", 
+                       MB_OK|MB_ICONSTOP);
         }
     }
 }
 
 VOID CLeashView::OnUpdateDestroyTicket(CCmdUI* pCmdUI)
 {
-    if (!CLeashApp::m_hAfsDLL || !CLeashApp::m_hKrb4DLL)
+    if (!CLeashApp::m_hAfsDLL)
         pCmdUI->SetText("&Destroy Ticket(s)\tCtrl+D");
     else
         pCmdUI->SetText("&Destroy Ticket(s)/Token(s)\tCtrl+D");
 
-    if (!ticketinfoKrb4.btickets && !ticketinfoKrb5.btickets && m_afsNoTokens)
+    CSingleLock lock(&ticketinfo.lockObj);
+    lock.Lock();
+    BOOL b_enable =!ticketinfo.Krb4.btickets && !ticketinfo.Krb5.btickets && !ticketinfo.Afs.btickets;
+    lock.Unlock();
+
+    if (b_enable)
         pCmdUI->Enable(FALSE);
     else
         pCmdUI->Enable(TRUE);
@@ -1346,7 +1572,7 @@ VOID CLeashView::OnUpdateDestroyTicket(CCmdUI* pCmdUI)
 
 VOID CLeashView::OnUpdateInitTicket(CCmdUI* pCmdUI)
 {
-    if (!CLeashApp::m_hAfsDLL || !CLeashApp::m_hKrb4DLL)
+    if (!CLeashApp::m_hAfsDLL)
         pCmdUI->SetText("&Get Ticket(s)\tCtrl+T");
     else
         pCmdUI->SetText("&Get Ticket(s)/Token(s)\tCtrl+T");
@@ -1360,14 +1586,18 @@ VOID CLeashView::OnUpdateInitTicket(CCmdUI* pCmdUI)
 
 VOID CLeashView::OnUpdateRenewTicket(CCmdUI* pCmdUI)
 {
-    if (!CLeashApp::m_hAfsDLL || !CLeashApp::m_hKrb4DLL)
+    if (!CLeashApp::m_hAfsDLL)
         pCmdUI->SetText("&Renew Ticket(s)\tCtrl+R");
     else
         pCmdUI->SetText("&Renew Ticket(s)/Token(s)\tCtrl+R");
 
-    if (!(ticketinfoKrb4.btickets || ticketinfoKrb5.btickets) ||
-        !CLeashApp::m_hKrb4DLL && !CLeashApp::m_hKrb5DLL &&
-        !CLeashApp::m_hAfsDLL)
+    CSingleLock lock(&ticketinfo.lockObj);
+    lock.Lock();
+    BOOL b_enable = !(ticketinfo.Krb4.btickets || ticketinfo.Krb5.btickets) ||
+                    !CLeashApp::m_hKrb4DLL && !CLeashApp::m_hKrb5DLL && !CLeashApp::m_hAfsDLL;
+    lock.Unlock();
+
+    if (b_enable)
         pCmdUI->Enable(FALSE);
     else
         pCmdUI->Enable(TRUE);
@@ -1384,6 +1614,100 @@ VOID CLeashView::OnUpdateImportTicket(CCmdUI* pCmdUI)
 LRESULT CLeashView::OnGoodbye(WPARAM wParam, LPARAM lParam)
 {
     m_pDebugWindow->DestroyWindow();
+    return 0L;
+}
+
+VOID CLeashView::OnLeashRestore()
+{
+    if ( CMainFrame::m_isMinimum ) {
+        CMainFrame * frame = (CMainFrame *)GetParentFrame();
+        frame->ShowTaskBarButton(TRUE);
+        frame->ShowWindow(SW_SHOWNORMAL);
+    }
+}
+
+VOID CLeashView::OnLeashMinimize()
+{
+    if ( !CMainFrame::m_isMinimum ) {
+        CMainFrame * frame = (CMainFrame *)GetParentFrame();
+        // frame->ShowTaskBarButton(FALSE);
+        frame->ShowWindow(SW_HIDE);
+        frame->ShowWindow(SW_MINIMIZE);
+    }
+}
+
+LRESULT CLeashView::OnTrayIcon(WPARAM wParam, LPARAM lParam)
+{
+    switch ( lParam ) {
+    case WM_LBUTTONDOWN:
+        if ( CMainFrame::m_isMinimum )
+            OnLeashRestore();
+        else
+            OnLeashMinimize();
+        break;
+    case WM_RBUTTONDOWN:
+        {
+            CSingleLock lock(&ticketinfo.lockObj);
+            int nFlags;
+            CMenu * menu = new CMenu();
+            menu->CreatePopupMenu();
+            if ( !CMainFrame::m_isMinimum )
+                menu->AppendMenu(MF_STRING, ID_LEASH_MINIMIZE, "&Close Leash Window");
+            else
+                menu->AppendMenu(MF_STRING, ID_LEASH_RESTORE, "&Open Leash Window");
+            menu->AppendMenu(MF_SEPARATOR);
+            menu->AppendMenu(MF_STRING, ID_INIT_TICKET, "&Get Tickets");
+            lock.Lock();
+            if (!(ticketinfo.Krb4.btickets || ticketinfo.Krb5.btickets) ||
+                 !CLeashApp::m_hKrb4DLL && !CLeashApp::m_hKrb5DLL &&
+                 !CLeashApp::m_hAfsDLL)
+                nFlags = MF_STRING | MF_GRAYED;
+            else
+                nFlags = MF_STRING;
+            lock.Unlock();
+            menu->AppendMenu(nFlags, ID_RENEW_TICKET, "&Renew Tickets");
+            if (!CLeashApp::m_hKrbLSA || !pLeash_importable())
+                nFlags = MF_STRING | MF_GRAYED;
+            else
+                nFlags = MF_STRING;
+            menu->AppendMenu(MF_STRING, ID_IMPORT_TICKET, "&Import Tickets");
+            lock.Lock();
+            if (!ticketinfo.Krb4.btickets && !ticketinfo.Krb5.btickets && !ticketinfo.Afs.btickets)
+                nFlags = MF_STRING | MF_GRAYED;
+            else
+                nFlags = MF_STRING;
+            lock.Unlock();
+            menu->AppendMenu(MF_STRING, ID_DESTROY_TICKET, "&Destroy Tickets");
+            menu->AppendMenu(MF_STRING, ID_CHANGE_PASSWORD, "&Change Password");
+
+            menu->AppendMenu(MF_SEPARATOR);
+            if ( m_autoRenewTickets )
+                nFlags = MF_STRING | MF_CHECKED;
+            else
+                nFlags = MF_STRING | MF_UNCHECKED;
+            menu->AppendMenu(nFlags, ID_AUTO_RENEW, "&Automatic Ticket Renewal");
+            if ( m_lowTicketAlarm )
+                nFlags = MF_STRING | MF_CHECKED;
+            else
+                nFlags = MF_STRING | MF_UNCHECKED;
+            menu->AppendMenu(nFlags, ID_LOW_TICKET_ALARM, "&Expiration Alarm");
+            menu->AppendMenu(MF_SEPARATOR);
+            menu->AppendMenu(MF_STRING, ID_APP_EXIT, "E&xit");
+            menu->SetDefaultItem(ID_LEASH_RESTORE);
+
+            POINT pt;
+            GetCursorPos(&pt);
+
+            menu->TrackPopupMenu(TPM_RIGHTALIGN | TPM_RIGHTBUTTON,
+                                pt.x, pt.y, GetParentFrame());
+            menu->DestroyMenu();
+            delete menu;
+        }
+        break;
+    case WM_MOUSEMOVE:
+        // SendMessage(WM_COMMAND, ID_UPDATE_DISPLAY, 0);
+        break;
+    }
     return 0L;
 }
 
@@ -1487,309 +1811,520 @@ void CLeashView::GetRowWidthHeight(CDC* pDC, LPCSTR theString, int& nRowWidth,
 }
 */
 
+void CLeashView::SetTrayText(int nim, CString tip)
+{
+    if ( (nim == NIM_MODIFY) && (m_bIconDeleted) )
+        return;
+    if ( (nim == NIM_MODIFY) && (!m_bIconAdded) )
+        nim = NIM_ADD;
+
+    if ( (nim != NIM_DELETE) || IsWindow(m_hWnd) )
+    {
+        NOTIFYICONDATA nid;
+        memset (&nid, 0x00, sizeof(NOTIFYICONDATA));
+        nid.cbSize = sizeof(NOTIFYICONDATA);
+        nid.hWnd = m_hWnd;
+        nid.uID = 0;
+        nid.uFlags = NIF_MESSAGE | NIF_TIP;
+        nid.uCallbackMessage = WM_TRAYICON;
+        strncpy(nid.szTip, (LPCTSTR) tip, sizeof(nid.szTip));
+        nid.szTip[sizeof(nid.szTip)-1] = '\0';
+        Shell_NotifyIcon (nim, &nid);
+    }
+
+    if ( nim == NIM_ADD )
+        m_bIconAdded = TRUE;
+    if ( nim == NIM_DELETE )
+        m_bIconDeleted = TRUE;
+}
+
+void CLeashView::SetTrayIcon(int nim, int state)
+{
+    static HICON hIcon[IMAGE_COUNT];
+    static BOOL bIconInit = FALSE;
+
+    if ( (nim == NIM_MODIFY) && (m_bIconDeleted) )
+        return;
+    if ( (nim == NIM_MODIFY) && (!m_bIconAdded) )
+        nim = NIM_ADD;
+
+    if ( (nim != NIM_DELETE) || IsWindow(m_hWnd) )
+    {
+        if ( !bIconInit ) {
+            // The state is reported as the parent node value although
+            // we want to use the Tray Version of the icons
+            hIcon[ACTIVE_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_GOOD); 
+            hIcon[LOW_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_LOW); 
+            hIcon[EXPIRED_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_EXPIRED); 
+            hIcon[NONE_PARENT_NODE]  = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_NONE); 
+            bIconInit = TRUE;
+        }
+
+        NOTIFYICONDATA nid;
+        memset (&nid, 0x00, sizeof(NOTIFYICONDATA));
+        nid.cbSize = sizeof(NOTIFYICONDATA);
+        nid.hWnd = m_hWnd;
+        nid.uID = 0;
+        nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+        nid.uCallbackMessage = WM_TRAYICON;
+        nid.hIcon = hIcon[state];
+        Shell_NotifyIcon (nim, &nid);
+    }
+
+    if ( nim == NIM_ADD )
+        m_bIconAdded = TRUE;
+    if ( nim == NIM_DELETE )
+        m_bIconDeleted = TRUE;
+}
+
 BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
 {
-	BOOL renewed = FALSE;
+	if ( pMsg->message == ID_OBTAIN_TGT_WITH_LPARAM )
+	{
+		OutputDebugString("Obtain TGT with LParam\n");
+	}
 
     if ( pMsg->message == WM_TIMER ) {
-        CString ticketStatusKrb4 = NOT_INSTALLED;
-        CString ticketStatusKrb5 = NOT_INSTALLED;
-        CString strTimeDate;
-        CString lowTicketWarningKrb4;
-        CString lowTicketWarningKrb5;
+        if (InterlockedDecrement(&m_timerMsgNotInProgress) == 0) {
+            CSingleLock lock(&ticketinfo.lockObj);
 
-      timer_start:
-        if (CLeashApp::m_hKrb5DLL)
-        {
-            // KRB5
-            UpdateTicketTime(ticketinfoKrb5);
+            CString ticketStatusKrb4 = TCHAR(NOT_INSTALLED);
+            CString ticketStatusKrb5 = TCHAR(NOT_INSTALLED);
+            CString ticketStatusAfs  = TCHAR(NOT_INSTALLED);
+            CString strTimeDate;
+            CString lowTicketWarningKrb4;
+            CString lowTicketWarningKrb5;
+            CString lowTicketWarningAfs;
 
-            if (!ticketinfoKrb5.btickets)
+          timer_start:
+            lock.Lock();
+            if (CLeashApp::m_hKrb5DLL)
             {
-                ticketStatusKrb5 = "Kerb-5: No Tickets";
-            }
-            else if (EXPIRED_TICKETS == ticketinfoKrb5.btickets)
-            {
-                ticketStatusKrb5 = "Kerb-5: Expired Ticket(s)";
-                m_ticketTimeLeft = 0;
-                lowTicketWarningKrb5 = "Your Kerberos Five ticket(s) have expired";
-                if (!m_warningOfTicketTimeLeftLockKrb5)
-                    m_warningOfTicketTimeLeftKrb5 = 0;
-                m_warningOfTicketTimeLeftLockKrb5 = ZERO_MINUTES_LEFT;
-            }
-            else
-            {
-                m_ticketStatusKrb5 = GetLowTicketStatus(5);
-                switch (m_ticketStatusKrb5)
+                // KRB5
+                UpdateTicketTime(ticketinfo.Krb5);
+
+                if (!ticketinfo.Krb5.btickets)
                 {
-                case FIFTEEN_MINUTES_LEFT:
-                    ticketinfoKrb5.btickets = TICKETS_LOW;
-                    lowTicketWarningKrb5 = "Less then 15 minutes left on your Kerberos Five ticket(s)";
-                    break;
-                case TEN_MINUTES_LEFT:
-                    ticketinfoKrb5.btickets = TICKETS_LOW;
-                    lowTicketWarningKrb5 = "Less then 10 minutes left on your Kerberos Five ticket(s)";
+                    ticketStatusKrb5 = "Kerb-5: No Tickets";
+                }
+                else if (EXPIRED_TICKETS == ticketinfo.Krb5.btickets)
+                {
+                    ticketStatusKrb5 = "Kerb-5: Expired Ticket(s)";
+                    m_ticketTimeLeft = 0;
+                    lowTicketWarningKrb5 = "Your Kerberos Five ticket(s) have expired";
                     if (!m_warningOfTicketTimeLeftLockKrb5)
                         m_warningOfTicketTimeLeftKrb5 = 0;
-                    m_warningOfTicketTimeLeftLockKrb5 = TEN_MINUTES_LEFT;
-                    break;
-                case FIVE_MINUTES_LEFT:
-                    ticketinfoKrb5.btickets = TICKETS_LOW;
-                    if (m_warningOfTicketTimeLeftLockKrb5 == TEN_MINUTES_LEFT)
-                        m_warningOfTicketTimeLeftKrb5 = 0;
-                    m_warningOfTicketTimeLeftLockKrb5 = FIVE_MINUTES_LEFT;
-                    lowTicketWarningKrb5 = "Less then 5 minutes left on your Kerberos Five ticket(s)";
-                    break;
-                default:
-                    m_ticketStatusKrb5 = 0;
-                    break;
+                    m_warningOfTicketTimeLeftLockKrb5 = ZERO_MINUTES_LEFT;
                 }
-            }
-
-            if (CMainFrame::m_isMinimum)
-            {
-                // minimized dispay
-                ticketStatusKrb5.Format("Kerb-5: %02d:%02d Left",
-                                         (m_ticketTimeLeft / 60L / 60L),
-                                         (m_ticketTimeLeft / 60L % 60L));
-            }
-            else
-            {
-                // normal display
-                if (GOOD_TICKETS == ticketinfoKrb5.btickets || TICKETS_LOW == ticketinfoKrb5.btickets)
+                else
                 {
-                    if ( m_ticketTimeLeft >= 60 ) {
-                        ticketStatusKrb5.Format("Kerb-5 Ticket Life: %02d:%02d",
-                                                 (m_ticketTimeLeft / 60L / 60L),
-                                                 (m_ticketTimeLeft / 60L % 60L));
-                    } else {
-                        ticketStatusKrb5.Format("Kerb-5 Ticket Life: < 1 min");
+                    m_ticketStatusKrb5 = GetLowTicketStatus(5);
+                    switch (m_ticketStatusKrb5)
+                    {
+                    case TWENTY_MINUTES_LEFT:
+                        break;
+                    case FIFTEEN_MINUTES_LEFT:
+                        ticketinfo.Krb5.btickets = TICKETS_LOW;
+                        lowTicketWarningKrb5 = "Less then 15 minutes left on your Kerberos Five ticket(s)";
+                        break;
+                    case TEN_MINUTES_LEFT:
+                        ticketinfo.Krb5.btickets = TICKETS_LOW;
+                        lowTicketWarningKrb5 = "Less then 10 minutes left on your Kerberos Five ticket(s)";
+                        if (!m_warningOfTicketTimeLeftLockKrb5)
+                            m_warningOfTicketTimeLeftKrb5 = 0;
+                        m_warningOfTicketTimeLeftLockKrb5 = TEN_MINUTES_LEFT;
+                        break;
+                    case FIVE_MINUTES_LEFT:
+                        ticketinfo.Krb5.btickets = TICKETS_LOW;
+                        if (m_warningOfTicketTimeLeftLockKrb5 == TEN_MINUTES_LEFT)
+                            m_warningOfTicketTimeLeftKrb5 = 0;
+                        m_warningOfTicketTimeLeftLockKrb5 = FIVE_MINUTES_LEFT;
+                        lowTicketWarningKrb5 = "Less then 5 minutes left on your Kerberos Five ticket(s)";
+                        break;
+                    default:
+                        m_ticketStatusKrb5 = 0;
+                        break;
                     }
                 }
 
+                if (CMainFrame::m_isMinimum)
+                {
+                    // minimized dispay
+                    ticketStatusKrb5.Format("Kerb-5: %02d:%02d Left",
+                                             (m_ticketTimeLeft / 60L / 60L),
+                                             (m_ticketTimeLeft / 60L % 60L));
+                }
+                else
+                {
+                    // normal display
+                    if (GOOD_TICKETS == ticketinfo.Krb5.btickets || TICKETS_LOW == ticketinfo.Krb5.btickets)
+                    {
+                        if ( m_ticketTimeLeft >= 60 ) {
+                            ticketStatusKrb5.Format("Kerb-5 Ticket Life: %02d:%02d",
+                                                     (m_ticketTimeLeft / 60L / 60L),
+                                                     (m_ticketTimeLeft / 60L % 60L));
+                        } else {
+                            ticketStatusKrb5.Format("Kerb-5 Ticket Life: < 1 min");
+                        }
+                    }
+
+                    if (CMainFrame::m_wndStatusBar)
+                    {
+                        CMainFrame::m_wndStatusBar.SetPaneInfo(1, 111112, SBPS_NORMAL, 130);
+                        CMainFrame::m_wndStatusBar.SetPaneText(1, ticketStatusKrb5, SBT_POPOUT);
+                    }
+                }
+            }
+            else
+            {
+                // not installed
+                ticketStatusKrb5.Format("Kerb-5: Not Available");
+
                 if (CMainFrame::m_wndStatusBar)
                 {
-                    CMainFrame::m_wndStatusBar.SetPaneInfo(2, 111112, SBPS_NORMAL, 130);
-                    CMainFrame::m_wndStatusBar.SetPaneText(2, ticketStatusKrb5, SBT_POPOUT);
+                    CMainFrame::m_wndStatusBar.SetPaneInfo(1, 111112, SBPS_NORMAL, 130);
+                    CMainFrame::m_wndStatusBar.SetPaneText(1, ticketStatusKrb5, SBT_POPOUT);
                 }
             }
-        }
-        else
-        {
-            // not installed
-            ticketStatusKrb5.Format("Kerb-5: Not Available");
+            //KRB5
 
-            if (CMainFrame::m_wndStatusBar)
+            if (CLeashApp::m_hKrb4DLL)
             {
-                CMainFrame::m_wndStatusBar.SetPaneInfo(2, 111112, SBPS_NORMAL, 130);
-                CMainFrame::m_wndStatusBar.SetPaneText(2, ticketStatusKrb5, SBT_POPOUT);
-            }
-        }
-        //KRB5
-
-        if (CLeashApp::m_hKrb4DLL)
-        {
-            // KRB4
-            UpdateTicketTime(ticketinfoKrb4);
-
-            if (!ticketinfoKrb4.btickets)
-            {
-                if (!CLeashApp::m_hKrb4DLL && !CLeashApp::m_hKrb5DLL && !CLeashApp::m_hAfsDLL)
-                    ticketStatusKrb4 = "Kerb-4: Not Available";
-                else if (!CLeashApp::m_hAfsDLL)
-                    ticketStatusKrb4 = "Kerb-4: No Tickets";
-                else
-                    ticketStatusKrb4 = "Kerb-4/AFS: No Tickets";
-            }
-            else if (EXPIRED_TICKETS == ticketinfoKrb4.btickets)
-            {
-#ifndef NO_KRB5
-                if (ticketinfoKrb5.btickets && 
-                     EXPIRED_TICKETS != ticketinfoKrb5.btickets &&
-                     m_autoRenewTickets &&
-                     ticketinfoKrb5.renew_till &&
-                     (ticketinfoKrb5.issue_date + ticketinfoKrb5.renew_till -LeashTime() > 20 * 60)
-                     )
+                // KRB4
+                UpdateTicketTime(ticketinfo.Krb4);
+                if (!ticketinfo.Krb4.btickets)
                 {
-                    OnRenewTicket();
-                    goto timer_start;
+                    ticketStatusKrb4 = "Kerb-4: No Tickets";
                 }
+                else if (EXPIRED_TICKETS == ticketinfo.Krb4.btickets)
+                {
+#ifndef NO_KRB5
+                    if (ticketinfo.Krb5.btickets && 
+                         EXPIRED_TICKETS != ticketinfo.Krb5.btickets &&
+                         m_autoRenewTickets &&
+                         !m_autoRenewalAttempted &&
+                         ticketinfo.Krb5.renew_till &&
+                         (ticketinfo.Krb5.issue_date + ticketinfo.Krb5.renew_till -LeashTime() > 20 * 60) &&
+                         pLeash_get_default_use_krb4()
+                         )
+                    {
+                        m_autoRenewalAttempted = 1;
+                        lock.Unlock();
+                        AfxBeginThread(RenewTicket,m_hWnd);
+                        goto timer_start;
+                    }
 #endif /* NO_KRB5 */
-                if (!CLeashApp::m_hAfsDLL) {
                     ticketStatusKrb4 = "Kerb-4: Expired Tickets";
                     lowTicketWarningKrb4 = "Your Kerberos Four ticket(s) have expired";
                     if (!m_warningOfTicketTimeLeftLockKrb4)
                         m_warningOfTicketTimeLeftKrb4 = 0;
                     m_warningOfTicketTimeLeftLockKrb4 = ZERO_MINUTES_LEFT;
-                } else {
-                    ticketStatusKrb4 = "Kerb-4/AFS: Expired Tickets";
-                    lowTicketWarningKrb4 = "Your Kerberos Four ticket(s)/AFS token(s) have expired";
+                    m_ticketTimeLeft = 0;
                 }
-                m_ticketTimeLeft = 0;
-            }
-            else
-            {
-                m_ticketStatusKrb4 = GetLowTicketStatus(4);
-                switch (m_ticketStatusKrb4)
+                else if ( pLeash_get_default_use_krb4() )
                 {
-                case FIFTEEN_MINUTES_LEFT:
-                    ticketinfoKrb4.btickets = TICKETS_LOW;
-
-                    if (!m_gotAfsTokens || !CLeashApp::m_hAfsDLL || !CLeashApp::m_hKrb4DLL)
+                    m_ticketStatusKrb4 = GetLowTicketStatus(4);
+                    switch (m_ticketStatusKrb4)
+                    {
+                    case FIFTEEN_MINUTES_LEFT:
+                        ticketinfo.Krb4.btickets = TICKETS_LOW;
                         lowTicketWarningKrb4 = "Less then 15 minutes left on your Kerberos Four ticket(s)";
-                    else
-                        lowTicketWarningKrb4 = "Less then 15 minutes left on your Kerberos Four ticket(s)/token(s)";
-                    break;
-                case TEN_MINUTES_LEFT:
-                    ticketinfoKrb4.btickets = TICKETS_LOW;
-
-                    if (!m_gotAfsTokens || !CLeashApp::m_hAfsDLL || !CLeashApp::m_hKrb4DLL)
+                        break;
+                    case TEN_MINUTES_LEFT:
+                        ticketinfo.Krb4.btickets = TICKETS_LOW;
                         lowTicketWarningKrb4 = "Less then 10 minutes left on your Kerberos Four ticket(s)";
-                    else
-                        lowTicketWarningKrb4 = "Less then 10 minutes left on your Kerberos Four ticket(s)/token(s)";
-
-                    if (!m_warningOfTicketTimeLeftLockKrb4)
-                        m_warningOfTicketTimeLeftKrb4 = 0;
-
-                    m_warningOfTicketTimeLeftLockKrb4 = TEN_MINUTES_LEFT;
-                    break;
-                case FIVE_MINUTES_LEFT:
-                    ticketinfoKrb4.btickets = TICKETS_LOW;
-                    if (m_warningOfTicketTimeLeftLockKrb4 == TEN_MINUTES_LEFT)
-                        m_warningOfTicketTimeLeftKrb4 = 0;
-
-                    m_warningOfTicketTimeLeftLockKrb4 = FIVE_MINUTES_LEFT;
-
-                    if (!m_gotAfsTokens || !CLeashApp::m_hAfsDLL || !CLeashApp::m_hKrb4DLL)
+                        if (!m_warningOfTicketTimeLeftLockKrb4)
+                            m_warningOfTicketTimeLeftKrb4 = 0;
+                        m_warningOfTicketTimeLeftLockKrb4 = TEN_MINUTES_LEFT;
+                        break;
+                    case FIVE_MINUTES_LEFT:
+                        ticketinfo.Krb4.btickets = TICKETS_LOW;
+                        if (m_warningOfTicketTimeLeftLockKrb4 == TEN_MINUTES_LEFT)
+                            m_warningOfTicketTimeLeftKrb4 = 0;
+                        m_warningOfTicketTimeLeftLockKrb4 = FIVE_MINUTES_LEFT;
                         lowTicketWarningKrb4 = "Less then 5 minutes left on your Kerberos Four ticket(s)";
-                    else
-                        lowTicketWarningKrb4 = "Less then 5 minutes left on your Kerberos Four ticket(s)/token(s)";
+                        break;
+                    default:
+                        m_ticketStatusKrb4 = 0;
+                        break;
+                    }
 
-                    break;
-                default:
-                    m_ticketStatusKrb4 = 0;
-                    break;
                 }
 
-            }
-
-            if (CMainFrame::m_isMinimum)
-            {
-                // minimized dispay
-                ticketStatusKrb4.Format("Kerb-4: %02d:%02d Left",
-                                         (m_ticketTimeLeft / 60L / 60L),
-                                         (m_ticketTimeLeft / 60L % 60L));
-            }
-            else
-            {
-                // normal display
-                if (GOOD_TICKETS == ticketinfoKrb4.btickets ||
-                     TICKETS_LOW == ticketinfoKrb4.btickets)
+                if (CMainFrame::m_isMinimum)
                 {
-                    if ( m_ticketTimeLeft >= 60 ) {
-                        if (m_gotAfsTokens)
-                            ticketStatusKrb4.Format("Kerb-4 Ticket/Token Life: %02d:%02d",
-                                                     (m_ticketTimeLeft / 60L / 60L),
-                                                     (m_ticketTimeLeft / 60L % 60L));
-                        else
+                    // minimized dispay
+                    ticketStatusKrb4.Format("Kerb-4: %02d:%02d Left",
+                                             (m_ticketTimeLeft / 60L / 60L),
+                                             (m_ticketTimeLeft / 60L % 60L));
+                }
+                else
+                {
+                    // normal display
+                    if (GOOD_TICKETS == ticketinfo.Krb4.btickets ||
+                         TICKETS_LOW == ticketinfo.Krb4.btickets)
+                    {
+                        if ( m_ticketTimeLeft >= 60 ) {
                             ticketStatusKrb4.Format("Kerb-4 Ticket Life: %02d:%02d",
                                                      (m_ticketTimeLeft / 60L / 60L),
                                                      (m_ticketTimeLeft / 60L % 60L));
-                    } else {
-                        if (m_gotAfsTokens)
-                            ticketStatusKrb4.Format("Kerb-4 Ticket/Token Life: < 1 min");
-                        else
+                        } else {
                             ticketStatusKrb4.Format("Kerb-4 Ticket Life: < 1 min");
+                        }
+                    }
+
+                    if (CMainFrame::m_wndStatusBar)
+                    {
+                        CMainFrame::m_wndStatusBar.SetPaneInfo(2, 111111, SBPS_NORMAL, 130);
+                        CMainFrame::m_wndStatusBar.SetPaneText(2, ticketStatusKrb4, SBT_POPOUT);
                     }
                 }
+            }
+            else
+            {
+                // not installed
+                ticketStatusKrb4.Format("Kerb-4: Not Available");
 
                 if (CMainFrame::m_wndStatusBar)
                 {
-                    CMainFrame::m_wndStatusBar.SetPaneInfo(1, 111111, SBPS_NORMAL, 130);
-                    CMainFrame::m_wndStatusBar.SetPaneText(1, ticketStatusKrb4, SBT_POPOUT);
+                    CMainFrame::m_wndStatusBar.SetPaneInfo(2, 111111, SBPS_NORMAL, 130);
+                    CMainFrame::m_wndStatusBar.SetPaneText(2, ticketStatusKrb4, SBT_POPOUT);
                 }
             }
-        }
-        else
-        {
-            // not installed
-            ticketStatusKrb4.Format("Kerb-4: Not Available");
+            // KRB4
 
-            if (CMainFrame::m_wndStatusBar)
+            if (CLeashApp::m_hAfsDLL)
             {
-                CMainFrame::m_wndStatusBar.SetPaneInfo(1, 111111, SBPS_NORMAL, 130);
-                CMainFrame::m_wndStatusBar.SetPaneText(1, ticketStatusKrb4, SBT_POPOUT);
-            }
-        }
-        // KRB4
-
-        BOOL warningKrb5 = m_ticketStatusKrb5 > NO_TICKETS &&
-             m_ticketStatusKrb5 < TWENTY_MINUTES_LEFT && 
-             !m_warningOfTicketTimeLeftKrb5;
-        BOOL warningKrb4 = m_ticketStatusKrb4 > NO_TICKETS &&
-             m_ticketStatusKrb4 < TWENTY_MINUTES_LEFT && 
-             !m_warningOfTicketTimeLeftKrb4;
-
-        // Play warning message only once per each case statement above
-        if (warningKrb4 || warningKrb5 )
-        {
+                // AFS
+                UpdateTicketTime(ticketinfo.Afs);
+                if (!ticketinfo.Afs.btickets)
+                {
+                    BOOL AfsEnabled = m_pApp->GetProfileInt("Settings", "AfsStatus", 1);
+                    if ( AfsEnabled )
+                        ticketStatusAfs = "AFS: No Tickets";
+                    else
+                        ticketStatusAfs = "AFS: Disabled";
+                }
+                else if (EXPIRED_TICKETS == ticketinfo.Afs.btickets)
+                {
 #ifndef NO_KRB5
-            if ( m_autoRenewTickets && !renewed && ticketinfoKrb5.renew_till && 
-                 (ticketinfoKrb5.issue_date + ticketinfoKrb5.renew_till -LeashTime() > 20 * 60)) 
+                    if (ticketinfo.Krb5.btickets && 
+                         EXPIRED_TICKETS != ticketinfo.Krb5.btickets &&
+                         m_autoRenewTickets &&
+                         !m_autoRenewalAttempted &&
+                         ticketinfo.Krb5.renew_till &&
+                         (ticketinfo.Krb5.issue_date + ticketinfo.Krb5.renew_till -LeashTime() > 20 * 60) &&
+                         !stricmp(ticketinfo.Krb5.principal,ticketinfo.Afs.principal)
+                         )
+                    {
+                        m_autoRenewalAttempted = 1;
+                        lock.Unlock();
+                        AfxBeginThread(RenewTicket,m_hWnd);
+                        goto timer_start;
+                    }
+#endif /* NO_KRB5 */
+                    ticketStatusAfs = "AFS: Expired Tickets";
+                    lowTicketWarningAfs = "Your AFS token(s) have expired";
+                    if (!m_warningOfTicketTimeLeftLockAfs)
+                        m_warningOfTicketTimeLeftAfs = 0;
+                    m_warningOfTicketTimeLeftLockAfs = ZERO_MINUTES_LEFT;
+                    m_ticketTimeLeft = 0;
+                }
+                else
+                {
+                    m_ticketStatusAfs = GetLowTicketStatus(1);
+                    switch (m_ticketStatusAfs)
+                    {
+                    case FIFTEEN_MINUTES_LEFT:
+                        ticketinfo.Afs.btickets = TICKETS_LOW;
+
+                        lowTicketWarningAfs = "Less then 15 minutes left on your AFStoken(s)";
+                        break;
+                    case TEN_MINUTES_LEFT:
+                        ticketinfo.Afs.btickets = TICKETS_LOW;
+
+                        lowTicketWarningAfs = "Less then 10 minutes left on your AFS token(s)";
+
+                        if (!m_warningOfTicketTimeLeftLockAfs)
+                            m_warningOfTicketTimeLeftAfs = 0;
+
+                        m_warningOfTicketTimeLeftLockAfs = TEN_MINUTES_LEFT;
+                        break;
+                    case FIVE_MINUTES_LEFT:
+                        ticketinfo.Afs.btickets = TICKETS_LOW;
+                        if (m_warningOfTicketTimeLeftLockAfs == TEN_MINUTES_LEFT)
+                            m_warningOfTicketTimeLeftAfs = 0;
+
+                        m_warningOfTicketTimeLeftLockAfs = FIVE_MINUTES_LEFT;
+
+                        lowTicketWarningAfs = "Less then 5 minutes left on your AFS token(s)";
+                        break;
+                    default:
+                        m_ticketStatusAfs = 0;
+                        break;
+                    }
+
+                }
+
+                if (CMainFrame::m_isMinimum)
+                {
+                    // minimized dispay
+                    ticketStatusAfs.Format("AFS: %02d:%02d Left",
+                                            (m_ticketTimeLeft / 60L / 60L),
+                                            (m_ticketTimeLeft / 60L % 60L));
+                }
+                else
+                {
+                    // normal display
+                    if (GOOD_TICKETS == ticketinfo.Afs.btickets ||
+                         TICKETS_LOW == ticketinfo.Afs.btickets)
+                    {
+                        if ( m_ticketTimeLeft >= 60 ) {
+                            ticketStatusAfs.Format("AFS Token Life: %02d:%02d",
+                                                    (m_ticketTimeLeft / 60L / 60L),
+                                                    (m_ticketTimeLeft / 60L % 60L));
+                        } else {
+                            ticketStatusAfs.Format("AFS Token Life: < 1 min");
+                        }
+                    }
+
+                    if (CMainFrame::m_wndStatusBar)
+                    {
+                        CMainFrame::m_wndStatusBar.SetPaneInfo(3, 111113, SBPS_NORMAL, 130);
+                        CMainFrame::m_wndStatusBar.SetPaneText(3, ticketStatusAfs, SBT_POPOUT);
+                    }
+                }
+            }
+#ifdef COMMENT
+            // we do not set this field because the field does not exist when AfsDLL is NULL
+            else
+            {
+                // not installed
+                ticketStatusAfs.Format("AFS: Not Available");
+
+                if (CMainFrame::m_wndStatusBar)
+                {
+                    CMainFrame::m_wndStatusBar.SetPaneInfo(3, 111113, SBPS_NORMAL, 130);
+                    CMainFrame::m_wndStatusBar.SetPaneText(3, ticketStatusAfs, SBT_POPOUT);
+                }
+            }
+#endif /* COMMENT */
+            // AFS
+
+#ifndef NO_KRB5
+            if ( m_ticketStatusKrb5 == TWENTY_MINUTES_LEFT &&
+                 m_autoRenewTickets && !m_autoRenewalAttempted && ticketinfo.Krb5.renew_till &&
+                 (ticketinfo.Krb5.issue_date + ticketinfo.Krb5.renew_till - LeashTime() > 20 * 60)) 
             {   
-                OnRenewTicket();
-				renewed = TRUE;
+                m_autoRenewalAttempted = 1;
+                lock.Unlock();
+                AfxBeginThread(RenewTicket,m_hWnd);
                 goto timer_start;
             }
 #endif /* NO_KRB5 */
-            if ( warningKrb4 && warningKrb5 ) {
-                CString lowTicketWarning( lowTicketWarningKrb5 + "\n" +
-                    lowTicketWarningKrb4 );
-                m_warningOfTicketTimeLeftKrb4 = ON;
-                m_warningOfTicketTimeLeftKrb5 = ON;
+
+            BOOL warningKrb5 = m_ticketStatusKrb5 > NO_TICKETS &&
+                m_ticketStatusKrb5 < TWENTY_MINUTES_LEFT && 
+                    !m_warningOfTicketTimeLeftKrb5;
+            BOOL warningKrb4 = m_ticketStatusKrb4 > NO_TICKETS &&
+                m_ticketStatusKrb4 < TWENTY_MINUTES_LEFT && 
+                    !m_warningOfTicketTimeLeftKrb4;
+            BOOL warningAfs = m_ticketStatusAfs > NO_TICKETS &&
+                m_ticketStatusAfs < TWENTY_MINUTES_LEFT && 
+                    !m_warningOfTicketTimeLeftAfs;
+
+            // Play warning message only once per each case statement above
+            if (warningKrb4 || warningKrb5 || warningAfs)
+            {
+
+                CString lowTicketWarning = "";
+                int warnings = 0;
+
+                if (warningKrb5) {
+                    lowTicketWarning += lowTicketWarningKrb5;
+                    m_warningOfTicketTimeLeftKrb5 = ON;
+                    warnings++;
+                }
+                if (warningKrb4) {
+                    if ( warnings )
+                        lowTicketWarning += "\n";
+                    lowTicketWarning += lowTicketWarningKrb4;
+                    m_warningOfTicketTimeLeftKrb4 = ON;
+                    warnings++;
+                }
+                if (warningAfs) {
+                    if ( warnings )
+                        lowTicketWarning += "\n";
+                    lowTicketWarning += lowTicketWarningAfs;
+                    m_warningOfTicketTimeLeftAfs = ON;
+                    warnings++;
+                }
+
+                lock.Unlock();
                 AlarmBeep();
-                CLeashMessageBox leashMessageBox(this, lowTicketWarning, 100000);
+                CLeashMessageBox leashMessageBox(!CMainFrame::m_isMinimum ? GetDesktopWindow() : NULL, 
+                                                  lowTicketWarning, 100000);
                 leashMessageBox.DoModal();
-            } else if ( warningKrb4 ) {
-                m_warningOfTicketTimeLeftKrb4 = ON;
-                AlarmBeep();
-                CLeashMessageBox leashMessageBox(this, lowTicketWarningKrb4, 100000);
-                leashMessageBox.DoModal();
-            } else if ( warningKrb5 ) {
-                m_warningOfTicketTimeLeftKrb5 = ON;
-                AlarmBeep();
-                CLeashMessageBox leashMessageBox(this, lowTicketWarningKrb5, 100000);
-                leashMessageBox.DoModal();
+                lock.Lock();
             }
-        }
 
-        CTime tTimeDate = CTime::GetCurrentTime();
+            CTime tTimeDate = CTime::GetCurrentTime();
 
-        if (CMainFrame::m_isMinimum)
-        {
-            strTimeDate = ("Leash - [" + ticketStatusKrb4 + "] - " + "[" +
-                            ticketStatusKrb5 + "] - " +
-                            "[" + ticketinfoKrb5.principal + "]" + " - " +
-                            tTimeDate.Format("%A, %B %d, %Y  %H:%M ")
-            );
-        }
-        else
-        {
-            strTimeDate = ("Leash - " +
-                            tTimeDate.Format("%A, %B %d, %Y  %H:%M ")
-                            //timeDate.Format("%d %b %y %H:%M:%S - ")
-                            );
-        }
+            if (CMainFrame::m_isMinimum)
+            {
+                if ( CLeashApp::m_hAfsDLL )
+                    strTimeDate = ( "Leash - "
+                                    "[" + ticketStatusKrb5 + "] - " +
+                                    "[" + ticketStatusKrb4 + "] - " +
+                                    "[" + ticketStatusAfs + "] - " +
+                                    "[" + ticketinfo.Krb5.principal + "]" + " - " +
+                                    tTimeDate.Format("%A, %B %d, %Y  %H:%M "));
+                else
+                    strTimeDate = ( "Leash - "
+                                    "[" + ticketStatusKrb5 + "] - " +
+                                    "[" + ticketStatusKrb4 + "] - " +
+                                    "[" + ticketinfo.Krb5.principal + "]" + " - " +
+                                    tTimeDate.Format("%A, %B %d, %Y  %H:%M "));
+            }
+            else
+            {
+                strTimeDate = ("Leash - " +
+                                tTimeDate.Format("%A, %B %d, %Y  %H:%M ")
+                                //timeDate.Format("%d %b %y %H:%M:%S - ")
+                                );
+            }
+            ::SetWindowText(CLeashApp::m_hProgram, strTimeDate);
 
-        ::SetWindowText(CLeashApp::m_hProgram, strTimeDate);
-        m_updateDisplayCount++;
-        m_alreadyPlayedDisplayCount++;
-    }
+            if (CLeashApp::m_hKrb5DLL) {
+                if ( ticketinfo.Krb5.btickets )
+                    strTimeDate = ( "Leash: "
+                                    "[" + ticketStatusKrb5 + "]" + 
+                                    " - [" + ticketinfo.Krb5.principal + "]");
+                else
+                    strTimeDate = "Leash: Kerb-5 No Tickets";
+            } else {
+                if ( ticketinfo.Krb4.btickets )
+                    strTimeDate = ( "Leash: "
+                                    "[" + ticketStatusKrb4 + "]" +
+                                    " - [" + ticketinfo.Krb4.principal + "]");
+                else
+                    strTimeDate = "Leash: Kerb-4 No Tickets";
+            }
+            lock.Unlock();
+
+            SetTrayText(NIM_MODIFY, strTimeDate);
+
+            m_updateDisplayCount++;
+            m_alreadyPlayedDisplayCount++;
+        }
+        InterlockedIncrement(&m_timerMsgNotInProgress);
+    }  // WM_TIMER
+
 
     if (UPDATE_DISPLAY_TIME == m_updateDisplayCount)
     {
         m_updateDisplayCount = 0;
-        OnUpdateDisplay();
+        SendMessage(WM_COMMAND, ID_UPDATE_DISPLAY, 0);
     }
 
     if (m_alreadyPlayedDisplayCount > 2)
@@ -1806,8 +2341,8 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
         CWnd *heading = GetDlgItem(IDC_LABEL_KERB_TICKETS);
         if (!heading->GetWindowPlacement(&headingWndpl))
         {
-            MessageBox("There is a problem getting Leash Heading size!", 
-                       "Error", MB_OK);
+            AfxMessageBox("There is a problem getting Leash Heading size!", 
+                       MB_OK|MB_ICONSTOP);
             return CFormView::PreTranslateMessage(pMsg);;
          }
 
@@ -1815,8 +2350,8 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
         VERIFY(m_pTree);
         if (!m_pTree)
         {
-            MessageBox("There is a problem finding the Ticket Tree!", 
-                       "Errror", MB_OK);
+            AfxMessageBox("There is a problem finding the Ticket Tree!", 
+                       MB_OK|MB_ICONSTOP);
             return CFormView::PreTranslateMessage(pMsg);
         }
 
@@ -1828,8 +2363,8 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
         
         if (!GetWindowPlacement(&wndpl))
         {
-            MessageBox("There is a problem getting Leash Window size!", 
-                       "Error", MB_OK);
+            AfxMessageBox("There is a problem getting Leash Window size!", 
+                       MB_OK|MB_ICONSTOP);
             return CFormView::PreTranslateMessage(pMsg);
         }
 	
@@ -1842,8 +2377,8 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
 
         if (!m_pTree->SetWindowPlacement(&wndpl))
         {
-            MessageBox("There is a problem setting Leash ticket Tree size!", 
-                       "Error", MB_OK);
+            AfxMessageBox("There is a problem setting Leash ticket Tree size!", 
+                       MB_OK|MB_ICONSTOP);
         }
 	
                
@@ -1869,7 +2404,7 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
 
            if (!m_startup)
            {
-           if (ticketinfoKrb4.btickets || ticketinfoKrb5.btickets)
+           if (ticketinfo.Krb4.btickets || ticketinfo.Krb5.btickets)
            { // control scroll bars to TreeView
            #define TICKET_LABEL_TOP 8
            #define TICKET_LABEL_BOTTOM 28
@@ -2037,6 +2572,7 @@ VOID CLeashView::OnAutoRenew()
         m_pApp->WriteProfileInt("Settings", "AutoRenewTickets", TRUE_FLAG);						
         m_autoRenewTickets = TRUE;
     }	
+    m_autoRenewalAttempted = 0;
 }
 
 VOID CLeashView::AlarmBeep()
@@ -2084,17 +2620,29 @@ VOID CLeashView::OnUpdateAfsControlPanel(CCmdUI* pCmdUI)
 
 void CLeashView::OnHelpLeash32()
 {
+#ifdef CALL_HTMLHELP
+	AfxGetApp()->HtmlHelp(HID_LEASH_PROGRAM);
+#else
     AfxGetApp()->WinHelp(HID_LEASH_PROGRAM);
+#endif
 }
 
 void CLeashView::OnHelpKerberos()
 {
+#ifdef CALL_HTMLHELP
+    AfxGetApp()->HtmlHelp(HID_ABOUT_KERBEROS);
+#else
     AfxGetApp()->WinHelp(HID_ABOUT_KERBEROS);
+#endif
 }
 
 void CLeashView::OnHelpWhyuseleash32()
 {
+#ifdef CALL_HTMLHELP
+    AfxGetApp()->HtmlHelp(HID_WHY_USE_LEASH32);
+#else
     AfxGetApp()->WinHelp(HID_WHY_USE_LEASH32);
+#endif
 }
 
 void CLeashView::OnSysColorChange()
@@ -2107,3 +2655,32 @@ void CLeashView::OnSysColorChange()
 }
 
 
+LRESULT
+CLeashView::OnObtainTGTWithParam(WPARAM wParam, LPARAM lParam)
+{
+    LRESULT res = 0;
+    char * param = (char *) GlobalLock((HGLOBAL) lParam);
+    LSH_DLGINFO_EX ldi;
+    ldi.size = sizeof(ldi);
+    ldi.dlgtype = DLGTYPE_PASSWD;
+    ldi.use_defaults = 1;
+    if ( param ) {
+        if ( *param )
+            ldi.title = param;
+        param += strlen(param) + 1;
+        if ( *param )
+            ldi.username = param;
+        param += strlen(param) + 1;
+        if ( *param )
+            ldi.realm = param;
+    } else {
+        ldi.title = "Initialize Ticket";
+        ldi.username = NULL;
+        ldi.realm = NULL;
+    }
+
+    res = pLeash_kinit_dlg_ex(m_hWnd, &ldi);
+    GlobalUnlock((HGLOBAL) lParam);
+    ::SendMessage(m_hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
+    return res;
+}

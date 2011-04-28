@@ -15,6 +15,9 @@ typedef struct {
     LPSTR principal;
 } LSH_DLGINFO, FAR *LPLSH_DLGINFO;
 
+#define LEASH_USERNAME_SZ  64
+#define LEASH_REALM_SZ    192
+
 typedef struct {
 	DWORD size;
     int dlgtype;
@@ -32,7 +35,14 @@ typedef struct {
 	int   renew_till;
 	int   proxiable;
 	int   publicip;
+    // Version 1 of this structure ended here
+    struct {
+        char username[LEASH_USERNAME_SZ];
+        char realm[LEASH_REALM_SZ];
+    } out;
 } LSH_DLGINFO_EX, FAR *LPLSH_DLGINFO_EX;
+
+#define LSH_DLGINFO_EX_V1_SZ (sizeof(DWORD) + 3 * sizeof(LPSTR) * 8 * sizeof(int))
 
 typedef struct {                                                
     char    principal[MAX_K_NAME_SZ]; /* Principal name/instance/realm */
@@ -60,49 +70,18 @@ long FAR Leash_klist(HWND hlist, TICKETINFO FAR *ticketinfo);
 long FAR Leash_kdestroy(void);
 long FAR Leash_get_lsh_errno( LONG FAR *err_val);
 
+long FAR Leash_renew(void);
+long FAR Leash_importable(void);
+long FAR Leash_import(void);
+
 BOOL Leash_set_help_file( char FAR *szHelpFile );
 LPSTR Leash_get_help_file(void);
 
 void Leash_reset_defaults(void);
 
-#include <com_err.h>
-
-/*
- * This is a hack needed because the real com_err.h does
- * not define err_func.  We need it in the case where
- * we pull in the real com_err instead of the krb4 
- * impostor.
- */
-#ifndef _DCNS_MIT_COM_ERR_H
-typedef LPSTR (*err_func)(int, long);
-#endif
-
-#include <krberr.h>
-extern void Leash_initialize_krb_error_func(err_func func,struct et_list **);
-#undef init_krb_err_func
-#define init_krb_err_func(erf) Leash_initialize_krb_error_func(erf,&_et_list)
-
-#include <kadm_err.h>
-
-extern void Leash_initialize_kadm_error_table(struct et_list **);
-#undef init_kadm_err_tbl
-#define init_kadm_err_tbl() Leash_initialize_kadm_error_table(&_et_list)
-#define kadm_err_base ERROR_TABLE_BASE_kadm
-
-#define krb_err_func Leash_krb_err_func
-
-#include <stdarg.h>
-int lsh_com_err_proc (LPSTR whoami, long code,
-		      LPSTR fmt, va_list args);
-void FAR Leash_load_com_err_callback(FARPROC,FARPROC,FARPROC);
-
 #define NO_TICKETS 0
 #define EXPD_TICKETS 2
 #define GOOD_TICKETS 1
-
-#ifndef KRBERR
-#define KRBERR(code) (code + krb_err_base)
-#endif
 
 /* Leash Configuration functions - alters Current User Registry */
 DWORD Leash_get_default_lifetime();
@@ -150,4 +129,5 @@ DWORD Leash_reset_lock_file_locations();
 DWORD Leash_get_default_uppercaserealm();
 DWORD Leash_set_default_uppercaserealm(DWORD onoff);
 DWORD Leash_reset_default_uppercaserealm();
+
 #endif /* LEASHWIN */

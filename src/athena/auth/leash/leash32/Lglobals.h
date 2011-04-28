@@ -16,8 +16,8 @@
 #if !defined LEASHGLOBALS_H
 #define LEASHGLOBALS_H
 
-#include "tlhelp32.h"
-
+#include <tlhelp32.h>
+#include <afxmt.h>
 #include <loadfuncs-krb5.h>
 #include <loadfuncs-krb.h>
 #include <loadfuncs-profile.h>
@@ -31,6 +31,9 @@ typedef struct TicketList
     char* keyEncType;
     int   addrCount;
     char ** addrList;
+    char * name;
+    char * inst;
+    char * realm;
 } TicketList;
 
 // toolhelp functions
@@ -86,7 +89,7 @@ TYPEDEF_FUNC(
     long,
     WINAPIV,
     not_an_API_LeashAFSGetToken,
-    (TicketList **)
+    (TICKETINFO *, TicketList **, char *)
     );
 TYPEDEF_FUNC(
     long,
@@ -173,10 +176,21 @@ extern DECL_FUNC_PTR(Module32Next);
 
 // krb5 functions
 extern DECL_FUNC_PTR(krb5_cc_default_name);
+extern DECL_FUNC_PTR(krb5_cc_set_default_name);
 extern DECL_FUNC_PTR(krb5_get_default_config_files);
 extern DECL_FUNC_PTR(krb5_free_config_files);
 extern DECL_FUNC_PTR(krb5_free_context);
 extern DECL_FUNC_PTR(krb5_get_default_realm);
+extern DECL_FUNC_PTR(krb5_cc_get_principal);
+extern DECL_FUNC_PTR(krb5_build_principal);
+extern DECL_FUNC_PTR(krb5_c_random_make_octets);
+extern DECL_FUNC_PTR(krb5_get_init_creds_password);
+extern DECL_FUNC_PTR(krb5_free_cred_contents);
+extern DECL_FUNC_PTR(krb5_cc_resolve);
+extern DECL_FUNC_PTR(krb5_unparse_name);
+extern DECL_FUNC_PTR(krb5_free_unparsed_name);
+extern DECL_FUNC_PTR(krb5_free_principal);
+extern DECL_FUNC_PTR(krb5_cc_close);
 // extern DECL_FUNC_PTR(krb5_get_host_realm);
 
 // profile functions
@@ -204,10 +218,6 @@ extern DECL_FUNC_PTR(profile_release_string);
 
 #define ADMIN_SERVER "admin_server"
 
-extern TICKETINFO ticketinfo;
-extern TICKETINFO ticketinfoKrb4;
-extern TICKETINFO ticketinfoKrb5;
-
 #define ON  1
 #define OFF 0
 #define TRUE_FLAG		1 
@@ -222,6 +232,8 @@ extern TICKETINFO ticketinfoKrb5;
 #define KRBREALM_FILE	"KRBREALM.CON"
 #define TICKET_FILE		"TICKET.KRB"
 #define WIN95_AUTOEXEC  "C:\\AUTOEXEC.BAT"
+
+#define LEASH_HELP_FILE "leash32.chm"
 
 extern int  config_boolean_to_int(const char *);
 extern BOOL SetRegistryVariable(const CString& regVariable, 
@@ -243,5 +255,14 @@ public:
     BOOL IsValidDirectory();
     BOOL IsValidFile();
 };
+
+class TicketInfoWrapper {
+  public:
+    CCriticalSection lockObj;
+    TICKETINFO Krb4;
+    TICKETINFO Krb5;
+    TICKETINFO Afs;
+};
+extern TicketInfoWrapper ticketinfo;
 
 #endif 

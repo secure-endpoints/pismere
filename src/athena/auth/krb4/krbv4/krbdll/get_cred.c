@@ -11,6 +11,10 @@
 #include <krb.h>
 #include <timeval.h>
 
+#include <leashwin.h>
+static HINSTANCE  m_hLeashDLL = 0;
+#define  LEASHDLL "leashw32.dll"
+
 /*
  * krb_get_cred takes a service name, instance, and realm, and a
  * structure of type CREDENTIALS to be filled in with ticket
@@ -30,20 +34,23 @@ krb_get_cred(
 {
     int tf_status;              /* return value of tf function calls */
     struct timeval local_time;
+    int kinited = 0;
+
+	c->pname[0] = c->pinst[0] = '\0';
+
+check_cache:
 
     gettimeofday(&local_time, 0);
         
     /* Open ticket file and lock it for shared reading */
     if ((tf_status = tf_init(TKT_FILE, R_TKT_FIL)) != KSUCCESS) {
-    	tf_close();
-    	return(tf_status);
+		goto cache_checked;
     }
     /* Copy principal's name and instance into the CREDENTIALS struc c */
     if (((tf_status = tf_get_pname(c->pname)) != KSUCCESS) ||
         ((tf_status = tf_get_pinst(c->pinst)) != KSUCCESS))
     {
-    	tf_close();
-    	return (tf_status);
+    	goto cache_checked;
     }
     /* Search for requested service credentials and copy into c */ 
     while ((tf_status = tf_get_cred(c)) == KSUCCESS) {
@@ -63,9 +70,54 @@ krb_get_cred(
         }
     }
 
+cache_checked:
     tf_close();
+
+    // If we are requesting a tgt, prompt for it
+	if (tf_status != KSUCCESS && !kinited && 
+        strncmp(service, "krbtgt", ANAME_SZ) == 0 && 
+        getenv("KERBEROSLOGIN_NEVER_PROMPT") == NULL) 
+    {
+        static int (*pLeash_kinit_dlg_ex)(HWND hParent, LPLSH_DLGINFO_EX lpdlginfoex) = 0;
+
+        kinited = 1;
+
+        if ( !m_hLeashDLL ) {
+            m_hLeashDLL = LoadLibrary(LEASHDLL);
+            if ( m_hLeashDLL )
+                (FARPROC)pLeash_kinit_dlg_ex=GetProcAddress(m_hLeashDLL,"Leash_kinit_dlg_ex");
+        }
+
+        if ( pLeash_kinit_dlg_ex ) {
+            LSH_DLGINFO_EX dlginfo;
+            int success;
+
+            // copy in the existing username and realm
+            char * pTmp = calloc(1, strlen(c->pname) + strlen(c->pinst) + 2);
+            strcpy(pTmp, c->pname);
+            if (c->pname[0] != 0 && c->pinst[0] != 0)
+            {
+                strcat(pTmp, "/");
+                strcat(pTmp, c->pinst);
+            }
+
+            memset(&dlginfo, 0, sizeof(LSH_DLGINFO_EX));
+            dlginfo.size = sizeof(LSH_DLGINFO_EX);
+            dlginfo.dlgtype = DLGTYPE_PASSWD;
+            dlginfo.title = "Kerberos 4 - Obtain Tickets";
+            dlginfo.username = pTmp;
+            dlginfo.realm = realm;
+            dlginfo.use_defaults = 1;
+
+            success = pLeash_kinit_dlg_ex(GetDesktopWindow(), &dlginfo);
+            free(pTmp);
+            if (success)
+                goto check_cache;
+        }
+    }
+
     if (tf_status == EOF)
-   	return (GC_NOTKT);
+        return (GC_NOTKT);
 
     return(tf_status);
 }

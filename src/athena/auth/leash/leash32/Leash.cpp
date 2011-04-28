@@ -21,6 +21,7 @@
 #include "LeashDoc.h"
 #include "LeashView.h"
 #include "LeashAboutBox.h" 
+#include "Htmlhelp.h"
 
 #include "reminder.h"
 #include "mitwhich.h"
@@ -59,6 +60,7 @@ HINSTANCE CLeashApp::m_hKrbLSA = 0;
 /////////////////////////////////////////////////////////////////////////////
 // CLeashApp
 
+
 BEGIN_MESSAGE_MAP(CLeashApp, CWinApp)
 	//{{AFX_MSG_MAP(CLeashApp)
 	//}}AFX_MSG_MAP
@@ -75,10 +77,26 @@ CLeashApp::CLeashApp()
     m_krbv5_profile = NULL;
     // TODO: add construction code here,
 	// Place all significant initialization in InitInstance
+
+#ifdef USE_HTMLHELP
+#if _MSC_VER >= 1300
+    EnableHtmlHelp();
+#endif
+#endif
 }
 
 CLeashApp::~CLeashApp()
 {
+    if ( m_krbv5_context ) {
+        pkrb5_free_context(m_krbv5_context);
+        m_krbv5_context = NULL;
+    }
+
+    if ( m_krbv5_profile ) {
+        pprofile_release(m_krbv5_profile);
+        m_krbv5_profile = NULL;
+    }
+
  	AfxFreeLibrary(m_hLeashDLL);
 	AfxFreeLibrary(m_hKrb4DLL); 
 	AfxFreeLibrary(m_hKrb5DLL);  
@@ -102,20 +120,36 @@ void CLeashApp::ParseParam (LPCTSTR lpszParam,BOOL bFlag,BOOL bLast)
 	//CCommandLineInfo::ParseParam(lpszParam, bFlag, bLast) ;
 }
 
+extern "C" {
+    LRESULT WINAPI LeashWindowProc( HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+    {
+        switch ( Msg ) {
+        case WM_SYSCOMMAND:
+            if (SC_CLOSE == (wParam & 0xfff0)) {
+                wParam = (wParam & ~0xfff0) | SC_MINIMIZE;
+            }
+            break;
+        }
+        return ::DefWindowProc(hWnd, Msg, wParam, lParam);
+    }
+}
+
 BOOL CLeashApp::InitInstance()
 {
     // NOTE: Not used at this time
     /// Set LEASH_DLL to the path where the Leash.exe is
-    ///char dllFile[MAX_PATH];
-    ///ASSERT(GetModuleFileName(AfxGetInstanceHandle(), dllFile, MAX_PATH));
+    char modulePath[MAX_PATH];
+    ASSERT(GetModuleFileName(AfxGetInstanceHandle(), modulePath, MAX_PATH));
 
-    ///char* pPath = dllFile + strlen(dllFile) - 1;
-    ///while (*pPath != '\\')
-    ///{
-    ///	*pPath = 0;
-    ///	pPath--;   
-    ///}
-	
+    char* pPath = modulePath + strlen(modulePath) - 1;
+    while (*pPath != '\\')
+    {
+    	*pPath = 0;
+    	pPath--;   
+    }
+	strcat(modulePath, LEASH_HELP_FILE);
+    m_helpFile = modulePath;
+
     ///strcat(dllFile, LEASH_DLL);  
     ///m_leashDLL = dllFile;
 		
@@ -135,57 +169,49 @@ BOOL CLeashApp::InitInstance()
             if (0 == stricmp(optionParam+1, "kinit") || 
                 0 == stricmp(optionParam+1, "i"))
             {
-                TicketList* ticketList = NULL;
-                pLeashKRB5GetTickets(&ticketinfoKrb5, &ticketList, 
-                                      &CLeashApp::m_krbv5_context);
-                pLeashFreeTicketList(&ticketList);
-                pLeashKRB4GetTickets(&ticketinfoKrb4, &ticketList);
-                pLeashFreeTicketList(&ticketList);
-                
-#ifdef OLD_DLG
-                LSH_DLGINFO ldi;
-                ldi.principal = ticketinfoKrb4.principal;
-                ldi.dlgtype = DLGTYPE_PASSWD;
-                ldi.title = "Initialize Ticket";
-                
-                if (!pLeash_kinit_dlg(hMsg, &ldi))
-                {
-                    MessageBox(hMsg, "There was an error getting tickets!", 
-                               "Error", MB_OK);
-                    return FALSE;
-                }
-#else
                 LSH_DLGINFO_EX ldi;
 				char username[64]="";
 				char realm[192]="";
 				int i=0, j=0;
-                if ( ticketinfoKrb5.btickets && ticketinfoKrb5.principal[0] ) {
-                    for (; ticketinfoKrb5.principal[i] && ticketinfoKrb5.principal[i] != '@'; i++)
+                TicketList* ticketList = NULL;
+                CSingleLock lock(&ticketinfo.lockObj);
+
+                lock.Lock();
+                pLeashKRB5GetTickets(&ticketinfo.Krb5, &ticketList, 
+                                      &CLeashApp::m_krbv5_context);
+                pLeashFreeTicketList(&ticketList);
+                pLeashKRB4GetTickets(&ticketinfo.Krb4, &ticketList);
+                pLeashFreeTicketList(&ticketList);
+                
+                if ( ticketinfo.Krb5.btickets && ticketinfo.Krb5.principal[0] ) {
+                    for (; ticketinfo.Krb5.principal[i] && ticketinfo.Krb5.principal[i] != '@'; i++)
                     {
-                        username[i] = ticketinfoKrb5.principal[i];
+                        username[i] = ticketinfo.Krb5.principal[i];
                     }
                     username[i] = '\0';
-                    if (ticketinfoKrb5.principal[i]) {
-                        for (i++ ; ticketinfoKrb5.principal[i] ; i++, j++)
+                    if (ticketinfo.Krb5.principal[i]) {
+                        for (i++ ; ticketinfo.Krb5.principal[i] ; i++, j++)
                         {
-                            realm[j] = ticketinfoKrb5.principal[i];
+                            realm[j] = ticketinfo.Krb5.principal[i];
                         }
                     }
                     realm[j] = '\0';
-                } else if ( ticketinfoKrb4.btickets && ticketinfoKrb4.principal[0] ) {
-                    for (; ticketinfoKrb4.principal[i] && ticketinfoKrb4.principal[i] != '@'; i++)
+                } else if ( ticketinfo.Krb4.btickets && ticketinfo.Krb4.principal[0] ) {
+                    for (; ticketinfo.Krb4.principal[i] && ticketinfo.Krb4.principal[i] != '@'; i++)
                     {
-                        username[i] = ticketinfoKrb4.principal[i];
+                        username[i] = ticketinfo.Krb4.principal[i];
                     }
                     username[i] = '\0';
-                    if (ticketinfoKrb4.principal[i]) {
-                        for (i++ ; ticketinfoKrb4.principal[i] ; i++, j++)
+                    if (ticketinfo.Krb4.principal[i]) {
+                        for (i++ ; ticketinfo.Krb4.principal[i] ; i++, j++)
                         {
-                            realm[j] = ticketinfoKrb4.principal[i];
+                            realm[j] = ticketinfo.Krb4.principal[i];
                         }
                     }
                     realm[j] = '\0';
                 }
+                lock.Unlock();
+
 				ldi.size = sizeof(ldi);
 				ldi.dlgtype = DLGTYPE_PASSWD;
                 ldi.title = "Initialize Ticket";
@@ -200,13 +226,19 @@ BOOL CLeashApp::InitInstance()
                                "Error", MB_OK);
                     return FALSE;
                 }
-#endif /* OLD_DLG */
                 return TRUE;
             }
             else if (0 == stricmp(optionParam+1, "ms2mit") || 
                      0 == stricmp(optionParam+1, "import") || 
                      0 == stricmp(optionParam+1, "m"))
             {
+                if (!pLeash_importable()) {
+                    MessageBox(hMsg, 
+                               "The Microsoft Logon Session does not support importing Ticket Getting Tickets!",
+                               "Error", MB_OK);
+                    return FALSE;
+                }
+
                 if (!pLeash_import())
                 {
                     MessageBox(hMsg, 
@@ -274,39 +306,11 @@ BOOL CLeashApp::InitInstance()
     if (!FirstInstance())
         return FALSE;
 
-    // Check to see if there are any tickets in the cache
-    // If not and the Windows Logon Session is Kerberos authenticated attempt an import
-    {
-        TicketList* ticketList = NULL;
-        pLeashKRB5GetTickets(&ticketinfoKrb5, &ticketList, &CLeashApp::m_krbv5_context);
-        pLeashFreeTicketList(&ticketList);
-        pLeashKRB4GetTickets(&ticketinfoKrb4, &ticketList);
-        pLeashFreeTicketList(&ticketList);
-
-        if ( !ticketinfoKrb4.btickets && !ticketinfoKrb5.btickets ) {
-            if ( pLeash_importable() ) {
-                pLeash_import();
-            } 
-            else if (autoInit) {
-                LSH_DLGINFO_EX ldi;
-				ldi.size = sizeof(ldi);
-				ldi.dlgtype = DLGTYPE_PASSWD;
-                ldi.title = "Initialize Ticket";
-                ldi.username = NULL;
-				ldi.realm = NULL;
-                ldi.dlgtype = DLGTYPE_PASSWD;
-                ldi.use_defaults = 1;
-
-                pLeash_kinit_dlg_ex(hMsg, &ldi);
-            }
-        }
-    }
-
-	//register our unique wnd class name to find it later
+    //register our unique wnd class name to find it later
     WNDCLASS wndcls;
     memset(&wndcls, 0, sizeof(WNDCLASS));
     wndcls.style = CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW;
-    wndcls.lpfnWndProc = ::DefWindowProc;
+    wndcls.lpfnWndProc = ::LeashWindowProc;
     wndcls.hInstance = AfxGetInstanceHandle();
     wndcls.hIcon = LoadIcon(IDR_MAINFRAME);
     wndcls.hCursor = LoadCursor(IDC_ARROW);
@@ -329,10 +333,12 @@ BOOL CLeashApp::InitInstance()
 	//  of your final executable, you should remove from the following
 	//  the specific initialization routines you do not need.
 
+#if _MSC_VER < 1300
 #ifdef _AFXDLL
     Enable3dControls();			// Call this when using MFC in a shared DLL
 #else
     Enable3dControlsStatic();	// Call this when linking to MFC statically
+#endif
 #endif
 
     // Registry key under which our settings are stored.
@@ -361,6 +367,36 @@ BOOL CLeashApp::InitInstance()
 	// Dispatch commands specified on the command line
     if (!ProcessShellCommand(cmdInfo))
         return FALSE;
+
+    // Check to see if there are any tickets in the cache
+    // If not and the Windows Logon Session is Kerberos authenticated attempt an import
+    {
+        TicketList* ticketList = NULL;
+        CSingleLock lock(&ticketinfo.lockObj);
+
+        lock.Lock();
+        pLeashKRB5GetTickets(&ticketinfo.Krb5, &ticketList, &CLeashApp::m_krbv5_context);
+        pLeashFreeTicketList(&ticketList);
+        pLeashKRB4GetTickets(&ticketinfo.Krb4, &ticketList);
+        pLeashFreeTicketList(&ticketList);
+        BOOL b_autoinit = !ticketinfo.Krb4.btickets && !ticketinfo.Krb5.btickets;
+        lock.Unlock();
+
+        if ( b_autoinit ) {
+            if ( pLeash_importable() ) {
+                if (pLeash_import()) {
+                    CLeashView::m_importedTickets = 1;
+                    ::PostMessage(m_pMainWnd->m_hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
+                }
+            } 
+            else if ( autoInit ) {
+				AfxBeginThread(InitWorker, m_pMainWnd->m_hWnd);
+            }
+        }
+
+        if (autoInit)
+            IpAddrChangeMonitorInit(m_pMainWnd->m_hWnd);
+    }
 
     VScheckVersion(m_pMainWnd->m_hWnd, AfxGetInstanceHandle());
 
@@ -526,6 +562,7 @@ FUNC_INFO toolhelp_fi[] = {
 
 // krb5 functions
 DECL_FUNC_PTR(krb5_cc_default_name);
+DECL_FUNC_PTR(krb5_cc_set_default_name);
 DECL_FUNC_PTR(krb5_get_default_config_files);
 DECL_FUNC_PTR(krb5_free_config_files);
 DECL_FUNC_PTR(krb5_free_context);
@@ -535,9 +572,18 @@ DECL_FUNC_PTR(krb5_cc_default);
 DECL_FUNC_PTR(krb5_parse_name);
 DECL_FUNC_PTR(krb5_free_principal);
 DECL_FUNC_PTR(krb5_cc_close);
+DECL_FUNC_PTR(krb5_cc_get_principal);
+DECL_FUNC_PTR(krb5_build_principal);
+DECL_FUNC_PTR(krb5_c_random_make_octets);
+DECL_FUNC_PTR(krb5_get_init_creds_password);
+DECL_FUNC_PTR(krb5_free_cred_contents);
+DECL_FUNC_PTR(krb5_cc_resolve);
+DECL_FUNC_PTR(krb5_unparse_name);
+DECL_FUNC_PTR(krb5_free_unparsed_name);
 
 FUNC_INFO krb5_fi[] = {
     MAKE_FUNC_INFO(krb5_cc_default_name),
+    MAKE_FUNC_INFO(krb5_cc_set_default_name),
     MAKE_FUNC_INFO(krb5_get_default_config_files),
     MAKE_FUNC_INFO(krb5_free_config_files),
     MAKE_FUNC_INFO(krb5_free_context),
@@ -547,6 +593,14 @@ FUNC_INFO krb5_fi[] = {
     MAKE_FUNC_INFO(krb5_parse_name),
     MAKE_FUNC_INFO(krb5_free_principal),
     MAKE_FUNC_INFO(krb5_cc_close),
+    MAKE_FUNC_INFO(krb5_cc_get_principal),
+    MAKE_FUNC_INFO(krb5_build_principal),
+    MAKE_FUNC_INFO(krb5_c_random_make_octets),
+    MAKE_FUNC_INFO(krb5_get_init_creds_password),
+    MAKE_FUNC_INFO(krb5_free_cred_contents),
+    MAKE_FUNC_INFO(krb5_cc_resolve),
+    MAKE_FUNC_INFO(krb5_unparse_name),
+    MAKE_FUNC_INFO(krb5_free_unparsed_name),
     END_FUNC_INFO
 };
 
@@ -1153,3 +1207,265 @@ CLeashApp::GetProfileFile(
     
     return FALSE;
 }
+
+#define PROBE_USERNAME               "KERBEROS-KDC-PROBE"
+#define PROBE_PASSWORD_LEN           16
+
+BOOL 
+CLeashApp::ProbeKDC(void)
+{
+    krb5_context ctx=0;
+    krb5_ccache  cc=0;
+    krb5_principal principal = 0;
+    krb5_principal probeprinc = 0;
+    krb5_creds     creds;
+    krb5_error_code code;
+    krb5_data pwdata;
+    char   password[PROBE_PASSWORD_LEN+1];
+    long   success = FALSE;
+
+    if (!pkrb5_init_context)
+        return success;
+
+    memset(&creds, 0, sizeof(creds));
+
+    code = pkrb5_init_context(&ctx);
+    if (code)
+        goto cleanup;
+
+    code = pkrb5_cc_default(ctx, &cc);
+    if (code) 
+        goto cleanup;
+
+    code = pkrb5_cc_get_principal(ctx, cc, &principal);
+    if ( code )
+        code = pkrb5_parse_name(ctx, "foo", &principal);
+    if ( code )
+        goto cleanup;
+
+    code = pkrb5_build_principal( ctx, &probeprinc, 
+                                  krb5_princ_realm(ctx,principal)->length,
+                                  krb5_princ_realm(ctx,principal)->data, 
+                                  PROBE_USERNAME, NULL, NULL);
+    if ( code ) 
+        goto cleanup;
+
+    pwdata.data = password;
+    pwdata.length = PROBE_PASSWORD_LEN;
+    code = pkrb5_c_random_make_octets(ctx, &pwdata);
+    if (code) {
+        int i;
+        for ( i=0 ; i<PROBE_PASSWORD_LEN ; i )
+            password[i] = 'x';
+    }
+    password[PROBE_PASSWORD_LEN] = '\0';
+
+    code = pkrb5_get_init_creds_password(ctx, 
+                                         &creds, 
+                                         probeprinc,
+                                         password, // password
+                                         NULL, // prompter
+                                         0, // prompter data
+                                         0, // start time
+                                         0, // service name
+                                         0  // no options
+                                         );
+
+    switch ( code ) {
+    case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
+    case KRB5KDC_ERR_CLIENT_REVOKED:
+    case KRB5KDC_ERR_CLIENT_NOTYET:
+    case KRB5KDC_ERR_PREAUTH_FAILED:
+    case KRB5KDC_ERR_PREAUTH_REQUIRED:
+    case KRB5KDC_ERR_PADATA_TYPE_NOSUPP:
+        success = TRUE;
+        break;
+    }
+  cleanup:
+    if (creds.client == probeprinc)
+        creds.client = 0;
+    pkrb5_free_cred_contents(ctx, &creds);
+    if (principal)
+        pkrb5_free_principal(ctx,principal);
+    if (probeprinc)
+        pkrb5_free_principal(ctx,probeprinc);
+    if (cc)
+        pkrb5_cc_close(ctx,cc);
+    if (ctx)
+        pkrb5_free_context(ctx);
+    return success;
+}
+
+VOID
+CLeashApp::ObtainTicketsViaUserIfNeeded(HWND hWnd)
+{
+    TicketList* ticketList = NULL;
+    CSingleLock lock(&ticketinfo.lockObj);
+
+    lock.Lock();
+    pLeashKRB5GetTickets(&ticketinfo.Krb5, &ticketList, &CLeashApp::m_krbv5_context);
+    pLeashFreeTicketList(&ticketList);
+    pLeashKRB4GetTickets(&ticketinfo.Krb4, &ticketList);
+    pLeashFreeTicketList(&ticketList);
+
+    if ( !ticketinfo.Krb4.btickets && !ticketinfo.Krb5.btickets ) {
+        lock.Unlock();
+        if ( pLeash_importable() ) {
+            if (pLeash_import())
+                CLeashView::m_importedTickets = 1;
+        } 
+        else if ( ProbeKDC() ) {
+            LSH_DLGINFO_EX ldi;
+            ldi.size = sizeof(ldi);
+            ldi.dlgtype = DLGTYPE_PASSWD;
+            ldi.title = "Initialize Ticket";
+            ldi.username = NULL;
+            ldi.realm = NULL;
+            ldi.dlgtype = DLGTYPE_PASSWD;
+            ldi.use_defaults = 1;
+
+            pLeash_kinit_dlg_ex(hWnd, &ldi);
+        }
+    } else if ( ticketinfo.Krb5.btickets ) {
+        lock.Unlock();
+        if ( CLeashView::m_importedTickets && pLeash_importable() ) {
+            if (pLeash_import())
+                CLeashView::m_importedTickets = 1;
+        } 
+        else if ( ProbeKDC() && !pLeash_renew() ) {
+            LSH_DLGINFO_EX ldi;
+            ldi.size = sizeof(ldi);
+            ldi.dlgtype = DLGTYPE_PASSWD;
+            ldi.title = "Initialize Ticket";
+            ldi.username = NULL;
+            ldi.realm = NULL;
+            ldi.dlgtype = DLGTYPE_PASSWD;
+            ldi.use_defaults = 1;
+
+            pLeash_kinit_dlg_ex(hWnd, &ldi);
+        }
+    } else if ( ticketinfo.Krb4.btickets ) {
+        lock.Unlock();
+        if ( ProbeKDC() ) {
+            LSH_DLGINFO_EX ldi;
+            ldi.size = sizeof(ldi);
+            ldi.dlgtype = DLGTYPE_PASSWD;
+            ldi.title = "Initialize Ticket";
+            ldi.username = NULL;
+            ldi.realm = NULL;
+            ldi.dlgtype = DLGTYPE_PASSWD;
+            ldi.use_defaults = 1;
+
+            pLeash_kinit_dlg_ex(hWnd, &ldi);
+        }
+    } else {
+        lock.Unlock();
+        // Do nothing ...
+    }
+    return;
+}
+
+// IP Change Monitoring Functions
+#include <Iphlpapi.h>
+
+
+DWORD
+CLeashApp::GetNumOfIpAddrs(void)
+{
+    PMIB_IPADDRTABLE pIpAddrTable = 0;
+    ULONG            dwSize;
+    DWORD            code;
+    DWORD            index;
+    DWORD            validAddrs = 0;
+
+    dwSize = 0;
+    code = GetIpAddrTable(NULL, &dwSize, 0);
+    if (code == ERROR_INSUFFICIENT_BUFFER) {
+        pIpAddrTable = (PMIB_IPADDRTABLE) malloc(dwSize);
+        code = GetIpAddrTable(pIpAddrTable, &dwSize, 0);
+        if ( code == NO_ERROR ) {
+            for ( index=0; index < pIpAddrTable->dwNumEntries; index++ ) {
+                if (pIpAddrTable->table[index].dwAddr != 0)
+                    validAddrs++;
+            }
+        }
+        free(pIpAddrTable);
+    }
+    return validAddrs;
+}
+
+UINT
+CLeashApp::IpAddrChangeMonitor(void * hWnd)
+{
+    DWORD Result;
+    DWORD prevNumOfAddrs = GetNumOfIpAddrs();
+    DWORD NumOfAddrs;
+
+    if ( !hWnd )
+        return 0;
+
+    while ( TRUE ) {
+        Result = NotifyAddrChange(NULL,NULL);
+        if ( Result != NO_ERROR ) {
+            // We do not have permission to open the device
+            return 0;
+        }
+        
+        NumOfAddrs = GetNumOfIpAddrs();
+        if ( NumOfAddrs != prevNumOfAddrs ) {
+            // wait for the network state to stablize
+            Sleep(2000);
+            // this call should probably be mutex protected
+            ObtainTicketsViaUserIfNeeded((HWND)hWnd);
+        }
+        prevNumOfAddrs = NumOfAddrs;
+    }
+
+    return 0;
+}
+
+
+DWORD 
+CLeashApp::IpAddrChangeMonitorInit(HWND hWnd)
+{
+    AfxBeginThread(IpAddrChangeMonitor, hWnd);
+    return 0;
+}
+
+UINT
+CLeashApp::InitWorker(void * hWnd)
+{
+    if ( ProbeKDC() ) {
+        LSH_DLGINFO_EX ldi;
+        ldi.size = sizeof(ldi);
+        ldi.dlgtype = DLGTYPE_PASSWD;
+        ldi.title = "Initialize Ticket";
+        ldi.username = NULL;
+        ldi.realm = NULL;
+        ldi.use_defaults = 1;
+
+        pLeash_kinit_dlg_ex((HWND)hWnd, &ldi);
+        ::SendMessage((HWND)hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
+    }
+    return 0;
+}
+
+#ifdef USE_HTMLHELP
+#if _MSC_VER < 1300
+void 
+CLeashApp::WinHelp(DWORD dwData, UINT nCmd)
+{
+	switch (nCmd)
+	{
+		case HELP_CONTEXT: 
+			::HtmlHelp(GetDesktopWindow(), m_helpFile, HH_HELP_CONTEXT, dwData );
+			break;
+		case HELP_FINDER: 
+			::HtmlHelp(GetDesktopWindow(), m_helpFile, HH_DISPLAY_TOPIC, 0);
+            break;	
+	}
+}
+#endif
+#endif
+
+

@@ -1,0 +1,53 @@
+#!perl -w
+
+sub mk_src_do
+{
+    my $OPT = shift || die;
+    my $origdir = shift || die;
+    my $tag = shift || die;
+    my $zdir = shift || die;
+
+    my $core =
+      [
+       'pismere/scripts/build.pl',
+       'pismere/scripts/binplace.pl',
+       'pismere/scripts/tee.pl',
+       'pismere/scripts/build',
+       'pismere/scripts/site/mk.pl',
+       'pismere/scripts/site/mk.pm',
+       '-l pismere/athena',
+       '-l pismere/athena/util',
+       '-l pismere/athena/util/lib',
+       # Needed by atcomat
+       'pismere/athena/util/loadfuncs/loadfuncs.h',
+       'pismere/athena/util/loadfuncs/loadfuncs-krb.h',
+       'pismere/athena/util/loadfuncs/loadfuncs-wshelper.h',
+       # Other libraries
+       'pismere/athena/util/lib/log',
+       'pismere/athena/util/lib/about',
+       'pismere/athena/util/lib/ss',
+       'pismere/athena/util/lib/atcompat',
+       'pismere/athena/util/lib/getopt',
+       'pismere/scripts/site/mk/winzephyr',
+       'pismere/athena/zephyr',
+      ];
+
+    my $site=
+      [
+      ];
+
+    foreach my $m (@$core) {
+	my_system("cvs -d :kserver:cvs.mit.edu:/cvs/pismere co -r $tag $m")
+	  || die;
+    }
+
+    my_move("pismere", $zdir) || die;
+    for my $i (0..$#{$site}) {
+	$$site[$i] =~ s/^pismere/$zdir/;
+    }
+
+    return $site;
+}
+
+1;
+

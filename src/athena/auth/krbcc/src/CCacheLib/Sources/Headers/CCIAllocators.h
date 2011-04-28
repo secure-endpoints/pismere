@@ -12,13 +12,20 @@
 #include "CCache.debug.h"
 
 #if !TARGET_OS_MAC
+
 // If not on macintosh, shared data allocated as any other data
 template <class T>
 class CCISharedDataAllocator:
 	public std::allocator <T> {
 	
 	public:
+	typedef value_type _FARQ *pointer;
+	typedef value_type _FARQ& reference;
+	typedef const value_type _FARQ *const_pointer;
+	typedef const value_type _FARQ& const_reference;
 
+	typedef _SIZT size_type;
+	typedef _PDFT difference_type;
 	template<class U>
      CCISharedDataAllocator (const CCISharedDataAllocator<U>&) throw () {}
 
@@ -29,11 +36,12 @@ class CCISharedDataAllocator:
 
      ~CCISharedDataAllocator () throw () {}
 
-	 template <class U>
+	template <class U>
      struct rebind {
-          typedef CCISharedDataAllocator <U>  other; 
+          typedef CCISharedDataAllocator<U>  other; 
      };
 	};
+
 
 #else // !TARGET_OS_MAC
 

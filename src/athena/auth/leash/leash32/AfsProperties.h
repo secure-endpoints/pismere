@@ -45,6 +45,7 @@ protected:
 	virtual void OnOK();
 	afx_msg void OnRadioAfsEnabled();
 	afx_msg void OnRadioAfsDisabled();
+    afx_msg void OnHelp();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

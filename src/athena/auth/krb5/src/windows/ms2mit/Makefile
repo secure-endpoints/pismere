@@ -116,13 +116,17 @@ DNSLIBS=
 DNSFLAGS=
 !endif
 
+!if defined(KRB5_KFW_COMPILE)
+KFWFLAGS=-DUSE_LEASH=1
+!endif
+
 #
 # The name of the C compiler for the target
 #
 CC=cl
 
 PDB_OPTS=-Fd$(OUTPRE)\ -FD
-CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1
+CPPFLAGS=-I$(SRCTOP)\include -I$(SRCTOP)\include\krb5 $(DNSFLAGS) -DKRB5_PRIVATE=1 -DWIN32_LEAN_AND_MEAN -DKRB5_DEPRECATED=1 $(KFWFLAGS)
 CCOPTS=-nologo /W3 $(PDB_OPTS) $(DLL_FILE_DEF)
 LOPTS=-nologo -incremental:no
 
@@ -231,7 +235,7 @@ PROG_LIBPATH=-L$(TOPLIBD) -L$(KRB5_LIBDIR)
 all-windows:: $(OUTPRE)ms2mit.exe
 
 $(OUTPRE)ms2mit.exe: $(OUTPRE)ms2mit.obj
-    link $(EXE_LINKOPTS) -out:$@ $(OUTPRE)ms2mit.obj user32.lib secur32.lib advapi32.lib $(KLIB) $(CLIB)
+    link $(EXE_LINKOPTS) -out:$@ $(OUTPRE)ms2mit.obj user32.lib advapi32.lib $(KLIB) $(CLIB)
 
 install::
 	copy $(OUTPRE)ms2mit.exe $(DESTDIR)

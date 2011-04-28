@@ -4,11 +4,11 @@
 
 #if CCache_ContainsSharedStaticData
 template <class T>
-CCISharedStaticData <CCIUniqueGlobally <T>::Globals>	CCIUniqueGlobally <T>::sGlobals;
+CCISharedStaticData <typename CCIUniqueGlobally <T>::Globals>	CCIUniqueGlobally <T>::sGlobals;
 #endif
 
 template <class T>
-CCISharedStaticDataProxy <CCIUniqueGlobally <T>::Globals>
+CCISharedStaticDataProxy <typename CCIUniqueGlobally <T>::Globals>
 		CCIUniqueGlobally <T>::sGlobalsProxy = CCIUniqueGlobally <T>::sGlobals;
 
 #include "CCICCacheData.h"
