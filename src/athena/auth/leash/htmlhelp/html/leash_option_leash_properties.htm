@@ -36,17 +36,26 @@ server
 succeeds, Leash would tell you where it found the time.<span style="">&nbsp;
 </span>See the Synchronize Time command for more
 information.</p>
-<p class="MsoNormal">The Kerberos libraries depend on configuration
-files for
-their proper operation.<span style="">&nbsp; </span>When <b>Create
-Missing Configuration Files</b> is checked, Leash will construct
-replacements
-for missing configuration files upon startup.<span style="">&nbsp;
-</span>This is performed by extracting Kerberos configuration
-information from
-the local Windows registry and the Domain Name System.<span style="">&nbsp;
-</span>The contents of the created file may then be
-edited using the <b>Kerberos Properties Dialog</b>.<o:p>&nbsp;</o:p></p>
+<p class="MsoNormal">
+</p>
+<p class="MsoNormal">The <b style="">Automatic MSLSA
+Ticket Importation</b> radio buttons allow you to configure how Leash
+interacts
+with the Microsoft Kerberos Authentication Provider.<span style="">&nbsp;
+</span>Leash will automatically import Kerberos
+Tickets from the Microsoft LSA at startup depending upon the selected
+option
+and whether or not the Kerberos Authentication Provider was used for
+Windows
+Logon authorization.<span style="">&nbsp; </span><b style="">Never</b>
+means do not import tickets from
+the MSLSA; <b style="">Always</b> means do import
+tickets from the MSLSA; and <b style="">When MSLSA
+Principal matches Default Realm</b> means import tickets from the MSLSA
+only if
+the Kerberos principal belongs to the Kerberos Realm specified within
+the <u style="">Kerberos Properties Dialog.</u><o:p></o:p></p>
+<p class="MsoNormal"><o:p></o:p></p>
 <p class="MsoNormal">When <b>Request Kerberos 4 credentials</b> is
 checked, Leash
 will attempt to retrieve Kerberos 4 credentials when ticket

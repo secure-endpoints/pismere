@@ -129,5 +129,11 @@ DWORD Leash_reset_lock_file_locations();
 DWORD Leash_get_default_uppercaserealm();
 DWORD Leash_set_default_uppercaserealm(DWORD onoff);
 DWORD Leash_reset_default_uppercaserealm();
+DWORD Leash_get_default_mslsa_import();
+DWORD Leash_set_default_mslsa_import(DWORD onoffmatch);
+DWORD Leash_reset_default_mslsa_import();
+DWORD Leash_get_default_preserve_kinit_settings();
+DWORD Leash_set_default_preserve_kinit_settings(DWORD onoff);
+DWORD Leash_reset_default_preserve_kinit_settings();
 
 #endif /* LEASHWIN */

@@ -16,8 +16,6 @@
 #if !defined(AFX_LeashVIEW_H__6F45AD99_561B_11D0_8FCF_00C04FC2A0C2__INCLUDED_)
 #define AFX_LeashVIEW_H__6F45AD99_561B_11D0_8FCF_00C04FC2A0C2__INCLUDED_
 
-#include <afxmt.h>
-
 #if _MSC_VER >= 1000
 #pragma once
 #endif // _MSC_VER >= 1000
@@ -118,7 +116,6 @@ private:
     static INT	        m_alreadyPlayedDisplayCount; 
     static LONG			m_ticketTimeLeft;    
 	static BOOL			m_lowTicketAlarmSound;
-    static CCriticalSection    m_tgsReqCriticalSection;
     static LONG         m_timerMsgNotInProgress;
 
 	VOID ResetTreeNodes();

@@ -212,7 +212,7 @@ extern DECL_FUNC_PTR(Module32First);
 extern DECL_FUNC_PTR(Module32Next);
 
 /* The following definitions are summarized from KRB4, KRB5, Leash32, and 
- * Leashw32 modules.  They are current as of KfW 2.5 Beta 4.  There is no
+ * Leashw32 modules.  They are current as of KfW 2.6.2.  There is no
  * guarrantee that changes to other modules will be updated in this list.
  */
 
@@ -227,6 +227,7 @@ extern DECL_FUNC_PTR(Module32Next);
 #define LEASH_SETTINGS_REGISTRY_VALUE_UPPERCASEREALM   "UpperCaseRealm"
 #define LEASH_SETTINGS_REGISTRY_VALUE_TIMEHOST         "TIMEHOST"
 #define LEASH_SETTINGS_REGISTRY_VALUE_CREATE_MISSING_CFG "CreateMissingConfig"
+#define LEASH_SETTINGS_REGISTRY_VALUE_MSLSA_IMPORT     "MsLsaImport"
 
 /* These values are defined and used within Leashw32.dll */
 #define LEASH_REGISTRY_KEY_NAME "Software\\MIT\\Leash"
@@ -244,6 +245,7 @@ extern DECL_FUNC_PTR(Module32Next);
 #define LEASH_REGISTRY_VALUE_RENEW_MIN "renew_min"
 #define LEASH_REGISTRY_VALUE_RENEW_MAX "renew_max"
 #define LEASH_REGISTRY_VALUE_LOCK_LOCATION "lock_file_locations"
+#define LEASH_REGISTRY_VALUE_PRESERVE_KINIT "preserve_kinit_options"
 
 /* must match values used within krbv4w32.dll */
 #define KRB4_REGISTRY_KEY_NAME "Software\\MIT\\Kerberos4"

@@ -13,8 +13,10 @@ clean::
 	@if exist $(ERR) del $(ERR)
 
 rename:
-	@if exist $(TARGET) ren $(TARGET) $(TARGET)
-	@if exist $(ERR) ren $(ERR) $(ERR)
+	@if exist $(TARGET) ren $(TARGET) $(TARGET).tmp
+	@if exist $(TARGET).tmp ren $(TARGET).tmp $(TARGET)
+	@if exist $(ERR) ren $(ERR) $(ERR).tmp
+	@if exist $(ERR).tmp ren $(ERR).tmp $(ERR)
 
 HC=hcw /a /c /m /e
 

@@ -18,7 +18,8 @@ tabbed window. The box within this window has four tabs: <br>
 </p>
 <ul>
   <li>Default Realm Configuration</li>
-  <li>Ticket Lifetime</li>
+  <li>Ticket Lifetime and Other Initialization Options<br>
+  </li>
   <li>Realm/Server Mapping<br>
   </li>
   <li>DNS/Realm Mapping.</li>
@@ -42,11 +43,13 @@ the name of your local machine.&nbsp; The <span
  style="font-weight: bold;">Your Computer's Domain Name</span> field
 displays the domain to which your local machine currently belongs.<br>
 </p>
-<p><i>Ticket Lifetime:<br>
+<p><i>Ticket Lifetime and Other Initialization Options:<br>
 <img style="width: 623px; height: 558px;" alt="Ticket Lifetime"
  title="Ticket Lifetime" src="..%5CImages%5CLeash_properties_krb_2.jpg"><br>
 </i></p>
-<p>There are two expiration times associated with Kerberos
+<p>
+</p>
+<>There are two expiration times associated with Kerberos
 tickets.&nbsp; The first specifies the length of the time period during
 which the tickets are valid for use.&nbsp; The second specifies the
 length of the renewable lifetime.&nbsp; Valid Kerberos tickets may have
@@ -62,6 +65,27 @@ dialog box when constructing the Lifetime and Renewable Lifetime
 sliders.&nbsp; These sliders can be used to modify the requested ticket
 lifetimes when Kerberos tickets are initialized.<br>
 <br>
+When the <b>Request Kerberos 4
+credentials</b> button is checked, Leash will attempt to retrieve
+Kerberos 4
+credentials when ticket initialization, renewal, or importation is
+performed.<span style="">&nbsp; </span>Leash will attempt a Kerberos
+5 to Kerberos 4 conversion and if that fails an initial Kerberos 4
+ticket
+request will be generated.<span style="">&nbsp; </span>Kerberos
+realms are increasingly configured to support on Kerberos 5.<span
+ style="">&nbsp; </span>If the realms you use do not support Kerberos
+4 it is suggested that this button be unchecked.</>
+<><o:p>&nbsp;</o:p><br>
+<br>
+When the <b style="">Preserve Ticket Initialization Options</b> button
+is checked, changes
+to the Lifetime, Renewable Lifetime, and Kerberos 5 ticket properties
+on the
+Ticket Initialization Dialog will be saved as the new default values
+for the
+current user. <o:p></o:p></>
+<p>
 </p>
 <p><i>Realm/Server Mapping</i>:<br>
 <img style="width: 623px; height: 558px;" alt="Realm / Server Mapping"

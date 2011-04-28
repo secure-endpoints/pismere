@@ -35,7 +35,7 @@ CLeashProperties::CLeashProperties(CWnd* pParent /*=NULL*/)
 	: CDialog(CLeashProperties::IDD, pParent)
 {
     m_initMissingFiles = m_newMissingFiles = 0;
-    m_initUseKrb4 = m_newUseKrb4 = 0;
+    dw_initMslsaImport = dw_newMslsaImport = 0;
 
 	//{{AFX_DATA_INIT(CLeashProperties)
 		// NOTE: the ClassWizard will add member initialization here
@@ -56,8 +56,10 @@ BEGIN_MESSAGE_MAP(CLeashProperties, CDialog)
 	//{{AFX_MSG_MAP(CLeashProperties)
 	ON_BN_CLICKED(IDC_BUTTON_LEASHINI_HELP2, OnHelp)
     ON_BN_CLICKED(IDC_CHECK_CREATE_MISSING_CFG, OnCheckMissingCfg)
-	ON_BN_CLICKED(IDC_CHECK_REQUEST_KRB4, OnCheckUseKrb4)
     ON_BN_CLICKED(IDC_RESET_DEFAULTS, OnButtonResetDefaults)
+    ON_BN_CLICKED(IDC_RADIO_MSLSA_IMPORT_OFF, OnRadioMslsaNever)
+    ON_BN_CLICKED(IDC_RADIO_MSLSA_IMPORT_ON,  OnRadioMslsaAlways)
+    ON_BN_CLICKED(IDC_RADIO_MSLSA_IMPORT_MATCH, OnRadioMslsaMatchingRealm)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -82,11 +84,20 @@ BOOL CLeashProperties::OnInitDialog()
             pApp->GetProfileInt("Settings", "CreateMissingConfig", FALSE_FLAG);
     CheckDlgButton(IDC_CHECK_CREATE_MISSING_CFG, m_initMissingFiles);
 
-    m_initUseKrb4 = m_newUseKrb4 = (CLeashApp::m_hKrb4DLL ? pLeash_get_default_use_krb4() : 0); 
-	CheckDlgButton(IDC_CHECK_REQUEST_KRB4, m_initUseKrb4);
-    if ( !CLeashApp::m_hKrb4DLL )
-        GetDlgItem(IDC_CHECK_REQUEST_KRB4)->EnableWindow(FALSE);
-    return TRUE;  
+    dw_initMslsaImport = dw_newMslsaImport = pLeash_get_default_mslsa_import();
+    switch ( dw_initMslsaImport ) {
+    case 0:
+        CheckDlgButton(IDC_RADIO_MSLSA_IMPORT_OFF,TRUE);
+        break;
+    case 1:
+        CheckDlgButton(IDC_RADIO_MSLSA_IMPORT_ON,TRUE);
+        break;
+    case 2:
+        CheckDlgButton(IDC_RADIO_MSLSA_IMPORT_MATCH,TRUE);
+        break;
+    }
+
+    return TRUE;
 }
 
 void CLeashProperties::OnOK() 
@@ -126,8 +137,9 @@ void CLeashProperties::OnOK()
         if ( m_newMissingFiles )
             CLeashApp::ValidateConfigFiles();
     }   
-	if ( m_initUseKrb4 != m_newUseKrb4 ) {
-		pLeash_set_default_use_krb4(m_newUseKrb4);
+
+    if ( dw_initMslsaImport != dw_newMslsaImport ) {
+		pLeash_set_default_mslsa_import(dw_newMslsaImport);
 	}
 
 	CDialog::OnOK();
@@ -138,9 +150,19 @@ void CLeashProperties::OnCheckMissingCfg()
     m_newMissingFiles = (BOOL)IsDlgButtonChecked(IDC_CHECK_CREATE_MISSING_CFG);
 }
 
-void CLeashProperties::OnCheckUseKrb4()
+void CLeashProperties::OnRadioMslsaNever()
 {
-    m_newUseKrb4 = (BOOL)IsDlgButtonChecked(IDC_CHECK_REQUEST_KRB4);
+    dw_newMslsaImport = 0;
+}
+
+void CLeashProperties::OnRadioMslsaAlways()
+{
+    dw_newMslsaImport = 1;
+}
+
+void CLeashProperties::OnRadioMslsaMatchingRealm()
+{
+    dw_newMslsaImport = 2;
 }
 
 void CLeashProperties::OnHelp() 

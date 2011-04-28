@@ -88,6 +88,12 @@ EXPORTS
 	Leash_get_default_uppercaserealm
 	Leash_set_default_uppercaserealm
     Leash_reset_default_uppercaserealm
+	Leash_get_default_mslsa_import
+	Leash_set_default_mslsa_import
+    Leash_reset_default_mslsa_import
+	Leash_get_default_preserve_kinit_settings
+	Leash_set_default_preserve_kinit_settings
+    Leash_reset_default_preserve_kinit_settings
     Leash_import
     Leash_importable
     Leash_renew

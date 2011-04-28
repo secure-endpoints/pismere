@@ -33,8 +33,8 @@ private:
 	CHAR sysDir[MAX_PATH];
     BOOL m_initMissingFiles;
     BOOL m_newMissingFiles;
-    BOOL m_initUseKrb4;
-    BOOL m_newUseKrb4;
+    DWORD dw_initMslsaImport;
+    DWORD dw_newMslsaImport;
 
 // Construction
 public:
@@ -64,7 +64,9 @@ protected:
 	virtual void OnOK();
 	afx_msg void OnHelp();
     afx_msg void OnCheckMissingCfg();
-    afx_msg void OnCheckUseKrb4();
+    afx_msg void OnRadioMslsaNever();
+    afx_msg void OnRadioMslsaAlways();
+    afx_msg void OnRadioMslsaMatchingRealm();
     afx_msg void OnButtonResetDefaults();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()

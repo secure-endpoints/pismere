@@ -1,5 +1,5 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
+// Microsoft Visual C++ generated include file.
 // Used by Leash.rc
 //
 #define IDD_ABOUTBOX                    100
@@ -87,7 +87,6 @@
 #define IDI_LEASH_TICKET_ADDRESS        262
 #define IDI_LEASH_TICKET_SESSION        263
 #define IDI_LEASH_TICKET_ENCRYPTION     264
-
 #define IDC_PROGRESS1                   1000
 #define IDC_TRACKBAR1                   1001
 #define IDC_TRACKBAR2                   1002
@@ -259,6 +258,7 @@
 #define IDC_CHECK1                      1172
 #define IDC_CHECK_REQUEST_KRB4          1172
 #define IDC_CHECK2                      1173
+#define IDC_CHECK_PRESERVE_KINIT_OPTIONS 1173
 #define IDC_CHECK3                      1174
 #define IDC_SLIDER2                     1175
 #define IDC_STATIC_LIFETIME_VALUE       1176
@@ -283,6 +283,10 @@
 #define IDC_EDIT_RENEW_MAX_M            1200
 #define IDC_EDIT_LIFETIME_M             1201
 #define IDC_EDIT_RENEWTILL_M            1202
+#define IDC_RADIO_MSLSA_IMPORT_OFF      1203
+#define IDC_RADIO_MSLSA_IMPORT_ON       1204
+#define IDC_RADIO_MSLSA_IMPORT_MATCH    1205
+#define IDC_STATIC_LEASH_MSLSA          1206
 #define IDD_FILESPECIAL                 1536
 #define IDD_LEASH_FILESPECIAL           1536
 #define IDD_KRB_PROP_MISC               1537
@@ -326,7 +330,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        241
 #define _APS_NEXT_COMMAND_VALUE         32810
-#define _APS_NEXT_CONTROL_VALUE         1201
+#define _APS_NEXT_CONTROL_VALUE         1207
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

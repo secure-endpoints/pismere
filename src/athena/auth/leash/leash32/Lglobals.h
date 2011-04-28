@@ -17,7 +17,6 @@
 #define LEASHGLOBALS_H
 
 #include <tlhelp32.h>
-#include <afxmt.h>
 #include <loadfuncs-krb5.h>
 #include <loadfuncs-krb.h>
 #include <loadfuncs-profile.h>
@@ -143,6 +142,10 @@ extern DECL_FUNC_PTR(Leash_get_lock_file_locations);
 extern DECL_FUNC_PTR(Leash_set_lock_file_locations);
 extern DECL_FUNC_PTR(Leash_get_default_uppercaserealm);
 extern DECL_FUNC_PTR(Leash_set_default_uppercaserealm);
+extern DECL_FUNC_PTR(Leash_get_default_mslsa_import);
+extern DECL_FUNC_PTR(Leash_set_default_mslsa_import);
+extern DECL_FUNC_PTR(Leash_get_default_preserve_kinit_settings);
+extern DECL_FUNC_PTR(Leash_set_default_preserve_kinit_settings);
 extern DECL_FUNC_PTR(Leash_import);
 extern DECL_FUNC_PTR(Leash_importable);
 extern DECL_FUNC_PTR(Leash_renew);
@@ -181,6 +184,7 @@ extern DECL_FUNC_PTR(krb5_get_default_config_files);
 extern DECL_FUNC_PTR(krb5_free_config_files);
 extern DECL_FUNC_PTR(krb5_free_context);
 extern DECL_FUNC_PTR(krb5_get_default_realm);
+extern DECL_FUNC_PTR(krb5_free_default_realm);
 extern DECL_FUNC_PTR(krb5_cc_get_principal);
 extern DECL_FUNC_PTR(krb5_build_principal);
 extern DECL_FUNC_PTR(krb5_c_random_make_octets);
@@ -258,7 +262,7 @@ public:
 
 class TicketInfoWrapper {
   public:
-    CCriticalSection lockObj;
+    HANDLE     lockObj;
     TICKETINFO Krb4;
     TICKETINFO Krb5;
     TICKETINFO Afs;

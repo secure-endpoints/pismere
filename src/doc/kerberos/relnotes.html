@@ -1,19 +1,19 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-  <title>Release Notes for Kerberos for Windows 2.6</title>
+  <title>Release Notes for Kerberos for Windows 2.6.2</title>
   <meta content="Jeffrey Altman &lt;jaltman@mit.edu&gt;" name="author">
 </head>
 <body>
 <center>
-<h1>Kerberos for Windows 2.6.1<br>
+<h1>Kerberos for Windows 2.6.2<br>
 </h1>
 <p>
 </p>
 <h2>Release Notes</h2>
 <p>
 </p>
-<h3>14 April 2004</h3>
+<h3>24 May 2004</h3>
 </center>
 <h3>Table of Contents</h3>
 <ul type="disc">
@@ -107,6 +107,51 @@ same thing.
 <p></p>
 <hr><a name="whatsnew"></a>
 <h2>What's New in Kerberos for Windows 2.6</h2>
+<h3>2.6.2</h3>
+<ul>
+  <li>The behavior of the Leash automatic importing of credentials from
+the MSLSA credentials cache is now configurable.&nbsp; Options include
+never, always, and only if the MSLSA principal belongs to the default
+realm as specified in krb5.ini.</li>
+</ul>
+<ul>
+  <li>Keberos Ticket Initialization options modified within the Ticket
+Initialization dialog may now optionally be preserved.&nbsp; <br>
+  </li>
+</ul>
+<ul>
+  <li>A memory access error introduced in 2.6.1 has been
+eliminated.&nbsp; This problem was traced to errors in implementation
+of the MFC CSingleLock class.<br>
+  </li>
+</ul>
+<h3>2.6.1</h3>
+<ul>
+  <li>Kerberos 5 library updated to release 1.3.3.&nbsp; See the
+Kerberos 5 README file for details of the changes in the
+Kerberos 5 version 1.3.3 distribution. </li>
+</ul>
+<ul>
+  <li>Fixes a compatibility issue with Windows 98 and
+ME discovered after the 2.6 release.<br>
+  </li>
+</ul>
+<ul>
+  <li>Leash and aklog obtain AFS tokens via Kerberos 5 without
+requiring the use of a krb524 daemon.<br>
+  </li>
+</ul>
+<ul>
+  <li>The Kerberos 5 command line utilities kvno.exe and kpasswd.exe
+are now included in the distribution.<br>
+  </li>
+</ul>
+<ul>
+  <li>The Leash Change Password function once again works when
+passwords are expired.<br>
+  </li>
+</ul>
+<h3>2.6.0</h3>
 <ul>
   <li>Leash has been turned into a System Tray application</li>
 </ul>
@@ -131,10 +176,6 @@ Kerberos 4 credentials.<br>
 <ul>
   <li>krb5_cc api support for accessing the Microsoft Kerberos LSA
 cache in read-only mode.&nbsp; Use a ccache name of "MSLSA:".<br>
-  </li>
-</ul>
-<ul>
-  <li>Kerberos 5 library updated to release 1.3.3 (kfw 2.6.1)<br>
   </li>
 </ul>
 <ul>
@@ -165,26 +206,8 @@ avoid several problems related to initializing the list of DNS
 servers.&nbsp; Whenever possible the operating system versions of
 resolver functions are used instead of the internal versions.</li>
 </ul>
-<ul>
-  <li>The 2.6.1 release fixes a compatibility issue with Windows 98 and
-ME discovered after the 2.6 release.<br>
-  </li>
-</ul>
-<ul>
-  <li>Leash and aklog obtain AFS tokens via Kerberos 5 without
-requiring the use of a krb524 daemon. (kfw 2.6.1)<br>
-  </li>
-</ul>
-<ul>
-  <li>The Kerberos 5 command line utilities kvno.exe and kpasswd.exe
-are now included in the distribution. (kfw 2.6.1)</li>
-</ul>
-<ul>
-  <li>The Leash Change Password function once again works when
-passwords are expired. (kfw 2.6.1)<br>
-  </li>
-</ul>
-<h3>What's New since Kerberos for Windows 2.5<br>
+<h3>What's New in Kerberos for Windows 2.5</h3>
+<h3>2.5.1<br>
 </h3>
 <ul>
   <li>The order of Kerberos 5 and Kerberos 4 tickets in the Leash
@@ -205,7 +228,7 @@ check password, kinit, and change password</li>
 in preference to obtaining a Kerberos 4 AFS Ticket<br>
   </li>
 </ul>
-<h3>What's New since Kerberos for Windows 2.1<br>
+<h3>2.5.0 (includes all changes since 2.1)<br>
 </h3>
 <ul>
   <p> </p>
@@ -410,8 +433,7 @@ functions to alter Leash and Kerberos behavior</li>
   <li>New Leash End User documentation provided in PDF format<br>
   </li>
 </ul>
-See the README file for Kerberos 5 for details of the changes in the
-Kerberos 5 version 1.3.2 distribution.<!-- ---------------------------------------------------------------------- -->
+<!-- ---------------------------------------------------------------------- -->
 <p></p>
 <hr><a name="requirements"></a>
 <h2>System Requirements</h2>
@@ -1484,7 +1506,7 @@ or in the SDK at <span style="font-weight: bold;">inc/leash/leashwin.h</span>.<b
 <pre>Leash_set_default_renew_max</pre>
 <pre>Leash_reset_default_renew_max<br><br>Leash_get_lock_file_locations</pre>
 <pre>Leash_set_lock_file_locations</pre>
-<pre>Leash_reset_lock_file_locations<br><br>Leash_get_default_uppercaserealm<br><br>Leash_set_default_uppercaserealm<br><br>Leash_reset_default_uppercaserealm<br><br>Leash_get_lsh_errno</pre>
+<pre>Leash_reset_lock_file_locations<br><br>Leash_get_default_uppercaserealm<br><br>Leash_set_default_uppercaserealm<br><br>Leash_reset_default_uppercaserealm<br><br>Leash_get_default_mslsa_import<br><br>Leash_set_default_mslsa_import<br><br>Leash_reset_default_mslsa_import<br><br>Leash_get_default_preserve_kinit_settings<br><br>Leash_set_default_preserve_kinit_settings<br><br>Leash_reset_default_preserve_kinit_settings<br><br>Leash_get_lsh_errno</pre>
 <pre>initialize_lsh_error_table</pre>
 <pre>lsh_com_err_proc</pre>
 <pre>Leash_initialize_krb_error_func</pre>
@@ -1508,6 +1530,10 @@ or in the SDK at <span style="font-weight: bold;">inc/leash/leashwin.h</span>.<b
 <h4>lock configuration files location ( 0 or 1 )<br>
 </h4>
 <pre>   1. Use value from registry <br>      (HKCU\Software\MIT\Leash,lock_file_locations) if present.<br>   2. Otherwise, use value from registry <br>      (HKLM\Software\MIT\Leash,lock_file_locations) if present.<br>   3. Otherwise, use resource string if present.<br>   4. Otherwise, default to 0.<br></pre>
+<h4>automatic importation of MSLSA credentials ( 0 - never, 1 - always,
+or 2 - matching realms )<br>
+</h4>
+<pre>   1. Use value from registry <br>      (HKCU\Software\MIT\Leash32,MsLsaImport) if present.<br>   2. Otherwise, use value from registry <br>      (HKLM\Software\MIT\Leash,MsLsaImport) if present.<br>   3. Otherwise, use resource string if present.<br>   4. Otherwise, default to 2.<br></pre>
 <h3>Leash32 DLL <br>
 </h3>
 <h4>default lifetime ( minutes )<br>
@@ -1552,7 +1578,9 @@ or in the SDK at <span style="font-weight: bold;">inc/leash/leashwin.h</span>.<b
 <h4>upper case realm:</h4>
 <pre>   1. Use value from registry <br>      (HKCU\Software\MIT\Leash32\Settings,uppercaserealm) if present.<br>   2. Otherwise, use value from registry <br>      (HKLM\Software\MIT\Leash32\Settings,uppercaserealm) if present.<br>   3. Otherwise, use resource string if present.<br>   4. Otherwise, default to 1.<br></pre>
 <h4>timesync host:</h4>
-<pre>   1. Use TIMEHOST environment value if defined.<br>   2. Otherwise, use value from registry <br>      (HKCU\Software\MIT\Leash32\Settings,timehost) if present.<br>   3. Otherwise, use value from registry <br>      (HKLM\Software\MIT\Leash32\Settings,timehost) if present.<br>   4. Otherwise, use resource string if present.<br>   5. Otherwise, default to #defined value "time".<br><br><br></pre>
+<pre>   1. Use TIMEHOST environment value if defined.<br>   2. Otherwise, use value from registry <br>      (HKCU\Software\MIT\Leash32\Settings,timehost) if present.<br>   3. Otherwise, use value from registry <br>      (HKLM\Software\MIT\Leash32\Settings,timehost) if present.<br>   4. Otherwise, use resource string if present.<br>   5. Otherwise, default to #defined value "time".<br></pre>
+<h4>Preserve ticket initialization dialog options:</h4>
+<pre>   1. Otherwise, use value from registry <br>      (HKCU\Software\MIT\Leash,preserve_kinit_options) if present.<br>   2. Otherwise, use value from registry <br>      (HKLM\Software\MIT\Leash,preserve_kinit_options) if present.<br>   4. Otherwise, use resource string if present.<br>   5. Otherwise, default to 0.</pre>
 <h3>Kerberos 4:</h3>
 <h4>A. location of krbrealm &amp; krbconf:</h4>
 <pre>   1. First, check for environment overrides:<br>      a. Use %KRB4_KRB.REALMS% as full filename for realms file if defined.<br>      a. Use %KRB4_KRB.CONF% as full filename for config file if defined.<br>      b. Otherwise, look for krbrealm.con and krb.con in dir %KRB4_CONFIG%.<br>   2. If nothing defined so far, look in registry:<br>      a. HKCU\Software\MIT\Kerberos4,krb.realms for realms full pathname.<br>      a. HKCU\Software\MIT\Kerberos4,krb.conf for config full pathname.<br>      b. HKCU\Software\MIT\Kerberos4,config as dir for both files.<br>      c. HKLM\Software\MIT\Kerberos4,krb.realms for realms full pathname .<br>      c. HKLM\Software\MIT\Kerberos4,krb.conf for config full pathname.<br>      d. HKLM\Software\MIT\Kerberos4,configdir as dir for both files.<br>   3. If any of the above are set, use it even if the files are not there.<br>      If none of them are set, use the old krb4 search.<br><br></pre>
@@ -1861,7 +1889,8 @@ looking at its release history.
   <li>Significant enhancements to Leash GUI application functionality</li>
   <li>Leashw32 API enhanced</li>
   <li>Numerous new registry settings are supported</li>
-  <li>Leash End user documentation provided in PDF format<br>
+  <li>Leash End user documentation provided in PDF format</li>
+  <li>Last release to support Windows 95<br>
   </li>
 </ul>
 <h3>KfW 2.2</h3>

@@ -21,7 +21,6 @@
 
 #endif // _AFX_NO_AFXCMN_SUPPORT
 
-
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Developer Studio will insert additional declarations immediately before the previous line.
 

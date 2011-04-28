@@ -21,7 +21,6 @@
 #include "LeashDoc.h"
 #include "LeashView.h"
 #include "LeashAboutBox.h" 
-#include "Htmlhelp.h"
 
 #include "reminder.h"
 #include "mitwhich.h"
@@ -44,6 +43,9 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 extern "C" int VScheckVersion(HWND hWnd, HANDLE hThisInstance);
+
+TicketInfoWrapper ticketinfo;
+HANDLE m_tgsReqMutex = 0;
 
 HWND CLeashApp::m_hProgram = 0;
 HINSTANCE CLeashApp::m_hLeashDLL = 0; 
@@ -78,6 +80,9 @@ CLeashApp::CLeashApp()
     // TODO: add construction code here,
 	// Place all significant initialization in InitInstance
 
+    ticketinfo.lockObj = CreateMutex(NULL, FALSE, NULL);
+    m_tgsReqMutex = CreateMutex(NULL, FALSE, NULL);
+
 #ifdef USE_HTMLHELP
 #if _MSC_VER >= 1300
     EnableHtmlHelp();
@@ -96,6 +101,9 @@ CLeashApp::~CLeashApp()
         pprofile_release(m_krbv5_profile);
         m_krbv5_profile = NULL;
     }
+
+    CloseHandle(ticketinfo.lockObj);
+    CloseHandle(m_tgsReqMutex);
 
  	AfxFreeLibrary(m_hLeashDLL);
 	AfxFreeLibrary(m_hKrb4DLL); 
@@ -174,9 +182,9 @@ BOOL CLeashApp::InitInstance()
 				char realm[192]="";
 				int i=0, j=0;
                 TicketList* ticketList = NULL;
-                CSingleLock lock(&ticketinfo.lockObj);
+                if (WaitForSingleObject( ticketinfo.lockObj, INFINITE ) != WAIT_OBJECT_0)
+                    throw("Unable to lock ticketinfo");
 
-                lock.Lock();
                 pLeashKRB5GetTickets(&ticketinfo.Krb5, &ticketList, 
                                       &CLeashApp::m_krbv5_context);
                 pLeashFreeTicketList(&ticketList);
@@ -210,7 +218,7 @@ BOOL CLeashApp::InitInstance()
                     }
                     realm[j] = '\0';
                 }
-                lock.Unlock();
+                ReleaseMutex(ticketinfo.lockObj);
 
 				ldi.size = sizeof(ldi);
 				ldi.dlgtype = DLGTYPE_PASSWD;
@@ -372,30 +380,72 @@ BOOL CLeashApp::InitInstance()
     // If not and the Windows Logon Session is Kerberos authenticated attempt an import
     {
         TicketList* ticketList = NULL;
-        CSingleLock lock(&ticketinfo.lockObj);
-
-        lock.Lock();
+        if (WaitForSingleObject( ticketinfo.lockObj, INFINITE ) != WAIT_OBJECT_0)
+            throw("Unable to lock ticketinfo");
         pLeashKRB5GetTickets(&ticketinfo.Krb5, &ticketList, &CLeashApp::m_krbv5_context);
         pLeashFreeTicketList(&ticketList);
         pLeashKRB4GetTickets(&ticketinfo.Krb4, &ticketList);
         pLeashFreeTicketList(&ticketList);
         BOOL b_autoinit = !ticketinfo.Krb4.btickets && !ticketinfo.Krb5.btickets;
-        lock.Unlock();
+        ReleaseMutex(ticketinfo.lockObj);
 
-        if ( b_autoinit ) {
-            if ( pLeash_importable() ) {
-                if (pLeash_import()) {
-                    CLeashView::m_importedTickets = 1;
-                    ::PostMessage(m_pMainWnd->m_hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
+        DWORD dwMsLsaImport = pLeash_get_default_mslsa_import();
+
+        if ( b_autoinit && dwMsLsaImport && pLeash_importable() ) {
+            // We have the option of importing tickets from the MSLSA
+            // but should we?  Do the tickets in the MSLSA cache belong 
+            // to the default realm used by Leash?  If so, import.  
+            int import = 0;
+
+            if ( dwMsLsaImport == 1 ) {             /* always import */
+                import = 1;
+            } else if ( dwMsLsaImport == 2 ) {      /* import when realms match */
+                krb5_error_code code;
+                krb5_ccache mslsa_ccache=0;
+                krb5_principal princ = 0;
+                char ms_realm[128] = "", *def_realm = 0, *r;
+                int i;
+
+                if (code = pkrb5_cc_resolve(CLeashApp::m_krbv5_context, "MSLSA:", &mslsa_ccache))
+                    goto cleanup;
+
+                if (code = pkrb5_cc_get_principal(CLeashApp::m_krbv5_context, mslsa_ccache, &princ))
+                    goto cleanup;
+
+                for ( r=ms_realm, i=0; i<krb5_princ_realm(ctx, princ)->length; r++, i++ ) {
+                    *r = krb5_princ_realm(ctx, princ)->data[i];
                 }
-            } 
-            else if ( autoInit ) {
-				AfxBeginThread(InitWorker, m_pMainWnd->m_hWnd);
+                *r = '\0';
+
+                if (code = pkrb5_get_default_realm(CLeashApp::m_krbv5_context, &def_realm))
+                    goto cleanup;
+
+                import = !strcmp(def_realm, ms_realm);
+
+              cleanup:
+                if (def_realm)
+                    pkrb5_free_default_realm(CLeashApp::m_krbv5_context, def_realm);
+
+                if (princ)
+                    pkrb5_free_principal(CLeashApp::m_krbv5_context, princ);
+
+                if (mslsa_ccache)
+                    pkrb5_cc_close(CLeashApp::m_krbv5_context, mslsa_ccache);
+            }
+             
+            if (import && pLeash_import()) {
+                CLeashView::m_importedTickets = 1;
+                ::PostMessage(m_pMainWnd->m_hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
+                b_autoinit = FALSE;
             }
         }
 
-        if (autoInit)
+        if (autoInit) {
+            if ( b_autoinit )
+                AfxBeginThread(InitWorker, m_pMainWnd->m_hWnd);
+
             IpAddrChangeMonitorInit(m_pMainWnd->m_hWnd);
+        }
     }
 
     VScheckVersion(m_pMainWnd->m_hWnd, AfxGetInstanceHandle());
@@ -455,6 +505,10 @@ DECL_FUNC_PTR(Leash_get_lock_file_locations);
 DECL_FUNC_PTR(Leash_set_lock_file_locations);
 DECL_FUNC_PTR(Leash_get_default_uppercaserealm);
 DECL_FUNC_PTR(Leash_set_default_uppercaserealm);
+DECL_FUNC_PTR(Leash_get_default_mslsa_import);
+DECL_FUNC_PTR(Leash_set_default_mslsa_import);
+DECL_FUNC_PTR(Leash_get_default_preserve_kinit_settings);
+DECL_FUNC_PTR(Leash_set_default_preserve_kinit_settings);
 DECL_FUNC_PTR(Leash_import);
 DECL_FUNC_PTR(Leash_importable);
 DECL_FUNC_PTR(Leash_renew);
@@ -500,6 +554,10 @@ FUNC_INFO leash_fi[] = {
     MAKE_FUNC_INFO(Leash_set_lock_file_locations),
     MAKE_FUNC_INFO(Leash_get_default_uppercaserealm),
     MAKE_FUNC_INFO(Leash_set_default_uppercaserealm),
+    MAKE_FUNC_INFO(Leash_get_default_mslsa_import),
+    MAKE_FUNC_INFO(Leash_set_default_mslsa_import),
+    MAKE_FUNC_INFO(Leash_get_default_preserve_kinit_settings),
+    MAKE_FUNC_INFO(Leash_set_default_preserve_kinit_settings),
     MAKE_FUNC_INFO(Leash_import),
     MAKE_FUNC_INFO(Leash_importable),
     MAKE_FUNC_INFO(Leash_renew),
@@ -567,6 +625,7 @@ DECL_FUNC_PTR(krb5_get_default_config_files);
 DECL_FUNC_PTR(krb5_free_config_files);
 DECL_FUNC_PTR(krb5_free_context);
 DECL_FUNC_PTR(krb5_get_default_realm);
+DECL_FUNC_PTR(krb5_free_default_realm);
 DECL_FUNC_PTR(krb5_init_context);
 DECL_FUNC_PTR(krb5_cc_default);
 DECL_FUNC_PTR(krb5_parse_name);
@@ -588,6 +647,7 @@ FUNC_INFO krb5_fi[] = {
     MAKE_FUNC_INFO(krb5_free_config_files),
     MAKE_FUNC_INFO(krb5_free_context),
     MAKE_FUNC_INFO(krb5_get_default_realm),
+    MAKE_FUNC_INFO(krb5_free_default_realm),
     MAKE_FUNC_INFO(krb5_init_context),
     MAKE_FUNC_INFO(krb5_cc_default),
     MAKE_FUNC_INFO(krb5_parse_name),
@@ -878,11 +938,13 @@ CLeashApp::ValidateConfigFiles()
 
                 if ( domain[0] ) {
                     strncpy(realm,domain,256);
+                    realm[255] = '\0';
                     if ( krb_con_open ) {
                         krbCon.WriteString(realm);
                         krbCon.WriteString("\n");
                     }
-                    strncat(realmkey,domain,256);
+                    strncat(realmkey,domain,256-strlen(realmkey));
+                    realmkey[255] = '\0';
                 }
 
                 if ( domain[0] &&
@@ -1103,15 +1165,19 @@ CLeashApp::GetKrb4ConFile(
         if (GetProfileFile(krbConFile, sizeof(krbConFile)))	
         {
 		    GetWindowsDirectory(krbConFile,sizeof(krbConFile));
-			strncat(krbConFile,"\\KRB5.INI",sizeof(krbConFile));
+            krbConFile[MAX_PATH-1] = '\0';
+			strncat(krbConFile,"\\KRB5.INI",sizeof(krbConFile)-strlen(krbConFile)-1);
+            krbConFile[MAX_PATH-1] = '\0';
         }
 
 		LPSTR pFind = strrchr(krbConFile, '\\');
 		if (pFind)
 		{
 			*pFind = 0;
-			strcat(krbConFile, "\\");
-			strcat(krbConFile, KRB_FILE);
+			strncat(krbConFile, "\\",MAX_PATH-1);
+            krbConFile[MAX_PATH-1] = '\0';
+			strncat(krbConFile, KRB_FILE,MAX_PATH-1);
+            krbConFile[MAX_PATH-1] = '\0';
 		}
 		else
 		  ASSERT(0);
@@ -1126,8 +1192,11 @@ CLeashApp::GetKrb4ConFile(
  		if (!pkrb_get_krbconf2(confname, &size))
 		{ // Error has happened
 		    GetWindowsDirectory(confname,szConfname);
+            confname[szConfname-1] = '\0';
 			strncat(confname, "\\",szConfname);
+            confname[szConfname-1] = '\0';
 			strncat(confname,KRB_FILE,szConfname);
+            confname[szConfname-1] = '\0';
 		}
 	}
     return FALSE;
@@ -1146,15 +1215,19 @@ CLeashApp::GetKrb4RealmFile(
 		if (GetProfileFile(krbRealmConFile, sizeof(krbRealmConFile)))	
         {
 		    GetWindowsDirectory(krbRealmConFile,sizeof(krbRealmConFile));
-			strncat(krbRealmConFile,"\\KRB5.INI",sizeof(krbRealmConFile));
+            krbRealmConFile[MAX_PATH-1] = '\0';
+			strncat(krbRealmConFile,"\\KRB5.INI",sizeof(krbRealmConFile)-strlen(krbRealmConFile));
+            krbRealmConFile[MAX_PATH-1] = '\0';
         }
 
 		LPSTR pFind = strrchr(krbRealmConFile, '\\');
 		if (pFind)
 		{
 			*pFind = 0;
-			strcat(krbRealmConFile, "\\");
-			strcat(krbRealmConFile, KRBREALM_FILE);
+			strncat(krbRealmConFile, "\\",MAX_PATH-1-strlen(krbRealmConFile));
+            krbRealmConFile[MAX_PATH-1] = '\0';
+			strncat(krbRealmConFile, KRBREALM_FILE,MAX_PATH-1-strlen(krbRealmConFile));
+            krbRealmConFile[MAX_PATH-1] = '\0';
 		}
 		else
 		  ASSERT(0);
@@ -1169,8 +1242,11 @@ CLeashApp::GetKrb4RealmFile(
         if (!pkrb_get_krbrealm2(confname, &size))
 		{ 
 		    GetWindowsDirectory(confname,szConfname);
-			strncat(confname, "\\",szConfname);
-			strncat(confname,KRBREALM_FILE,szConfname);
+            confname[szConfname-1] = '\0';
+			strncat(confname, "\\",szConfname-strlen(confname));
+            confname[szConfname-1] = '\0';
+			strncat(confname,KRBREALM_FILE,szConfname-strlen(confname));
+            confname[szConfname-1] = '\0';
             return TRUE;
 		}
 	}	
@@ -1190,7 +1266,9 @@ CLeashApp::GetProfileFile(
     if (pkrb5_get_default_config_files(&configFile)) 
     {
         GetWindowsDirectory(confname,szConfname);
-        strncat(confname,"\\KRB5.INI",szConfname);
+        confname[szConfname-1] = '\0';
+        strncat(confname,"\\KRB5.INI",szConfname-strlen(confname));
+        confname[szConfname-1] = '\0';
         return FALSE;
     }
     
@@ -1199,13 +1277,16 @@ CLeashApp::GetProfileFile(
     if (configFile)
     {
         strncpy(confname, *configFile, szConfname);
+        confname[szConfname-1] = '\0';
         pkrb5_free_config_files(configFile); 
     }
     
     if (!*confname)
     {
         GetWindowsDirectory(confname,szConfname);
-        strncat(confname,"\\KRB5.INI",szConfname);
+        confname[szConfname-1] = '\0';
+        strncat(confname,"\\KRB5.INI",szConfname-strlen(confname));
+        confname[szConfname-1] = '\0';
     }
     
     return FALSE;
@@ -1303,21 +1384,25 @@ VOID
 CLeashApp::ObtainTicketsViaUserIfNeeded(HWND hWnd)
 {
     TicketList* ticketList = NULL;
-    CSingleLock lock(&ticketinfo.lockObj);
-
-    lock.Lock();
+    if (WaitForSingleObject( ticketinfo.lockObj, INFINITE ) != WAIT_OBJECT_0)
+        throw("Unable to lock ticketinfo");
     pLeashKRB5GetTickets(&ticketinfo.Krb5, &ticketList, &CLeashApp::m_krbv5_context);
     pLeashFreeTicketList(&ticketList);
     pLeashKRB4GetTickets(&ticketinfo.Krb4, &ticketList);
     pLeashFreeTicketList(&ticketList);
 
     if ( !ticketinfo.Krb4.btickets && !ticketinfo.Krb5.btickets ) {
-        lock.Unlock();
+        ReleaseMutex(ticketinfo.lockObj);
+        if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
+            throw("Unable to lock TGS mutex");
         if ( pLeash_importable() ) {
             if (pLeash_import())
                 CLeashView::m_importedTickets = 1;
+            ReleaseMutex(m_tgsReqMutex);
         } 
         else if ( ProbeKDC() ) {
+            ReleaseMutex(m_tgsReqMutex);
+
             LSH_DLGINFO_EX ldi;
             ldi.size = sizeof(ldi);
             ldi.dlgtype = DLGTYPE_PASSWD;
@@ -1328,14 +1413,21 @@ CLeashApp::ObtainTicketsViaUserIfNeeded(HWND hWnd)
             ldi.use_defaults = 1;
 
             pLeash_kinit_dlg_ex(hWnd, &ldi);
+        } else {
+            ReleaseMutex(m_tgsReqMutex);
         }
     } else if ( ticketinfo.Krb5.btickets ) {
-        lock.Unlock();
+        ReleaseMutex(ticketinfo.lockObj);
+        if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
+            throw("Unable to TGS mutex");
         if ( CLeashView::m_importedTickets && pLeash_importable() ) {
             if (pLeash_import())
                 CLeashView::m_importedTickets = 1;
+            ReleaseMutex(m_tgsReqMutex);
         } 
         else if ( ProbeKDC() && !pLeash_renew() ) {
+            ReleaseMutex(m_tgsReqMutex);
+
             LSH_DLGINFO_EX ldi;
             ldi.size = sizeof(ldi);
             ldi.dlgtype = DLGTYPE_PASSWD;
@@ -1346,10 +1438,16 @@ CLeashApp::ObtainTicketsViaUserIfNeeded(HWND hWnd)
             ldi.use_defaults = 1;
 
             pLeash_kinit_dlg_ex(hWnd, &ldi);
+        } else {
+            ReleaseMutex(m_tgsReqMutex);
         }
     } else if ( ticketinfo.Krb4.btickets ) {
-        lock.Unlock();
+        ReleaseMutex(ticketinfo.lockObj);
+        if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
+            throw("Unable to lock TGS mutex");
         if ( ProbeKDC() ) {
+            ReleaseMutex(m_tgsReqMutex);
+
             LSH_DLGINFO_EX ldi;
             ldi.size = sizeof(ldi);
             ldi.dlgtype = DLGTYPE_PASSWD;
@@ -1360,9 +1458,11 @@ CLeashApp::ObtainTicketsViaUserIfNeeded(HWND hWnd)
             ldi.use_defaults = 1;
 
             pLeash_kinit_dlg_ex(hWnd, &ldi);
+        } else {
+            ReleaseMutex(m_tgsReqMutex);
         }
     } else {
-        lock.Unlock();
+        ReleaseMutex(ticketinfo.lockObj);
         // Do nothing ...
     }
     return;
@@ -1438,6 +1538,8 @@ CLeashApp::IpAddrChangeMonitorInit(HWND hWnd)
 UINT
 CLeashApp::InitWorker(void * hWnd)
 {
+    if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
+        throw("Unable to lock ticketinfo");
     if ( ProbeKDC() ) {
         LSH_DLGINFO_EX ldi;
         ldi.size = sizeof(ldi);
@@ -1447,9 +1549,11 @@ CLeashApp::InitWorker(void * hWnd)
         ldi.realm = NULL;
         ldi.use_defaults = 1;
 
+        ReleaseMutex(m_tgsReqMutex);
         pLeash_kinit_dlg_ex((HWND)hWnd, &ldi);
         ::SendMessage((HWND)hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
-    }
+    } else
+        ReleaseMutex(m_tgsReqMutex);
     return 0;
 }
 

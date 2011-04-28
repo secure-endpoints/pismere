@@ -537,19 +537,24 @@ Leash_afs_klog(
     // * we were comparing whether identical tokens already existed.
 
     strncpy(aclient.name, creds.pname, MAXKTCNAMELEN - 1);
+    aclient.name[MAXKTCNAMELEN - 1] = '\0';
     if (creds.pinst[0])
     {
-        strncat(aclient.name, ".", MAXKTCNAMELEN - 1);
-        strncat(aclient.name, creds.pinst, MAXKTCNAMELEN - 1);
+        strncat(aclient.name, ".", MAXKTCNAMELEN - 1 - strlen(aclient.name));
+        aclient.name[MAXKTCNAMELEN - 1] = '\0';
+        strncat(aclient.name, creds.pinst, MAXKTCNAMELEN - 1 - strlen(aclient.name));
+        aclient.name[MAXKTCNAMELEN - 1] = '\0';
     }
     strcpy(aclient.instance, "");
 
     if ( strcmp(realm_of_cell, creds.realm) ) 
     {
-        strncat(aclient.name, "@", MAXKTCNAMELEN - 1);
-        strncpy(aclient.name, creds.realm, MAXKTCREALMLEN - 1);
+        strncat(aclient.name, "@", MAXKTCNAMELEN - 1 - strlen(aclient.name));
+        aclient.name[MAXKTCNAMELEN - 1] = '\0';
+        strncpy(aclient.name, creds.realm, MAXKTCNAMELEN - 1 - strlen(aclient.name));
+        aclient.name[MAXKTCNAMELEN - 1] = '\0';
     }
-    aclient.name[MAXKTCREALMLEN-1] = '\0';
+    aclient.name[MAXKTCNAMELEN-1] = '\0';
 
     strcpy(aclient.cell, CellName);
 

@@ -112,6 +112,8 @@ CKrbMiscConfigOpt::CKrbMiscConfigOpt() : CPropertyPage(CKrbMiscConfigOpt::IDD)
 	m_DefaultLifeMax = 0;
 	m_DefaultRenewMin = 0;
 	m_DefaultRenewMax = 0;
+    m_initUseKrb4 = m_newUseKrb4 = 0;
+    m_initKinitPreserve = m_newKinitPreserve = 0;
 
 	//{{AFX_DATA_INIT(CKrbConfigOptions)
 	//}}AFX_DATA_INIT
@@ -279,6 +281,16 @@ BOOL CKrbMiscConfigOpt::OnInitDialog()
         GetDlgItem(IDC_EDIT_RENEW_MAX_H)->EnableWindow(FALSE);
         GetDlgItem(IDC_EDIT_RENEW_MAX_M)->EnableWindow(FALSE);
     }
+
+    
+    m_initUseKrb4 = m_newUseKrb4 = (CLeashApp::m_hKrb4DLL ? pLeash_get_default_use_krb4() : 0); 
+	CheckDlgButton(IDC_CHECK_REQUEST_KRB4, m_initUseKrb4);
+    if ( !CLeashApp::m_hKrb4DLL )
+        GetDlgItem(IDC_CHECK_REQUEST_KRB4)->EnableWindow(FALSE);
+
+    m_initKinitPreserve = m_newKinitPreserve = pLeash_get_default_preserve_kinit_settings(); 
+	CheckDlgButton(IDC_CHECK_PRESERVE_KINIT_OPTIONS, m_initKinitPreserve);
+
     return(TRUE);
 }
 
@@ -297,7 +309,9 @@ BOOL CKrbMiscConfigOpt::OnApply()
 		 m_DefaultLifeMin == lifemin &&
 		 m_DefaultLifeMax == lifemax &&
 		 m_DefaultRenewMin == renewmin &&
-		 m_DefaultRenewMax == renewmax 
+		 m_DefaultRenewMax == renewmax &&
+		 m_initUseKrb4 == m_newUseKrb4 &&
+		 m_initKinitPreserve == m_newKinitPreserve
 		 )
         return TRUE;
 	
@@ -387,6 +401,14 @@ BOOL CKrbMiscConfigOpt::OnApply()
                    "appropriate",
                    "Leash", MB_OK);
     }
+
+	if ( m_initUseKrb4 != m_newUseKrb4 ) {
+		pLeash_set_default_use_krb4(m_newUseKrb4);
+	}
+
+	if ( m_initKinitPreserve != m_newKinitPreserve ) {
+		pLeash_set_default_preserve_kinit_settings(m_newKinitPreserve);
+	}
 
 	return TRUE;
 }
@@ -882,6 +904,16 @@ void CKrbMiscConfigOpt::ResetDefaultRenewMaxEditBox()
 	::SetDlgItemText(::GetForegroundWindow(), IDC_EDIT_RENEW_MAX_M, m_newDefaultRenewMaxMin);
 }
 
+void CKrbMiscConfigOpt::OnCheckUseKrb4()
+{
+    m_newUseKrb4 = (BOOL)IsDlgButtonChecked(IDC_CHECK_REQUEST_KRB4);
+}
+
+void CKrbMiscConfigOpt::OnCheckKinitPreserve()
+{
+    m_newKinitPreserve = (BOOL)IsDlgButtonChecked(IDC_CHECK_PRESERVE_KINIT_OPTIONS);
+}
+
 void CKrbMiscConfigOpt::OnShowWindow(BOOL bShow, UINT nStatus)
 {
     CPropertyPage::OnShowWindow(bShow, nStatus);
@@ -973,5 +1005,8 @@ BEGIN_MESSAGE_MAP(CKrbMiscConfigOpt, CPropertyPage)
 	ON_CBN_SELCHANGE(IDC_EDIT_RENEW_MAX_H, OnSelchangeEditDefaultRenewMax)
 	ON_EN_KILLFOCUS(IDC_EDIT_RENEW_MAX_M, OnEditKillfocusEditDefaultRenewMax)
 	ON_CBN_SELCHANGE(IDC_EDIT_RENEW_MAX_M, OnSelchangeEditDefaultRenewMax)
+
+    ON_BN_CLICKED(IDC_CHECK_REQUEST_KRB4, OnCheckUseKrb4)
+	ON_BN_CLICKED(IDC_CHECK_PRESERVE_KINIT_OPTIONS, OnCheckKinitPreserve)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()

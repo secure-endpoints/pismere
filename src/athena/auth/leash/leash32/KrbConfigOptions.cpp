@@ -268,7 +268,7 @@ BOOL CKrbConfigOptions::OnInitDialog()
 		pkrb5_get_default_realm(CLeashApp::m_krbv5_context, &realm); 
 		
 		if (!realm)
-			m_noRealm = TRUE;
+			m_noRealm = TRUE;            
 
 		m_initDefaultRealm = m_newDefaultRealm = realm; 
 	
@@ -320,6 +320,9 @@ BOOL CKrbConfigOptions::OnInitDialog()
             }
         }
         SetDlgItemText(IDC_EDIT_REALM_HOSTNAME, m_hostServer);
+
+        if ( realm )
+            pkrb5_free_default_realm(CLeashApp::m_krbv5_context, realm);
     }
 
 	// Set host and domain names in their Edit Boxes, respectively.

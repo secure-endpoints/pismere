@@ -728,8 +728,11 @@ GetProfileFile(
 		pkrb5_get_default_config_files(&configFile)) 
     {
         GetWindowsDirectory(confname,szConfname);
-		strncat(confname, "\\",sizeof(confname));
-		strncat(confname, KRB5_FILE,sizeof(confname));
+        confname[szConfname-1] = '\0';
+		strncat(confname, "\\",sizeof(confname)-strlen(confname));
+        confname[szConfname-1] = '\0';
+		strncat(confname, KRB5_FILE,sizeof(confname)-strlen(confname));
+        confname[szConfname-1] = '\0';
         return FALSE;
     }
     
@@ -744,8 +747,11 @@ GetProfileFile(
     if (!*confname)
     {
         GetWindowsDirectory(confname,szConfname);
-		strncat(confname, "\\",sizeof(confname));
-		strncat(confname, KRB5_FILE,sizeof(confname));
+        confname[szConfname-1] = '\0';
+		strncat(confname, "\\",sizeof(confname)-strlen(confname));
+        confname[szConfname-1] = '\0';
+		strncat(confname, KRB5_FILE,sizeof(confname)-strlen(confname));
+        confname[szConfname-1] = '\0';
     }
     
     return FALSE;
@@ -766,16 +772,21 @@ GetKrb4ConFile(
         if (GetProfileFile(krbConFile, sizeof(krbConFile)))	
         {
 		    GetWindowsDirectory(krbConFile,sizeof(krbConFile));
-			strncat(krbConFile, "\\",sizeof(krbConFile));
-			strncat(krbConFile, KRB5_FILE,sizeof(krbConFile));
+            krbConFile[MAX_PATH-1] = '\0';
+			strncat(krbConFile, "\\",sizeof(krbConFile)-strlen(krbConFile));
+            krbConFile[MAX_PATH-1] = '\0';
+			strncat(krbConFile, KRB5_FILE,sizeof(krbConFile)-strlen(krbConFile));
+            krbConFile[MAX_PATH-1] = '\0';
         }
 
 		pFind = strrchr(krbConFile, '\\');
 		if (pFind)
 		{
 			*pFind = 0;
-			strncat(krbConFile, "\\",sizeof(krbConFile));
-			strncat(krbConFile, KRB_FILE,sizeof(krbConFile));
+			strncat(krbConFile, "\\",sizeof(krbConFile)-strlen(krbConFile));
+            krbConFile[MAX_PATH-1] = '\0';
+			strncat(krbConFile, KRB_FILE,sizeof(krbConFile)-strlen(krbConFile));
+            krbConFile[MAX_PATH-1] = '\0';
 		}
 		else
 			krbConFile[0] = 0;
@@ -790,8 +801,11 @@ GetKrb4ConFile(
  		if (!pkrb_get_krbconf2(confname, &size))
 		{ // Error has happened
 		    GetWindowsDirectory(confname,szConfname);
-			strncat(confname, "\\",szConfname);
-			strncat(confname,KRB_FILE,szConfname);
+            confname[szConfname-1] = '\0';
+			strncat(confname, "\\",szConfname-strlen(confname));
+            confname[szConfname-1] = '\0';
+			strncat(confname,KRB_FILE,szConfname-strlen(confname));
+            confname[szConfname-1] = '\0';
 		}
 	}
     return FALSE;
@@ -812,16 +826,21 @@ GetKrb4RealmFile(
 		if (GetProfileFile(krbRealmConFile, sizeof(krbRealmConFile)))	
         {
 		    GetWindowsDirectory(krbRealmConFile,sizeof(krbRealmConFile));
-			strncat(krbRealmConFile, "\\",sizeof(krbRealmConFile));
-			strncat(krbRealmConFile, KRB5_FILE,sizeof(krbRealmConFile));
+            krbRealmConFile[MAX_PATH-1] = '\0';
+			strncat(krbRealmConFile, "\\",sizeof(krbRealmConFile)-strlen(krbRealmConFile));
+            krbRealmConFile[MAX_PATH-1] = '\0';
+			strncat(krbRealmConFile, KRB5_FILE,sizeof(krbRealmConFile)-strlen(krbRealmConFile));
+            krbRealmConFile[MAX_PATH-1] = '\0';
         }
 
 		pFind = strrchr(krbRealmConFile, '\\');
 		if (pFind)
 		{
 			*pFind = 0;
-			strcat(krbRealmConFile, "\\");
-			strcat(krbRealmConFile, KRBREALM_FILE);
+			strncat(krbRealmConFile, "\\", sizeof(krbRealmConFile)-strlen(krbRealmConFile));
+            krbRealmConFile[MAX_PATH-1] = '\0';
+			strncat(krbRealmConFile, KRBREALM_FILE, sizeof(krbRealmConFile)-strlen(krbRealmConFile));
+            krbRealmConFile[MAX_PATH-1] = '\0';
 		}
 		else
 			krbRealmConFile[0] = 0;
@@ -836,8 +855,11 @@ GetKrb4RealmFile(
         if (!pkrb_get_krbrealm2(confname, &size))
 		{ 
 		    GetWindowsDirectory(confname,szConfname);
-			strncat(confname, "\\",szConfname);
-			strncat(confname,KRBREALM_FILE,szConfname);
+            confname[szConfname-1] = '\0';
+			strncat(confname, "\\",szConfname-strlen(confname));
+            confname[szConfname-1] = '\0';
+			strncat(confname,KRBREALM_FILE,szConfname-strlen(confname));
+            confname[szConfname-1] = '\0';
             return TRUE;
 		}
 	}	
@@ -1716,6 +1738,19 @@ AuthenticateProc(
 #endif /* COMMENT */
 					return TRUE;
 				}
+
+                if ( Leash_get_default_preserve_kinit_settings() ) 
+                {
+                    Leash_set_default_lifetime(lifetime);
+                    if ( renew_till > 0 ) {
+                        Leash_set_default_renew_till(renew_till);
+                        Leash_set_default_renewable(1);
+                    } else {
+                        Leash_set_default_renewable(0);
+                    }
+                    Leash_set_default_forwardable(forwardable);
+                    Leash_set_default_noaddresses(noaddresses);
+                }
 
                 if ( lpdi->size == sizeof(LSH_DLGINFO_EX) ) {
                     strncpy(lpdi->out.username, username, LEASH_USERNAME_SZ);

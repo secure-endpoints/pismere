@@ -1342,7 +1342,9 @@ get_profile_file(LPSTR confname, UINT szConfname)
         if (pkrb5_get_default_config_files(&configFile))
         {
             GetWindowsDirectory(confname,szConfname);
-            strncat(confname,"\\KRB5.INI",szConfname);
+            confname[szConfname-1] = '\0';
+            strncat(confname,"\\KRB5.INI",szConfname-strlen(confname));
+            confname[szConfname-1] = '\0';
             return FALSE;
         }
 
@@ -1351,6 +1353,7 @@ get_profile_file(LPSTR confname, UINT szConfname)
         if (configFile)
         {
             strncpy(confname, *configFile, szConfname);
+            confname[szConfname-1] = '\0';
             pkrb5_free_config_files(configFile);
         }
     }
@@ -1358,7 +1361,9 @@ get_profile_file(LPSTR confname, UINT szConfname)
     if (!*confname)
     {
         GetWindowsDirectory(confname,szConfname);
-        strncat(confname,"\\KRB5.INI",szConfname);
+        confname[szConfname-1] = '\0';
+        strncat(confname,"\\KRB5.INI",szConfname-strlen(confname));
+        confname[szConfname-1] = '\0';
     }
 
     return FALSE;
@@ -2807,6 +2812,161 @@ Leash_get_default_uppercaserealm(
     return 1;
 }
 
+static
+BOOL
+get_default_mslsa_import_from_registry(
+    HKEY hBaseKey,
+    DWORD * result
+    )
+{
+    return get_DWORD_from_registry(hBaseKey, 
+                                   LEASH_SETTINGS_REGISTRY_KEY_NAME,
+                                   LEASH_SETTINGS_REGISTRY_VALUE_MSLSA_IMPORT,
+                                   result);
+}
+
+DWORD
+Leash_reset_default_mslsa_import(
+    )
+{
+    HKEY hKey;
+    LONG rc;
+
+    rc = RegOpenKeyEx(HKEY_CURRENT_USER, LEASH_SETTINGS_REGISTRY_KEY_NAME, 0, KEY_WRITE, &hKey);
+    if (rc)
+        return rc;
+
+    rc = RegDeleteValue(hKey, LEASH_SETTINGS_REGISTRY_VALUE_MSLSA_IMPORT);
+    RegCloseKey(hKey);
+
+    return rc;
+}
+
+DWORD
+Leash_set_default_mslsa_import(
+    DWORD onoffmatch
+    )
+{
+    HKEY hKey;
+    LONG rc;
+
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_SETTINGS_REGISTRY_KEY_NAME, 0, 
+                        0, 0, KEY_WRITE, 0, &hKey, 0);
+    if (rc)
+        return rc;
+
+    rc = RegSetValueEx(hKey, LEASH_SETTINGS_REGISTRY_VALUE_MSLSA_IMPORT, 0, REG_DWORD, 
+                       (LPBYTE) &onoffmatch, sizeof(DWORD));
+    RegCloseKey(hKey);
+
+    return rc;
+}
+
+DWORD
+Leash_get_default_mslsa_import(
+    )
+{
+    HMODULE hmLeash;
+    DWORD result;
+
+    if (get_default_mslsa_import_from_registry(HKEY_CURRENT_USER, &result) ||
+        get_default_mslsa_import_from_registry(HKEY_LOCAL_MACHINE, &result))
+    {
+        return result;
+    }
+
+    hmLeash = GetModuleHandle(LEASH_DLL);
+    if (hmLeash)
+    {
+        char mslsa_import[80];
+        if (LoadString(hmLeash, LSH_DEFAULT_MSLSA_IMPORT, 
+                       mslsa_import, sizeof(mslsa_import)))
+        {
+            mslsa_import[sizeof(mslsa_import) - 1] = 0;
+            return atoi(mslsa_import);
+        }
+    }
+    return 2;   /* import only when mslsa realm matches default */
+}
+
+
+static
+BOOL
+get_default_preserve_kinit_settings_from_registry(
+    HKEY hBaseKey,
+    DWORD * result
+    )
+{
+    return get_DWORD_from_registry(hBaseKey, 
+                                   LEASH_REGISTRY_KEY_NAME,
+                                   LEASH_REGISTRY_VALUE_PRESERVE_KINIT,
+                                   result);
+}
+
+DWORD
+Leash_reset_default_preserve_kinit_settings(
+    )
+{
+    HKEY hKey;
+    LONG rc;
+
+    rc = RegOpenKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, KEY_WRITE, &hKey);
+    if (rc)
+        return rc;
+
+    rc = RegDeleteValue(hKey, LEASH_REGISTRY_VALUE_PRESERVE_KINIT);
+    RegCloseKey(hKey);
+
+    return rc;
+}
+
+DWORD
+Leash_set_default_preserve_kinit_settings(
+    DWORD onoff
+    )
+{
+    HKEY hKey;
+    LONG rc;
+
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+                        0, 0, KEY_WRITE, 0, &hKey, 0);
+    if (rc)
+        return rc;
+
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_PRESERVE_KINIT, 0, REG_DWORD, 
+                       (LPBYTE) &onoff, sizeof(DWORD));
+    RegCloseKey(hKey);
+
+    return rc;
+}
+
+DWORD
+Leash_get_default_preserve_kinit_settings(
+    )
+{
+    HMODULE hmLeash;
+    DWORD result;
+
+    if (get_default_preserve_kinit_settings_from_registry(HKEY_CURRENT_USER, &result) ||
+        get_default_preserve_kinit_settings_from_registry(HKEY_LOCAL_MACHINE, &result))
+    {
+        return result;
+    }
+
+    hmLeash = GetModuleHandle(LEASH_DLL);
+    if (hmLeash)
+    {
+        char preserve_kinit_settings[80];
+        if (LoadString(hmLeash, LSH_DEFAULT_PRESERVE_KINIT, 
+                       preserve_kinit_settings, sizeof(preserve_kinit_settings)))
+        {
+            preserve_kinit_settings[sizeof(preserve_kinit_settings) - 1] = 0;
+            return atoi(preserve_kinit_settings);
+        }
+    }
+    return 1;
+}
+
 void
 Leash_reset_defaults(void)
 {
@@ -2824,6 +2984,8 @@ Leash_reset_defaults(void)
 	Leash_reset_default_renew_min();
 	Leash_reset_default_renew_max();
 	Leash_reset_default_uppercaserealm();
+    Leash_reset_default_mslsa_import();
+    Leash_reset_default_preserve_kinit_settings();
 }
 
 static BOOL CALLBACK 

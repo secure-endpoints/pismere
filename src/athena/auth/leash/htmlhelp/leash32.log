@@ -1,6 +1,6 @@
 Microsoft HTML Help Compiler 4.74.8702
 
-Compiling c:\src\kerberos\mit-cvs\pismere\athena\auth\leash\htmlhelp\leash32.chm
+Compiling c:\temp\kfw\cvs-tree\pismere\athena\auth\leash\htmlhelp\leash32.chm
 
 HHC4002: Warning: The alias "HID_KERBEROS_PROPERTIES_ADDHOST" is defined more then once. Only the first alias will be used.
 html\leash_topic_why_use.htm
@@ -114,12 +114,12 @@ Images\Kerberos_auth_serv_fig_11.jpg
 Images\Kerberos_auth_serv_fig_12.jpg
 Images\Kerberos_auth_serv_fig_13.jpg
 
-Compile time: 0 minutes, 7 seconds
+Compile time: 0 minutes, 3 seconds
 80	Topics
 257	Local links
 22	Internet links
 32	Graphics
 
 
-Created c:\src\kerberos\mit-cvs\pismere\athena\auth\leash\htmlhelp\leash32.chm, 691,860 bytes
-Compression decreased file by 240,238 bytes.
+Created c:\temp\kfw\cvs-tree\pismere\athena\auth\leash\htmlhelp\leash32.chm, 691,944 bytes
+Compression decreased file by 240,157 bytes.
