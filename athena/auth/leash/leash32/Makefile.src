@@ -48,25 +48,27 @@ LIBS=wshelp32.lib version.lib loadfuncs.lib
 
 LIB_PATHS=..\..\..\wshelper\wshelper\$(O);..\..\..\util\loadfuncs\$(O)\
 
-INCLUDES="..\ext-inc";"..\include";"..\..\krb5\src\include";"..\..\krb4\include";"..\..\..\wshelper\include";..\..\..\util\loadfuncs
+INCLUDES=..\include;..\..\krb5\src\include;..\..\krb4\include;..\..\..\wshelper\include;..\..\..\util\loadfuncs
 
 USE_LIBC_DLL=1
 USE_MFC=1           # gives us _AFXDLL!
 USE_CPP_EH=1        # gives us GX
 PCH_FILE=stdafx.h   # uses a PCH file
 
-C_FLAGS=-D_WINDOWS -DWIN32 -DWINDOWS
+C_DEFINE=-D_WINDOWS -DWIN32 -DWINDOWS \
+!ifdef AFS36
+ 	-DAFS36
+!endif
 
+
+!if 0
 !ifdef MIT_ONLY
 INCLUDES=$(INCLUDES);..\..\..\vs\include
 LIBS=$(LIBS) vsnt.lib
 LIB_PATHS=$(LIB_PATHS);..\..\..\vs\src\lib\$(O)
-C_FLAGS=$(C_FLAGS) -DUSE_VS
+C_DEFINE=$(C_DEFINE) -DUSE_VS
+!endif
 !endif
 
-# -Gm     - minimal rebuild...
-!ifndef NODEBUG
-C_FLAGS=$(C_FLAGS) -Gm
-!endif
-
+USE_MINIMAL=1
 USE_EXTERNAL_DEPS=1

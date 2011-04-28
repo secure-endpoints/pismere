@@ -1,0 +1,13 @@
+*.aps
+*.plg
+*.opt
+*.ncb
+Debug
+Release
+*.wsp
+*.vcw
+*.WSP
+*.VCW
+WinDebug
+WinRel
+obj

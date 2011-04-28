@@ -1,0 +1,16 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=cctime
+TARGETTYPE=EXE
+TARGETSS=console
+
+OBJS= \
+	$(O)\cctime.obj
+
+USE_DEFAULTLIB=1
+LIBS=krbcc32.lib
+LIB_PATHS=..\..\src\dll\$(O)
+
+INCLUDES=..\..\include

@@ -30,7 +30,7 @@ int FAR Leash_kinit_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo);
 int FAR Leash_changepwd_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo);
 
 long FAR Leash_checkpwd(char *principal, char *password);
-long FAR Leash_changepwd(char *principal, char *password, char *newpassword, LPSTR kadm_info);
+long FAR Leash_changepwd(char *principal, char *password, char *newpassword, char** result_string);
 long FAR Leash_kinit(char *principal, char *password, int lifetime);
 long FAR Leash_klist(HWND hlist, TICKETINFO FAR *ticketinfo);
 long FAR Leash_kdestroy(void);

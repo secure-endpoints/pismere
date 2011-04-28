@@ -1,0 +1,5 @@
+#define VER_FILEDESCRIPTION_STR 	"Kerberos Credendials Cache RPC Server"
+
+#include <kerberos.ver>
+#undef EXPORT_CONTROLLED
+#include <ver.inc>

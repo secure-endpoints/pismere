@@ -1,4 +1,0 @@
-#define VER_FILEDESCRIPTION_STR "Fleavius Component of Kerberos Credentials Cache"
-
-#include <kerberos.ver>
-#include <ver.inc>

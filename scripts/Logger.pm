@@ -43,11 +43,10 @@ sub start {
     STDERR->autoflush(1);
 
     $SIG{__DIE__} = sub {
-	print STDERR $_[0]; 
+	print STDERR $_[0];
 	$self->stop;
 	die "\n";
     };
-
 
     return 1;
 }

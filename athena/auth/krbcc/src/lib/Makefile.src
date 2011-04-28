@@ -1,0 +1,26 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=ccutil
+TARGETTYPE=LIB
+TARGETSS=console
+
+OBJS= \
+	$(O)\memory.obj \
+	$(O)\util.obj \
+	$(O)\opts.obj \
+	$(O)\marshall.obj \
+	$(O)\secure.obj \
+	$(O)\init.obj \
+	$(O)\debug.obj
+
+USE_LIBC_DLL=1
+NO_PLACE=1
+INCLUDES=..\inc
+USE_CPP_EH=1
+
+C_DEFINE=-DWIN32_LEAN_AND_MEAN
+!ifdef DEBUG_MEMORY
+C_DEFINE=$(C_DEFINE) -DDEBUG_MEMORY
+!endif

@@ -72,7 +72,7 @@ protected:
 	afx_msg void OnResetWindowSize();
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 	afx_msg void OnGetMinMaxInfo(MINMAXINFO FAR* lpMMI);
-    afx_msg void OnContextHelp();
+    //afx_msg void OnContextHelp();
     //}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

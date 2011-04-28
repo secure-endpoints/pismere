@@ -233,26 +233,3 @@ int _export lsh_com_err_proc (LPSTR whoami, long code,
     SetFocus(hOldFocus);
     return retval;
 }
-
-
-/*  These little utils are taken from leash.c
- *  they are added here for the Call back funtion.
- */
-
-int _export DoNiftyErrorReport(long errnum, LPSTR what)
-{
-    int retval;
-    if( Lcom_err != NULL ){
-
-        if( err_context != NULL ){
-            retval=Lcom_err("Leash",lsh_errno,
-                            "%s\n%s", (LPSTR)what,
-                            (LPSTR)err_context);
-        } else {
-            retval=Lcom_err("Leash",errnum,
-                            "%s", (LPSTR)what);
-        }
-        return retval;
-    }
-    return(errnum);
-}

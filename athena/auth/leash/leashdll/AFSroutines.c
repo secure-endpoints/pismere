@@ -19,6 +19,8 @@
 #include <decldll.h>
 #undef DLL
 
+#include "leash-int.h"
+
 #define MAXCELLCHARS   64
 #define MAXHOSTCHARS   64
 #define MAXHOSTSPERCELL 8
@@ -35,12 +37,10 @@ typedef struct {
 DWORD   AfsOnLine = 1;
 
 EXPORT32 int not_an_API_LeashAFSGetToken(TicketList** ticketList);
-int LeashAFSdestroyToken();
-int LeashAFSprocessK4Token(char *, char *, char *, int);
-void LeashAfsErrorMessage(LONG rc, LPCSTR FailedFunctionName);
 DWORD GetServiceStatus(LPSTR lpszMachineName, LPSTR lpszServiceName, DWORD *lpdwCurrentState);
 BOOL SetAfsStatus(DWORD AfsStatus);
 BOOL GetAfsStatus(DWORD *AfsStatus);
+void Leash_afs_error(LONG rc, LPCSTR FailedFunctionName);
 
 static char *afs_realm_of_cell(afsconf_cell *);
 static long get_cellconfig_callback(void *, struct sockaddr_in *, char *);
@@ -49,7 +49,10 @@ static int get_cellconfig(char *, afsconf_cell *, char *);
 /**************************************/
 /* LeashAFSdestroyToken():            */
 /**************************************/
-int LeashAFSdestroyToken(void)
+int
+Leash_afs_unlog(
+    void
+    )
 {
 #ifdef NO_AFS
     return(0);
@@ -67,8 +70,7 @@ int LeashAFSdestroyToken(void)
         return(0);
     }
 
-    GetAfsStatus(&AfsOnLine);
-    if (!AfsOnLine)
+    if (GetAfsStatus(&AfsOnLine) && !AfsOnLine)
         return(0);
 
     CurrentState = 0;
@@ -124,8 +126,7 @@ int FAR not_an_API_LeashAFSGetToken(TicketList** ticketList)
         return(0);
     }
 
-    GetAfsStatus(&AfsOnLine);
-    if (!AfsOnLine)
+    if (GetAfsStatus(&AfsOnLine) && !AfsOnLine)
         return(0);
 
     CurrentState = 0;
@@ -150,8 +151,6 @@ int FAR not_an_API_LeashAFSGetToken(TicketList** ticketList)
             }
             if (BreakAtEnd == 1)
                 break;
-            //if (LeashAFSprocessK4Token("", "", "", 120)) //>>>>>>>
-				//break;
         }
         BreakAtEnd = 1;
         memset(&atoken, '\0', sizeof(atoken));
@@ -225,32 +224,35 @@ int FAR not_an_API_LeashAFSGetToken(TicketList** ticketList)
 }
 
 
-/**************************************/
-/* LeashAFSprocessK4Token():          */
-/**************************************/
-int LeashAFSprocessK4Token(char *service, char *cell, char *realm, int LifeTime)
+int
+Leash_afs_klog(
+    char *service,
+    char *cell,
+    char *realm,
+    int LifeTime
+    )
 {
 #ifdef NO_AFS
     return(0);
 #else
-    long					rc;
-    CREDENTIALS				creds;
-    KTEXT_ST				ticket;
+    long	rc;
+    CREDENTIALS	creds;
+    KTEXT_ST	ticket;
     struct ktc_principal	aserver;
     struct ktc_principal	aclient;
-    char					username[BUFSIZ];	/* To hold client username structure */
-    char					realm_of_user[REALM_SZ]; /* Kerberos realm of user */
-    char					realm_of_cell[REALM_SZ]; /* Kerberos realm of cell */
-    char					local_cell[MAXCELLCHARS+1];
-    char					Dmycell[MAXCELLCHARS+1];
-    struct ktc_token		atoken;
-    struct ktc_token		btoken;
-    afsconf_cell			ak_cellconfig; /* General information about the cell */
-    char					RealmName[128];
-    char					CellName[128];
-    char					ServiceName[128];
-    DWORD                   CurrentState;
-    char                    HostName[64];
+    char	username[BUFSIZ];	/* To hold client username structure */
+    char	realm_of_user[REALM_SZ]; /* Kerberos realm of user */
+    char	realm_of_cell[REALM_SZ]; /* Kerberos realm of cell */
+    char	local_cell[MAXCELLCHARS+1];
+    char	Dmycell[MAXCELLCHARS+1];
+    struct ktc_token	atoken;
+    struct ktc_token	btoken;
+    afsconf_cell	ak_cellconfig; /* General information about the cell */
+    char	RealmName[128];
+    char	CellName[128];
+    char	ServiceName[128];
+    DWORD       CurrentState;
+    char        HostName[64];
 
     if ((pktc_ListTokens == NULL) ||
         (pktc_GetToken == NULL) ||
@@ -261,8 +263,7 @@ int LeashAFSprocessK4Token(char *service, char *cell, char *realm, int LifeTime)
         return(0);
     }
 
-    GetAfsStatus(&AfsOnLine);
-    if (!AfsOnLine)
+    if (GetAfsStatus(&AfsOnLine) && !AfsOnLine)
         return(0);
 
     CurrentState = 0;
@@ -280,10 +281,10 @@ int LeashAFSprocessK4Token(char *service, char *cell, char *realm, int LifeTime)
     memset(realm_of_cell, '\0', sizeof(realm_of_cell));
     memset(Dmycell, '\0', sizeof(Dmycell));
 
-//	 NULL or empty cell returns information on local cell
+    // NULL or empty cell returns information on local cell
     if (rc = get_cellconfig(Dmycell, &ak_cellconfig, local_cell))
     {
-        LeashAfsErrorMessage(rc, "get_cellconfig()");
+        Leash_afs_error(rc, "get_cellconfig()");
         AfsOnLine = 0;
         SetAfsStatus(AfsOnLine);
         return(rc);
@@ -321,7 +322,7 @@ int LeashAFSprocessK4Token(char *service, char *cell, char *realm, int LifeTime)
         {
             if ((rc = (*pkrb_get_cred)(ServiceName, CellName, RealmName, &creds)) != KSUCCESS)
             {
-                LeashAfsErrorMessage(rc, "krb_get_cred()");
+                Leash_afs_error(rc, "krb_get_cred()");
                 AfsOnLine = 0;
                 SetAfsStatus(AfsOnLine);
                 return(rc);
@@ -365,21 +366,21 @@ int LeashAFSprocessK4Token(char *service, char *cell, char *realm, int LifeTime)
         return(0);
     }
 
-//	* Reset the "aclient" structure before we call ktc_SetToken.
-//	* This structure was first set by the ktc_GetToken call when
-//	* we were comparing whether identical tokens already existed.
+    // * Reset the "aclient" structure before we call ktc_SetToken.
+    // * This structure was first set by the ktc_GetToken call when
+    // * we were comparing whether identical tokens already existed.
 
     strncpy(aclient.name, username, MAXKTCNAMELEN - 1);
     strcpy(aclient.instance, "");
     strncpy(aclient.cell, creds.realm, MAXKTCREALMLEN - 1);
 
-//	* NOTE: On WIN32, the order of SetToken params changed...
-//	* to   ktc_SetToken(&aserver, &aclient, &atoken, 0)
-//	* from ktc_SetToken(&aserver, &atoken, &aclient, 0) on Unix...
+    // * NOTE: On WIN32, the order of SetToken params changed...
+    // * to   ktc_SetToken(&aserver, &aclient, &atoken, 0)
+    // * from ktc_SetToken(&aserver, &atoken, &aclient, 0) on Unix...
 
     if (rc = (*pktc_SetToken)(&aserver, &aclient, &atoken, 0))
     {
-        LeashAfsErrorMessage(rc, "ktc_SetToken()");
+        Leash_afs_error(rc, "ktc_SetToken()");
         AfsOnLine = 0;
         SetAfsStatus(AfsOnLine);
         return(rc);
@@ -434,8 +435,7 @@ static int get_cellconfig(char *cell, afsconf_cell *cellconfig, char *local_cell
     local_cell[0] = (char)0;
     memset(cellconfig, 0, sizeof(*cellconfig));
 
-//	* WIN32: cm_GetRootCellName(local_cell) - NOTE: no way to get max chars *
-    //if (rc = (*pcm_GetRootCellName)(local_cell)) 
+    /* WIN32: cm_GetRootCellName(local_cell) - NOTE: no way to get max chars */
     if (rc = (*pcm_GetRootCellName)(local_cell)) 
     {
         return(rc);
@@ -444,7 +444,7 @@ static int get_cellconfig(char *cell, afsconf_cell *cellconfig, char *local_cell
     if (strlen(cell) == 0)
         strcpy(cell, local_cell);
 
-//	* WIN32: cm_SearchCellFile(cell, pcallback, pdata) *
+    /* WIN32: cm_SearchCellFile(cell, pcallback, pdata) */
     strcpy(cellconfig->name, cell);
     return((*pcm_SearchCellFile)(cell, get_cellconfig_callback, (void *)cellconfig)); 
 #endif
@@ -469,9 +469,10 @@ static long get_cellconfig_callback(void *cellconfig, struct sockaddr_in *addrp,
 
 
 /**************************************/
-/* LeashAfsErrorMessage():           */
+/* Leash_afs_error():           */
 /**************************************/
-void LeashAfsErrorMessage(LONG rc, LPCSTR FailedFunctionName)
+void
+Leash_afs_error(LONG rc, LPCSTR FailedFunctionName)
 {
 #ifdef NO_AFS
     return;
@@ -587,60 +588,29 @@ cleanup:
 #endif 
 } 
 
-BOOL SetAfsStatus(DWORD AfsStatus)
+BOOL
+SetAfsStatus(
+    DWORD AfsStatus
+    )
 {
 #ifdef NO_AFS
     return(TRUE);
 #else
-    HKEY    hKey = NULL;
-    char    RegVariable[32];
-
-    if (ERROR_SUCCESS != RegOpenKeyEx(HKEY_CURRENT_USER, 
-                                      "software\\MIT\\Leash32\\Afs", 
-                                      0, KEY_ALL_ACCESS, &hKey))
-    {
-        if (RegCreateKeyEx(HKEY_CURRENT_USER, "software\\MIT\\Leash32\\Afs", 0, 0, 0,
-                           KEY_ALL_ACCESS, 0, &hKey, 0))
-        {
-            return TRUE;
-        }
-    }
-    sprintf(RegVariable, "%d", AfsStatus);
-    RegSetValueEx(hKey, "AfsStatus", 0, REG_SZ, (const unsigned char*)RegVariable, lstrlen(RegVariable));
-
-    RegCloseKey(hKey);
-
-    return(TRUE);
-#endif 
+    return write_registry_setting(LEASH_REG_SETTING_AFS_STATUS, 
+                                  REG_DWORD, &AfsStatus, 
+                                  sizeof(AfsStatus)) ? FALSE : TRUE;
+#endif
 }
 
-BOOL GetAfsStatus(DWORD *AfsStatus)
+BOOL
+GetAfsStatus(
+    DWORD *AfsStatus
+    )
 {
 #ifdef NO_AFS
     return(TRUE);
 #else
-    HKEY    hKey = NULL;
-    char    RegVariable[32];
-    DWORD   dwCount;
-    DWORD   dwType;
-
-    if (ERROR_SUCCESS != RegOpenKeyEx(HKEY_CURRENT_USER, 
-                                      "software\\MIT\\Leash32\\Afs", 
-                                      0, KEY_ALL_ACCESS, &hKey))
-    {
-        return(TRUE);
-    }
-
-    memset(RegVariable, '\0', sizeof(RegVariable));
-    if (RegQueryValueEx(hKey, "AfsStatus", 
-                              NULL, &dwType,
-                              RegVariable, &dwCount) == ERROR_SUCCESS)
-    {
-        RegVariable[dwCount] = '\0';
-        (*AfsStatus) = atoi(RegVariable);
-    }
-    RegCloseKey(hKey);
-
-    return(TRUE);
+    return read_registry_setting(LEASH_REG_SETTING_AFS_STATUS, 
+                                 AfsStatus, sizeof(DWORD)) ? FALSE : TRUE;
 #endif 
 }

@@ -11,7 +11,7 @@
 
 #ifndef lint
 static char *rcsid_decomp_ticket_c =
-"$Header: /cvs/pismere/pismere/athena/auth/krb4/krbv4/krbdll/decomtkt.c,v 1.1.2.1 1999/10/06 19:41:00 dalmeida Exp $";
+"$Header: /cvs/pismere/pismere/athena/auth/krb4/krbv4/krbdll/decomtkt.c,v 1.2 1999/10/06 19:38:28 dalmeida Exp $";
 #endif /* lint */
 
 #ifdef WINDOWS

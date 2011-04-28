@@ -12,7 +12,7 @@ extern "C"
 
 #include <stdarg.h>
 
-#ifndef WINDOWS /* jms 6/30/93 */
+#if !defined(WINDOWS) && !defined(_WIN32)
 #define FAR
 #define LPSTR char *
 #endif

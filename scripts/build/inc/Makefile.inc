@@ -1,9 +1,15 @@
 ###############################################################################
 # In the beginning...
 
-!if "$(USERNAME)"=="" || "$(HOSTNAME)"=="" || "$(DATE)" == ""
+!if "$(USERNAME)"=="" || "$(HOSTNAME)"=="" || "$(DATE)" == "" || "$(BINPLACE_CMD)" == "" || "$(WHICH_CMD)" == "" || "$(BUILD_MAKEFILE_INC)" == "" || "$(BUILD_INCLUDE)" == ""
 !error You must invoke the build script!
 !endif
+
+ENV_INCLUDE=$(INCLUDE)
+INCLUDE=$(BUILD_INCLUDE);$(INCLUDE)
+
+BUILD_MAKE_CMD=$(MAKE) -$(MAKEFLAGS) -f $(BUILD_MAKEFILE_INC)
+BUILD_MAKE_CMD_ALT=$(MAKE) -$(MAKEFLAGS)
 
 all::
 
@@ -13,7 +19,7 @@ RECURSED_DIR=.
 
 ###############################################################################
 
-!if defined(RECURSED_DIRS) && "$(RECURSED_DIRS)" != "."
+!if defined(BUILD_USING_OLDSTYLE_BUILD) && defined(RECURSED_DIRS) && "$(RECURSED_DIRS)" != "." # recursed
 
 !if exists("Makefile.dir")
 !include .\Makefile.dir
@@ -22,8 +28,8 @@ RECURSED_DIR=.
 !error
 !endif
 
-!if !defined(PREDIRS) && !defined(DIRS)
-!message You must define one of PREDIRS or DIRS in Makefile.dir
+!if !defined(PREDIRS) && !defined(DIRS) && !defined(OPTDIRS)
+!message You must define one of PREDIRS, DIRS, or OPTDIRS in Makefile.dir
 !error
 !endif
 
@@ -31,6 +37,10 @@ RECURSED_DIR=.
 DIRS=$(PREDIRS)
 !elseif "$(RECURSED_DIRS)" == "DIRS"
 DIRS=$(DIRS)
+!elseif "$(RECURSED_DIRS)" == "OPTDIRS"
+DIRS=$(OPTDIRS)
+!elseif "$(RECURSED_DIRS)" == "OPTDIRS_DIR" && "$(OPTDIRS_DIR)" != ""
+DIRS=$(OPTDIRS_DIR)
 !else
 !message Invalid RECURSED_DIRS.
 !message This should never happen.  Contact the build dude.
@@ -46,13 +56,34 @@ DIRS=$(DIRS)
 $(RECURSED_TARGET):: $(DIRS)
 
 $(DIRS): _pseudo_target
+!if "$(RECURSED_DIRS)" == "OPTDIRS"
+	@$(BUILD_MAKE_CMD) $(RECURSED_TARGET) RECURSED_TARGET=$(RECURSED_TARGET) RECURSED_DIRS=OPTDIRS_DIR OPTDIRS_DIR=$@
+!elseif "$(RECURSED_DIRS)" == "OPTDIRS_DIR" && !exists("$(DIRS)\Makefile") && !exists("$(DIRS)\Makefile.dir") && !exists("$(DIRS)\Makefile.src")
+!if "$(OPTDIRS_MESSAGE)" != ""
+	@echo MISSING DIR: $(DIRS) $(OPTDIRS_MESSAGE)
+!endif
+!else
 	@echo Entering $(RECURSED_DIR)\$@
 	@cd $@
-	@$(MAKE) -$(MAKEFLAGS) $(RECURSED_TARGET) RECURSED_DIR=$(RECURSED_DIR)\$@ RECURSED_DIRS=.
+	@if "%CMDEXTVERSION%"=="" echo The build may break.  You need Windows 2000 or newer to build.
+	@if not cmdextversion 2 echo The build may break.  You need Windows 2000 or newer to build.
+	@if exist Makefile.dir ( \
+		$(BUILD_MAKE_CMD) $(RECURSED_TARGET) RECURSED_DIR=$(RECURSED_DIR)\$@ RECURSED_DIRS=. \
+	) else ( \
+		if exist Makefile.src ( \
+			$(BUILD_MAKE_CMD) $(RECURSED_TARGET) RECURSED_DIR=$(RECURSED_DIR)\$@ RECURSED_DIRS=. \
+		) else ( \
+		$(BUILD_MAKE_CMD_ALT) $(RECURSED_TARGET) RECURSED_DIR=$(RECURSED_DIR)\$@ RECURSED_DIRS=. \
+		) \
+	)
 	@echo Exiting $(RECURSED_DIR)\$@
 	@cd $(MAKEDIR)
+	@echo.
+!endif
 
 !else # not recursed
+
+!if defined(BUILD_USING_OLDSTYLE_BUILD)
 ###############################################################################
 # Not Recursed...
 
@@ -60,8 +91,8 @@ $(DIRS): _pseudo_target
 MAKEFILE_FOUND=1
 !include .\Makefile.dir
 
-!if !defined(PREDIRS) && !defined(DIRS)
-!message You must define one of PREDIRS or DIRS in Makefile.dir
+!if !defined(PREDIRS) && !defined(DIRS) && !defined(OPTDIRS)
+!message You must define one of PREDIRS, DIRS, or OPTDIRS in Makefile.dir
 !error
 !endif
 
@@ -71,8 +102,9 @@ MAKEFILE_FOUND=1
 # Pre dirs...
 !if defined(PREDIRS)
 all clean::
-	@$(MAKE) -$(MAKEFLAGS) $@ RECURSED_TARGET=$@ RECURSED_DIRS=PREDIRS
+	@$(BUILD_MAKE_CMD) $@ RECURSED_TARGET=$@ RECURSED_DIRS=PREDIRS
 !endif
+!endif # BUILD_USING_OLDSTYLE_BUILD
 
 ###############################################################################
 # The main event...
@@ -185,27 +217,48 @@ clean_outdir:
 
 #------------------------------------------------------------------------------
 
-!ifndef NO_EXTERNAL_DEPS
-!if exists("$(NAME).dep")
-!include "$(NAME).dep"
-MESSAGE_DEP=Included "$(NAME).dep"
-!elseif defined(USE_EXTERNAL_DEPS)
-MESSAGE_DEP=Warning: Cannot find "$(NAME).dep"
+!ifdef C_FLAGS
+MESSAGE_C_FLAGS=1
 !endif
+
+!ifdef RC_FLAGS
+MESSAGE_RC_FLAGS=1
+!endif
+
+!ifdef C_DEFINE
+C_FLAGS=$(C_DEFINE) $(C_FLAGS)
+!endif
+
+!ifdef RC_DEFINE
+RC_FLAGS=$(RC_DEFINE) $(RC_FLAGS)
 !endif
 
 !if defined(PCH_FILE) || defined(USE_PCH)
 C_FLAGS=$(C_FLAGS) -Fp$(O)\$(NAME).pch -YX$(PCH_FILE)
 !endif
 
+!ifdef UNICODE
+C_FLAGS=$(C_FLAGS) -DUNICODE -D_UNICODE
+!endif
+
+!ifndef USE_MINIMAL
+NO_MINIMAL=1
+!endif
+
+!if !defined(NO_MINIMAL) && !defined(NODEBUG)
+C_FLAGS=$(C_FLAGS) -Gm
+!endif
+
+!ifdef USE_CPP_RTTI
+C_FLAGS=$(C_FLAGS) -GR
+!endif
+
 !ifdef USE_CPP_EH
 C_FLAGS=$(C_FLAGS) -GX
 !endif
 
-!ifdef NODEBUG
-!ifndef FORCE_BSC
+!ifndef GEN_BSC
 NO_BSC=1
-!endif
 !endif
 
 !ifdef KEEP_SBRS
@@ -265,6 +318,10 @@ LIBC_FLAGS=$(cvarsdll)
 
 !endif # !NO_LIBC
 
+!ifdef NO_LIBC_LINK
+LIBC_LIB=
+!endif
+
 !ifdef INCLUDES
 INCFLAGS=-I$(INCLUDES:;= -I)
 !endif
@@ -280,6 +337,12 @@ RCFLAGS=$(rcflags) $(rcvars) $(RC_FLAGS) $(DEBUG_DEF) $(INCFLAGS) -DVER_USERNAME
 RCFLAGS=$(RCFLAGS) -DVENDORMOD="stringer($(VENDORMOD))"
 !endif
 
+!ifdef BETA
+RCFLAGS=$(RCFLAGS) -DBETA=$(BETA) -DBETA_STR="stringer($(BETA))"
+!endif
+
+!include <Makefile.inc.site>
+
 !ifdef DEF_FILE
 LDEF=-def:$(DEF_FILE)
 !endif
@@ -288,20 +351,27 @@ LDEF=-def:$(DEF_FILE)
 LMAP=-map
 !endif
 
-!if "$(TARGETTYPE)"=="DLL"
+!if ("$(TARGETTYPE)"=="DLL") || ("$(TARGETTYPE)"=="CPL")
 !ifndef NO_LIBC
 LTAR_XTRA=-entry:_DllMainCRTStartup$(DLLENTRY)
 !else
 LTAR_XTRA=
 !endif
 LTAR=-dll $(LTAR_XTRA) -implib:$(O)\$(NAME).lib
+!if "$(TARGETTYPE)"=="CPL"
+OUTFILE=$(O)\$(NAME).cpl
+!else
 OUTFILE=$(O)\$(NAME).dll
+!endif
 VER_TARGET=VFT_DLL
 !endif
 
 !if "$(TARGETTYPE)"=="EXE"
 OUTFILE=$(O)\$(NAME).exe
 VER_TARGET=VFT_APP
+!if "$(TARGETSS)"=="windows" && defined(UNICODE) && !defined(NO_LIBC) 
+LTAR=-entry:wWinMainCRTStartup
+!endif
 !endif
 
 !if "$(TARGETTYPE)"=="LIB"
@@ -311,6 +381,7 @@ VER_TARGET=VFT_STATIC_LIB
 
 LSS=
 
+!ifdef OUTFILE
 !if "$(TARGETSS)"=="console"
 LSS=-subsystem:console
 !elseif "$(TARGETSS)"=="windows"
@@ -319,6 +390,7 @@ LSS=-subsystem:windows
 !message Invalid TARGETSS: $(TARGETSS)
 !message Valid ones are: console, windows
 !error
+!endif
 !endif
 
 C_RULE_STUFF=$(cc) $(CFLAGS) -Fo$(O)^\ -Fd$(O)^\ -FD -c 
@@ -332,6 +404,22 @@ LNDL=-nodefaultlib
 
 !if "$(RES)"!=""
 $(RES): $(OBJS)
+!endif
+
+!ifndef NO_EXTERNAL_DEPS
+!if exists("$(NAME).dep") && exists("Makefile.dep")
+!include "$(NAME).dep"
+!include "Makefile.dep"
+MESSAGE_DEP=Warning: Included both "$(NAME).dep" and "Makefile.dep"
+!elseif exists("$(NAME).dep")
+!include "$(NAME).dep"
+MESSAGE_DEP=Included "$(NAME).dep"
+!elseif exists("Makefile.dep")
+!include "Makefile.dep"
+MESSAGE_DEP=Included Makefile.dep
+!elseif defined(USE_EXTERNAL_DEPS)
+MESSAGE_DEP=Warning: Cannot find "$(NAME).dep" nor "Makefile.dep"
+!endif
 !endif
 
 {}.rc{$O\}.res:
@@ -352,8 +440,13 @@ $(RES): $(OBJS)
 	@set DO_C_RULE_PRINT=
 	@$(C_RULE)
 
-!ifndef NO_ALL
-all:: output_dir
+!ifdef USE_SUFFIX_CP
+.SUFFIXES: .cp
+
+{}.cp{$O\}.obj:
+	@if "%DO_C_RULE_PRINT%"=="1" echo %C_RULE_PRINT% ...
+	@set DO_C_RULE_PRINT=
+	@$(C_RULE) -TP
 !endif
 
 #------------------------------------------------------------------------------
@@ -367,6 +460,32 @@ $(BSCFILE): $(O) $(SBRS)
 
 #------------------------------------------------------------------------------
 
+!ifdef OUTFILE
+
+all:: output_dir
+
+LINK_LINE=-nologo $(ldebug) $(LIBFLAGS) $(LSS) $(LDEF) $(LNDL) $(LTAR) $(LMAP) -out:$(OUTFILE) -pdb:$(O)\$(NAME).pdb -pdbtype:sept $(LIBC_LIB) $(optlibs) $(LIBS) $(OBJS) $(RES)
+
+LIB_LINE=-nologo -out:$@ $(LIBFLAGS) $(OBJS) $(LIBS) $(LNDL)
+
+!if ("$(TARGETTYPE)"=="DLL") || ("$(TARGETTYPE)"=="EXE") || ("$(TARGETTYPE)"=="CPL")
+$(OUTFILE): $(OBJS) $(RES) $(DEF_FILE) $(DEP_LIBS)
+	$(link) $(LINK_LINE)
+#	@echo $(link) $(LINK_LINE)
+#	$(link) @<<
+#$(LINK_LINE)
+#<<
+!elseif "$(TARGETTYPE)"=="LIB"
+$(OUTFILE): $(OBJS) $(DEP_LIBS)
+	$(implib) $(LIB_LINE)
+#	@echo $(implib) $(LIB_LINE)
+#	@$(implib) @<<
+#$(LIB_LINE)
+#<<
+!else
+!error Invalid TARGETTYPE $(TARGETTYPE) (must be one of DLL EXE LIB CPL NONE)
+!endif
+
 !ifdef NO_BSC
 all:: $(OUTFILE)
 !else
@@ -374,35 +493,28 @@ all:: $(OUTFILE) $(BSCFILE)
 !endif
 	@$(BINPLACE) $(OUTFILE)
 
-LINK_LINE=-nologo $(ldebug) $(LIBFLAGS) $(LSS) $(LDEF) $(LNDL) $(LTAR) $(LMAP) -out:$(OUTFILE) -pdb:$(O)\$(NAME).pdb -pdbtype:sept -incremental:yes $(LIBC_LIB) $(optlibs) $(LIBS) $(OBJS) $(RES)
+!else # OUTFILE
 
-LIB_LINE=-nologo -out:$@ $(OBJS) $(LIBS) $(LNDL)
+!if ("$(TARGETTYPE)"!="NONE")
+!error Invalid TARGETTYPE $(TARGETTYPE) (must be one of DLL EXE LIB CPL NONE)
+!endif
 
-!if ("$(TARGETTYPE)"=="DLL") || ("$(TARGETTYPE)"=="EXE")
-$(OUTFILE): $(OBJS) $(RES) $(DEF_FILE)
-	$(link) $(LINK_LINE)
-#	@echo $(link) $(LINK_LINE)
-#	$(link) @<<
-#$(LINK_LINE)
-#<<
-!elseif "$(TARGETTYPE)"=="LIB"
-$(OUTFILE): $(OBJS)
-	$(implib) $(LIB_LINE)
-#	@echo $(implib) $(LIB_LINE)
-#	@$(implib) @<<
-#$(LIB_LINE)
-#<<
-!else
-!error Invalid TARGETTYPE $(TARGETTYPE) (must be one of DLL EXE LIB)
+!endif # OUTFILE
+
+!ifdef PLACE
+all::
+	@$(BINPLACE) $(PLACE)
 !endif
 
 #------------------------------------------------------------------------------
 
-!ifdef NO_OUT
-output_dir:
-!else
-output_dir: $(OUTDIR)$(DIRNUL)
+!if exists("Makefile.xtra")
+!include .\Makefile.xtra
 !endif
+
+#------------------------------------------------------------------------------
+
+output_dir: $(OUTDIR)$(DIRNUL)
 
 super_clean: super_clean_files clean_outdir
 
@@ -431,7 +543,9 @@ clean:: super_clean
 # Build messagges...
 
 _all_msg: _pseudo_target
+!ifdef BUILD_USING_OLDSTYLE_BUILD
 	@echo Building $(RECURSED_DIR)
+!endif
 	@set C_RULE_PRINT=	$(C_RULE_PRINT)
 	@set DO_C_RULE_PRINT=1
 
@@ -439,7 +553,9 @@ _clean_msg: _pseudo_target
 	@echo Cleaning $(RECURSED_DIR)
 
 _pre_msg: _pseudo_target
+!ifdef BUILD_USING_OLDSTYLE_BUILD
 	@echo.
+!endif
 
 _post_msg: _pseudo_target
 !if defined(MESSAGE_INST)
@@ -448,15 +564,31 @@ _post_msg: _pseudo_target
 !if defined(MESSAGE_DEP)
 	@echo $(MESSAGE_DEP)
 !endif
+!if defined(MESSAGE_C_FLAGS)
+	@echo WARNING: C_FLAGS definition in Makefile.src! (See build docs to fix this.)
+!endif
+!if defined(MESSAGE_RC_FLAGS)
+	@echo WARNING: RC_FLAGS definition in Makefile.src! (See build docs to fix this.)
+!endif
 
 !endif # Makefile.src
 
+!ifdef BUILD_USING_OLDSTYLE_BUILD
 ###############################################################################
 # Post dirs...
 !if defined(DIRS)
 all clean::
-	@$(MAKE) -$(MAKEFLAGS) $@ RECURSED_TARGET=$@ RECURSED_DIRS=DIRS
+	@$(BUILD_MAKE_CMD) $@ RECURSED_TARGET=$@ RECURSED_DIRS=DIRS
 !endif
+
+###############################################################################
+# Optional dirs...
+!if defined(OPTDIRS)
+all clean::
+	@$(BUILD_MAKE_CMD) $@ RECURSED_TARGET=$@ RECURSED_DIRS=OPTDIRS
+!endif
+
+!endif # BUILD_USING_OLDSTYLE_BUILD
 
 ###############################################################################
 # Sanity check...

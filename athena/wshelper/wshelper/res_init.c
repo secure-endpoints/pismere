@@ -58,8 +58,6 @@ static char sccsid[] = "@(#)res_init.c  6.15 (Berkeley) 2/24/91";
 #include <stdlib.h>
 #include <string.h>
 
-// #define DEBUG  // sets up some annonying messageboxes
-
 #if !defined(_WIN32)
 #include <wownt16.h>
 #endif
@@ -394,77 +392,63 @@ res_init()
     }
 #endif /* !_WIN32 */
     
-    /* some info not found? */ /* il 8/1/95 */
-#ifdef WINDOWS
-    /* no reliable source or local domain or name servers */ /* il 8/1/95 */
+    /* no reliable source or local domain or name servers */
     if (_res.defdname[0] == 0 || /*!havens ||*/ !nserv ){
-        if (MessageBox(NULL,
-                       "The network is not set up correctly.\n"
-                       "No reliable information about the local\n"
-                       "domain or the name servers has been found.\n"
-                       "\n"
-                       "However you should still able to resolve fully\n"
-                       "qualified machine names. Please see\n"
-                       "http://web.mit.edu/dosathena/doc/www/wshelper.html\n"
-                       "for more information.\n\n"
-                       "Do you want to continue?",
-                       "WSHelper Error!",
-                       MB_ICONEXCLAMATION | MB_YESNO | MB_TASKMODAL ) == IDNO){
 
-            if (/*!havens ||*/ !nserv){
-#ifndef WIN32
-                TerminateApp( NULL, UAE_BOX );
-#else
-                ExitProcess( 1 );
-#endif // WIN32
-            }else{
-                PostQuitMessage( 1 );
-            }  
-#endif // WINDOWS
-        } else {
-            // we've decided to continue, let's use those hard coded defaults
-            // Note: these must match the DEF file entries
+        // We output this to any attached debugger.
+        // You can get a free debug message viewer from www.sysinternals.com
 
-            if(LoadString(this_module(), IDS_DEF_DNS1, 
-                          wnServAddr, sizeof(wnServAddr) )){
+        OutputDebugString(
+            "wshelper error:\n"
+            "\tNo reliable info about the local domain or the "
+            "name servers found.\n"
+            "\tPerhaps the network is not properly setup "
+            "(or down if using DHCP).\n"
+            "\tUsing built-in defaults.\n"
+            );
 
-                if ((_res.nsaddr_list[0].sin_addr.s_addr = inet_addr(wnServAddr)) == (unsigned)-1)
-                    _res.nsaddr_list[0].sin_addr.s_addr = INADDR_ANY;
-                else{
-                    _res.nsaddr_list[0].sin_family = AF_INET;
-                    _res.nsaddr_list[0].sin_port = htons(NAMESERVER_PORT);
-                    nserv++;
-                    /*havens++;*/
-                }
+        // Let's use those hard coded defaults
+        // Note: these must match the DEF file entries
+
+        if(LoadString(this_module(), IDS_DEF_DNS1, 
+                      wnServAddr, sizeof(wnServAddr) )){
+
+            if ((_res.nsaddr_list[0].sin_addr.s_addr = inet_addr(wnServAddr)) == (unsigned)-1)
+                _res.nsaddr_list[0].sin_addr.s_addr = INADDR_ANY;
+            else{
+                _res.nsaddr_list[0].sin_family = AF_INET;
+                _res.nsaddr_list[0].sin_port = htons(NAMESERVER_PORT);
+                nserv++;
+                /*havens++;*/
             }
-            if(LoadString(this_module(), IDS_DEF_DNS2, 
-                          wnServAddr, sizeof(wnServAddr) )){
+        }
+        if(LoadString(this_module(), IDS_DEF_DNS2, 
+                      wnServAddr, sizeof(wnServAddr) )){
 
-                if ((_res.nsaddr_list[1].sin_addr.s_addr = inet_addr(wnServAddr)) == (unsigned)-1)
-                    _res.nsaddr_list[1].sin_addr.s_addr = INADDR_ANY;
-                else{
-                    _res.nsaddr_list[1].sin_family = AF_INET;
-                    _res.nsaddr_list[1].sin_port = htons(NAMESERVER_PORT);
-                    nserv++;
-                    /*havens++;*/
-                }
-
+            if ((_res.nsaddr_list[1].sin_addr.s_addr = inet_addr(wnServAddr)) == (unsigned)-1)
+                _res.nsaddr_list[1].sin_addr.s_addr = INADDR_ANY;
+            else{
+                _res.nsaddr_list[1].sin_family = AF_INET;
+                _res.nsaddr_list[1].sin_port = htons(NAMESERVER_PORT);
+                nserv++;
+                /*havens++;*/
             }
-            if(LoadString(this_module(), IDS_DEF_DNS3, 
-                          wnServAddr, sizeof(wnServAddr) )){
 
-                if ((_res.nsaddr_list[2].sin_addr.s_addr = inet_addr(wnServAddr)) == (unsigned)-1)
-                    _res.nsaddr_list[2].sin_addr.s_addr = INADDR_ANY;
-                else{
-                    _res.nsaddr_list[2].sin_family = AF_INET;
-                    _res.nsaddr_list[2].sin_port = htons(NAMESERVER_PORT);
-                    nserv++;
-                    /*havens++;*/
-                }
-		                    	
+        }
+        if(LoadString(this_module(), IDS_DEF_DNS3, 
+                      wnServAddr, sizeof(wnServAddr) )){
+
+            if ((_res.nsaddr_list[2].sin_addr.s_addr = inet_addr(wnServAddr)) == (unsigned)-1)
+                _res.nsaddr_list[2].sin_addr.s_addr = INADDR_ANY;
+            else{
+                _res.nsaddr_list[2].sin_family = AF_INET;
+                _res.nsaddr_list[2].sin_port = htons(NAMESERVER_PORT);
+                nserv++;
+                /*havens++;*/
             }
-        }  
+        }
     }
+
     if (_res.defdname[0] == 0) {
         if (gethostname(buf, sizeof(_res.defdname)) == 0 &&
             (cp = /*index*/ strrchr (buf, '.')))
@@ -653,18 +637,16 @@ static PFIXED_INFO ipinfo = NULL;
 static int
 load_iphelper()
 {
-    if ( ipinfo != NULL )
+    if (ipinfo != NULL)
         return(1);
 
-    if ( hIPHLPAPI == NULL ) {
-        hIPHLPAPI = LoadLibrary("IPHLPAPI");
-        if ( hIPHLPAPI == NULL )
-            return(0);
-    }
+    if (hIPHLPAPI == NULL)
+        return 0;
 
     (FARPROC) pGetNetworkParams = GetProcAddress(hIPHLPAPI, 
                                                  "GetNetworkParams");
-    if ( pGetNetworkParams ) {
+    if (pGetNetworkParams)
+    {
         DWORD dwBuf = 0;
         DWORD rc = pGetNetworkParams(ipinfo, &dwBuf);
         if (rc == ERROR_BUFFER_OVERFLOW) {
@@ -874,9 +856,6 @@ WhichOS(
     if( _res.options & RES_DEBUG ){
         wsprintf( debstr, wsaData.szDescription );
         OutputDebugString( debstr );
-#ifdef DEBUG
-        MessageBox(NULL, debstr, "wshelper", MB_OK );
-#endif //DEBUG
     }
 
     if( (0 == checkStack) && (0 == stricmp( wsaData.szDescription, NT_32 ))){
@@ -933,9 +912,6 @@ WhichOS(
         if( _res.options & RES_DEBUG ){
             wsprintf( debstr, "dwFlags = %x ", dwFlags );
             OutputDebugString( debstr );
-#ifdef DEBUG
-            MessageBox(NULL, debstr, "wshelper", MB_OK );
-#endif //DEBUG
         }	
 
         dwVersion = GetVersion();
@@ -943,9 +919,6 @@ WhichOS(
         if( _res.options & RES_DEBUG ){
             wsprintf( debstr, "dwVersion = %8lx ", dwVersion );
             OutputDebugString( debstr );
-#ifdef DEBUG
-            MessageBox(NULL, debstr, "wshelper", MB_OK );
-#endif //DEBUG
         }	
 		
         if( 95 == (DWORD)(HIBYTE(LOWORD(dwVersion))) ){
@@ -1864,6 +1837,8 @@ res_init_startup()
 {
     DWORD debug_on = 0;
 
+    hIPHLPAPI = LoadLibrary("IPHLPAPI");
+
     if (try_registry(HKEY_CURRENT_USER, "DebugOn", &debug_on) ||
         try_registry(HKEY_LOCAL_MACHINE, "DebugOn", &debug_on))
     {
@@ -1877,4 +1852,9 @@ res_init_cleanup()
 {
     if (ipinfo)
         free(ipinfo);
+    if (hIPHLPAPI)
+    {
+        FreeLibrary(hIPHLPAPI);
+        hIPHLPAPI = 0;
+    }
 }

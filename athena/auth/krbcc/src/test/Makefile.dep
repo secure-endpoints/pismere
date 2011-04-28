@@ -1,0 +1,6 @@
+cctest.cxx: \
+	..\inc\cacheapi.h \
+	..\inc\debug.h \
+	..\inc\opts.hxx \
+	..\inc\testapi.h \
+

@@ -112,7 +112,7 @@ not_an_API_LeashGetTimeServerName(
         for (check = 0; check < 2; check++)
         { 
             if (ERROR_SUCCESS == RegOpenKeyEx(check == 0 ? rKey1 : rKey2, 
-                                              "Software\\MIT\\Leash\\Settings", 
+                                              "Software\\MIT\\Leash32\\Settings", 
                                               0, KEY_QUERY_VALUE, &hKey))
             {
                 memset(value, '\0', sizeof(value));

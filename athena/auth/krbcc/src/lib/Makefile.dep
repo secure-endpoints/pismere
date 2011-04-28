@@ -1,0 +1,36 @@
+debug.cxx: \
+	..\inc\debug.h \
+
+init.cxx: \
+	..\inc\autolock.hxx \
+	..\inc\debug.h \
+	..\inc\init.hxx \
+	..\inc\secure.hxx \
+
+marshall.cxx: \
+	..\inc\cacheapi.h \
+	..\inc\ccapi.h \
+	..\inc\debug.h \
+	..\inc\marshall.hxx \
+
+memory.cxx: \
+	..\inc\autolock.hxx \
+	..\inc\ccapi.h \
+	..\inc\debug.h \
+	..\inc\util.h \
+
+opts.cxx: \
+	..\inc\opts.hxx \
+
+secure.cxx: \
+	..\inc\autolock.hxx \
+	..\inc\debug.h \
+	..\inc\secure.hxx \
+	..\inc\util.h \
+
+util.cxx: \
+	..\inc\autolock.hxx \
+	..\inc\debug.h \
+	..\inc\secure.hxx \
+	..\inc\util.h \
+

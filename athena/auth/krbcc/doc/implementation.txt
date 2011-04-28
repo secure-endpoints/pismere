@@ -1,0 +1,102 @@
+			krbcc32 Implementation
+			----------------------
+
+Introduction:
+------------
+
+You must be familiar with the "krbcc32 Architecture" document before
+reading this.
+
+
+Basic Operation:
+---------------
+
+* CCAPI on Server:
+
+The server uses the Mac CCacheLib CCAPI implementation to implement
+the underlying CCAPI.
+
+
+Deviations:
+----------
+
+These are places where the implementation deviated from the desired
+goal of the architecture.
+
+* Connection:
+
+The current DLL implementation does not automatically re-acquire
+handles when the DLL detects that the server disappeared.  It will
+restart the server as discussed in the architecture document, but the
+DLL does not attempt to re-acquire any handles that it has given to
+the CCAPI client.  It may be possible to implement this, but I am not
+sure.
+
+* Auto-Termination:
+
+The current EXE does not auto-terminate.  This can be implemented by
+having the server look at the internal CCacheLib state.
+
+
+Security:
+--------
+
+On Windows 9x/Me, there is no security.
+
+* Notation:
+
+In the discussion below, RN(x) = "krbcc.x" for Windows 9x/Me.  On
+Windows NT/2000, RN(x) =
+"krbcc.<user_domain>.<user_name>.<user_sid>.<login_session>.x" where
+the parameters in <> are derived from the process's primary token.
+
+* Security Descriptors
+
+In Windows NT/2000, we secure every globally-visible resource with a
+security descriptor.  Specifically, we build a security descriptor
+with a DACL containing only an ACE to allow the user SID of the
+primary token of current process (whether it's the client DLL's
+process or the EXE RPC server) to access the resource.
+
+* Connection:
+
+When connecting, the DLL constructs a name RN(ep) and
+tries to connect to an LRPC endpoint by that name.  If it is not
+successful, it starts a server.  The server will create a LRPC
+endpoint of that same form.
+
+To wait for the EXE to startup, the DLL creates the event RN(startup)
+and waits for the server to signal it for up to two seconds.  After
+the event is signaled or the timeout has elapsed, the DLL will check
+again for the presence of the RPC server.  If the server is not
+present at this point, the connection attempt is aborted.  The event
+has a security descriptor so random people who happen to be logged in
+can't signal it.
+
+* How the Server Authenticates the Client:
+
+On Windows NT/2000, we set the security descriptor in the call to
+create the LRPC endpoint (RpcServerUseProtseqEp()) to restrict who can
+connect to the server.  This allows us to skip having any connect-time
+security callback.
+
+* How the Client Authenticates the Server:
+
+On Windows NT/2000, we would like to check the owner of the LRPC
+endpoint by looking at its security descriptor.  However, since that
+is not really possible (unless perhaps you use GetKernelObjectSecurity
+on the NT namespace object "\RPC Control\<endpoint-name>"), we have
+the client make an RPC call to the server asking the server to
+increment a counter in shared memory.  The security descriptor on the
+shared memory is set so that only the client's SID can access it.  The
+name of the shared memory region is passed to the server.  The name
+that the DLL passes into the server happens to be RN(auth), but the
+DLL can use any name since it passes the name of the shared memory
+region into the server via the RPC call.
+
+* Attacks:
+
+This scheme is only susceptible to a denial of service attack.  If an
+attacker takes over the LRPC endpoint for a user login session, the
+user's client will fail to authenticate the attacker and no service
+will be provided.

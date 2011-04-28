@@ -376,6 +376,94 @@ fake_com_err(
     va_end(ap);
 }
 
+krb5_error_code
+KRB5_CALLCONV
+k_read_password(
+    krb5_context        ctx,
+    const char		* prompt,
+    const char		* prompt2,
+    char		* password,
+    int			* pwsize
+    )
+{
+    HANDLE		handle;
+    DWORD		old_mode, new_mode;
+    char		*tmpstr = 0;
+    char		*ptr;
+    int			scratchchar;
+    krb5_error_code	errcode = 0;
+
+    handle = GetStdHandle(STD_INPUT_HANDLE);
+    if (handle == INVALID_HANDLE_VALUE)
+	return ENOTTY;
+    if (!GetConsoleMode(handle, &old_mode))
+	return ENOTTY;
+
+    new_mode = old_mode;
+    new_mode |=  ( ENABLE_LINE_INPUT | ENABLE_PROCESSED_INPUT );
+    new_mode &= ~( ENABLE_ECHO_INPUT );
+
+    if (!SetConsoleMode(handle, new_mode))
+	return ENOTTY;
+
+    (void) fputs(prompt, stdout);
+    (void) fflush(stdout);
+    (void) memset(password, 0, *pwsize);
+
+    if (fgets(password, *pwsize, stdin) == NULL) {
+	(void) putchar('\n');
+	errcode = KRB5_LIBOS_CANTREADPWD;
+	goto cleanup;
+    }
+    (void) putchar('\n');
+
+    if ((ptr = strchr(password, '\n')))
+	*ptr = '\0';
+    else /* need to flush */
+	do {
+	    scratchchar = getchar();
+	} while (scratchchar != EOF && scratchchar != '\n');
+
+    if (prompt2) {
+	if (! (tmpstr = (char *)malloc(*pwsize))) {
+	    errcode = ENOMEM;
+	    goto cleanup;
+	}
+	(void) fputs(prompt2, stdout);
+	(void) fflush(stdout);
+	if (fgets(tmpstr, *pwsize, stdin) == NULL) {
+	    (void) putchar('\n');
+	    errcode = KRB5_LIBOS_CANTREADPWD;
+	    goto cleanup;
+	}
+	(void) putchar('\n');
+
+	if ((ptr = strchr(tmpstr, '\n')))
+	    *ptr = '\0';
+	else /* need to flush */
+	    do {
+		scratchchar = getchar();
+	    } while (scratchchar != EOF && scratchchar != '\n');
+
+	if (strncmp(password, tmpstr, *pwsize)) {
+	    errcode = KRB5_LIBOS_BADPWDMATCH;
+	    goto cleanup;
+	}
+    }
+
+cleanup:
+    (void) SetConsoleMode(handle, old_mode);
+    if (tmpstr) {
+	(void) memset(tmpstr, 0, *pwsize);
+	(void) free(tmpstr);
+    }
+    if (errcode)
+	(void) memset(password, 0, *pwsize);
+    else
+	*pwsize = strlen(password);
+    return errcode;
+}
+
 DECL_FUNC_PTR(get_krb_err_txt_entry);
 DECL_FUNC_PTR(krb_realmofhost);
 DECL_FUNC_PTR(tkt_string);
@@ -419,8 +507,25 @@ DECL_FUNC_PTR(krb5_get_renewed_creds);
 DECL_FUNC_PTR(krb5_kt_default);
 DECL_FUNC_PTR(krb5_kt_resolve);
 DECL_FUNC_PTR(krb5_sname_to_principal);
-DECL_FUNC_PTR(decode_krb5_ticket);
+DECL_FUNC_PTR(krb5_decode_ticket);
 DECL_FUNC_PTR(krb5_enctype_to_string);
+DECL_FUNC_PTR(krb5_timestamp_to_sfstring);
+DECL_FUNC_PTR(krb5_string_to_deltat);
+DECL_FUNC_PTR(krb5_string_to_timestamp);
+DECL_FUNC_PTR(krb5_524_conv_principal);
+DECL_FUNC_PTR(krb5_get_prompt_types);
+DECL_FUNC_PTR(krb5_prompter_posix);
+DECL_FUNC_PTR(krb5_get_init_creds_keytab);
+DECL_FUNC_PTR(krb5_get_init_creds_password);
+DECL_FUNC_PTR(krb5_free_addresses);
+DECL_FUNC_PTR(krb5_get_init_creds_opt_set_address_list);
+DECL_FUNC_PTR(krb5_os_localaddr);
+DECL_FUNC_PTR(krb5_get_init_creds_opt_set_proxiable);
+DECL_FUNC_PTR(krb5_get_init_creds_opt_set_forwardable);
+DECL_FUNC_PTR(krb5_get_init_creds_opt_set_renew_life);
+DECL_FUNC_PTR(krb5_get_init_creds_opt_set_tkt_life);
+DECL_FUNC_PTR(krb5_get_init_creds_opt_init);
+DECL_FUNC_PTR(krb5_read_password);
 
 DECL_FUNC_PTR(com_err);
 
@@ -471,8 +576,25 @@ FUNC_INFO k5_fi[] = {
     MAKE_FUNC_INFO(krb5_kt_default),
     MAKE_FUNC_INFO(krb5_kt_resolve),
     MAKE_FUNC_INFO(krb5_sname_to_principal),
-    MAKE_FUNC_INFO(decode_krb5_ticket),
+    MAKE_FUNC_INFO(krb5_decode_ticket),
     MAKE_FUNC_INFO(krb5_enctype_to_string),
+    MAKE_FUNC_INFO(krb5_timestamp_to_sfstring),
+    MAKE_FUNC_INFO(krb5_string_to_deltat),
+    MAKE_FUNC_INFO(krb5_string_to_timestamp),
+    MAKE_FUNC_INFO(krb5_524_conv_principal),
+    MAKE_FUNC_INFO(krb5_get_prompt_types),
+    MAKE_FUNC_INFO(krb5_prompter_posix),
+    MAKE_FUNC_INFO(krb5_get_init_creds_keytab),
+    MAKE_FUNC_INFO(krb5_get_init_creds_password),
+    MAKE_FUNC_INFO(krb5_free_addresses),
+    MAKE_FUNC_INFO(krb5_get_init_creds_opt_set_address_list),
+    MAKE_FUNC_INFO(krb5_os_localaddr),
+    MAKE_FUNC_INFO(krb5_get_init_creds_opt_set_proxiable),
+    MAKE_FUNC_INFO(krb5_get_init_creds_opt_set_forwardable),
+    MAKE_FUNC_INFO(krb5_get_init_creds_opt_set_renew_life),
+    MAKE_FUNC_INFO(krb5_get_init_creds_opt_set_tkt_life),
+    MAKE_FUNC_INFO(krb5_get_init_creds_opt_init),
+    MAKE_FUNC_INFO(krb5_read_password),
     END_FUNC_INFO
 };
 

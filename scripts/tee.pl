@@ -4,13 +4,16 @@
 #  (This may be a bug in perl 4 for NT)
 #
 # Use it like:
-#	open(PIPE, "|perl tee.pl foo.log") || die "Can't pipe";
+#	open(PIPE, "|$^X tee.pl foo.log") || die "Can't pipe";
 #	open(STDOUT, ">&PIPE") || die "Can't dup pipe to stdout";
 #	open(STDERR, ">&PIPE") || die "Can't dup pipe to stderr";
 
 use IO::File;
 
-$SIG{'INT'} = \&handler;
+#$SIG{'INT'} = \&handler;
+#$SIG{'QUIT'} = \&handler;
+
+$SIG{'INT'} = 'IGNORE';
 $SIG{'QUIT'} = \&handler;
 
 my $fh = new IO::File;
@@ -48,8 +51,9 @@ while (<>) {
 sub logtime {
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
     $mon = $mon + 1;
-    sprintf ("[%02d/%02d/%02d %02d:%02d:%02d] ", 
-	     $year, $mon, $mday, 
+    $year %= 100;
+    sprintf ("[%02d/%02d/%02d %02d:%02d:%02d] ",
+	     $year, $mon, $mday,
 	     $hour, $min, $sec);
 }
 
@@ -65,7 +69,11 @@ EOH
     print $bailmsg, $warnmsg;
     print $fh $bailmsg, $warnmsg;
     print "Closing log...";
-    $fh->close if $file;
+    undef $fh if $fh;
     print "closed!\n";
     exit(2);
+}
+
+END {
+    undef $fh if $fh;
 }

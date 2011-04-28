@@ -1548,12 +1548,19 @@ TYPEDEF_FUNC(
     KRB5_PROTOTYPE((krb5_context context, char *str))
     );
 
+TYPEDEF_FUNC(
+    krb5_prompt_type*,
+    KRB5_CALLCONV,
+    krb5_get_prompt_types,
+    KRB5_PROTOTYPE((krb5_context context))
+    );
+
 /* NOT IN krb5.h HEADER: */
 
 TYPEDEF_FUNC(
     krb5_error_code,
-    KRB5_CALLCONV_C,
-    decode_krb5_ticket,
+    KRB5_CALLCONV,
+    krb5_decode_ticket,
     KRB5_PROTOTYPE((const krb5_data *code, krb5_ticket **rep))
     );
 

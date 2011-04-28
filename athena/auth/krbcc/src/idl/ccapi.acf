@@ -1,0 +1,5 @@
+[implicit_handle(handle_t ccapi_IfHandle)]
+interface ccapi
+{
+
+}

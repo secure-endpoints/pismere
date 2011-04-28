@@ -589,7 +589,7 @@ VOID CLeashView::OnRenewTicket()
 
 VOID CLeashView::OnDestroyTicket()
 {
-    if (m_gotKrb4Tickets || m_gotKrb5Tickets) 
+    if (m_gotKrb4Tickets || m_gotKrb5Tickets || !m_afsNoTokens) 
     {
         INT whatToDo;
 		
@@ -728,7 +728,9 @@ VOID CLeashView::OnUpdateDisplay()
     // Krb4
     m_tvinsert.hParent = NULL;
     m_tvinsert.item.iImage = 1;
-    m_tvinsert.item.pszText = ticketinfoKrb4.principal;
+
+	m_tvinsert.item.pszText = ticketinfoKrb4.principal;
+	
     m_hPrincipal = m_pTree->InsertItem(&m_tvinsert);
 
     UpdateTicketTime(ticketinfoKrb4);
@@ -885,8 +887,8 @@ VOID CLeashView::OnUpdateDisplay()
         {
             m_gotAfsTokens = TRUE;
             m_tvinsert.item.pszText = "AFS Tokens";
-            m_tvinsert.item.iImage = iconStatusKrb4;
-            m_tvinsert.item.iSelectedImage = iconStatusKrb4;
+            m_tvinsert.item.iImage = ACTIVE_TICKET; //iconStatusKrb4;
+            m_tvinsert.item.iSelectedImage = ACTIVE_TICKET; //iconStatusKrb4;
         }
     	else
         {
@@ -899,8 +901,8 @@ VOID CLeashView::OnUpdateDisplay()
         m_hAFS = m_pTree->InsertItem(&m_tvinsert);
 
         m_tvinsert.hParent = m_hAFS;
-        m_tvinsert.item.iImage = ticketIconStatusKrb4;
-        m_tvinsert.item.iSelectedImage = ticketIconStatus_SelectedKrb4;
+        m_tvinsert.item.iImage = ACTIVE_CLOCK; //ticketIconStatusKrb4;
+        m_tvinsert.item.iSelectedImage = ACTIVE_CLOCK; //ticketIconStatus_SelectedKrb4;
 
         tempList = m_listAFS, *killList;
         while (tempList)
@@ -936,14 +938,20 @@ VOID CLeashView::OnUpdateDisplay()
     if (sPrincipal.IsEmpty())
         sPrincipal = ticketinfoKrb4.principal;
 
-    if (!ticketinfoKrb4.btickets && !ticketinfoKrb5.btickets) //&& sPrincipal.IsEmpty())
+	// if no tickets
+	if (!ticketinfoKrb4.btickets && !ticketinfoKrb5.btickets)
+		sPrincipal = " No Tickets ";
+    
+
+	// if no tickets and tokens
+    if (!ticketinfoKrb4.btickets && !ticketinfoKrb5.btickets && m_afsNoTokens) //&& sPrincipal.IsEmpty())
     {
         // No tickets
         m_pTree->DeleteAllItems();
 
         m_tvinsert.hParent = NULL;
         m_tvinsert.item.iImage = 1;
-        m_tvinsert.item.pszText = " No Tickets ";
+        m_tvinsert.item.pszText = " No Tickets/Tokens ";
         m_tvinsert.item.iSelectedImage = 1;
         m_hPrincipal = m_pTree->InsertItem(&m_tvinsert);
 
@@ -1361,7 +1369,7 @@ VOID CLeashView::OnUpdateDestroyTicket(CCmdUI* pCmdUI)
     else
         pCmdUI->SetText("&Destroy Ticket(s)/Token(s)\tCtrl+D");
 
-    if (!m_gotKrb4Tickets && !m_gotKrb5Tickets)
+    if (!m_gotKrb4Tickets && !m_gotKrb5Tickets && m_afsNoTokens)
         pCmdUI->Enable(FALSE);
     else
         pCmdUI->Enable(TRUE);

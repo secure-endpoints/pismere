@@ -1,0 +1,26 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=krbcc32s
+TARGETTYPE=EXE
+TARGETSS=console
+
+OBJS= \
+	$(O)\ccapi_s.obj \
+	$(O)\server.obj \
+	$(O)\procs.obj \
+	$(O)\rundown.obj
+
+RES=$(O)\ver.res
+
+USE_DEFAULTLIB=1
+NO_LIBC_LINK=1
+USE_LIBC_DLL=1
+DEP_LIBS=..\lib\$(O)\ccutil.lib ..\CCacheLib\Sources\$(O)\CCache.lib
+LIBS=rpcrt4.lib $(DEP_LIBS) $(STD_LIBS)
+INCLUDES=..\inc
+
+USE_CPP_EH=1
+
+C_DEFINE=-DWIN32_LEAN_AND_MEAN

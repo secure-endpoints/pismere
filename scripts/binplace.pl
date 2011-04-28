@@ -19,6 +19,7 @@ my $TOPDIR = File::Spec->catfile($FindBin::Bin, '..');
 my $DIRBASE = File::Spec->catfile($TOPDIR, 'target');
 my $MAP;
 my $EXTRA;
+my @FILES;
 
 sub set_cpu
 {
@@ -54,19 +55,27 @@ sub set_map
        LIB => File::Spec->catfile($DIRBASE, 'lib', $CPU, $DEBUG_DIR),
        INC => File::Spec->catfile($DIRBASE, 'inc'),
       };
-    $MAP = 
+    $MAP =
       {
        exe => $DIR->{BIN},
        dll => $DIR->{BIN},
+       cpl => $DIR->{BIN},
        hlp => $DIR->{BIN},
        lib => $DIR->{LIB},
        h   => $DIR->{INC},
+	 sys => $DIR->{BIN},
+	 inf => $DIR->{BIN},
+	 msc => $DIR->{BIN},
+	 htm => $DIR->{BIN},
+	html => $DIR->{BIN},
       };
     $EXTRA =
       {
        exe => ['pdb', 'bsc'],
        dll => ['pdb', 'bsc', 'lib'],
+       cpl => ['pdb', 'bsc', 'lib'],
        lib => ['pdb', 'bsc'],
+	 sys => ['pdb', 'bsc'],
       }
 }
 
@@ -82,7 +91,7 @@ sub get_extras
     }
     return ();
 }
-      
+
 sub get_by_ext
 {
     my $file = shift;
@@ -93,7 +102,7 @@ sub get_by_ext
     }
     return 0;
 }
-      
+
 sub init
 {
     set_cpu();
@@ -104,8 +113,8 @@ sub init
 sub main
 {
     Getopt::Long::Configure('bundling');
-    if (!GetOptions($OPT, 
-		    "help|H|h|?", 
+    if (!GetOptions($OPT,
+		    "help|H|h|?",
 		    "debug",
 		    "nodebug",
 		    "cpu=s",
@@ -125,6 +134,7 @@ sub main
 	return;
     }
     init();
+    @FILES = @ARGV;
     while ($file = shift @ARGV) {
 	place($file);
     }
@@ -142,11 +152,25 @@ sub excluded
     return 0;
 }
 
+sub in_list
+{
+    my $element = shift;
+    my $list = shift;
+    foreach my $e (@$list) {
+	return 1 if $e eq $element;
+    }
+    return 0;
+}
+
 sub place
 {
     my $file = shift;
     my $dir_extras = shift;
 
+    if (!-e $file) {
+	die "ERROR: Cannot find $file\n" if in_list($file, \@FILES);
+	return;
+    }
     return if (!-e $file);
     return if excluded($file);
 
@@ -212,7 +236,7 @@ sub mycopy
     }
     return $rc;
 }
-   
+
 sub usage
 {
     print <<USAGE;

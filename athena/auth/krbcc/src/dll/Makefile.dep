@@ -1,0 +1,43 @@
+cacheapi.cxx: \
+	..\inc\autolock.hxx \
+	..\inc\cacheapi.h \
+	..\inc\ccapi.h \
+	..\inc\debug.h \
+	..\inc\debug.hxx \
+	..\inc\marshall.hxx \
+	..\inc\secure.hxx \
+	.\client.h \
+
+ccapi_c.c: \
+	..\inc\ccapi.h \
+
+client.cxx: \
+	..\inc\autolock.hxx \
+	..\inc\ccapi.h \
+	..\inc\debug.h \
+	..\inc\init.hxx \
+	..\inc\name.h \
+	..\inc\secure.hxx \
+	..\inc\util.h \
+	.\client.h \
+
+dllmain.cxx: \
+	..\inc\autolock.hxx \
+	..\inc\init.hxx \
+	..\inc\secure.hxx \
+	..\inc\util.h \
+	.\client.h \
+
+testapi.cxx: \
+	..\inc\autolock.hxx \
+	..\inc\ccapi.h \
+	..\inc\debug.h \
+	..\inc\secure.hxx \
+	..\inc\testapi.h \
+	.\client.h \
+
+ver.rc: \
+	$(PISMERE)\athena\include\export.ver \
+	$(PISMERE)\athena\include\kerberos.ver \
+	$(PISMERE)\scripts\build\inc\ver.inc \
+

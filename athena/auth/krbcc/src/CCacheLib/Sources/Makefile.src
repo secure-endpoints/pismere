@@ -1,0 +1,34 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=CCache
+TARGETTYPE=LIB
+TARGETSS=console
+
+OBJS= \
+	$(O)\CCache2Compat.obj \
+	$(O)\CCacheUtil.obj \
+	$(O)\CCICCache.obj \
+	$(O)\CCICCacheData.obj \
+	$(O)\CCICCacheDataCallStubs.obj \
+	$(O)\CCICCacheIterator.obj \
+	$(O)\CCIContext.obj \
+	$(O)\CCIContextData.obj \
+	$(O)\CCIContextDataCallStubs.obj \
+	$(O)\CCICredentials.obj \
+	$(O)\CCICredentialsData.obj \
+	$(O)\CCICredentialsDataCallStubs.obj \
+	$(O)\CCICredentialsIterator.obj \
+	$(O)\CCIData.obj \
+	$(O)\CCILeaks.obj \
+	$(O)\CCIString.obj \
+	$(O)\CCIUniqueGlobally.obj \
+	$(O)\CCIUniqueInProcess.obj
+
+INCLUDES=..\Headers;..\Headers.mac;.\Headers
+USE_DEFAULTLIB=1
+NO_BSC=1
+NO_PLACE=1
+USE_CPP_EH=1
+USE_SUFFIX_CP=1

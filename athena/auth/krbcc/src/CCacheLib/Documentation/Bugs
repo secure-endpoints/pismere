@@ -1,0 +1,64 @@
+========================================================================
+CCache Library Bug List
+========================================================================
+Current version:	3.0b3
+Date:				June 14, 2000
+Authors:			meeroh@mit.edu, smcguire@mit.edu, fdabek@mit.edu,
+					lxs@mit.edu
+========================================================================
+
+No Known bugs in 3.0b3
+
+========================================================================
+Bug #		Bug description										Fixed in
+========================================================================
+
+[BZ 332]	Assertion when initializing v4 for the second time	3.0b3
+[BZ 330]	Crash in cc_initialize								3.0b2
+[BZ 270]	cc_context_create_next_ccache leaks 128 bytes		3.0b1
+[BZ 267]	Logging in twice causes a memory leak				3.0b1
+[BZ 273]	Crashes, exceptions launching MZ after launching TK	3.0a2
+[BZ 252]	Static data refcount not incremented correcty 		3.0a1
+[BZ 259]	Buffer overrun when copying cc_data arrays 			3.0a1
+[BZ 195]	get/free_NC_info unimplemented						3.0d7
+[BZ 140]	Uninitialized variables in compat layer				3.0d6
+[BZ 107]	cc_fetch_creds_next returns NULL creds 				3.0d5
+[BZ 108]	cc_fetch_creds_next returning v4 and v5 creds
+			in one ccache 										3.0d5
+[BZ 123]	non-debugging version crashes in
+			std::ios_base::~ios_base 							3.0d5
+[BZ 103]	cc_open doesn't deal with caches with both
+			v4 and v5 tickets 									3.0d5
+[BZ 104]	cc_free_principal() results in an access exception 	3.0d5
+[BZ  38]	crash in creds_iter_release if ccache handle freed	3.0d3
+[BZ  25]	creds_deep_free crashes under low memory conditions	3.0d3
+[BZ  11]	New ccache not created with default name			3.0d3
+[BZ   4]	Service credentials left behind on create			3.0d3
+[    16]	Read past the end of an array in caompat ccache
+			iterator											3.0d2
+[    15]	Allowed storing v4 creds in v5 cache
+			and vice versa										3.0d2
+[    14]	Incorrect handling of empty creds in deep_free		3.0d2
+[    13]	Heap corruption in cci_realloc (was forgetting
+			space for block tag)								2.0.2b1
+[    12]	Heap corruption in cci_deep_copy_v5_creds (wrong
+			parens in strlen)									2.0.1
+[    11]	Wrong names for MIT Ticket Keeper and Kerberos
+			Manager in notification								2.0fc3
+[    10]	CFM initializer was crashing and losing because we were stupidly
+			reinitializing QuickDraw and sending events from it	2.0fc1
+[     9]	cc_store was corrupting krb5 tickets
+			(wrong order of args to memcpy)						2.0b4
+[     8]	cc_destroy was freeing cache and reference in the
+			wrong order											2.0b3
+[     7]	cci_deep_free_creds wasn't expecting some nils		2.0b3
+[     6]	Wasn't decrementing ccache count on cc_destroy		2.0b3
+[     5]	cc_cred_vers should have been cc_int32				2.0b3
+[     4]	cci_deep_copy_v5_creds and cci_deep_free_v5_creds -> client vs.
+			-> server confusion									2.0b3
+[     3]	assertions from __terminate come up after QD world
+			is gone												2.0b3
+[     2]	bogus assertion for leaking ccache infos			2.0b2
+[     1]	bogus assertion for leaking ccache handles			2.0b2
+
+   

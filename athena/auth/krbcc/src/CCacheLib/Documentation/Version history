@@ -1,0 +1,309 @@
+========================================================================
+Credentials Cache Library Version History
+========================================================================
+Current version:	3.0b3
+Date:				June 14, 2000
+Author:				meeroh@mit.edu, smcguire@mit.edu, fdabek@mit.edu,
+					lxs@mit.edu
+========================================================================
+
+CCacheLib 3.0
+Not yet released
+
+Changes since 2.0.2:
+	Complete rewrite, now implements CCache API v3
+
+========================================================================
+
+	CCacheLib 3.0b3
+	June 14, 2000
+	
+	Bugs fixed in this release:
+		[BZ 332]	Assertion when initializing v4 for the second time
+	========================================================================
+
+	CCacheLib 3.0b2
+	June 13, 2000
+	
+	More code changes to compile under VC++
+	Bugs fixed in this release:
+		[BZ 330]	crash in cc_initialize
+	========================================================================
+
+	CCacheLib 3.0b1
+	June 3, 2000
+	
+	Code changes to compile under VC++
+	Bugs fixed in this release:
+		[BZ 270]	c_context_create_next_ccache leaks 128 bytes
+		[BZ 267]	Logging in twice causes a memory leak
+
+	========================================================================
+
+	CCacheLib 3.0a2
+	May 22, 2000
+	
+	Bugs fixed in this release:
+		[BZ 273]	Crashes & exceptions launching MZ after launching TK
+			
+	========================================================================
+
+	CCacheLib 3.0a1
+	May 22, 2000
+	
+	Bugs fixed in this release:
+		[BZ 252]	Static data refcount not incremented correcty
+		[BZ 259]	Buffer overrun when copying cc_data arrays
+			
+	========================================================================
+
+	CCacheLib 3.0d7
+	May 6, 2000
+	
+	Documentation update
+
+	Bugs fixed in this release:
+		[BZ 195]	get/free_NC_info unimplemented
+			
+	========================================================================
+
+	CCacheLib 3.0d6
+	April 29, 2000
+
+	Bugs fixed in this release:
+		[BZ 140]	Uninitialized variables in compat layer
+			
+	========================================================================
+
+	CCacheLib 3.0d5
+	April 20, 2000
+
+	Bugs fixed in this release:
+		[BZ 107]	cc_fetch_creds_next returns NULL creds
+		[BZ 108]	cc_fetch_creds_next returning v4 and v5 creds
+					in one ccache
+		[BZ 123]	non-debugging version crashes in
+					std::iso_base::~ios_base
+		[BZ 103]	cc_open doesn't deal with caches with both
+					v4 and v5 tickets
+		[BZ 104]	cc_free_principal() results in an access exception
+			
+	========================================================================
+
+	CCacheLib 3.0d4
+	April 9, 2000
+
+	Complete rewrite in C++ with interface/data factoring
+			
+	========================================================================
+
+	CCacheLib 3.0d3
+	March 11, 2000
+	
+	Bugs fixed in this revision:
+		[BZ  38]	crash in creds_iter_release if ccache handle freed
+		[BZ  25]	creds_deep_free crashes under low memory conditions
+		[BZ  11]	New ccache not created with default name
+		[BZ   4]	Service credentials left behind on create
+			
+	========================================================================
+
+	CCacheLib 3.0d2
+	February 27, 2000
+	
+	Bugs fixed in this revision:
+	 - [    14] handle empty creds correctly in deep_free
+	 - [    15] correctly fail storing wrong creds in a ccache
+	 - [    16] don't read past end of ccache array in compat ccache iter
+	 
+	 Changed to use MIT Runtime.Lib
+			
+	========================================================================
+
+	CCacheLib 3.0d1
+	February 10, 2000
+	
+	First implementation of CCache API v3 draft
+			
+	========================================================================
+
+CCacheLib 2.0.2
+September 14, 1999
+
+Changes since 2.0.1:
+	Changed locking function to work per-context, not per-process
+	Fixed heap corruption in cci_realloc
+	Updated to use TicketKeeperLib
+
+========================================================================
+
+	CCacheLib 2.0.2b2
+	September 2, 1999
+	
+	Updated to use TicketKeeperLib
+			
+	========================================================================
+
+	CCacheLib 2.0.2b1
+	August 21, 1999
+	
+	Bugs fixed in this revision:
+	 - [    13] No more heap corruption in cci_realloc	
+			
+	========================================================================
+
+	CCacheLib 2.0.2a1
+	August 8, 1999
+	
+	Changed locking functions to lock per-context, not per-process.
+	Updated to the new tree
+			
+	========================================================================
+
+CCacheLib 2.0.1
+June 23, 1999
+
+This is the first bug-fix version to 2.0, released in MIT Kerberos for the
+Macintosh 2.0.2
+
+Bug fixed in this version:
+	 - [    12]	Fixed heap corruption in cci_deep_copy_v5_creds
+
+
+	CCacheLib 2.0.1d1
+	May 28, 1999
+	
+	Rebuilt from the new tree
+			
+	========================================================================
+
+CCacheLib 2.0
+April 199, 1999
+
+This version is an almost complete rewrite of the CCache library. Version 1
+had several problems that came from misunderstandings about intended use of
+the API, which required a major reingeneering to fix.
+
+New features in this version:
+	- CCAPI v2 support
+	- leak checking and reporting
+
+Bugs fixed in this version:
+	- all bugs related to API misunderstandings
+	- miscellaneous edge cases and boundary conditions
+
+	CCacheLib 2.0fc3
+	April 23, 1999
+	
+	New features in this revision: none
+	
+	Bugs fixed in this revision:
+	 [    11] Fixed MIT Ticket Keeper and Kerberos Manager names in 
+	 notification string
+		
+	========================================================================
+	
+	
+	CCacheLib 2.0fc2
+	April 23, 1999
+	
+	New features in this revision:
+	 - Error notification not displayed when CCacheLib is laoded by the
+	 Kerberos Manager
+	
+	Bugs fixed in this revision: none
+		
+	========================================================================
+	
+	
+	CCacheLib 2.0fc1
+	April 21, 1999
+	
+	Changed fragment names according to the new MIT Kerberos convention
+	
+	New features in this revision: none
+	
+	Bugs fixed in this revision:
+		- [    10] Fixed CFM initializer to not crash and reinitialize
+		  QuickDraw
+		
+	========================================================================
+	
+	
+	CCacheLib 2.0b5
+	April 8, 1999
+	
+	New features in this revision:
+		- Added code to launch Ticket Keeper and complain if we can't
+	
+	Bugs fixed in this revision: none
+		
+	========================================================================
+	
+	
+	CCacheLib 2.0b4
+	March 22, 1999
+	
+	New features in this revision: none
+	
+	Bugs fixed in this revision:
+		- [     9] fixed v5 credential corruption resulting from memcpy
+		  confusion
+		
+	========================================================================
+	
+	
+	CCacheLib 2.0b3
+	March 11, 1999
+	
+	New features in this revision: none
+	
+	Bugs fixed in this revision:
+		- [     3] assertions from __terminate no longer try to use dialogs
+		- [     4] cci_deep_copy_v5_creds and cci_deep_free_v5_creds are no
+		  longer freeing -> client and -> server incorrectly
+		- [     5] cc_cred_vers typedef fixed
+		- [     6] ccache count now corectly decremented on cc_destroy
+		- [     7] added null checks in cci_deep_free_creds
+		- [     8] cc_destroy freeing ccache and ccache reference in right
+		  order
+		
+	========================================================================
+	
+	
+	CCacheLib 2.0b2
+	February 26, 1999
+	
+	New features in this revision: none
+	
+	Bugs fixed in this revision:
+		- [     1] bogus assertion for leaking ccache infos
+		- [     2] bogus assertion for leaking ccache handles
+		
+	========================================================================
+	
+	
+	CCacheLib 2.0b1
+	February 24, 1999
+	
+	New features in this revision:
+		- CCAPI v2 support
+		- Added leak checking and appropriate assertions
+	
+	Bugs fixed in this revision:
+		- cc_close deletes ccache
+		- ccache_p to a deleted cache is a dangling pointer
+		- credential caches not destroyed when globals library unloaded
+		- return values do not follow spec
+		- miscellaneous boundary conditions not checked all over the place
+		
+	========================================================================
+	
+CCacheLib 1.0
+Summer/Fall 1998
+by Frank Dabek and Scott McGuire
+
+This was the initial implementation of the credentials cache API, based on
+version 1 of the API. It was included in all releases of GSS/Kerberos v5
+libraries between 1.1a2 and 1.1b4.
+

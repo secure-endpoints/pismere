@@ -9,17 +9,14 @@
 #include <krb.h>
 #include <decldll.h>
 #include <leashwin.h>
+#include "leash-int.h"
 
 #define KRB5_DEFAULT_LIFE            60*60*10 /* 10 hours */
-#define KRB5_DEFAULT_OPTIONS 0
 
-const int LeashKrb5ErrorMessage(krb5_error_code rc, LPCSTR FailedFunctionName, 
-                                int FreeContextFlag, krb5_context KRBv5Context,
-                                krb5_ccache KRBv5Cache);
-int LeashKRB5initialize(krb5_context *, krb5_ccache *);
-int LeashKRB5destroyTicket(void);
-int LeashKRB5processTicket(char *, char *, char *, char *, char *, 
-                           krb5_deltat, int, krb5_context);
+int Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName, 
+                     int FreeContextFlag, krb5_context ctx,
+                     krb5_ccache cache);
+int Leash_krb5_initialize(krb5_context *, krb5_ccache *);
 
 char *GetTicketFlag(krb5_creds *cred) 
 {
@@ -82,8 +79,8 @@ not_an_API_LeashKRB5GetTickets(
 #ifdef NO_KRB5
     return(0);
 #else
-    krb5_context	KRBv5Context;
-    krb5_ccache		KRBv5Cache;
+    krb5_context	ctx;
+    krb5_ccache		cache;
     krb5_error_code	code;
     krb5_principal	KRBv5Principal;
     krb5_flags		flags;
@@ -111,32 +108,32 @@ not_an_API_LeashKRB5GetTickets(
 
     TicketList* list = NULL; 
     
-    KRBv5Context = NULL;
-    KRBv5Cache = NULL;
+    ctx = NULL;
+    cache = NULL;
     ticketinfo->btickets = NO_TICKETS; 
     
-    if ((code = LeashKRB5initialize(&(*krbv5Context), &KRBv5Cache)))
+    if ((code = Leash_krb5_initialize(&(*krbv5Context), &cache)))
         return(code);
 	
-    KRBv5Context = (*krbv5Context);
+    ctx = (*krbv5Context);
 	
     flags = 0;
 
-    if ((code = krb5_cc_set_flags(KRBv5Context, KRBv5Cache, flags)))
+    if ((code = krb5_cc_set_flags(ctx, cache, flags)))
     {
         if (code != KRB5_FCC_NOFILE)
-            LeashKrb5ErrorMessage(code, "krb5_cc_set_flags()", 0, KRBv5Context, 
-                                  KRBv5Cache);        
-        else if (code != KRB5_FCC_NOFILE && KRBv5Context != NULL)
+            Leash_krb5_error(code, "krb5_cc_set_flags()", 0, ctx, 
+                                  cache);        
+        else if (code != KRB5_FCC_NOFILE && ctx != NULL)
         {
-            if (KRBv5Cache != NULL)
-                krb5_cc_close(KRBv5Context, KRBv5Cache);
+            if (cache != NULL)
+                krb5_cc_close(ctx, cache);
         }
 
         return code;
     }
 	
-    if (code = krb5_cc_get_principal(KRBv5Context, KRBv5Cache, 
+    if (code = krb5_cc_get_principal(ctx, cache, 
                                      &KRBv5Principal))
     {
         functionName = "krb5_cc_get_principal()";
@@ -147,17 +144,17 @@ not_an_API_LeashKRB5GetTickets(
     PrincipalName = NULL;
     ClientName = NULL;
     sServerName = NULL;
-    if ((code = (*pkrb5_unparse_name)(KRBv5Context, KRBv5Principal, 
+    if ((code = (*pkrb5_unparse_name)(ctx, KRBv5Principal, 
                                       (char **)&PrincipalName))) 
     {
         if (PrincipalName != NULL)
-            (*pkrb5_free_unparsed_name)(KRBv5Context, PrincipalName);
+            (*pkrb5_free_unparsed_name)(ctx, PrincipalName);
 		
-        (*pkrb5_free_principal)(KRBv5Context, KRBv5Principal);
-        if (KRBv5Context != NULL)
+        (*pkrb5_free_principal)(ctx, KRBv5Principal);
+        if (ctx != NULL)
         {
-            if (KRBv5Cache != NULL)
-                krb5_cc_close(KRBv5Context, KRBv5Cache);
+            if (cache != NULL)
+                krb5_cc_close(ctx, cache);
         }
 	
         return(code);
@@ -166,13 +163,13 @@ not_an_API_LeashKRB5GetTickets(
     if (!strcspn(PrincipalName, "@" ))
     {
         if (PrincipalName != NULL)
-            (*pkrb5_free_unparsed_name)(KRBv5Context, PrincipalName);
+            (*pkrb5_free_unparsed_name)(ctx, PrincipalName);
 	
-        (*pkrb5_free_principal)(KRBv5Context, KRBv5Principal);
-        if (KRBv5Context != NULL)
+        (*pkrb5_free_principal)(ctx, KRBv5Principal);
+        if (ctx != NULL)
         {
-            if (KRBv5Cache != NULL)
-                krb5_cc_close(KRBv5Context, KRBv5Cache);
+            if (cache != NULL)
+                krb5_cc_close(ctx, cache);
         }
 		
         return(code);
@@ -183,13 +180,13 @@ not_an_API_LeashKRB5GetTickets(
         if (strcmp(PrincipalName, ticketinfo->principal))
         {
             if (PrincipalName != NULL)
-                (*pkrb5_free_unparsed_name)(KRBv5Context, PrincipalName);
+                (*pkrb5_free_unparsed_name)(ctx, PrincipalName);
 
-            (*pkrb5_free_principal)(KRBv5Context, KRBv5Principal);
-            if (KRBv5Context != NULL)
+            (*pkrb5_free_principal)(ctx, KRBv5Principal);
+            if (ctx != NULL)
             {
-                if (KRBv5Cache != NULL)
-                    krb5_cc_close(KRBv5Context, KRBv5Cache);
+                if (cache != NULL)
+                    krb5_cc_close(ctx, cache);
             }
 			
             return(code);
@@ -198,8 +195,8 @@ not_an_API_LeashKRB5GetTickets(
 
     wsprintf(ticketinfo->principal, "%s", PrincipalName);
 
-    (*pkrb5_free_principal)(KRBv5Context, KRBv5Principal);
-    if ((code = krb5_cc_start_seq_get(KRBv5Context, KRBv5Cache, &KRBv5Cursor))) 
+    (*pkrb5_free_principal)(ctx, KRBv5Principal);
+    if ((code = krb5_cc_start_seq_get(ctx, cache, &KRBv5Cursor))) 
     {
         functionName = "krb5_cc_start_seq_get()";
         freeContextFlag = 1;
@@ -208,7 +205,7 @@ not_an_API_LeashKRB5GetTickets(
 	
     memset(&KRBv5Credentials, '\0', sizeof(KRBv5Credentials));
 
-    while (!(code = krb5_cc_next_cred(KRBv5Context, KRBv5Cache, &KRBv5Cursor, &KRBv5Credentials))) 
+    while (!(code = krb5_cc_next_cred(ctx, cache, &KRBv5Cursor, &KRBv5Credentials))) 
     {
         if (!list)
         {
@@ -221,26 +218,26 @@ not_an_API_LeashKRB5GetTickets(
             list = (TicketList*) list->next;
         }
 
-        if ((*pkrb5_unparse_name)(KRBv5Context, KRBv5Credentials.client, &ClientName))
+        if ((*pkrb5_unparse_name)(ctx, KRBv5Credentials.client, &ClientName))
         {
-            (*pkrb5_free_cred_contents)(KRBv5Context, &KRBv5Credentials);
-            LeashKrb5ErrorMessage(code, "krb5_free_cred_contents()", 0, KRBv5Context, KRBv5Cache);
+            (*pkrb5_free_cred_contents)(ctx, &KRBv5Credentials);
+            Leash_krb5_error(code, "krb5_free_cred_contents()", 0, ctx, cache);
 			
             if (ClientName != NULL)
-                (*pkrb5_free_unparsed_name)(KRBv5Context, ClientName);
+                (*pkrb5_free_unparsed_name)(ctx, ClientName);
 			
             ClientName = NULL;
             sServerName = NULL;
             continue;
         }
 
-        if ((*pkrb5_unparse_name)(KRBv5Context, KRBv5Credentials.server, &sServerName))
+        if ((*pkrb5_unparse_name)(ctx, KRBv5Credentials.server, &sServerName))
         {
-            (*pkrb5_free_cred_contents)(KRBv5Context, &KRBv5Credentials);
-            LeashKrb5ErrorMessage(code, "krb5_free_cred_contents()", 0, KRBv5Context, KRBv5Cache);
+            (*pkrb5_free_cred_contents)(ctx, &KRBv5Credentials);
+            Leash_krb5_error(code, "krb5_free_cred_contents()", 0, ctx, cache);
 			
             if (ClientName != NULL)
-                (*pkrb5_free_unparsed_name)(KRBv5Context, ClientName);
+                (*pkrb5_free_unparsed_name)(ctx, ClientName);
 			
             ClientName = NULL;
             sServerName = NULL;
@@ -327,28 +324,28 @@ not_an_API_LeashKRB5GetTickets(
         ticketinfo->lifetime = KRBv5Credentials.times.endtime - KRBv5Credentials.times.starttime;
 
     	if (ClientName != NULL)
-            (*pkrb5_free_unparsed_name)(KRBv5Context, ClientName);
+            (*pkrb5_free_unparsed_name)(ctx, ClientName);
 		
         if (sServerName != NULL)
-            (*pkrb5_free_unparsed_name)(KRBv5Context, sServerName);
+            (*pkrb5_free_unparsed_name)(ctx, sServerName);
 		
         ClientName = NULL;
         sServerName = NULL;
-        (*pkrb5_free_cred_contents)(KRBv5Context, &KRBv5Credentials);
+        (*pkrb5_free_cred_contents)(ctx, &KRBv5Credentials);
     }
 
     if (PrincipalName != NULL)
-        (*pkrb5_free_unparsed_name)(KRBv5Context, PrincipalName);
+        (*pkrb5_free_unparsed_name)(ctx, PrincipalName);
 	
     if (ClientName != NULL)
-        (*pkrb5_free_unparsed_name)(KRBv5Context, ClientName);
+        (*pkrb5_free_unparsed_name)(ctx, ClientName);
 	
     if (sServerName != NULL)
-        (*pkrb5_free_unparsed_name)(KRBv5Context, sServerName);
+        (*pkrb5_free_unparsed_name)(ctx, sServerName);
 
     if ((code == KRB5_CC_END) || (code == KRB5_CC_NOTFOUND))
     {
-        if ((code = krb5_cc_end_seq_get(KRBv5Context, KRBv5Cache, &KRBv5Cursor))) 
+        if ((code = krb5_cc_end_seq_get(ctx, cache, &KRBv5Cursor))) 
         {
             functionName = "krb5_cc_end_seq_get()";
             freeContextFlag = 1;
@@ -356,7 +353,7 @@ not_an_API_LeashKRB5GetTickets(
         }
 
         flags = KRB5_TC_OPENCLOSE;
-        if ((code = krb5_cc_set_flags(KRBv5Context, KRBv5Cache, flags))) 
+        if ((code = krb5_cc_set_flags(ctx, cache, flags))) 
         {
             functionName = "krb5_cc_set_flags()";
             freeContextFlag = 1;
@@ -370,263 +367,114 @@ not_an_API_LeashKRB5GetTickets(
         goto on_error;
     }
 
-    if (KRBv5Context != NULL)
+    if (ctx != NULL)
     {
-        if (KRBv5Cache != NULL)
-            krb5_cc_close(KRBv5Context, KRBv5Cache);
+        if (cache != NULL)
+            krb5_cc_close(ctx, cache);
     }
 	
     return(code);
 
  on_error:
     
-    LeashKrb5ErrorMessage(code, functionName, freeContextFlag, KRBv5Context, KRBv5Cache);
+    Leash_krb5_error(code, functionName, freeContextFlag, ctx, cache);
     return(code);
 #endif //!NO_KER5
 }
 
 
-/**************************************/
-/* LeashKRB5processTicket():          */
-/**************************************/
 int
-LeashKRB5processTicket(
-    char *PrincipalName, 
-    char *PassWord, 
-    char *service, 
-    char *cell, 
-    char *Realm, 
-    krb5_deltat LifeTime, 
-    int TicketType,
+Leash_krb5_kinit(
+    char *principal_name,
+    char *password,
+    krb5_deltat lifetime,
     krb5_context alt_ctx
     )
 {
 #ifdef NO_KRB5
     return(0);
 #else
-    krb5_timestamp		StartTime;
-    krb5_timestamp		CurrentTime;
-    int					Options;
-    krb5_error_code		rc = 0;
-    krb5_context		KRBv5Context = 0;
-    krb5_ccache			KRBv5Cache = 0;
-    krb5_principal		KRBv5Principal = 0;
-    krb5_principal		TmpKRBv5Principal = 0;
-    krb5_principal		server = 0;
-    krb5_preauthtype	*PreAuth = NULL;
-    krb5_creds			KRBv5Creds;
-//    krb5_data			pwchname = {0, 8, "changepw"};
-    krb5_address		**Addrs;
-    char				*ClientName = 0;
-    char				*pName = 0;
-    char				RealmName[128];
-    char				CellName[128];
-    char				ServiceName[128];
-    krb5_auth_context	AuthContext;
-    krb5_data			InData;
-    krb5_data			OutData;
-    LPCSTR              functionName;
-    HKEY hKey;
-		
-    
+    krb5_error_code		code = 0;
+    krb5_context		ctx = 0;
+    krb5_ccache			cc = 0;
+    krb5_principal		me = 0;
+    char*                       name = 0;
+    krb5_creds			my_creds;
+    krb5_get_init_creds_opt     options;
+    DWORD                       forwardable = 0;
+    DWORD                       proxiable = 0;
+
     if (!pkrb5_init_context)
         return 0;
 
-    memset((char *)&KRBv5Creds, '\0', sizeof(KRBv5Creds));
+    pkrb5_get_init_creds_opt_init(&options);
+    memset(&my_creds, 0, sizeof(my_creds));
 
     if (alt_ctx)
     {
-        KRBv5Context = alt_ctx;
+        ctx = alt_ctx;
     }
     else
     {
-        if (rc = pkrb5_init_context(&KRBv5Context))
-            goto cleanup;
+        code = pkrb5_init_context(&ctx);
+        if (code) goto cleanup;
     }
 
-    if (rc = pkrb5_cc_default(KRBv5Context, &KRBv5Cache))
-        goto cleanup;
+    code = pkrb5_cc_default(ctx, &cc);
+    if (code) goto cleanup;
 
-    if (TicketType == 1)
-    {
-        memset(&AuthContext, '\0', sizeof(AuthContext));
-        memset(&InData, '\0', sizeof(InData));
-        memset(&OutData, '\0', sizeof(OutData));
+    code = pkrb5_parse_name(ctx, principal_name, &me);
+    if (code) goto cleanup;
 
-        rc = pkrb5_mk_req(KRBv5Context, &AuthContext, 
-                          AP_OPTS_USE_SESSION_KEY, service, cell, 
-                          &InData, KRBv5Cache, &OutData);
+    code = pkrb5_unparse_name(ctx, me, &name);
+    if (code) goto cleanup;
 
-        if (!rc)
-            pkrb5_free_data_contents(KRBv5Context, &OutData);
-
-        goto cleanup;
-    }
-
-    LifeTime *= 5;
-    LifeTime *= 60;
-	
-    if (LifeTime == 0)
-        LifeTime = KRB5_DEFAULT_LIFE;
-
-    StartTime = 0;
-    Options = KRB5_DEFAULT_OPTIONS;
-    
-    if (ERROR_SUCCESS == RegOpenKeyEx(HKEY_CURRENT_USER, 
-                                       "Software\\MIT\\Leash32\\Settings", 
-                                       0, KEY_QUERY_VALUE, &hKey))
-    {
-        long lResult; 
-        DWORD dwType; 
-        DWORD dwCount;
-        int value;
-        // Get the registry value for 'Forwardable tickets'
-        value = 0;
-        dwCount = sizeof(value);
-        lResult = RegQueryValueEx(hKey, "ForwardableTicket", 
-                                  NULL, &dwType,
-                                  (LPBYTE)&value, &dwCount);
-        if (lResult == ERROR_SUCCESS && value)
-        {
-            if (value)
-                Options |= KDC_OPT_FORWARDABLE;
-        }
-        // Get the registry value for 'Proxiable tickets'
-        value = 0;
-        dwCount = sizeof(value);
-        lResult = RegQueryValueEx(hKey, "ProxiableTicket", 
-                                  NULL, &dwType,
-                                  (LPBYTE)&value, &dwCount);
-        if (lResult == ERROR_SUCCESS && value)
-        {
-            if (value)
-                Options |= KDC_OPT_PROXIABLE;
-        }
-        RegCloseKey(hKey);
-    }
-  
-    Addrs = (krb5_address **)0;
-
-    rc = pkrb5_timeofday(KRBv5Context, &CurrentTime); 
-	
-    if (rc = pkrb5_parse_name(KRBv5Context, PrincipalName, &KRBv5Principal))
-    {
-        functionName = "krb5_parse_name()";
-        goto cleanup;
-    }
-
-    ClientName = NULL;
-    rc = pkrb5_unparse_name(KRBv5Context, KRBv5Principal, &ClientName);
-
-    memset(ServiceName, '\0', sizeof(ServiceName));
-    if (strlen(service) == 0)
-        strcpy(ServiceName, KRB5_TGS_NAME);
+    if (lifetime == 0)
+        lifetime = KRB5_DEFAULT_LIFE;
     else
-        strcpy(ServiceName, service);
+        lifetime *= 5*60;
 
-    memset(CellName, '\0', sizeof(CellName));
-    if (strlen(cell) == 0)
-        memcpy(CellName, krb5_princ_realm(KRBv5Context, KRBv5Principal)->data, krb5_princ_realm(KRBv5Context, KRBv5Principal)->length);
-    else
-        strcpy(CellName, cell);
+    if (lifetime)
+        pkrb5_get_init_creds_opt_set_tkt_life(&options, lifetime);
+    if (!read_registry_setting(LEASH_REG_SETTING_KRB5_FORWARDABLE,
+                               &forwardable, sizeof(forwardable)))
+	pkrb5_get_init_creds_opt_set_forwardable(&options,
+                                                 forwardable ? 1 : 0);
+    if (!read_registry_setting(LEASH_REG_SETTING_KRB5_PROXIABLE,
+                               &proxiable, sizeof(proxiable)))
+	pkrb5_get_init_creds_opt_set_proxiable(&options,
+                                               proxiable ? 1 : 0);
 
-    memset(RealmName, '\0', sizeof(RealmName));
-    if (strlen(cell) == 0)
-        memcpy(RealmName, krb5_princ_realm(KRBv5Context, KRBv5Principal)->data, krb5_princ_realm(KRBv5Context, KRBv5Principal)->length);
-    else
-        strcpy(RealmName, Realm);
+    code = pkrb5_get_init_creds_password(ctx, 
+                                       &my_creds, 
+                                       me,
+                                       password, // password
+                                       0, // prompter
+                                       0, // prompter data
+                                       0, // start time
+                                       0, // service name
+                                       &options);
+    if (code) goto cleanup;
 
-    KRBv5Creds.client = KRBv5Principal;
+    code = krb5_cc_initialize(ctx, cc, me);
+    if (code) goto cleanup;
 
-    rc = pkrb5_build_principal_ext(KRBv5Context,
-                                   &server,
-                                   strlen(RealmName),
-                                   RealmName,
-                                   strlen(ServiceName),
-                                   ServiceName,
-                                   strlen(CellName),
-                                   CellName,
-                                   0);
-
-    KRBv5Creds.server = server;
-    server = 0;
-    KRBv5Creds.times.starttime = 0;
-    KRBv5Creds.times.endtime = CurrentTime + LifeTime;
-    KRBv5Creds.times.renew_till = 0;
-
-    if ((rc = pkrb5_get_in_tkt_with_password(KRBv5Context, Options, Addrs, 
-                                             NULL, PreAuth, PassWord, 0, 
-                                             &KRBv5Creds, 0)))
-    {
-        functionName = "krb5_get_in_tkt_with_password()";
-        goto cleanup;
-    }
-
-    if (rc = krb5_cc_get_principal(KRBv5Context, KRBv5Cache, 
-                                   &TmpKRBv5Principal))
-    {
-        if ((rc = krb5_cc_initialize(KRBv5Context, KRBv5Cache, 
-                                     KRBv5Principal)) != 0)
-        {
-            functionName = "krb5_cc_initialize()";
-            goto cleanup;
-    	}
-    }
-    else
-    {
-        if ((rc = pkrb5_unparse_name(KRBv5Context, TmpKRBv5Principal, &pName)))
-        {
-            if ((rc = krb5_cc_initialize(KRBv5Context, KRBv5Cache, 
-                                         KRBv5Principal)) != 0)
-            {
-                goto cleanup;
-            }
-        }
-        else
-        {
-            if ((!strcmp(pName, ClientName)) && 
-                (KRBv5Cache->ops->remove_cred != NULL))
-            {
-                krb5_cc_remove_cred(KRBv5Context, KRBv5Cache, 0, &KRBv5Creds);
-            }
-            else
-            {
-                if ((rc = krb5_cc_initialize(KRBv5Context, KRBv5Cache, 
-                                             KRBv5Principal)) != 0)
-                {
-                    functionName = "krb5_cc_initialize()";
-                    goto cleanup;
-                }
-            }
-        }
-    }
-
-    if ((rc = krb5_cc_store_cred(KRBv5Context, KRBv5Cache, &KRBv5Creds)) != 0)
-    {
-        functionName = "krb5_cc_store_cred()";
-        goto cleanup;
-    }
+    code = krb5_cc_store_cred(ctx, cc, &my_creds);
+    if (code) goto cleanup;
 
  cleanup:
-    if (KRBv5Creds.client)
-        KRBv5Principal = 0;
-    pkrb5_free_cred_contents(KRBv5Context, &KRBv5Creds);
-    if (server)
-        pkrb5_free_principal(KRBv5Context, server);
-    if (KRBv5Principal)
-        pkrb5_free_principal(KRBv5Context, KRBv5Principal);
-    if (TmpKRBv5Principal)
-        pkrb5_free_principal(KRBv5Context, TmpKRBv5Principal);
-    if (ClientName)
-        pkrb5_free_unparsed_name(KRBv5Context, ClientName);
-    if (pName)
-        pkrb5_free_unparsed_name(KRBv5Context, pName);
-
-    if (KRBv5Cache)
-        krb5_cc_close(KRBv5Context, KRBv5Cache);
-    if (KRBv5Context && (KRBv5Context != alt_ctx))
-        pkrb5_free_context(KRBv5Context);
-    return(rc);
+    if (my_creds.client == me)
+	my_creds.client = 0;
+    pkrb5_free_cred_contents(ctx, &my_creds);
+    if (name)
+	pkrb5_free_unparsed_name(ctx, name);
+    if (me)
+	pkrb5_free_principal(ctx, me);
+    if (cc)
+	krb5_cc_close(ctx, cc);
+    if (ctx && (ctx != alt_ctx))
+	pkrb5_free_context(ctx);
+    return(code);
 #endif //!NO_KRB5
 }
 
@@ -634,24 +482,27 @@ LeashKRB5processTicket(
 /**************************************/
 /* LeashKRB5destroyTicket():          */
 /**************************************/
-int LeashKRB5destroyTicket(void)
+int
+Leash_krb5_kdestroy(
+    void
+    )
 {
 #ifdef NO_KRB5
     return(0);
 #else
-    krb5_context		KRBv5Context;
-    krb5_ccache			KRBv5Cache;
+    krb5_context		ctx;
+    krb5_ccache			cache;
     krb5_error_code		rc;
 
-    KRBv5Context = NULL;
-    KRBv5Cache = NULL;
-    if (rc = LeashKRB5initialize(&KRBv5Context, &KRBv5Cache))
+    ctx = NULL;
+    cache = NULL;
+    if (rc = Leash_krb5_initialize(&ctx, &cache))
         return(rc);
 	
-    rc = krb5_cc_destroy(KRBv5Context, KRBv5Cache);
+    rc = krb5_cc_destroy(ctx, cache);
 
-    if (KRBv5Context != NULL)
-        (*pkrb5_free_context)(KRBv5Context);
+    if (ctx != NULL)
+        pkrb5_free_context(ctx);
 
     return(rc);
 
@@ -659,9 +510,9 @@ int LeashKRB5destroyTicket(void)
 }
 
 /**************************************/
-/* LeashKRB5initialize():             */
+/* Leash_krb5_initialize():             */
 /**************************************/
-int LeashKRB5initialize(krb5_context *KRBv5Context, krb5_ccache *KRBv5Cache)
+int Leash_krb5_initialize(krb5_context *ctx, krb5_ccache *cache)
 {
 #ifdef NO_KRB5
     return(0);
@@ -674,14 +525,14 @@ int LeashKRB5initialize(krb5_context *KRBv5Context, krb5_ccache *KRBv5Cache)
     if (pkrb5_init_context == NULL)
         return 1;
 
-    if ((rc = (*pkrb5_init_context)(KRBv5Context)))
+    if ((rc = (*pkrb5_init_context)(ctx)))
     {
         functionName = "krb5_init_context()";
         freeContextFlag = 0;
         goto on_error;
     }
 
-    if ((rc = (*pkrb5_cc_default)(*KRBv5Context, KRBv5Cache)))
+    if ((rc = pkrb5_cc_default(*ctx, cache)))
     {
         functionName = "krb5_cc_default()";
         freeContextFlag = 1;
@@ -692,19 +543,19 @@ int LeashKRB5initialize(krb5_context *KRBv5Context, krb5_ccache *KRBv5Cache)
 
  on_error:
 
-    return LeashKrb5ErrorMessage(rc, functionName, freeContextFlag, *KRBv5Context, *KRBv5Cache);
+    return Leash_krb5_error(rc, functionName, freeContextFlag, *ctx, *cache);
 
 #endif //!NO_KRB5
 }
 
 
 /**************************************/
-/* LeashKrb5ErrorMessage():           */
+/* Leash_krb5_error():           */
 /**************************************/
-const int 
-LeashKrb5ErrorMessage(krb5_error_code rc, LPCSTR FailedFunctionName, 
-                      int FreeContextFlag, krb5_context KRBv5Context, 
-                      krb5_ccache KRBv5Cache)
+int 
+Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName, 
+                 int FreeContextFlag, krb5_context ctx, 
+                 krb5_ccache cache)
 {
 #ifdef NO_KRB5
     return 0;
@@ -735,12 +586,12 @@ LeashKrb5ErrorMessage(krb5_error_code rc, LPCSTR FailedFunctionName,
                MB_SETFOREGROUND);
     if (FreeContextFlag == 1)
     {
-        if (KRBv5Context != NULL)
+        if (ctx != NULL)
         {
-            if (KRBv5Cache != NULL)
-                krb5_cc_close(KRBv5Context, KRBv5Cache);
+            if (cache != NULL)
+                krb5_cc_close(ctx, cache);
 	
-            (*pkrb5_free_context)(KRBv5Context);
+            pkrb5_free_context(ctx);
         }
     }
 

@@ -8,7 +8,7 @@
 #include <time.h>
 
 #include "leasherr.h"
-#include "lsh_pwd.h"
+#include "leash-int.h"
 #include <leashwin.h>
 #include <mitwhich.h>
 
@@ -18,20 +18,6 @@
 
 #include <winkrbid.h>
 #include "reminder.h"
-
-long
-Leash_kinit_ex(
-    char * principal, 
-    char * password, 
-    int lifetime,
-    krb5_context ctx
-    );
-
-extern int LeashKRB5destroyTicket(void);
-extern int LeashKRB5processTicket(char *, char *, char *, char *, char *, krb5_deltat, int, krb5_context);
-extern int LeashAFSdestroyToken(void);
-extern int LeashAFSprocessK4Token(char *, char *, char *, int);
-extern LPSTR err_describe(LPSTR buf, long code);
 
 #define NO_TICKETS 0    // Don't change this value
 #define EXPD_TICKETS 2  // Don't change this value
@@ -58,16 +44,44 @@ short_date(dp)
     return (cp);
 }
 
+
+static
+char*
+clean_string(
+    char* s
+    )
+{
+    char* p = s;
+    char* b = s;
+
+    if (!s) return s;
+
+    for (p = s; *p; p++) {
+        switch (*p) {
+        case '\007':
+            /* Add more cases here */
+            break;
+        default:
+            *b = *p;
+            b++;
+        }
+    }
+    *b = *p;
+    return s;
+}
+
+static
 int
 leash_error_message(
     const char *error,
     int rcL,
     int rc4,
     int rc5,
-    int rcA
+    int rcA,
+    char* result_string
     )
 {
-    char message[1024];
+    char message[2048];
     char *p = message;
     int size = sizeof(message);
     int n;
@@ -81,7 +95,7 @@ leash_error_message(
     p += n;
     size -= n;
 
-    if (rc5)
+    if (rc5 && !result_string)
     {
         n = _snprintf(p, size,
                       "Kerberos 5: %s (error %ld)\n",
@@ -91,7 +105,7 @@ leash_error_message(
         p += n;
         size -= n;
     }
-    if (rc4)
+    if (rc4 && !result_string)
     {
         char buffer[1024];
         n = _snprintf(p, size,
@@ -108,6 +122,14 @@ leash_error_message(
                       "\n%s\n",
                       err_describe(buffer, rcL)
             );
+        p += n;
+        size -= n;
+    }
+    if (result_string)
+    {
+        n = _snprintf(p, size,
+                      "%s\n",
+                      result_string);
         p += n;
         size -= n;
     }
@@ -278,7 +300,8 @@ long
 Leash_changepwd_v5(
     char * principal,
     char * password,
-    char * newpassword
+    char * newpassword,
+    char** error_str
     )
 {
     krb5_error_code rc = 0;
@@ -338,12 +361,18 @@ Leash_changepwd_v5(
    }
 
    if (result_code) {
-#if 0
-      printf("%.*s%s%.*s\n",
-	     result_code_string.length, result_code_string.data,
-	     result_string.length?": ":"",
-	     result_string.length, result_string.data);
-#endif
+       int len = result_code_string.length + 
+           (result_string.length ? (sizeof(": ") - 1) : 0) +
+           result_string.length;
+       if (len && error_str) {
+           *error_str = malloc(len + 1);
+           if (*error_str)
+               _snprintf(*error_str, len + 1,
+                         "%.*s%s%.*s",
+                         result_code_string.length, result_code_string.data,
+                         result_string.length?": ":"",
+                         result_string.length, result_string.data);
+       }
       rc = result_code;
       goto cleanup;
    }
@@ -370,7 +399,7 @@ Leash_changepwd_v4(
     char * principal,
     char * password,
     char * newpassword,
-    void * return_handle // WHAT IS THIS???!!!!
+    char** error_str
     )
 {
     long k_errno;
@@ -382,7 +411,7 @@ Leash_changepwd_v4(
     k_errno = make_temp_cache_v4("_chgpwd");
     if (k_errno) return k_errno;
     k_errno = pkadm_change_your_password(principal, password, newpassword, 
-                                         return_handle);
+                                         error_str);
     make_temp_cache_v4(0);
     return k_errno;
 }
@@ -398,21 +427,61 @@ Leash_changepwd(
     char * principal, 
     char * password, 
     char * newpassword,
-    LPSTR return_handle
+    char** result_string
     )
 {
+    char* v5_error_str = 0;
+    char* v4_error_str = 0;
+    char* error_str = 0;
     int rc4 = 0;
     int rc5 = 0;
     int rc = 0;
     if (hKrb5)
-        rc = rc5 = Leash_changepwd_v5(principal, password, newpassword);
-    if (rc5 && hKrb4)
+        rc = rc5 = Leash_changepwd_v5(principal, password, newpassword,
+                                      &v5_error_str);
+    if (hKrb4 && (!hKrb5 || rc5))
         rc = rc4 = Leash_changepwd_v4(principal, password, newpassword, 
-                                      return_handle);
+                                      &v4_error_str);
     if (!rc)
         return 0;
+    if (v5_error_str || v4_error_str) {
+        int len = 0;
+        char v5_prefix[] = "Kerberos 5: ";
+        char sep[] = "\n";
+        char v4_prefix[] = "Kerberos 4: ";
+
+        clean_string(v5_error_str);
+        clean_string(v4_error_str);
+
+        if (v5_error_str)
+            len += sizeof(sep) + sizeof(v5_prefix) + strlen(v5_error_str) + 
+                sizeof(sep);
+        if (v4_error_str)
+            len += sizeof(sep) + sizeof(v4_prefix) + strlen(v4_error_str) + 
+                sizeof(sep);
+        error_str = malloc(len + 1);
+        if (error_str) {
+            char* p = error_str;
+            int size = len + 1;
+            int n;
+            if (v5_error_str) {
+                n = _snprintf(p, size, "%s%s%s%s",
+                              sep, v5_prefix, v5_error_str, sep);
+                p += n;
+                size -= n;
+            }
+            if (v4_error_str) {
+                n = _snprintf(p, size, "%s%s%s%s",
+                              sep, v4_prefix, v4_error_str, sep);
+                p += n;
+                size -= n;
+            }
+            if (result_string)
+                *result_string = error_str;
+        }
+    }
     return leash_error_message("Error while changing password.", 
-                               rc4, rc4, rc5, 0);
+                               rc4, rc4, rc5, 0, error_str);
 }
 
 int (*Lcom_err)(LPSTR,long,LPSTR,...);
@@ -524,67 +593,62 @@ Leash_kinit_ex(
         strcat(temp, realm);
     }
 
-    rc5 = LeashKRB5processTicket(temp, password, "", "", "", lifetime, 0, ctx);
+    rc5 = Leash_krb5_kinit(temp, password, lifetime, ctx);
 
     if (pkname_parse == NULL)
     {
         goto cleanup;
-        // return (KSUCCESS);
     }
 
     err_context = "getting realm";
     if (!*realm && (rc4  = (int)(*pkrb_get_lrealm)(realm, 1))) 
     {
-        functionName = "pkrb_get_lrealm()";
+        functionName = "krb_get_lrealm()";
         rcL  = LSH_FAILEDREALM;
-        goto on_error;
+        goto cleanup;
     }
 
     err_context = "checking principal";
     if ((!*aname) || (!(rc4  = (int)(*pk_isname)(aname))))
     {
-        functionName = "pkrb_get_lrealm()";
+        functionName = "krb_get_lrealm()";
         rcL = LSH_INVPRINCIPAL;
-        goto on_error;
+        goto cleanup;
     }
 
     /* optional instance */
     if (!(rc4 = (int)(*pk_isinst)(inst)))
     {
-        functionName = "pk_isinst()";
+        functionName = "k_isinst()";
         rcL = LSH_INVINSTANCE;
-        goto on_error;
+        goto cleanup;
     }
 	
     if (!(rc4 = (int)(*pk_isrealm)(realm)))
     {
-        functionName = "pk_isrealm()";
+        functionName = "k_isrealm()";
         rcL = LSH_INVREALM;
-        goto on_error;
+        goto cleanup;
     }
 
     err_context = "fetching ticket";	
-    if (!(rc4 = (*pkrb_get_pw_in_tkt)((LPSTR)aname, (LPSTR)inst, 
-                                      (LPSTR)realm, 
-                                      (LPSTR)"krbtgt", (LPSTR)realm, 
-                                      lifetime, 
-                                      (LPSTR)password)))
+    if (!(rc4 = (*pkrb_get_pw_in_tkt)(aname, inst, realm, "krbtgt", realm, 
+                                      lifetime, password)))
     {
-        rcA = LeashAFSprocessK4Token("", "", "", lifetime);
+        rcA = Leash_afs_klog("", "", "", lifetime);
     }
     else if (rc4) /* XXX: do we want: && (rc != NO_TKT_FIL) as well? */
     { 
-        functionName = "pkrb_get_pw_in_tkt()";
+        functionName = "krb_get_pw_in_tkt()";
         rcL = KRBERR(rc4);
-        goto on_error;
+        goto cleanup;
     }
 
     return 0;
 
  cleanup:
- on_error:
     return leash_error_message("Ticket initialization failed.", 
-                               rcL, rc4?KRBERR(rc4):0, rc5, rcA);
+                               rcL, rc4?KRBERR(rc4):0, rc5, rcA, 0);
 
 #pragma message(Reminder "Are we returning the right thing?")
 }
@@ -593,8 +657,8 @@ long Leash_kdestroy(void)
 {
     int k_errno;
 
-    LeashAFSdestroyToken();
-    LeashKRB5destroyTicket();
+    Leash_afs_unlog();
+    Leash_krb5_kdestroy();
 
     if (pdest_tkt != NULL)
     {

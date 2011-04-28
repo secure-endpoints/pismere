@@ -155,7 +155,14 @@ long krb_rd_safe(in,in_length,key,sender,receiver,m_data)
      */
 
     bcopy((char *)p,(char *)big_cksum,sizeof(big_cksum));
-    /* if (swap_bytes) swap_u_16(big_cksum); */
+    if (swap_bytes) {
+        /* swap_u_16(big_cksum); */
+        unsigned long * l = (unsigned long *) &big_cksum;
+        swap_u_long((l[0]));
+        swap_u_long((l[1]));
+        swap_u_long((l[2]));
+        swap_u_long((l[3]));
+    }
 
 #ifdef NOENCRYPTION
     bzero(calc_cksum, sizeof(calc_cksum));

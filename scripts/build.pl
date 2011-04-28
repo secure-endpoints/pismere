@@ -7,6 +7,9 @@ use File::Basename;
 use lib $FindBin::Bin;
 use Logger;
 use Getopt::Long;
+use Cwd;
+
+my $BAIL;
 
 $0 = fileparse($0);
 
@@ -26,13 +29,26 @@ my $MAKE='NMAKE';
 
 sub makescript
 {
-    my $prefix = ($ENV{OS} && ($ENV{OS} eq 'Windows_NT'))?'':'perl ';
-    return $prefix.File::Spec->catfile($DIR_SCRIPTS, @_);
+    #
+    # NOTE: We must invoke perl directly instead of using file associations
+    # so as to prevent the shell from doing weird things when we CTRL-C.
+    #
+    return $^X.' '.File::Spec->catfile($DIR_SCRIPTS, @_);
+}
+
+sub pismere_dirify
+{
+    my $dir = shift;
+    my $i = index($dir, $DIR_TOP);
+    if ($i == 0) {
+	substr($dir, $i, length($DIR_TOP), '$(PISMERE)');
+    }
+    return $dir;
 }
 
 sub main
 {
-    Getopt::Long::Configure('no_bundling', 'no_auto_abbrev', 
+    Getopt::Long::Configure('no_bundling', 'no_auto_abbrev',
 			    'no_getopt_compat', 'require_order',
 			    'ignore_case', 'pass_through',
 			    'prefix_pattern=(--|-|\+|\/)',
@@ -43,6 +59,9 @@ sub main
 	       'top',
 	       'logfile|l:s',
 	       'nolog|n',
+	       'softdirs',
+	       'norecurse',
+	       'oldstyle|O',
 	       );
 
     if ($OPT->{help} || !$OPT->{logfile}) {
@@ -51,17 +70,25 @@ sub main
     }
 
     if ($OPT->{docs}) {
-	system("start ".File::Spec->catfile($DIR_DOC, 'Makefile.html'));
+	my $norm = File::Spec->catfile($DIR_DOC, 'Makefile.html');
+	my $site = File::Spec->catfile($DIR_SITE, 'Makefile.html');
+	if (-e $site) {
+	    system("start $site");
+	} elsif (-e $norm) {
+	    system("start $norm");
+	} else {
+	    die "Could not find documentation\n";
+	}
 	exit(0);
     }
 
+    $ENV{BUILD_MAKEFILE_INC} = File::Spec->catfile($DIR_INC, 'Makefile.inc');
     $ENV{BINPLACE_CMD} = makescript('binplace.pl');
     $ENV{WHICH_CMD} = makescript('which.pl');
-    $ENV{INCLUDE} = $DIR_ATHENA_INC.';'.$ENV{INCLUDE};
-    $ENV{INCLUDE} = $DIR_INC.';'.$ENV{INCLUDE};
-    if (-d $DIR_SITE) {
-	$ENV{INCLUDE} = $DIR_SITE.';'.$ENV{INCLUDE};
-    }
+    $ENV{BUILD_INCLUDE} = join(';',
+			       pismere_dirify($DIR_ATHENA_INC),
+			       (-d $DIR_SITE) ? pismere_dirify($DIR_SITE) :(),
+			       pismere_dirify($DIR_INC));
     $ENV{PISMERE} = $DIR_TOP;
     $ENV{USERNAME} = $ENV{USERNAME}?$ENV{USERNAME}:'*Unknown*';
     {
@@ -94,10 +121,164 @@ sub main
     print "$0 invoking $MAKE with the following options:\n";
     map { print "\t$_\n" } @ARGV;
     print "\n";
-    system($MAKE, @ARGV);
+    my $err = 0;
+    if ($OPT->{oldstyle}) {
+	$ENV{BUILD_USING_OLDSTYLE_BUILD} = 1;
+	$err = system($MAKE, @ARGV) / 256;
+    } else {
+	$err = do_dir(\&build_dir, '.');
+    }
+    if ($BAIL) {
+	print $BAIL;
+    }
     if (!$OPT->{nolog}) {
 	$l->stop;
     }
+    return $err;
+}
+
+sub read_file
+{
+    my $file = shift;
+    my $fh = new IO::File;
+    $fh->open("<$file");
+    my @lines = <$fh>;
+    $fh->close();
+    @lines;
+}
+
+sub parse_dirs_lines
+{
+    my @lines = @_;
+    my $info = {};
+    while (my $line = shift @lines) {
+	chomp($line);
+
+	$line =~ s/^#.*//;     # remove any line starting with #
+	$line =~ s/[^\^]#.*//; # remove anything after an unescaped #
+
+	if (($line =~ /^(.*)\\\s*$/) && !($line =~ /^(.*)\^\\\s*$/)) {
+	    my $n = shift @lines;
+	    $line = $1 . $n;
+	    unshift(@lines, $line);
+	    next;
+	}
+
+	$line =~ s/\^#/#/g;    # replace all ^# with #
+
+	if ($line =~ /^\s*$/) {
+	    next;
+	} elsif ($line =~ /^\s*([^=\s]+)\s*=(.*)$/) {
+	    $info->{$1} = $2;
+	} else {
+	    print "ERROR: $line\n";
+	    return 0;
+	}
+    }
+    foreach my $key (keys %$info) {
+	if (($key eq 'DIRS') || ($key eq 'PREDIRS')) {
+	    $info->{$key} =  [ split(' ', $info->{$key}) ];
+	} elsif ($key eq 'OPTDIRS') {
+	    my @list = split(' ', $info->{$key});
+	    $info->{$key} = {};
+	    map { $info->{$key}->{$_} = 1; } @list;
+	} else {
+	    print "ERROR: Invalid key found: $key = $info->{$key}\n";
+	    return 0;
+	}
+    }
+    if ($info->{DIRS} || $info->{PREDIRS}) {
+	return $info;
+    }
+    print "ERROR: Missing DIRS/PREDIRS directives in Makefile.dir\n";
+    return 0;
+}
+
+sub do_dirs
+{
+    my $routine = shift;
+    my $basedir = shift;
+    my $dirs = shift;
+    my $key = shift;
+
+    if ($dirs->{$key}) {
+	foreach my $dir (@{$dirs->{$key}}) {
+	    my $short_dir = $dir;
+	    $dir = File::Spec->catfile($basedir, $short_dir);
+	    if (-d $dir) {
+		my $err = 0;
+		if (-e File::Spec->catfile($dir, 'Makefile.dir') ||
+		    -e File::Spec->catfile($dir, 'Makefile.src') ||
+		    -e File::Spec->catfile($dir, 'Makefile')) {
+		    $err = do_dir($routine, $dir);
+		} elsif ($OPT->{softdirs}) {
+		    print "SKIPPING DIR MISSING Makefiles (softdirs enabled): $dir\n";
+		} else {
+		    print "ERROR: Cannot find Makefile.dir, Makefile.src, or Makefile in $dir!\n";
+		    $err = 2;
+		}
+		return $err if $err;
+	    } elsif ($OPT->{softdirs}) {
+		print "SKIPPING MISSING DIR (softdirs enabled): $dir\n";
+	    } elsif ($dirs->{OPTDIRS}->{$short_dir}) {
+		print "SKIPPING MISSING OPTIONAL DIR: $dir\n";
+	    } else {
+		print "ERROR -- COULD NOT FIND DIR: $dir\n";
+		return 2; # XXX
+	    }
+	}
+    }
+    return 0;
+}
+
+sub build_dir
+{
+    my $dir = shift;
+    my $curdir = cwd() || die "Cannot get cwd\n";
+    print "\nBuilding $dir\n";
+    chdir($dir) || die "Could not chdir to $dir\n";
+    my $err = 0;
+    if (-e 'Makefile.src') {
+	$err = system($MAKE, ('-f', $ENV{BUILD_MAKEFILE_INC}, @ARGV)) / 256;
+    } elsif (-e 'Makefile') {
+	$err = system($MAKE, @ARGV) / 256;
+    } else {
+	print "ERROR: Cannot find Makefile.src or Makefile\n";
+	$err = 2;
+    }
+    chdir($curdir) || die "Could not chdir to $curdir\n";
+    return $err;
+}
+
+sub do_dir
+{
+    my $routine = shift;
+    my $dir = shift;
+    my $dirs = {};
+    my $Makefile_dir = File::Spec->catfile($dir, 'Makefile.dir');
+    if (!$OPT->{norecurse} && -e $Makefile_dir) {
+	$dirs = parse_dirs_lines(read_file($Makefile_dir));
+	return 0 if !$dirs;
+    }
+    print "Entering $dir\n";
+    if (!(-e File::Spec->catfile($dir, 'Makefile.dir') ||
+	  -e File::Spec->catfile($dir, 'Makefile.src') ||
+	  -e File::Spec->catfile($dir, 'Makefile'))) {
+	print "ERROR: Cannot find Makefile.dir, Makefile.src, or Makefile in $dir!\n";
+	return 2;
+    }
+    my $err = 0;
+    $err = do_dirs($routine, $dir, $dirs, 'PREDIRS');
+    return $err if $err;
+    if (-e File::Spec->catfile($dir, 'Makefile.src') ||
+	-e File::Spec->catfile($dir, 'Makefile')) {
+	$err = &$routine($dir);
+	return $err if $err;
+    }
+    $err = do_dirs($routine, $dir, $dirs, 'DIRS');
+    return $err if $err;
+    print "Exiting $dir\n\n";
+    return 0;
 }
 
 sub usage
@@ -112,6 +293,9 @@ Usage: $0 [options] $MAKE-options
     --logfile filename  log to specified filename (default: build.pl.log)
        or -l filename
     --nolog, -n         do not log
+    --softdirs          do not bail on missing directories
+    --norecurse         do not recurse
+    --oldstyle, -O      use old style
   Other:
     $MAKE-options       any options you want to pass to $MAKE, which can be:
                         (note: /nologo is always used)
@@ -120,4 +304,19 @@ USAGE
     system("$MAKE /?");
 }
 
-main();
+sub handler {
+    my $sig = shift;
+    my $bailmsg = "Bailing out due to SIG$sig!\n";
+    my $warnmsg = <<EOH;
+*********************************
+* FUTURE BUILDS MAY FAIL UNLESS *
+* BUILD DIRECTORIES ARE CLEANED *
+*********************************
+EOH
+    $BAIL = $bailmsg.$warnmsg;
+}
+
+$SIG{'INT'} = \&handler;
+$SIG{'QUIT'} = \&handler;
+
+exit(main());

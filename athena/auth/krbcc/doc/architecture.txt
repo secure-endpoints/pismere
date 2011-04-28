@@ -1,0 +1,135 @@
+			 krbcc32 Architecture
+			 --------------------
+
+Introduction:
+------------
+
+krbcc32 is the Kerberos Credentials Cache API (CCAPI) implementation
+on Windows.  In this document, we discuss a new krbcc32
+implementation.
+
+On Windows NT/2000, this implementation support a credentials cache
+namespace per each user login (see below for more details) in a way
+that does not require any services to be installed on a machine.  Only
+processes within the same user login session share a cache.
+
+On Windows 9x/Me, the implementation provides a single global
+credentials cache shared by all processes on the local machine.
+
+
+Components:
+----------
+
+There are two components that make up krbcc32.  One is a dynamic link
+library (DLL) that exposes the public CCAPI to users of the API.  The
+other component is an executable file (EXE) that users of the CCAPI do
+not need to know about.
+
+The EXE is a RPC server that actually contains the credentials caches
+for a given user login.  It protects the credentials from being
+accessed by anyone that should not have privileges to do so.  (In
+general, this means other users.)
+
+The DLL is a RPC client that acts on behalf of the user of the CCAPI
+to talk to the instance of the EXE RPC server that holds the
+credentials cache for the process using the CCAPI.
+
+The RPC mechanism used for communications between the DLL and the EXE
+is LRPC.  LRPC is local remote procedure call.  On Windows, the OS
+will typically implement this via shared memory.  This is the same
+mechanism used in NT to securely provide some OS services to user-mode
+applications via separate system-owned user-mode processes.
+
+
+Basic Operation:
+---------------
+
+On DLL startup, the DLL tries to connect to the server that is
+supposed to hold the credentials for the current process.  If the
+server is not present, the DLL starts up the EXE to start up the
+server and retries to connect.  If it still cannot connect, the DLL
+aborts (potentially causing the process loading the DLL to terminate
+if the said process aborts on failure to load the DLL).
+
+Once the DLL is started, CCAPI calls requiring service by the RPC
+server will cause the DLL to do a remote procedure call to the server
+to satisfy the request.  Some CCAPI calls can be satisfied directly by
+the DLL, however (e.g., freeing memory).
+
+If the DLL loses the connection to the server during the course of
+operation (e.g., the EXE providing the RPC server for this DLL is
+terminated by the user via the task manager), the DLL will try to
+automatically resume it using the same sequence it used during DLL
+startup.
+
+[NOTE: See Implementation document, "Deviations", "Connection".]
+
+The EXE server will automatically terminate when it has been idle for
+a while with no client connections and no credentials caches stored
+within it.
+
+[NOTE: See Implementation document, "Deviations", "Auto-Termination".]
+
+
+Security:
+--------
+
+On Windows 9x/Me, there is no security.
+
+On Windows NT/2000, the credentials are secured.  However, there is no
+guarantee that the implementation will prevent denial of service
+attacks.  In such an attack, the user could be prevented from
+accessing the CCAPI (given a sufficiently determined attacker), but
+his credentials would not be compromised.
+
+Each RPC server is "owned" by a (user, login session) pair.  The
+"owner" of the process is given by the process tokens of the process
+that started the RPC server.
+
+The DLL authenticates the RPC server to make sure it is talking to the
+correct RPC server.
+
+The system will prevent other users from accessing a given user's RPC
+server.  However, there is no guarantee that one user cannot write
+code to access the cache of another of his own login sessions.  Still,
+the DLL will not do that.  The DLL will only communicate with the RPC
+server that holds the credentials cache for the DLL's login session.
+
+
+* Impersonation:
+
+When the user of the DLL is using impersonation (see Security
+documentation on MSDN for information on impersonation), the DLL will
+disable impersonation for the thread executing in the DLL while
+executing code in the DLL.  The impersonation will be restored before
+the thread returns from the DLL code.  This impersonation behavior is
+necessary so that the DLL can be guaranteed to be able to perform any
+action on behalf of the client.  The alternative would be to support
+different behaviors depending on the level of impersonation of the
+current thread (see Security documentation on MSDN for information on
+impersonation levels).  This alternative of supporting different
+behaviors depending on impersonation level would make the
+implementation and use of the CCAPI more complex in environments where
+impersonation is needed.  We avoid all that complexity by having the
+CCAPI behave the same way regardless of any impersonation that the
+user of CCAPI may be doing.  Thus, we rely strictly on the process
+tokens of the current process.  Then people writing server don't have
+to deal with any complexity resulting from impersonation.
+
+[NOTE: According to "MSDN : Windows 2000 Server Resource Kit :
+       Distributed Systems Guide : Appendixes : User Rights :
+       Privileges", the "Replace a process-level token"
+       (SeAssignPrimaryTokenPrivilege) privilege "Allows a parent
+       process to replace the access token that is associated with a
+       child process".  Thus, I think that a process level token can
+       never be changed after a process has started.]
+
+Given that impersonation is effectively not active for CCAPI, a user
+of the API that must transfer credentials from/to other "owner" must
+communicate the credentials being transferred through some manner
+other than just reading/writing the credentials via the CCAPI while
+impersonating the "owner".
+
+There are many solutions to transferring credentials (including
+standard IPC mechanisms and even simpler mechanisms).  The solution to
+use depends on the application.

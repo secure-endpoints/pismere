@@ -9,9 +9,13 @@ TARGETSS=console
 OBJS= \
 	$(O)\kinit.obj
 
-LIBS=..\$(O)\kuser.lib advapi32.lib
+LIBS=..\$(O)\kuser.lib advapi32.lib \
+	$(PISMERE)\athena\util\lib\getopt\$(O)\getopt.lib
 INCLUDES=..;..\..\krb5\src\include;..\..\krb4\include;\
-	$(PISMERE)\athena\util\loadfuncs;..\..\leash\include
+	$(PISMERE)\athena\util\loadfuncs;$(PISMERE)\athena\util\lib\getopt;\
+	..\..\leash\include
 
 USE_DEFAULTLIB=1
 RES=$(O)\kinit.res
+
+C_DEFINE=-DKRB5_KRB4_COMPAT -DGETOPT_LONG -DKINIT_DEFAULT_BOTH

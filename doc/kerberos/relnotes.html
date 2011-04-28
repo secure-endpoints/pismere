@@ -1,25 +1,25 @@
 <html>
 <head>
 <title>
-Release Notes for Kerberos for Win32 version 2.0
+Release Notes for Kerberos for Windows 2.1
 </title>
 </head>
 
 <body>
 
 <center>
-<h1>Kerberos for Win32</h1>
-<h2>version 2.0</h2>
+<h1>Kerberos for Windows 2.1</h1>
 <p>
 <h2>Release Notes</h2>
 <p>
-<h3>October 7, 1999</h3>
+<h3>December 4, 2000</h3>
 
 </center>
 
 <h3>Table of Contents</h3>
 
 <ul type=disc>
+<li><a href="#intro">Introduction</a>
 <li><a href="http://web.mit.edu/kerberos/www/">What is Kerberos?</a>
 <li><a href="#whatsnew">What's New</a>
 <li><a href="#issues">Known Issues</a>
@@ -32,61 +32,108 @@ Release Notes for Kerberos for Win32 version 2.0
 
 <!-- ---------------------------------------------------------------------- -->
 <hr>
+<a name="intro"></a>
+<h2>Introduction</h2>
+
+<p><em>Kerberos for Windows</em> (or <em>KfW</em> for short) is the
+integrated release of Kerberos version 4 and Kerberos version 5 (or
+Kerberos 4 and Kerberos 5 for short -- also Kerberos v4 and Kerberos
+v5).
+
+<!-- http://www.geek.com/glossary/glossary_search.cgi?protocol -->
+<!-- http://www.m-w.com/cgi-bin/dictionary?protocol -->
+
+<p>Kerberos 4 and Kerberos 5 refers to the versions 4 and 5 of the
+Kerberos protocol.  (A <a
+href="http://www.whatis.com/WhatIs_Definition_Page/0,4152,212839,00.html">protocol</a>
+refers to how data is transmitted on a network.)  KfW includes both of
+these.  KfW 2.1, in particular, includes the <a
+href="http://web.mit.edu/kerberos/www/">MIT Kerberos v5 Release
+1.2.1</a> and KfW's own release of Kerberos v4.
+
+<p>
+
+<!-- ---------------------------------------------------------------------- -->
+<hr>
 <a name="whatsnew"></a>
 <h2>What's New</h2>
 
 
-<ol>
+<ul>
 
 <p>
 <li>
-Support for Kerberos 4 and Kerberos 5.  The Kerberos 5 included here
-is from the MIT Kerberos 5 1.1 distribution.
-
-<p>
-<li>Leash32 replaces kview32.  It support Kerberos 4 and/or Kerberos
-5, depending on what's installed on the machine.
-
-<p>
-<li>kinit, klist, and kdestroy support Kerberos 4 and/or Kerberos 5,
-depending on what's available.
+"Kerberos for Win32" is now "Kerberos for Windows", or "KfW" for short.
 
 <p>
 <li>
-We now support in-memory tickets.  In fact, Kerberos 4 does not
-support file-based tickets at the moment.
+Kerberos v4 and v5 now build with <a href="#dns">DNS support</a> by
+default.
 
 <p>
 <li>
-New <a href="#devnotes_kclient">kclient</a> behavior.
+Kerberos v5 support is from MIT Kerberos v5 Release 1.2.1.
 
 <p>
 <li>
-Missing kerberos entries in your services file will not necessarily
-cause problems.
+Various buffer overflow vulnerabilities in Kerberos 4 have been fixed.
 
 <p>
 <li>
-Support for configuration <a href="#dns">DNS</a>.
-
-</ol>
+The in-memory Kerberos Credentials Cache implementation is brand new.
+Fleavius is now obsolete.  In-memory credentials cache is now
+implemented via a LRPC (local remote procedure call) mechanism.  The
+tickets live in the krbcc32s process (which is automatically started).
+On Windows NT/2000, There is at most one such process per Windows
+login session.
+<p>
+Each Windows NT/2000 login session can access only its own credentials
+cache.  Even Windows NT/2000 security impersonation will not allow a
+process to access the cache of the user the process is impersonating.
+This is by design.
+<p>
+This implementation has a much smaller memory footprint and is far
+more robust than the fleavius implementation.  It can support a very
+large number of caches and credentials.  The only downside to the LRPC
+implementation is that it is currently about 35% slower than the
+fleavius implementation.
+<p>
+For more information, read the <a
+href="../../athena/auth/krbcc/doc/architecture.txt">krbcc32
+Architecture</a> and <a
+href="../../athena/auth/krbcc/doc/implementation.txt">krbcc32
+Implementation</a> documentation at
+<code>athena/auth/krbcc/doc/architecture.txt</code> and
+<code>athena/auth/krbcc/doc/implementation.txt</code>.
+</ul>
 
 <!-- ---------------------------------------------------------------------- -->
 <hr>
 <a name="issues"></a>
 <h2>Known Issues</h2>
 
-<ol>
-<p>
-<li>The credentials cache does not necessarily iterate properly if it is
-written to while you're trying to iterate over it.  This might cause
-behavior if an application is iterating over the cache while another
-is destroying it.
+<ul>
 
 <p>
-<li>The credentials cache only has a few slots for credentials.
+<li>The Kerberos Credentials Cache implementation does not support
+locking across calls.  Each call is atomic, however.
 
-</ol>
+<p>
+<li>If the krbcc32s LRPC server process is ever terminated while
+another process is supposed to have a valid handle to it, the other
+process will need to grab new handles.  The moral of the story is:
+do not kill krbcc32s if you have any such processes around (e.g., if
+Leash is running).  In fact, you generally should never have to kill
+krbcc32s.
+
+<p>
+<li>If writing a server that uses Kerberos and might use the Kerberos
+Credentials Cache as opposed to the Kerberos v5 file credentials cache
+(<code>FILE:</code>), please read the <a
+href="../../athena/auth/krbcc/doc/architecture.txt">krbcc32
+Architecture</a> documentation.
+
+</ul>
 
 <!---------------------------------------------------------------------------->
 <hr>
@@ -94,38 +141,61 @@ is destroying it.
 <h2>Building the Sources</h2>
 </a>
 
-<p>First, make sure that you have MSVC++ 6.0, <a
-href="http://www.activestate.com/">ActiveState Perl build 517</a>,
-sed, gawk, cat, and rm in your PATH.  You can get sed, gawk, cat, and
-rm from the <a href="http://sourceware.cygnus.com/cygwin/">Cygwin
-distribution</a>.  Also make sure that perl has been installed so that
-.pl files are automatically executed with perl.  You will probably
-also need to be using the default system shell (cmd or command,
-depending on whether you're running NT/2000 or 95/98) so that the
-Makefiles work properly.
+<p>First, make sure that you have Microsoft Visual C++ 6.0, a recent
+release of the <a
+href="http://msdn.microsoft.com/downloads/sdks/platform/default.asp">Microsoft
+Platform SDK</a> (July 2000 or higher is known to work), <a
+href="http://www.activestate.com/">ActiveState Perl</a> (build 517 or
+higher), sed, gawk, cat, and rm in your PATH.  You can get sed, gawk,
+cat, and rm from the <a
+href="http://sourceware.cygnus.com/cygwin/">Cygwin distribution</a>.
+Also make sure that your INCLUDE path includes the Microsoft Platform
+SDK before the Microsoft Visual C++ include files and that perl has
+been installed so that .pl files are automatically executed with perl.
+You will probably also need to be using the default system shell (cmd
+or command, depending on whether you're running NT/2000 or 9x/Me) so
+that the Makefiles work properly.
 
-<ul>
+<p>
+Then, go into the <code>athena</code> directory and type
 
-<li>Go into the <code>athena</code> directory and type
-<code>..\scripts\build.pl</code> to build everything with debug
-information.  For a release build, run <code>..\scripts\build.pl
-NODEBUG=1</code>.  For help, do <code>..\scripts\build.pl -?</code>
-and <code>..\scripts\build.pl help</code>.  (If krb5 does not build
-properly, it is because sed/gawk were not in your path.  To fix this,
-delete <code>athena/auth/krb5/src/Makefile</code>, fix your
-<code>PATH</code>, and try again.)
+<blockquote><code>..\scripts\build.pl --softdirs</code></blockquote>
 
-<li>To make your life easier, you might try putting the
-<code>scripts</code> directory in your path.
+to build everything with debug information.  For a release build, run
 
-<li>If you use the <code>build.pl</code> script, the targets should
+<blockquote><code>..\scripts\build.pl --softdirs NODEBUG=1</code></blockquote>
+
+For help, do
+
+<blockquote><code>..\scripts\build.pl -?</code></blockquote>
+
+and
+
+<blockquote><code>..\scripts\build.pl --docs</code><br><em>[NOTE: does not work in 9x/Me]</em></blockquote>
+
+If you are running 9x/Me, you will need to invoke the build.pl script
+using perl.  For example:
+
+<blockquote><code>perl ..\scripts\build.pl [args]</code></blockquote>
+
+If krb5 does not build properly, it is probably because sed/gawk were
+not in your path.  To fix this, delete
+<code>athena/auth/krb5/src/Makefile</code>, fix your
+<code>PATH</code>, and try again.
+
+<p>
+To make your life easier, you might try putting the
+<code>scripts</code> directory in your path.  (Under 9x/Me, that will
+not help you since you always need to invoke the script through perl.)
+
+<p>
+If you use the <code>build.pl</code> script, the targets should
 get copied into the <code>target</code> directory at the same level as
 the <code>athena</code> directory.  You can go into
-<code>target\bin\i386\dbg</code> (replacing i386 for the right CPU and
-dbg for rel if building release targets), and run the binaries.  You
-should be able to debug from there.
-
-</ul>
+<code>target\bin\i386\dbg</code> (replacing <code>i386</code> with the
+right CPU and <code>dbg</code> with <code>rel</code> if building
+release targets), and run the binaries.  The debug symbols for the
+debug build also get placed there in case you need to debug.
 
 <!-- ---------------------------------------------------------------------- -->
 <hr>
@@ -136,7 +206,7 @@ should be able to debug from there.
 
 <ul>
 <li><a href="#config_bin">Binaries</a>
-<li><a href="#config_conf">Kerberos Configuration Files</a>
+<li><a href="#config_files">Kerberos Configuration Files</a>
 <li><a href="#config_krb4">Modifying Kerberos 4 Configuration Files</a>
 <li><a href="#config_krb5">Modifying Kerberos 5 Configuration File</a>
 <li><a href="#config_services">Services File</a>
@@ -154,7 +224,7 @@ should be able to debug from there.
 <ul>
 <li>krbv4w32.dll - Kerberos 4
 <li>krbcc32.dll  - required by Kerberos 4, used by Kerberos 5 as well
-<li>fleavius.exe - required by krbcc32.dll
+<li>krbcc32s.exe - required by krbcc32.dll
 <li>kclnt32.dll  - required by some Kerberos 4 applications
 <li>krb5_32.dll  - Kerberos 5
 <li>leash32.exe  - Leash32 Integrated Kerberos ticket manager
@@ -162,40 +232,15 @@ should be able to debug from there.
 <li>xpprof32.dll - used by Leash32
 <li>comerr32.dll - used by Leash32 and Kerberos 5
 <li>gssapi32.dll - GSS API for Kerberos 5
-<li>wshelp32.dll - winsock herlper used by various things
+<li>wshelp32.dll - winsock helper used by various things
 <li>kinit.exe    - command-line app to get Kerberos tickets
 <li>klist.exe    - command-line app to list Kerberos tickets
 <li>kdestroy.exe - command-line app to destroy Kerberos tickets
 </ul>
 
 <p>
-At MIT we normally recommend to users that they have a directory
-<code>c:\net\mit</code> on their path and that the files reside in
-this directory.  Many other sites recommend that users place these
-files in their Windows system directory or the Windows directory.  MIT
-prefers to avoid this for a few reasons.
-
-<p>
-For MIT users we prefer using <code>c:\net\mit</code> for a few
-reasons. First this directory historically exists on most of our
-users' systems. It is also where we normally recommend installing
-locally developed applications. By using this setup we are able to
-support users that insist on running multiple operating systems or
-multiple versions of an operating system on their machine. It is much
-easier to track down a single copy of a DLL and determine its version
-number. Also the number of files in this directory is much smaller
-than in the OS directory so it is much easier for users to locate and
-determine the version number if this becomes necessary. Finally, very
-few third party installers will attempt to modify the
-<code>c:\net\mit</code> directory so we don't worry about what another
-application will do to our binaries.
-
-<p>
-The disadvantages to seperating the DLLs from the OS are that users
-must add yet another directory to their path. And when they do this
-manually they may make a typing mistake. Sometimes the typing mistakes
-can be subtle and difficult to resolve. E.g <code>c:\net\mit</code> is
-not the same as <code>c\net\mit</code>.
+We recommend to developers that the binaries have a single Kerberos
+directory that is on the user's path.
 
 <!-- ---------------------------------------------------------------------- -->
 <hr>
@@ -204,18 +249,18 @@ not the same as <code>c\net\mit</code>.
 
 <p>
 Kerberos 5 needs a single configuration file: <code>krb5.ini</code>.
-You can just put it in the same directory as the DLL and everything
-will work fine.  You can also put it in the Windows directory.  You
-can even point to an arbitrary file by settings the
-<code>KRB5_CONFIG</code>.
+You can put it in the same directory as the DLL and everything will
+work fine.  You can also put it in the Windows directory.  You can
+even point to an arbitrary file by setting the
+<code>KRB5_CONFIG</code> environment variable.
 
 <p>
 Kerberos 4 needs two configuration files, typically called
-<code>krb.con</code> and <code>krbrealm.con</code>.  You can just put
-these files in the same directory as the DLL and everything should
-work.  You can also set KRB4_KRB.REALMS or KRB4_KRB.CONF to override
-each file.  Or you can set KRB4_CONFIG to force Kerberos 4 to look for
-both files in a particular directory.  If you do neither of these, this 
+<code>krb.con</code> and <code>krbrealm.con</code>.  You can put these
+files in the same directory as the DLL and everything should work.
+You can also set KRB4_KRB.REALMS or KRB4_KRB.CONF to override each
+file.  Or you can set KRB4_CONFIG to force Kerberos 4 to look for both
+files in a particular directory.  If you do none of these, this is
 where Kerberos 4 will search:
 
 <ol>
@@ -234,7 +279,7 @@ where Kerberos 4 will search:
 (<a name="c1"><b>*</b></a>) Note: If you put the files in the DLL's
 directory, this part of the search is what will take you there.  If
 you have another config file earlier in the search, that will take
-precendence, so be careful.
+precedence, so be careful.
 
 <!-- ---------------------------------------------------------------------- -->
 <hr>
@@ -242,22 +287,23 @@ precendence, so be careful.
 <h3>Modifying Kerberos 4 Configuration Files</h3>
 
 <p>
-Note: Leash32 can be used to edit the Kerberos 4 configuration files.
+Note: You can use Leash32 to edit the Kerberos 4 configuration files.
 
 <p>
 It is anticipated that most sites using Kerberos version 4 on Windows
-will also have an existing UNIX Kerberos infrastrucutre. For that
-reason we kept the format of the <code>krb.con</code> indetical to the
-UNIX <code>krb.conf</code>and the format of <code>krbrealm.con</code>
-identical to the UNIX <code>krb.realms</code>. For many users the
-easiest way to configure these files for use at their local site will
-be to simply ftp the corresponding files from a local UNIX machine
-that is already properly configured.
+also will have an existing UNIX Kerberos infrastructure.  For that
+reason, we kept the format of the <code>krb.con</code> identical to
+the UNIX <code>krb.conf</code> and the format of
+<code>krbrealm.con</code> identical to the UNIX
+<code>krb.realms</code>.  For many users, the easiest way to configure
+these files for use at their local sites will be to ftp the
+corresponding files from a local UNIX machine that is already properly
+configured.
 
 <p>
-The <code>krb.con</code> file contain configuration information describing
-the Kerberos realm and the Kerberos key distribution center (KDC)
-servers for known realms.
+The <code>krb.con</code> file contains configuration information
+describing the Kerberos realm and the Kerberos key distribution center
+(KDC) servers for known realms.
 
 <p>
 <code>krb.con</code> contains the name of the local realm in the first
@@ -276,7 +322,7 @@ LCS.MIT.EDU kerberos.lcs.mit.edu admin server
 </pre>
 
 <p>
-If this was your <code>krb.con</code> file and you wanted to change
+If this were your <code>krb.con</code> file and you wanted to change
 the default local realm to <code>CIT.CORNELL.EDU</code> you would edit
 it to look like:
 
@@ -290,14 +336,14 @@ LCS.MIT.EDU kerberos.lcs.mit.edu admin server
 </pre>
 
 <p>
-The <code>krbrealm.con</code> file is the host to Kerberos realm
+The <code>krbrealm.con</code> file is the host-to-Kerberos realm
 translation file. This provides a translation from a local hostname to
-the Kerberos realmname for the services provided by that host.
+the Kerberos realm name for the services provided by that host.
 
 <p>
 Each line of the translation file is in one the following forms
-(domain_name should be of the form <code>.XXX.YYY</code>,
-e.g. <code>.LCS.MIT.EDU</code>):
+(domain_name should be of the form <code>.XXX.YYY</code>, e.g.,
+<code>.LCS.MIT.EDU</code>):
 
 <pre>
 	host_name kerberos_realm
@@ -356,19 +402,19 @@ memory.
 <p>
 You can specify the name of the ticket file and the directory in which
 it is stored via the environment variables <code>KRBTKFILE</code>
-(krb4) and <code>KRB5CCNAME</code> (krb5).  The krb4 credentials will
-always go into memory.  The ticket string you see will always have an
+(krb4) and <code>KRB5CCNAME</code> (krb5).  The krb4 credentials
+always go into memory.  The ticket string you see always has an
 &quot;API:&quot; in front of it.
 
 <p>
-There are also registry settings for these things.  Playing with
+There are also registry settings for these locations.  Playing with
 Leash32 will reveal where they are (look in
 HKCU\Software\MIT\Kerberos4 and Kerberos5).  You can set machine-wide
 values by playing with these settings in HKLM.
 
 <p>
-Kerberos 5 does support using file-based tickets, but we don't
-recomment this as it is less secure.
+Kerberos 5 does support using file-based tickets, but we do not
+recommend this, as it is less secure.
 
 <!-- ---------------------------------------------------------------------- -->
 <hr>
@@ -387,30 +433,30 @@ that are synchronized within a certain margin. This margin is normally
 5 minutes.
 
 <p>
-The date and time on the machine running Kerberos will need
-to be &quot;accurately&quot; set.  If the date or time is off
-&quot;too far&quot;, Kerberos authentication will not work.
+The date and time on the machine running Kerberos must be
+&quot;accurately&quot; set.  If the date or time is off &quot;too
+far&quot;, Kerberos authentication will not work.
 
 <p>
 You can synchronize your clock using Leash32.  It allows you to set
-the name of the host you will synchronize to.  It saves this
+the name of the host to which you will synchronize.  It saves this
 information in the registry (under HKCU\Software\MIT\Leash32 -- you
 can set machine-wide defaults in HKLM).
 
 <p>
-By default the server that the libraries will contact when
-synchronizing the time is <code>time</code>. The domain name has been
-left off on purpose.  If local system administrators create a machine
-with a CNAME of time within the local domain the clients will contact
-this machine by default.
+By default, the server that the libraries contact when synchronizing
+the time is <code>time</code>. The domain name has been left off on
+purpose.  If local system administrators create a machine with a CNAME
+of time within the local domain the clients will contact this machine
+by default.
 
 <p>
-If you local system administrators are opposed to doing this for some
-reason people can edit the resource <code>LSH_TIME_HOST</code> in the
-<code>leashw32.dll</code> to the name appropriate for their local
-site.  You can also edit the header files from the source distribution
-and recompile for your local site.  However, this is not recommended.
-You can also just tweak the registry setting Leash32 uses.
+If local system administrators are opposed to doing this for some
+reason, you can edit the resource <code>LSH_TIME_HOST</code> in the
+<code>leashw32.dll</code> to the name appropriate for your local site.
+You can also edit the header files from the source distribution and
+recompile for your local site.  However, this is not recommended.  You
+can also tweak the registry setting Leash32 uses.
 
 <p>
 You can also avoid this problem by running a local, properly
@@ -425,37 +471,31 @@ configured, NTP program on your machine.
 <p>
 The command line options for <b>Leash32</b> are:
 <pre>
-	-kinit	only perform a kinit and then exit Leash
+	-kinit, -i	only perform a kinit and then exit Leash
 </pre>
 
 <p>
-Docs for kinit, klist, and kdestroy are forthcoming.  Typing the name of the
-utility followed by <code>-?</code> will give you some usage infomation.
+The options for kinit, klist, and kdestroy can be viewed by typing the
+name of the utility followed by <code>-?</code> (e.g., <code>kinit
+-?</code>).
 
 <!-- ---------------------------------------------------------------------- -->
 <hr>
 <a name="todo"></a>
 <h2>To Do</h2>
 
-<ol>
+<ul>
 
 <p>
 <li>
-The tf_close in tf_save_cred still puzzles me.  We should figure out
-what the spec is supposed to be there (if there is supposed to be one
-at all) and document he heck out of it. :)
+The tf_close() in tf_save_cred() still puzzles the developer.  We
+should figure out what the spec is supposed to be there (if there is
+supposed to be one at all) and document the heck out of it. :)
 
 <p>
 <li>
 Make Kerberos 4 thread-safe and investigate whether Kerberos 5 is
 thread-safe.
-
-<p>
-<li>
-Revamp krbcc32 code to make it easier to read.  Add support for
-dyncamic sizing of credentials by using LPC to another process.  Also
-improve handling of iterators to avoid concurrency problems.  (This
-may slow down krbcc32 performance.  How can we avoid that?)
 
 <p>
 <li>
@@ -467,7 +507,7 @@ where that goes.
 <li>
 A clean Leash API.
 
-</ol>
+</ul>
 
 
 <!-- ---------------------------------------------------------------------- -->
@@ -475,13 +515,6 @@ A clean Leash API.
 <a name="devnotes"></a>
 <h2>Developer Notes</h2>
 
-
-<h3>Kerberos 5</h3>
-
-<p>
-The Kerberos 5 sources included here are a subset of the MIT Kerberos
-5 1.1 distribution.  They do not include some Unix and Mac-specific
-directories.
 
 <a name="devnotes_kclient">
 <h3>kclient</h3>
@@ -586,7 +619,7 @@ In order to correct this situation the following needs to be done to
 kclnt32.dll:
 
 <ol>
-<li>all calls to krb_get_lrealm() should be preceeded by an attempt
+<li>all calls to krb_get_lrealm() should be preceded by an attempt
    to retrieve the realm from the ticket file with
    krb_get_tf_realm().   Only if krb_get_tf_realm() fails should
    krb_get_lream() be called.
@@ -642,7 +675,7 @@ B. ticket file
       (HKCU\MIT\Kerberos4,ticketfile)
    3. Registry setting, if setting is present
       (HKLM\MIT\Kerberos4,ticketfile)
-   4. Otherwise, &quot;CCAPI:krb4cc&quot;.
+   4. Otherwise, &quot;API:krb4cc&quot;.
   (
    If we ever support a file-based cache, we should use this:
    4. %TEMP%\ticket.krb, if var defined and dir exists
@@ -668,7 +701,7 @@ B. credentials cache
    4. If RegKRB5CCNAME is set under [Files] in kerberos.ini,
       look at that path in the registry (code already in krb5 for compat
       with Gradient DCE installations, I believe).
-   5. Otherwise, if using CCAPI, default to &quot;CCAPI:krb5cc&quot;.
+   5. Otherwise, if using CCAPI, default to &quot;API:krb5cc&quot;.
                  if no CCAPI, use &quot;FILE:&quot; with:
       a. %TEMP%\krb5cc, if var defined and dir exists
       b. %TMP%\krb5cc, if var defined and dir exists
@@ -679,48 +712,15 @@ B. credentials cache
 </pre>
 
 <a name="dns">
-<h3>Using DNS Lookups for Win32 Kerberos 2.0</h3>
+<h3>Using DNS Lookups for Kerberos Configuration</h3>
 </a>
 
 <h4>What is it?</h4>
 
-<p>DNS Lookups provide Kebreros the ability to determine the Kerberos
+<p>DNS Lookups provide Kerberos the ability to determine the Kerberos
 Realm that a host belongs to and to find the servers associated with a
 given Realm by using the Domain Name Service instead of or in addition
 to local configuration files.
-
-<p>Support for DNS is not enabled by default.  You must explicitly
-turn it on when building Kerberos if you want to use it.
-
-
-<h4>Building with DNS Support</h4>
-
-<p>To build Win32 Kerberos 2.0 with support for DNS lookups, you need
-to set the following variables:
-
-<blockquote>
-<pre>
-DNS_INC=&lt;path&gt;\kerberos-win32-2.0\athena\wshelper\include
-DNS_LIB=&lt;path&gt;\kerberos-win32-2.0\athena\wshelper\wshload\obj\i386\dbg\wshload.lib
-KRB4_USE_DNS=1
-KRB5_USE_DNS=1
-</pre>
-</blockquote>
-
-<p>
-You can set them as environment variables before executing the
-<code>..\scripts\build.pl</code> script or you can set them on the
-script command-line (or a combination).
-
-<p>For example:
-
-<blockquote>
-<pre>
-set DNS_INC=&lt;path&gt;\kerberos-win32-2.0\athena\wshelper\include
-set DNS_LIB=&lt;path&gt;\kerberos-win32-2.0\athena\wshelper\wshload\obj\i386\dbg\wshload.lib
-..\scripts\build.pl KRB4_USE_DNS=1 KRB5_USE_DNS=1
-</pre>
-</blockquote>
 
 
 <h4>When are DNS Lookups used?</h4>
@@ -739,7 +739,8 @@ answered by data found in the appropriate configuration file.
 
 </ol>
 
-<p>To activate DNS lookups in a KRB.CON file place a line that reads:
+<p>To activate DNS lookups in a <code>krb.con</code> file place a line
+that reads:
 
 <blockquote>
 <pre>
@@ -753,7 +754,7 @@ first line may be left blank to indicate that the default realm should
 be determined by a DNS Lookup.
 
 <p>
-To activate DNS lookups in a KRB5.INI file place: 
+To activate DNS lookups in a <code>krb5.ini</code> file place: 
 
 <blockquote>
 <pre>
@@ -784,9 +785,7 @@ Example records are:
 <blockquote>
 <pre>
 _kerberos._udp.KRB5.COLUMBIA.EDU.    IN SRV 0 0 750     yclept.kermit.columbia.edu
-
 _kerberos-adm._tcp.KRB5.COLUMBIA.EDU IN SRV 0 0 749     yclept.kermit.columbia.edu
-
 _kpasswd._udp.KRB5.COLUMBIA.EDU      IN SRV 0 0 464     yclept.kermit.columbia.edu
 </pre>
 </blockquote>
@@ -799,7 +798,7 @@ _kpasswd._udp.KRB5.COLUMBIA.EDU      IN SRV 0 0 464     yclept.kermit.columbia.e
 
 <p>
 <li>
-Modification of the credential cache:
+Modification of the Kerberos 4 credential cache:
 <P>
 We encountered a problem at MIT that we felt needed to be addressed
 even though it broke some backwards compatibility. We found that if
@@ -830,8 +829,8 @@ machine.
 <P>
 Instead we borrowed an idea from Kerberos version 5 and decided to
 store the local IP address, unencrypted, in the credential which is
-cached in the local cache. Within the Kclient function IsCredExpired
-or the krbv4wxx function kchktkt we verify that the ticket has not
+cached in the local cache. Within the Kclient function IsCredExpired()
+or the krbv4wXX.dll function kchktkt we verify that the ticket has not
 expired and that the local IP address matches the IP address stored in
 the ticket.
 <P>
@@ -845,8 +844,8 @@ may also be affected. E.g. some software from FTP, Inc.
 
 <p>
 <li>
-Add a new function to Kclient DLL. This function is
-SendTicketsForService(). It is basically a send_auth type
+Add a new function to the Kclient DLL. This function is
+SendTicketsForService(). It is basically a send_auth() type
 function. Before everyone complains please read the following
 explanation.
 <P>
@@ -869,12 +868,12 @@ FUNCTION.
 <p>
 <li>
 We stole an idea from Cornell. If the clock is out of synch when we
-are trying to obtain a ticket we resynch the clock and try again. We
-inform the user if this occured.
+are trying to obtain a ticket we synchronize the clock and try again. We
+inform the user if this occurred.
 
 <p>
 <li>
-Fixed up some problems relating to DLL initialization. WSAStartup
+Fixed up some problems relating to DLL initialization. WSAStartup()
 will be called if necessary by a few functions. This was needed to
 handle some differences in DLL initialization under Win32 when
 multiple applications were using the DLL at the same time. Also fixed
@@ -884,18 +883,18 @@ up some initialization of the com_err functions due to similar issues.
 <li>
 Added two new functions to leashw32.dll.  The first is
 Leash_set_help_file(char*szHelpFile) which allows an application
-developer to specify which help file to use from the Dialogbox
-presented when using the Leash_kinit function. If the argument is NULL
+developer to specify which help file to use from the dialog box
+presented when using the Leash_kinit() function. If the argument is NULL
 the function will check the environment variable KERB_HELP. If this is
 not set the hard coded value of kerberos.hlp will be used.  The other
-function is Leash_get_help_file which allows an application developer
+function is Leash_get_help_file() which allows an application developer
 to determine the name of the help file being used.  These are defined
-in lshfunc.c
+in lshfunc.c.
 
 <p>
 <li>
 Fix the send_auth so that we do not fail on a null realm. Also
-detects when an invalid socket descriptor has been passed (special
+detects when an invalid socket descriptor has been passed. (Special
 thanks to Eudora 3.0 for providing a test case.)
 
 </ol>

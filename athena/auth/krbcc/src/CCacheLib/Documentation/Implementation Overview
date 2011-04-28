@@ -1,0 +1,60 @@
+
+Overview od the C++ implementation of the Credentials Cache library
+```````````````````````````````````````````````````````````````````
+
+meeroh@mit.edu, 4/3/2000
+
+
+
+The credentials cache consists of two layers: reference objects and
+data objects. A data object is shared among all applications, and
+stores some credentials cache data; a reference object is instantiated
+an arbitrary number of times in each process, and gives the caller
+access to a data object.
+
+For example, CCICCache is a reference object which accesses
+CCICCacheData. CCICCacheData is where credentials are actually
+stored; CCICCache merely provides an interface.
+
+Further, all reference objects are exported from the API in the form
+of opaque pointers. For example, CCICCache is exported from the API
+via cc_ccache_t.
+
+
+
+Each reference and data object pair consists of the following classes:
+ - external class -- implements the functions exported by the API for that
+ 	object. CCEContext, CCECCache, etc.
+ - internal reference class -- implements the reference object.
+ 	CCIContext, CCICCache, etc.
+ - internal reference stub class -- implements the reference end of the 
+ 	reference-data interface; see below. 
+ - internal data interface class -- implements the data end of the
+ 	reference-data interface; see below.
+ - internal data class -- implements the data object. CCIContextData,
+ 	CCICCacheData, etc.
+ 
+In order to achieve separation of references and data, we implement
+a very strinct interface between references and data. This allows
+complete decoupling of interfaces and data, for example, allowing
+data to be stored in a separate process, and references to access
+the data via inter-process communication.
+
+This interface consists of a stub, which accepts requests for data
+and handles them by whatever mechanism is used to communicate with data,
+and an interface, which accepts data requests from the same mechanism and
+actually handles them.
+
+For example, request for the name of a ccache would proceed like this:
+
+ 1. client requests the name from external class
+ 2. external class requests the name from the internal reference class
+ 3. internal reference class requests the name from the stub class
+ 4. the stub class requests the name from the interface class
+ 5. the interface class requests the name from the data class
+
+The duty of the reference and the data classes is to implement the data
+access, and the duty of the stub and interface classes is to provide a 
+method for the reference and the data class to communicate. This separation
+allows for a different method of communication to be implemented without
+changing the reference and data classes.

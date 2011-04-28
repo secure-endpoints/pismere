@@ -1,0 +1,29 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=krbcc32
+TARGETTYPE=DLL
+TARGETSS=console
+
+OBJS= \
+	$(O)\ccapi_c.obj \
+	$(O)\dllmain.obj \
+	$(O)\client.obj \
+	$(O)\cacheapi.obj \
+	$(O)\testapi.obj
+
+RES=$(O)\ver.res
+
+USE_DEFAULTLIB=1
+NO_LIBC_LINK=1
+USE_LIBC_DLL=1
+DEP_LIBS=..\lib\$(O)\ccutil.lib
+LIBS=rpcrt4.lib $(DEP_LIBS) user32.lib advapi32.lib
+INCLUDES=..\inc
+
+USE_CPP_EH=1
+
+DEF_FILE=cacheapi.def
+
+C_DEFINE=-DWIN32_LEAN_AND_MEAN

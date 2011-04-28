@@ -1,0 +1,139 @@
+<html>
+<head>
+<title>Pismere Build Version Documentation</title>
+</head>
+
+<body>
+
+<center>
+<h1>Pismere Build Version Documentation</h1>
+</center>
+
+<h2>Intro</h2>
+
+<p>
+To easily get version information into a particular module using the
+Pismere build system, you will need a resource script that does the
+following:
+
+<ol>
+<li>Define some stuff
+<li>include ver.inc
+</ol>
+
+<h2>The Definitions Needed by ver.inc</h2>
+
+<p>
+
+<h3>Required</h3>
+
+<dl>
+
+<dt><code><b>VER_PRODUCTNAME_STR</b></code><dd> Short description
+for the product that the file belongs to.
+
+<dt><code><b>VER_FILEDESCRIPTION_STR</b></code><dd> Short description
+for the file being built.
+
+</dl>
+
+<h3>Recommended</h3>
+
+<dl>
+
+<dt><code><b>VER_PROD_MAJOR</b></code><dd> Product's major version
+number.  Default is: <code>1</code>.
+
+<dt><code><b>VER_PROD_MINOR</b></code><dd> Product's major version
+number.  Default is: <code>0</code>.
+
+<dt><code><b>VER_PROD_REV</b></code><dd> Product version's revision
+number.  Default is: <code>0</code>.
+
+<dt><code><b>VER_PROD_MAJOR_STR</b></code><dd> String version of
+product's major version number.  Default is: <code>"1"</code>.
+
+<dt><code><b>VER_PROD_MINOR_STR</b></code><dd> String version of
+product's major version number.  Default is: <code>"0"</code>.
+
+<dt><code><b>VER_PROD_REV_STR</b></code><dd> String version of product
+version's revision number.  Default is: <code>"0"</code>.
+
+</dl>
+
+
+
+<h3>Options</h3>
+
+<dl>
+
+<dt><code><b>EXPORT_CONTROLLED</b></code><dd> Define this to indicate
+the file is export controlled.
+
+<dt><code><b>BETA</b></code><dd> Define this to a non-zero value to
+indicate that the file is beta (pre-release).  A negative value means
+just some beta.  A positive value indicates a particular beta number.
+
+<dt><code><b>BETA_STR</b></code><dd> The string version of
+<code>BETA</code> if <code>BETA &gt; 0</code>.
+
+</dl>
+
+
+
+<h3>Overridable</h3>
+
+<dl>
+
+<dt><code><b>VER_FILE_MAJOR</b></code><dd> File's major version
+number.  Default is: <code>VER_PROD_MAJOR</code>.
+
+<dt><code><b>VER_FILE_MINOR</b></code><dd> File's major version
+number.  Default is: <code>VER_PROD_MINOR</code>.
+
+<dt><code><b>VER_FILE_REV</b></code><dd> File version's revision
+number.  Default is: <code>VER_PROD_REV</code>.
+
+<dt><code><b>VER_FILE_MAJOR_STR</b></code><dd> String version of
+file's major version number.  Default is
+<code>VER_PROD_MAJOR_STR</code>.
+
+<dt><code><b>VER_FILE_MINOR_STR</b></code><dd> String version of
+file's minor version number.  Default is
+<code>VER_PROD_MINOR_STR</code>.
+
+<dt><code><b>VER_FILE_REV_STR</b></code><dd> String version of file
+version's revision number.  Default is: <code>VER_PROD_REV_STR</code>.
+
+</dl>
+
+
+
+<h3>Other</h3>
+
+<dl>
+
+<dt><code><b>VER_LEGALCOPYRIGHT_YEARS</b></code><dd> Copyright years
+string.  Default is: <code>"1993-2000"</code>.
+
+<dt><code><b>VER_LEGALCOPYRIGHT_STR</b></code><dd> Copyright string.
+Default is: <code>"Copyright (C) " VER_LEGALCOPYRIGHT_YEARS " by the "
+VER_MIT</code>.
+
+<dt><code><b>VER_COMPANYNAME_STR</b></code><dd> Company name string.
+Default is: <code>VER_MIT</code>.
+
+</dl>
+
+
+<h3>Useful</h3>
+
+<dl>
+
+<dt><code><b>VER_MIT</b></code><dd> <code>"Massachusetts Institute of
+Technology"</code>
+
+</dl>
+
+</body>
+</html>

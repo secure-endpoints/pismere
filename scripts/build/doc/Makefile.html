@@ -13,7 +13,7 @@
 
 <p>
 The tree uses the Pismere build script, <code>build.pl</code>.  This
-script is known to work with ActivePerl build 517 (<a
+script is known to work with ActivePerl builds 517 and 522 (<a
 href="http://www.activestate.com/"</a>www.activestate.com</a>).  Older
 builds of ActivePerl had subtle incompatibility problems.  Newer
 builds probably work...try them at your own risk.
@@ -41,6 +41,8 @@ are the most common ways to build:
 
 <li><code>build.pl -?</code> - show usage information.
 
+<li><code>build.pl --docs</code> - show this documentation.
+
 <li><code>build.pl</code> (or <code>build.pl all</code>)- builds debug target.
 
 <li><code>build.pl NODEBUG=1</code> (or <code>build.pl all NODEBUG=1</code>)
@@ -65,7 +67,8 @@ above commands, depending on whether your shell knows how to execute a
 
 <p>
 The build script works by entering a directory, and looking for a
-<code>Makefile.src</code> and a <code>Makefile.dir</code> file.
+<code>Makefile.src</code>, a <code>Makefile.dir</code>, or a
+<code>Makefile</code> file.
 
 <p>
 If the <code>Makefile.src</code> is present, the script will try to
@@ -83,17 +86,14 @@ If the <code>Makefile.dir</code> is present, the script will try to
 build the directories indicated in this file.  The directories can be
 build before and/or after the current directory.
 
+<p>
+If neither of the above files exist, the script will simply
+invoke the make utility on <code>Makefile</code>.
 
 <h3>Adding a component to the build</h3>
 
 <p>First, go to the directory where the component is located.  Then,
-create a <code>Makefile</code> file, with the contents:
-
-<pre>
-!include &lt;Makefile.inc&gt;
-</pre>
-
-<p>Then, create a <code>Makefile.src</code> as described <a
+create a <code>Makefile.src</code> as described <a
 href="#Makefile.src">below</a>.
 
 <p>
@@ -107,7 +107,26 @@ run <code>build.pl</code>.
 
 <p>
 If you need to build subdirectories, create a
-<code>Makefile.dir</code> in the directory with the line:
+<code>Makefile.dir</code> in the directory.  At least one of these
+variables must be defined in <code>Makefile.dir</code>.
+
+<dl>
+
+<dt><code><b>PREDIRS</b></code><dd> List of directories to build
+before building the current directory.
+
+<dt><code><b>DIRS</b></code><dd> List of directories to build after
+building the current directory.
+
+<dt><code><b>OPTDIRS</b></code><dd> List of optional directories to
+build after building the current directory.  (These directories will
+only be built if at least one of <code>dirname/Makefile.src</code>,
+<code>dirname/Makefile.dir</code>, or <code>dirname/Makefile</code>
+exists).
+
+</dl>
+
+<h4>Example</h4>
 
 <pre>
 DIRS=dir_1 dir_2
@@ -129,25 +148,17 @@ to any flags shown when you do a <code>build.pl -?</code>.
 <p>
 These are some of the common options you may want to use in building.
 You can set any option at the <code>build.pl</code> command-line.  The
-default build is a debug build with browse information.  It is
-important to realize that building browse information slows down the
-build quite a bit, so you may want to disable that at the
-command-line.
+default build is a debug build.  
 </p>
 
 <dl>
 
-<dt>NODEBUG <dd> set to 1 to build an optimized version of your app
-with no debug info (i.e., a release build).
+<dt><code><b>NODEBUG</b></code><dd> Set to 1 to build an optimized
+version of your app with no debug info (i.e., a release build).
 
-<dt>VENDORMOD <dd> set to the organization making a modification to
-the sources.  This helps figure out who made this modified build.
-
-<dt>NO_BSC <dd> define to skip SBR/BSC creation for a debug build
-(this is the default for a release build unless FORCE_BSC is defined)
-
-<dt>FORCE_BSC <dd> define to force SBR/BSC creation for a release
-build (this is the default for a debug build unless NO_BSC is defined)
+<dt><code><b>VENDORMOD</b></code><dd> Set to the organization making a
+modification to the sources.  This helps figure out who made this
+modified build.
 
 </dl>
 
@@ -161,35 +172,36 @@ are here for completeness.
 
 <dl>
 
-<dt>APPVER <dd>[ 4.0 | 5.0 ] - for build time checking for OS version
-dependencies and to mark the executable with OS version information.
-(Default is 4.0.) [<i>not much reason to use this</i>]
+<dt><code><b>APPVER</b></code><dd> [ 4.0 | 5.0 ] - For build time
+checking for OS version dependencies and to mark the executable with
+OS version information.  (Default is 4.0.) [<i>not much reason to use
+this</i>]
 
-<dt>TARGETOS <dd>[ WIN95 | WINNT | BOTH ] - for some build time
-checking for platform dependencies.  (Default is WINNT.)  [<i>not much
-reason to use this</i>]
+<dt><code><b>TARGETOS</b></code><dd> [ WIN95 | WINNT | BOTH ] - For
+some build time checking for platform dependencies.  (Default is
+WINNT.)  [<i>not much reason to use this</i>]
 
-<dt>TARGETLANG <dd> [ LANG_JAPANESE | LANG_CHINESE | LANG_KOREAN ] -
-for compile & link flags for building applications to run on Far-East
-Windows. (This is an optional parameter.  The system locale is the
+<dt><code><b>TARGETLANG</b></code><dd> [ LANG_JAPANESE | LANG_CHINESE
+| LANG_KOREAN ] - For compile & link flags for building applications
+to run on Far-East Windows. (This is an optional parameter.  The
+system locale is the default.)  [<i>not much reason to use this</i>]
+
+<dt><code><b>_WIN32_IE</b></code><dd> [ 0x0300 | 0x0400 ] - For
+compile and link flags for building applications and components to run
+on Internet Explorer. (This is an optional parameter.  IE 4.0 is the
 default.)  [<i>not much reason to use this</i>]
 
-<dt>_WIN32_IE <dd> [ 0x0300 | 0x0400 ] - for compile and link flags
-for building applications and components to run on Internet
-Explorer. (This is an optional parameter.  IE 4.0 is the default.)
-[<i>not much reason to use this</i>]
+<dt><code><b>NO_DEBUG_CRT</b></code><dd> Set to 1 to <b>not</b> use
+the debug version of the CRT when building a debug application.
 
-<dt>NO_DEBUG_CRT <dd> set to 1 to <b>not</b> use the debug version of
-the CRT when building a debug application.
+<dt><code><b>TUNE</b></code><dd> Set to 1 to get working set tuner
+info.
 
-<dt>NODEBUG <dd> set to 1 to build an optimized version of your app
-with no debug info (i.e., a release build).
+<dt><code><b>PROFILE</b></code><dd> Set to 1 to get call attributed
+profiling info.
 
-<dt>TUNE <dd> set to 1 to get working set tuner info.
-
-<dt>PROFILE <dd> set to 1 to get call attributed profiling info.
-
-<p>Note: NODEBUG, TUNE, and PROFILE are mutually exclusive.
+<p><em>Note:</em> <code>NODEBUG</code>, <code>TUNE</code>, and
+<code>PROFILE</code> are mutually exclusive.
 
 </dl>
 
@@ -206,85 +218,166 @@ standard Win32 libraries.
 <h4>Required</h4>
 
 <dl>
-<dt>NAME <dd> base name of target (no extension)
-<dt>TARGETTYPE <dd> [ EXE | DLL | LIB ] - type of target
-<dt>TARGETSS <dd> [ console | windows ] - target subsystem
-<dt>OBJS <dd> list of object files (i.e., $(O)\foo.obj )
+
+<dt><code><b>NAME</b></code><dd> Base name of target (no extension).
+
+<dt><code><b>TARGETTYPE</b></code><dd> [ EXE | DLL | LIB | NONE ] -
+Type of target.  <em>Note:</em> When the target type is NONE, it is
+not necessary (or even desirable) to define <code>NAME</code>,
+<code>TARGETSS</code>, or <code>OBJS</code>.  NONE is very useful as a
+means to use <code>PLACE</code> when not doing any kind of build at
+all, when building files that the build does not yet support (e.g.,
+help files), or when trying to integrate with a package with its own
+separate build.
+
+<dt><code><b>TARGETSS</b></code><dd> [ console | windows ] - Target
+subsystem.
+
+<dt><code><b>OBJS</b></code><dd> List of object files (i.e.,
+$(O)\foo.obj).
+
 </dl>
 
 <h4>Optional</h4>
 
 <dl>
 
-<dt>DEF_FILE <dd> .def file, if any
-<dt>RES <dd>resource file, if any (i.e., $(O)\foo.res )
+<dt><code><b>DEF_FILE</b></code><dd> Name of .def file, if any.
+
+<dt><code><b>RES</b></code><dd> Name of resource file, if any (i.e.,
+$(O)\foo.res).
 
 <p>
 
-<dt>NO_PLACE <dd>if defined, will not try to place output files
+<dt><code><b>PLACE</b></code><dd> List of additional files to place.
 
-<dt>NO_OUT <dd>if defined, will not create an output directory (avoid this)
+<dt><code><b>NO_PLACE</b></code><dd> If defined, will not try to place
+output files.
 
-<dt>NO_EXTERNAL_DEPS <dd> if defined, will not use $(NAME).dep as a
-dependency file
+<dt><code><b>NO_EXTERNAL_DEPS</b></code><dd> If defined, will not use
+$(NAME).dep as a dependency file (overrides USE_EXTERNAL_DEPS).  The
+default is to silently try to use a $(NAME).dep file.
 
-<dt>USE_EXTERNAL_DEPS <dd> if defined, will give warning if $(NAME).dep is
-not present
-
-<p>
-
-<dt>INCLUDES <dd>list of include dirs, ;-delimtited (e.g.,
-<code>INCLUDES=..\include;..\foo\inc;"..\annoying path with space\inc"</code> )
-
-<dt>LIB_PATHS <dd> list of lib dirs, ;-delimited (e.g.,
-<code>LIB_PATHS=..\lib;..\foo\lib</code> )
-
-<dt>LIBS <dd>libraries to use (e.g., <code>LIBS=foo.lib bar.lib
-..\baz\$(O)\baz.lib</code> or <code>LIBS=$(STD_LIBS)</code> )
-
-<dt>USE_DEFAULTLIB <dd>if defined, will use default libraries (the
-default is to only use the libraries specified in LIBS)
+<dt><code><b>USE_EXTERNAL_DEPS</b></code><dd> If defined, will give
+warning if $(NAME).dep is not present.  The default is to silently try
+to use a $(NAME).dep file.
 
 <p>
 
-<dt>USE_MFC <dd> use MFC (DLL by default)
+<dt><code><b>INCLUDES</b></code><dd> List of include dirs,
+<code>;</code>-delimtited (e.g.,
+<code>INCLUDES=..\include;..\foo\inc;"..\annoying path with
+spaces\inc"</code>).
 
-<dt>USE_MFC_STATIC <dd> use static MFC
+<dt><code><b>LIB_PATHS</b></code><dd> List of lib dirs, ;-delimited
+(e.g., <code>LIB_PATHS=..\lib;..\foo\lib</code>).
 
-<p>
+<dt><code><b>LIBS</b></code><dd> Libraries to use (e.g.,
+<code>LIBS=foo.lib bar.lib ..\baz\$(O)\baz.lib</code> or
+<code>LIBS=$(STD_LIBS)</code>).
 
-<dt>USE_LIBC_STD <dd> use static libc (not thread-safe)
+<dt><code><b>DEP_LIBS</b></code><dd> Anything that the output file
+depends on.  This is not used for linking, but it is used to determine
+whether the file to be linked is out of date.  It may be useful to
+include this variable in the <code>LIBS</code> line too.  (e.g.,
+<code>LIBS=subcomponent/a.lib ../other/component.lib</code>).
 
-<dt>USE_LIBC_MT <dd> use thread-safe satic libc
-
-<dt>USE_LIBC_DLL <dd> use thread-safe libc DLL (default)
-
-<dt>NO_LIBC <dd> do not use any libc
-
-<p>
-
-<dt>USE_CPP_EH <dd> define to get C++ exception handling (-GX)
-
-<dt>PCH_FILE <dd> set to header file to use for pre-compiled header
-
-<dt>NO_BSC <dd> define to skip SBR/BSC creation for a debug build
-(this is the default for a release build unless FORCE_BSC is defined)
-
-<dt>FORCE_BSC <dd> define to force SBR/BSC creation for a release
-build (this is the default for a debug build unless NO_BSC is defined)
-
-<dt>KEEP_SBRS <dd> define to not truncate SBR files when building a
-BSC file
+<dt><code><b>USE_DEFAULTLIB</b></code><dd> If defined, will use default
+libraries (the default is to only use the libraries specified in
+<code>LIBS</code>).
 
 <p>
 
-<dt>GEN_MAP <dd> generates a .map file in the build
+<dt><code><b>UNICODE</b></code><dd>Define this to use unicode libraries
+and entry points.
 
 <p>
 
-<dt>C_FLAGS <dd> define any additional flags to pass to the C/C++ compiler
+<dt><code><b>USE_MFC</b></code><dd> Use MFC (DLL by default).
 
-<dt>RC_FLAGS <dd> define any additional flags to pass to the resource compiler
+<dt><code><b>USE_MFC_STATIC</b></code><dd> Use static MFC.
+
+<p>
+
+<dt><code><b>USE_LIBC_STD</b></code><dd> Use static libc (not thread-safe).
+
+<dt><code><b>USE_LIBC_MT</b></code><dd> Use thread-safe satic libc.
+
+<dt><code><b>USE_LIBC_DLL</b></code><dd> Use thread-safe libc DLL (default)
+
+<dt><code><b>NO_LIBC</b></code><dd> Do not use any libc.
+
+<dt><code><b>NO_LIBC_LINK</b></code><dd> Do not explicitly specify the
+libc on the linker line.  This is needed if you need to override stuff
+in libc (like operator new).  (NOTE: Perhaps this should be the
+default.)
+
+<p>
+
+<dt><code><b>USE_PCH</b></code><dd> Define to use automatic
+pre-compiled headers (which will be in $(NAME).pch).
+
+<dt><code><b>USE_MINIMAL</b></code><dd> Define for minimal rebuilds
+(-Gm).  This setting is ignored in a release build.  <em>Note:</em>
+Minimal rebuild relies on class definitions not changing between
+include files. Class definitions must be global for a project (there
+should be only one definition of a given class), because the
+dependency information in the .IDB file is created for the entire
+project. If you have more than one definition for a class in your
+project, disable minimal rebuild.
+
+<dt><code><b>NO_MINIMAL</b></code><dd> Define to not do a minimal
+rebuild (overrides <code>USE_MINIMAL</code>).
+
+<dt><code><b>USE_CPP_RTTI</b></code><dd> Define to get C++ run-time
+type information (-GR).
+
+<dt><code><b>USE_CPP_EH</b></code><dd> Define to get C++ exception
+handling (-GX).
+
+<dt><code><b>PCH_FILE</b></code><dd> Set to header file to use for
+pre-compiled header (implies <code>USE_PCH</code>).  Note that this
+option is not needed if you want the compiler to automatically handle
+pre-compiled headers.  It's only needed if you need to control how
+pre-compiled headers are handled.
+
+<dt><code><b>GEN_BSC</b></code><dd> Define for SBR/BSC creation.
+
+<dt><code><b>NO_BSC</b></code><dd> Define for no SBR/BSC creation
+(overrides <code>GEN_BSC</code>).
+
+<dt><code><b>KEEP_SBRS</b></code><dd> Define to not truncate
+.SBR files when building a .BSC file.
+
+<p>
+
+<dt><code><b>GEN_MAP</b></code><dd> Generates a .MAP file in the
+build.
+
+<p>
+
+<dt><code><b>C_DEFINE</b></code><dd> Only for <code>-D</code> style
+definitions to pass to the C/C++ compiler.
+
+<dt><code><b>RC_DEFINE</b></code><dd> Only for <code>-D</code> style
+definitions to pass to the resource compiler.
+
+<dt><code><b>C_FLAGS</b></code><dd> Any additional flags to pass to
+the C/C++ compiler.  You should not use this unless absolutely
+necessary.  Using this may signal a need to have the build system
+support more options.  If it's a <code>-D</code> definition, put it in
+<code>C_DEFINE</code>.
+
+<dt><code><b>RC_FLAGS</b></code><dd> Any additional flags to pass to
+the resource compiler.  You should not use this unless absolutely
+necessary.  Using this may signal a need to have the build system
+support more options.  If it's a <code>-D</code> definition, put it in
+<code>RC_DEFINE</code>.
+
+<p>
+
+<dt><code><b>USE_SUFFIX_CP</b></code><dd> Define this to allow
+<code>.cp</code> files to be treated as C++ source files.
 
 </dl>
 

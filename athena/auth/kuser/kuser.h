@@ -44,6 +44,16 @@ fake_com_err(
     ...
     );
 
+krb5_error_code
+KRB5_CALLCONV
+k_read_password(
+    krb5_context        ctx,
+    const char		* prompt,
+    const char		* prompt2,
+    char		* password,
+    int			* pwsize
+    );
+
 /* ------------------------------------------------------------------------- */
 
 #include "loadfuncs-krb5.h"
@@ -70,8 +80,25 @@ extern DECL_FUNC_PTR(krb5_get_renewed_creds);
 extern DECL_FUNC_PTR(krb5_kt_default);
 extern DECL_FUNC_PTR(krb5_kt_resolve);
 extern DECL_FUNC_PTR(krb5_sname_to_principal);
-extern DECL_FUNC_PTR(decode_krb5_ticket);
+extern DECL_FUNC_PTR(krb5_decode_ticket);
 extern DECL_FUNC_PTR(krb5_enctype_to_string);
+extern DECL_FUNC_PTR(krb5_timestamp_to_sfstring);
+extern DECL_FUNC_PTR(krb5_string_to_deltat);
+extern DECL_FUNC_PTR(krb5_string_to_timestamp);
+extern DECL_FUNC_PTR(krb5_524_conv_principal);
+extern DECL_FUNC_PTR(krb5_get_prompt_types);
+extern DECL_FUNC_PTR(krb5_prompter_posix);
+extern DECL_FUNC_PTR(krb5_get_init_creds_keytab);
+extern DECL_FUNC_PTR(krb5_get_init_creds_password);
+extern DECL_FUNC_PTR(krb5_free_addresses);
+extern DECL_FUNC_PTR(krb5_get_init_creds_opt_set_address_list);
+extern DECL_FUNC_PTR(krb5_os_localaddr);
+extern DECL_FUNC_PTR(krb5_get_init_creds_opt_set_proxiable);
+extern DECL_FUNC_PTR(krb5_get_init_creds_opt_set_forwardable);
+extern DECL_FUNC_PTR(krb5_get_init_creds_opt_set_renew_life);
+extern DECL_FUNC_PTR(krb5_get_init_creds_opt_set_tkt_life);
+extern DECL_FUNC_PTR(krb5_get_init_creds_opt_init);
+extern DECL_FUNC_PTR(krb5_read_password);
 
 /* ------------------------------------------------------------------------- */
 

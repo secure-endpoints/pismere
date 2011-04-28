@@ -16,7 +16,10 @@
  * this permission notice appear in supporting documentation, and that
  * the name of M.I.T. not be used in advertising or publicity pertaining
  * to distribution of the software without specific, written prior
- * permission.  M.I.T. makes no representations about the suitability of
+ * permission.  Furthermore if you modify this software you must label
+ * your software as modified software and not distribute it in such a
+ * fashion that it might be confused with the original M.I.T. software.
+ * M.I.T. makes no representations about the suitability of
  * this software for any purpose.  It is provided "as is" without express
  * or implied warranty.
  * 
@@ -25,115 +28,95 @@
  */
 
 #include <krb5.h>
+#ifdef KRB5_KRB4_COMPAT
 #include <krb.h>
+//#define HAVE_KRB524
+#else
+#undef HAVE_KRB524
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
-#include <com_err.h>
-#include <getopt.h>
 
-#include <kuser.h>
+#ifdef GETOPT_LONG
+#include <getopt.h>
+#else
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#ifdef sun
+/* SunOS4 unistd didn't declare these; okay to make unconditional?  */
+extern int optind;
+extern char *optarg;
+#endif /* sun */
+#else
+extern int optind;
+extern char *optarg;
+extern int getopt();
+#endif /* HAVE_UNISTD_H */
+#endif /* GETOPT_LONG */
+
 #include <loadfuncs-leash.h>
+#include <kuser.h>
+#include <kuser-redefine.h>
+
+#ifndef _WIN32
+#define GET_PROGNAME(x) (strrchr((x), '/') ? strrchr((x), '/')+1 : (x))
+#else
+#define GET_PROGNAME(x) max(max(strrchr((x), '/'), strrchr((x), '\\')) + 1,(x))
+#endif
+
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+char * get_name_from_os()
+{
+    struct passwd *pw;
+    if (pw = getpwuid((int) getuid()))
+	return pw->pw_name;
+    return 0;
+}
+#else /* HAVE_PWD_H */
+#ifdef _WIN32
+char * get_name_from_os()
+{
+    static char name[1024];
+    DWORD name_size = sizeof(name);
+    if (GetUserName(name, &name_size)) {
+	name[sizeof(name)-1] = 0; /* Just to be extra safe */
+	return name;
+    } else {
+	return 0;
+    }
+}
+#else /* _WIN32 */
+char * get_name_from_os()
+{
+    return 0;
+}
+#endif /* _WIN32 */
+#endif /* HAVE_PWD_H */
+
+static char *progname;
 
 static char* progname_v5 = 0;
+#ifdef KRB5_KRB4_COMPAT
 static char* progname_v4 = 0;
+static char* progname_v524 = 0;
+#endif
 
-static int got_k4 = 0;
 static int got_k5 = 0;
+static int got_k4 = 0;
+
+static int default_k5 = 1;
+#if defined(KRB5_KRB4_COMPAT) && defined(KINIT_DEFAULT_BOTH)
+static int default_k4 = 1;
+#else
+static int default_k4 = 0;
+#endif
 
 static int authed_k5 = 0;
 static int authed_k4 = 0;
 
-#define KRB5_DEFAULT_OPTIONS (KDC_OPT_PROXIABLE|KDC_OPT_FORWARDABLE)
-#define KRB5_DEFAULT_LIFE 60*60*10 /* 10 hours */
-
-static krb5_timestamp now;
-
-static krb5_error_code
-read_console_password(
-    const char		* prompt,
-    const char		* prompt2,
-    char		* password,
-    int			* pwsize
-    )
-{
-    HANDLE		handle;
-    DWORD		old_mode, new_mode;
-    char		*tmpstr = 0;
-    char		*ptr;
-    int			scratchchar;
-    krb5_error_code	errcode = 0;
-
-    handle = GetStdHandle(STD_INPUT_HANDLE);
-    if (handle == INVALID_HANDLE_VALUE)
-	return ENOTTY;
-    if (!GetConsoleMode(handle, &old_mode))
-	return ENOTTY;
-
-    new_mode = old_mode;
-    new_mode |=  ( ENABLE_LINE_INPUT | ENABLE_PROCESSED_INPUT );
-    new_mode &= ~( ENABLE_ECHO_INPUT );
-
-    if (!SetConsoleMode(handle, new_mode))
-	return ENOTTY;
-
-    (void) fputs(prompt, stdout);
-    (void) fflush(stdout);
-    (void) memset(password, 0, *pwsize);
-
-    if (fgets(password, *pwsize, stdin) == NULL) {
-	(void) putchar('\n');
-	errcode = KRB5_LIBOS_CANTREADPWD;
-	goto cleanup;
-    }
-    (void) putchar('\n');
-
-    if ((ptr = strchr(password, '\n')))
-	*ptr = '\0';
-    else /* need to flush */
-	do {
-	    scratchchar = getchar();
-	} while (scratchchar != EOF && scratchchar != '\n');
-
-    if (prompt2) {
-	if (! (tmpstr = (char *)malloc(*pwsize))) {
-	    errcode = ENOMEM;
-	    goto cleanup;
-	}
-	(void) fputs(prompt2, stdout);
-	(void) fflush(stdout);
-	if (fgets(tmpstr, *pwsize, stdin) == NULL) {
-	    (void) putchar('\n');
-	    errcode = KRB5_LIBOS_CANTREADPWD;
-	    goto cleanup;
-	}
-	(void) putchar('\n');
-
-	if ((ptr = strchr(tmpstr, '\n')))
-	    *ptr = '\0';
-	else /* need to flush */
-	    do {
-		scratchchar = getchar();
-	    } while (scratchchar != EOF && scratchchar != '\n');
-
-	if (strncmp(password, tmpstr, *pwsize)) {
-	    errcode = KRB5_LIBOS_BADPWDMATCH;
-	    goto cleanup;
-	}
-    }
-
-cleanup:
-    (void) SetConsoleMode(handle, old_mode);
-    if (tmpstr) {
-	(void) memset(tmpstr, 0, *pwsize);
-	(void) free(tmpstr);
-    }
-    if (errcode)
-	(void) memset(password, 0, *pwsize);
-    else
-	*pwsize = strlen(password);
-    return errcode;
-}
+#define KRB4_BACKUP_DEFAULT_LIFE_SECS 10*60*60 /* 10 hours */
 
 typedef enum { INIT_PW, INIT_KT, RENEW, VALIDATE } action_type;
 
@@ -146,16 +129,19 @@ struct k_opts
 
     int forwardable;
     int proxiable;
+    int addresses;
 
     int not_forwardable;
     int not_proxiable;
+    int no_addresses;
 
     int verbose;
 
     char* principal_name;
     char* service_name;
     char* keytab_name;
-    char* cache_name;
+    char* k5_cache_name;
+    char* k4_cache_name;
 
     action_type action;
 };
@@ -170,117 +156,201 @@ struct k5_data
 
 struct k4_data
 {
+    krb5_deltat lifetime;
+#ifdef KRB5_KRB4_COMPAT
     char aname[ANAME_SZ + 1];
     char inst[INST_SZ + 1];
     char realm[REALM_SZ + 1];
-    char* name;
+    char name[ANAME_SZ + 1 + INST_SZ + 1 + REALM_SZ + 1];
+#endif
 };
 
+#ifdef GETOPT_LONG
+/* if struct[2] == NULL, then long_getopt acts as if the short flag
+   struct[3] was specified.  If struct[2] != NULL, then struct[3] is
+   stored in *(struct[2]), the array index which was specified is
+   stored in *index, and long_getopt() returns 0. */
+
+struct option long_options[] = {
+    { "noforwardable", 0, NULL, 'F' },
+    { "noproxiable", 0, NULL, 'P' },
+    { "addresses", 0, NULL, 'a'},
+    { "forwardable", 0, NULL, 'f' },
+    { "proxiable", 0, NULL, 'p' },
+    { "noaddresses", 0, NULL, 'A' },
+    { NULL, 0, NULL, 0 }
+};
+
+#define GETOPT(argc, argv, str) getopt_long(argc, argv, str, long_options, 0)
+#else
+#define GETOPT(argc, argv, str) getopt(argc, argv, str)
+#endif
+
 void
-usage()
+usage(void)
 {
-    fprintf(stderr, "Usage: %s [-l lifetime] [-r renewable_life] [-f] [-F] [-p] [-P] [-4] [-5] [-V] [-s start_time] [-S target_service] [-k [-t keytab_file]] [-R] [-v] [-c cachename] [principal]\n", progname);
-    fprintf(stderr,
-            "\t-4 Kerberos 4 only, -5 Kerberos 5 only, default is both\n"
-            "\toptions applicable to Kerberos 5 only:\n"
-            "\t\t-v validate\n"
-            "\t\t-c cache name\n"
-            "\t\t-f forwardable\n"
-            "\t\t-F not forwardable\n"
-            "\t\t-p proxiable\n"
-            "\t\t-P not proxiable\n"
-            "\t\t-r renewable lifetime\n"
-            "\t\t-s start time\n"
-            "\t\tdefault is %sforwardable and %sproxiable\n"
-            "\toptions applicable to both:\n"
-            "\t\t-R renew (will only work if also using Kerberos 5)\n"
-            "\t\t-l lifetime\n"
-            "\t\t-S service\n"
-            "\t\t-k use keytab/srvtab\n"
-            "\t\t-t filename of keytab/srvtab to use\n"
-            "\t\t-V verbose\n",
-            (KRB5_DEFAULT_OPTIONS & KDC_OPT_FORWARDABLE)?"":"not",
-            (KRB5_DEFAULT_OPTIONS & KDC_OPT_PROXIABLE)?"":"not"
-        );
+#define USAGE_BREAK "\n\t"
+
+#ifdef GETOPT_LONG
+#define USAGE_LONG_FORWARDABLE " | --forwardable | --noforwardable"
+#define USAGE_LONG_PROXIABLE   " | --proxiable | --noproxiable"
+#define USAGE_LONG_ADDRESSES   " | --addresses | --noaddresses"
+#define USAGE_BREAK_LONG       USAGE_BREAK
+#else
+#define USAGE_LONG_FORWARDABLE ""
+#define USAGE_LONG_PROXIABLE   ""
+#define USAGE_LONG_ADDRESSES   ""
+#define USAGE_BREAK_LONG       ""
+#endif
+
+    fprintf(stderr, "Usage: %s [-5] [-4] [-V] "
+	    "[-l lifetime] [-s start_time] "
+	    USAGE_BREAK
+	    "[-r renewable_life] "
+	    "[-f | -F" USAGE_LONG_FORWARDABLE "] "
+	    USAGE_BREAK_LONG
+	    "[-p | -P" USAGE_LONG_PROXIABLE "] "
+	    USAGE_BREAK_LONG
+	    "[-A" USAGE_LONG_ADDRESSES "] "
+	    USAGE_BREAK
+	    "[-v] [-R] "
+	    "[-k [-t keytab_file]] "
+	    USAGE_BREAK
+	    "[-c cachename] "
+	    "[-S service_name] [principal]"
+	    "\n\n", 
+	    progname);
+
+#define KRB_AVAIL_STRING(x) ((x)?"available":"not available")
+
+#define OPTTYPE_KRB5   "5"
+#define OPTTYPE_KRB4   "4"
+#define OPTTYPE_EITHER "Either 4 or 5"
+#ifdef HAVE_KRB524
+#define OPTTYPE_BOTH "5, or both 5 and 4"
+#else
+#define OPTTYPE_BOTH "5"
+#endif
+
+#ifdef KRB5_KRB4_COMPAT
+#define USAGE_OPT_FMT "%s%-50s%s\n"
+#else
+#define USAGE_OPT_FMT "%s%s\n"
+#endif
+
+#define ULINE(indent, col1, col2) \
+fprintf(stderr, USAGE_OPT_FMT, indent, col1, col2)
+
+    ULINE("    ", "options:", "valid with Kerberos:");
+    fprintf(stderr, "\t-5 Kerberos 5 (%s)\n", KRB_AVAIL_STRING(got_k5));
+    fprintf(stderr, "\t-4 Kerberos 4 (%s)\n", KRB_AVAIL_STRING(got_k4));
+    fprintf(stderr, "\t   (Default behavior is to try %s%s%s%s)\n",
+	    default_k5?"Kerberos 5":"",
+	    (default_k5 && default_k4)?" and ":"",
+	    default_k4?"Kerberos 4":"",
+	    (!default_k5 && !default_k4)?"neither":"");
+    ULINE("\t", "-V verbose",                   OPTTYPE_EITHER);
+    ULINE("\t", "-l lifetime",                  OPTTYPE_EITHER);
+    ULINE("\t", "-s start time",                OPTTYPE_KRB5);
+    ULINE("\t", "-r renewable lifetime",        OPTTYPE_KRB5);
+    ULINE("\t", "-f forwardable",               OPTTYPE_KRB5);
+    ULINE("\t", "-F not forwardable",           OPTTYPE_KRB5);
+    ULINE("\t", "-p proxiable",                 OPTTYPE_KRB5);
+    ULINE("\t", "-P not proxiable",             OPTTYPE_KRB5);
+    ULINE("\t", "-A do not include addresses",  OPTTYPE_KRB5);
+    ULINE("\t", "-v validate",                  OPTTYPE_KRB5);
+    ULINE("\t", "-R renew",                     OPTTYPE_BOTH);
+    ULINE("\t", "-k use keytab",                OPTTYPE_BOTH);
+    ULINE("\t", "-t filename of keytab to use", OPTTYPE_BOTH);
+    ULINE("\t", "-c Kerberos 5 cache name",     OPTTYPE_KRB5);
+    /* This options is not yet available: */
+    /* ULINE("\t", "-C Kerberos 4 cache name",     OPTTYPE_KRB4); */
+    ULINE("\t", "-S service",                   OPTTYPE_BOTH);
     exit(2);
 }
 
 char *
-parse_options(
-    int argc,
-    char **argv,
-    struct k_opts* opts
-    )
+parse_options(argc, argv, opts)
+    int argc;
+    char **argv;
+    struct k_opts* opts;
 {
     krb5_error_code code;
     int errflg = 0;
-    int use_k4_only = 0;
-    int use_k5_only = 0;
+    int use_k4 = 0;
+    int use_k5 = 0;
     int i;
 
-    while ((i = getopt(argc, argv, "r:fpFP45Vl:s:c:kt:RS:v")) != -1)
-    {
+    while ((i = GETOPT(argc, argv, "r:fpFP54AVl:s:c:kt:RS:v"))
+	   != -1) {
 	switch (i) {
-        case 'V':
-            opts->verbose = 1;
-            break;
-        case 'l':
-            /* Lifetime */
-            code = k_string_to_deltat(optarg, &opts->lifetime);
-            if (code != 0 || opts->lifetime == 0) {
-                fprintf(stderr, "Bad lifetime value %s\n", optarg);
-                errflg++;
-            }
-            break;
+	case 'V':
+	    opts->verbose = 1;
+	    break;
+	case 'l':
+	    /* Lifetime */
+	    code = krb5_string_to_deltat(optarg, &opts->lifetime);
+	    if (code != 0 || opts->lifetime == 0) {
+		fprintf(stderr, "Bad lifetime value %s\n", optarg);
+		errflg++;
+	    }
+	    break;
 	case 'r':
-            /* Renewable Time */
-            code = k_string_to_deltat(optarg, &opts->rlife);
-            if (code != 0 || opts->rlife == 0) {
-                fprintf(stderr, "Bad lifetime value %s\n", optarg);
-                errflg++;
-            }
-            break;
+	    /* Renewable Time */
+	    code = krb5_string_to_deltat(optarg, &opts->rlife);
+	    if (code != 0 || opts->rlife == 0) {
+		fprintf(stderr, "Bad lifetime value %s\n", optarg);
+		errflg++;
+	    }
+	    break;
 	case 'f':
-            opts->forwardable = 1;
-            break;
-        case 'F':
-            opts->not_forwardable = 1;
-            break;
+	    opts->forwardable = 1;
+	    break;
+	case 'F':
+	    opts->not_forwardable = 1;
+	    break;
 	case 'p':
-            opts->proxiable = 1;
-            break;
+	    opts->proxiable = 1;
+	    break;
 	case 'P':
-            opts->not_proxiable = 1;
-            break;
+	    opts->not_proxiable = 1;
+	    break;
+	case 'a':
+	    /* Note: This is supported only with GETOPT_LONG */
+	    opts->addresses = 1;
+	    break;
+	case 'A':
+	    opts->no_addresses = 1;
+	    break;
        	case 's':
-	    code = k_string_to_timestamp(optarg, &opts->starttime);
+	    code = krb5_string_to_deltat(optarg, &opts->starttime);
 	    if (code != 0 || opts->starttime == 0) {
-                krb5_deltat dt;
-                code = k_string_to_deltat(optarg, &dt);
-                if (code != 0 || dt == 0) {
-                    fprintf(stderr, "Bad postdate start time value %s\n", 
-                            optarg);
-                    errflg++;
-                } else {
-                    opts->starttime = now + dt;
-                }
-            }
+		krb5_timestamp abs_starttime;
+
+		code = krb5_string_to_timestamp(optarg, &abs_starttime);
+		if (code != 0 || abs_starttime == 0) {
+		    fprintf(stderr, "Bad start time value %s\n", optarg);
+		    errflg++;
+		} else {
+		    opts->starttime = abs_starttime - time(0);
+		}
+	    }
 	    break;
-        case 'S':
-            opts->service_name = optarg;
+	case 'S':
+	    opts->service_name = optarg;
 	    break;
-        case 'k':
-            opts->action = INIT_KT;
+	case 'k':
+	    opts->action = INIT_KT;
 	    break;
-        case 't':
-            if (opts->keytab_name)
-            {
-                fprintf(stderr, "Only one -t option allowed.\n");
-                errflg++;
-            } else {
-                opts->keytab_name = optarg;
-            }
-            break;
+	case 't':
+	    if (opts->keytab_name)
+	    {
+		fprintf(stderr, "Only one -t option allowed.\n");
+		errflg++;
+	    } else {
+		opts->keytab_name = optarg;
+	    }
+	    break;
 	case 'R':
 	    opts->action = RENEW;
 	    break;
@@ -288,50 +358,69 @@ parse_options(
 	    opts->action = VALIDATE;
 	    break;
        	case 'c':
-            if (opts->cache_name)
-            {
-                fprintf(stderr, "Only one -c option allowed\n");
-                errflg++;
-            } else {
-                opts->cache_name = optarg;
-            }
+	    if (opts->k5_cache_name)
+	    {
+		fprintf(stderr, "Only one -c option allowed\n");
+		errflg++;
+	    } else {
+		opts->k5_cache_name = optarg;
+	    }
 	    break;
-        case '4':
-            if (!got_k4)
-            {
-                fprintf(stderr, "Kerberos 4 support could not be loaded\n");
-                exit(3);
-            }
-            use_k4_only = 1;
-            break;
-        case '5':
-            if (!got_k5)
-            {
-                fprintf(stderr, "Kerberos 5 support could not be loaded\n");
-                exit(3);
-            }
-            use_k5_only = 1;
-            break;
+#if 0
+	    /*
+	      A little more work is needed before we can enable this
+	      option.
+	    */
+	case 'C':
+	    if (opts->k4_cache_name)
+	    {
+		fprintf(stderr, "Only one -C option allowed\n");
+		errflg++;
+	    } else {
+		opts->k4_cache_name = optarg;
+	    }
+	    break;
+#endif
+	case '4':
+	    if (!got_k4)
+	    {
+#ifdef KRB5_KRB4_COMPAT
+		fprintf(stderr, "Kerberos 4 support could not be loaded\n");
+#else
+		fprintf(stderr, "This was not built with Kerberos 4 support\n");
+#endif
+		exit(3);
+	    }
+	    use_k4 = 1;
+	    break;
+	case '5':
+	    if (!got_k5)
+	    {
+		fprintf(stderr, "Kerberos 5 support could not be loaded\n");
+		exit(3);
+	    }
+	    use_k5 = 1;
+	    break;
 	default:
 	    errflg++;
 	    break;
 	}
     }
 
-    if (use_k5_only && use_k4_only)
-    {
-        fprintf(stderr, "Only one of -4 and -5 allowed\n");
-        errflg++;
-    }
     if (opts->forwardable && opts->not_forwardable)
     {
-        fprintf(stderr, "Only one of -f and -F allowed\n");
-        errflg++;
+	fprintf(stderr, "Only one of -f and -F allowed\n");
+	errflg++;
     }
     if (opts->proxiable && opts->not_proxiable)
     {
-        fprintf(stderr, "Only one of -p and -P allowed\n");
-        errflg++;
+	fprintf(stderr, "Only one of -p and -P allowed\n");
+	errflg++;
+    }
+    if (opts->addresses && opts->no_addresses)
+    {
+	fprintf(stderr, "Only one of -a and -A allowed\n");
+	errflg++;
     }
 
     if (argc - optind > 1) {
@@ -340,458 +429,626 @@ parse_options(
 	errflg++;
     }
 
-    if (errflg) {
-        usage();
+    /* At this point, if errorless, we know we only have one option
+       selection */
+    if (!use_k5 && !use_k4) {
+	use_k5 = default_k5;
+	use_k4 = default_k4;
     }
 
-    /* At this point, we know we only have one option selection */
-    if (use_k4_only)
-        got_k5 = 0;
-    if (use_k5_only)
-        got_k4 = 0;
+    /* Now, we encode the OPTTYPE stuff here... */
+    if (!use_k5 &&
+	(opts->starttime || opts->rlife || opts->forwardable || 
+	 opts->proxiable || opts->addresses || opts->not_forwardable || 
+	 opts->not_proxiable || opts->no_addresses || 
+	 (opts->action == VALIDATE) || opts->k5_cache_name))
+    {
+	fprintf(stderr, "Specified option that requires Kerberos 5\n");
+	errflg++;
+    }
+    if (!use_k4 &&
+	opts->k4_cache_name)
+    {
+	fprintf(stderr, "Specified option that require Kerberos 4\n");
+	errflg++;
+    }
+    if (
+#ifdef HAVE_KRB524
+	!use_k5
+#else
+	use_k4
+#endif
+	&& (opts->service_name || opts->keytab_name || 
+	    (opts->action == INIT_KT) || (opts->action == RENEW))
+	)
+    {
+	fprintf(stderr, "Specified option that requires Kerberos 5\n");
+	errflg++;
+    }
+
+    if (errflg) {
+	usage();
+    }
+
+    got_k5 = got_k5 && use_k5;
+    got_k4 = got_k4 && use_k4;
 
     opts->principal_name = (optind == argc-1) ? argv[optind] : 0;
     return opts->principal_name;
 }
 
 int
-k5_begin(
-    struct k_opts* opts,
-    struct k5_data* k5,
-    struct k4_data* k4
-    )
+k5_begin(opts, k5, k4)
+    struct k_opts* opts;
+struct k5_data* k5;
+struct k4_data* k4;
 {
     char* progname = progname_v5;
     krb5_error_code code = 0;
 
     if (!got_k5)
-        return 0;
+	return 0;
 
-    if (code = pkrb5_init_context(&k5->ctx)) {
-        pcom_err(progname, code, "while initializing Kerberos 5 library");
-        return 0;
+    if (code = krb5_init_context(&k5->ctx)) {
+	com_err(progname, code, "while initializing Kerberos 5 library");
+	return 0;
     }
-    if (opts->cache_name)
+    if (opts->k5_cache_name)
     {
-        code = pkrb5_cc_resolve(k5->ctx, opts->cache_name, &k5->cc);
-        if (code != 0) {
-            pcom_err(progname, code, "resolving ccache %s",
-                     opts->cache_name);
-            return 0;
-        }
+	code = krb5_cc_resolve(k5->ctx, opts->k5_cache_name, &k5->cc);
+	if (code != 0) {
+	    com_err(progname, code, "resolving ccache %s",
+		    opts->k5_cache_name);
+	    return 0;
+	}
     } 
     else
     {
-        if ((code = pkrb5_cc_default(k5->ctx, &k5->cc))) {
-            pcom_err(progname, code, "while getting default ccache");
-            return 0;
-        }
+	if ((code = krb5_cc_default(k5->ctx, &k5->cc))) {
+	    com_err(progname, code, "while getting default ccache");
+	    return 0;
+	}
     }
 
     if (opts->principal_name)
     {
-        /* Use specified name */
-        if ((code = pkrb5_parse_name(k5->ctx, opts->principal_name, 
-                                     &k5->me))) {
-            pcom_err(progname, code, "when parsing name %s", 
-                     opts->principal_name);
-            return 0;
-        }
+	/* Use specified name */
+	if ((code = krb5_parse_name(k5->ctx, opts->principal_name, 
+				    &k5->me))) {
+	    com_err(progname, code, "when parsing name %s", 
+		    opts->principal_name);
+	    return 0;
+	}
     }
     else
     {
-        /* No principal name specified */
-        if (opts->action == INIT_KT) {
-            /* Use the default host/service name */
-            if (code = pkrb5_sname_to_principal(k5->ctx, NULL, NULL,
-                                                KRB5_NT_SRV_HST, 
-                                                &k5->me)) {
-                pcom_err(progname, code,
-                         "when creating default server principal name");
-                return 0;
-            }
-        } else {
-            /* Get default principal from cache if one exists */
-            if (code = krb5_cc_get_principal(k5->ctx, k5->cc, 
-                                             &k5->me))
-            {
-                char name[1024];
-                DWORD name_size = sizeof(name);
-                if (!GetUserName(name, &name_size))
-                {
-                    fprintf(stderr, "Unable to identify user\n");
-                    return 0;
-                }
-                if ((code = pkrb5_parse_name(k5->ctx, name, 
-                                             &k5->me)))
-                {
-                    pcom_err(progname, code, "when parsing name %s", 
-                             name);
-                    return 0;
-                }
-            }
-        }
+	/* No principal name specified */
+	if (opts->action == INIT_KT) {
+	    /* Use the default host/service name */
+	    if (code = krb5_sname_to_principal(k5->ctx, NULL, NULL,
+					       KRB5_NT_SRV_HST, &k5->me)) {
+		com_err(progname, code,
+			"when creating default server principal name");
+		return 0;
+	    }
+	} else {
+	    /* Get default principal from cache if one exists */
+	    if (code = krb5_cc_get_principal(k5->ctx, k5->cc, 
+					     &k5->me))
+	    {
+		char *name = get_name_from_os();
+		if (!name)
+		{
+		    fprintf(stderr, "Unable to identify user\n");
+		    return 0;
+		}
+		if ((code = krb5_parse_name(k5->ctx, name, 
+					    &k5->me)))
+		{
+		    com_err(progname, code, "when parsing name %s", 
+			    name);
+		    return 0;
+		}
+	    }
+	}
     }
-    if (code = pkrb5_unparse_name(k5->ctx, k5->me, 
-                                  &k5->name)) {
-        pcom_err(progname, code, "when unparsing name");
-        return 0;
+    if (code = krb5_unparse_name(k5->ctx, k5->me, 
+				 &k5->name)) {
+	com_err(progname, code, "when unparsing name");
+	return 0;
     }
     opts->principal_name = k5->name;
 
+#ifdef KRB5_KRB4_COMPAT
     if (got_k4)
     {
-        krb5_data* c;
-        c = krb5_princ_component(k5->ctx, k5->me, 0);
-        memcpy(k4->aname, c->data, min(c->length, sizeof(k4->aname)));
-        k4->aname[sizeof(k4->aname)] = 0;
-        if (krb5_princ_size(k5->ctx, k5->me) > 1) {
-            c = krb5_princ_component(k5->ctx, k5->me, 1);
-            memcpy(k4->inst, c->data, min(c->length, sizeof(k4->inst)));
-            k4->inst[sizeof(k4->inst)] = 0;
-        } else {
-            k4->inst[0] = 0;
-        }
-        c = krb5_princ_realm(k5->ctx, k5->me);
-        memcpy(k4->realm, c->data, min(c->length, sizeof(k4->realm)));
-        k4->realm[sizeof(k4->realm)] = 0;
+	/* Translate to a Kerberos 4 principal */
+	code = krb5_524_conv_principal(k5->ctx, k5->me,
+				       k4->aname, k4->inst, k4->realm);
+	if (code) {
+	    k4->aname[0] = 0;
+	    k4->inst[0] = 0;
+	    k4->realm[0] = 0;
+	}
     }
+#endif
     return 1;
 }
 
 void
-k5_end(
-    struct k5_data* k5
-    )
+k5_end(k5)
+    struct k5_data* k5;
 {
     if (k5->name)
-        pkrb5_free_unparsed_name(k5->ctx, k5->name);
+	krb5_free_unparsed_name(k5->ctx, k5->name);
     if (k5->me)
-        pkrb5_free_principal(k5->ctx, k5->me);
+	krb5_free_principal(k5->ctx, k5->me);
     if (k5->cc)
-        krb5_cc_close(k5->ctx, k5->cc);
+	krb5_cc_close(k5->ctx, k5->cc);
     if (k5->ctx)
-        pkrb5_free_context(k5->ctx);
+	krb5_free_context(k5->ctx);
     memset(k5, 0, sizeof(*k5));
 }
 
 int
-k4_begin(
-    struct k_opts* opts,
-    struct k4_data* k4
-    )
+k4_begin(opts, k4)
+    struct k_opts* opts;
+    struct k4_data* k4;
 {
+#ifdef KRB5_KRB4_COMPAT
     char* progname = progname_v4;
     int k_errno = 0;
+#endif
 
     if (!got_k4)
-        return 0;
+	return 0;
 
+#ifdef KRB5_KRB4_COMPAT
     if (k4->aname[0])
-        goto skip;
+	goto skip;
 
     if (opts->principal_name)
     {
-        /* Use specified name */
-        if (k_errno = pkname_parse(k4->aname, k4->inst, k4->realm, 
-                                   opts->principal_name))
-        {
-            fprintf(stderr, "%s: %s\n", progname, 
-                    pget_krb_err_txt_entry(k_errno));
-            return 0;
-        }
+	/* Use specified name */
+	if (k_errno = kname_parse(k4->aname, k4->inst, k4->realm, 
+				  opts->principal_name))
+	{
+	    fprintf(stderr, "%s: %s\n", progname, 
+		    krb_get_err_text(k_errno));
+	    return 0;
+	}
     } else {
-        /* No principal name specified */
-        if (opts->action == INIT_KT) {
-            /* Use the default host/service name */
-            /* XXX - need to add this functionality */
-            fprintf(stderr, "%s: Kerberos 4 srvtab support is not "
-                    "implemented\n", progname);
-            return 0;
-        } else {
-            /* Get default principal from cache if one exists */
-            if (k_errno = pkrb_get_tf_fullname(ptkt_string(), k4->aname, 
-                                               k4->inst, k4->realm))
-            {
-                char name[1024];
-                DWORD name_size = sizeof(name);
-                if (!GetUserName(name, &name_size))
-                {
-                    fprintf(stderr, "Unable to identify user\n");
-                    return 0;
-                }
-                if (k_errno = pkname_parse(k4->aname, k4->inst, k4->realm,
-                                           name))
-                {
-                    fprintf(stderr, "%s: %s\n", progname, 
-                            pget_krb_err_txt_entry(k_errno));
-                    return 0;
-                }
-            }
-        }
+	/* No principal name specified */
+	if (opts->action == INIT_KT) {
+	    /* Use the default host/service name */
+	    /* XXX - need to add this functionality */
+	    fprintf(stderr, "%s: Kerberos 4 srvtab support is not "
+		    "implemented\n", progname);
+	    return 0;
+	} else {
+	    /* Get default principal from cache if one exists */
+	    if (k_errno = krb_get_tf_fullname(tkt_string(), k4->aname, 
+					      k4->inst, k4->realm))
+	    {
+		char *name = get_name_from_os();
+		if (!name)
+		{
+		    fprintf(stderr, "Unable to identify user\n");
+		    return 0;
+		}
+		if (k_errno = kname_parse(k4->aname, k4->inst, k4->realm,
+					  name))
+		{
+		    fprintf(stderr, "%s: %s\n", progname, 
+			    krb_get_err_text(k_errno));
+		    return 0;
+		}
+	    }
+	}
     }
 
     if (!k4->realm[0])
-        pkrb_get_lrealm(k4->realm, 1);
+	krb_get_lrealm(k4->realm, 1);
 
-    k4->name = malloc(strlen(k4->aname) + 1 + strlen(k4->inst) + 1 +
-                      strlen(k4->realm) + 1);
-    if (!k4->name)
-        return 1; // XXX - pretend we're ok.
     if (k4->inst[0])
-        sprintf(k4->name, "%s.%s@%s", k4->aname, k4->inst, k4->realm);
+	sprintf(k4->name, "%s.%s@%s", k4->aname, k4->inst, k4->realm);
     else
-        sprintf(k4->name, "%s@%s", k4->aname, k4->realm);
+	sprintf(k4->name, "%s@%s", k4->aname, k4->realm);
     opts->principal_name = k4->name;
 
  skip:
-    if (k4->aname[0] && !pk_isname(k4->aname))
+    if (k4->aname[0] && !k_isname(k4->aname))
     {
 	fprintf(stderr, "%s: bad Kerberos 4 name format\n", progname);
-        return 0;
+	return 0;
     }
 
-    if (k4->inst[0] && !pk_isinst(k4->inst))
+    if (k4->inst[0] && !k_isinst(k4->inst))
     {
-        fprintf(stderr, "%s: bad Kerberos 4 instance format\n", progname);
-        return 0;
+	fprintf(stderr, "%s: bad Kerberos 4 instance format\n", progname);
+	return 0;
     }
 
-    if (k4->realm[0] && !pk_isrealm(k4->realm))
+    if (k4->realm[0] && !k_isrealm(k4->realm))
     {
-        fprintf(stderr, "%s: bad Kerberos 4 realm format\n", progname);
-        return 0;
+	fprintf(stderr, "%s: bad Kerberos 4 realm format\n", progname);
+	return 0;
     }
+#endif /* KRB5_KRB4_COMPAT */
     return 1;
 }
 
 void
-k4_end(
-    struct k4_data* k4
-    )
+k4_end(k4)
+    struct k4_data* k4;
 {
-    if (k4->name)
-        free(k4->name);
     memset(k4, 0, sizeof(*k4));
 }
 
-int
-k5_kinit(
-    struct k_opts* opts,
-    struct k5_data* k5,
-    char* password
+#ifdef KRB5_KRB4_COMPAT
+static char stash_password[1024];
+static int got_password = 0;
+#endif /* KRB5_KRB4_COMPAT */
+
+krb5_error_code
+KRB5_CALLCONV
+kinit_prompter(
+    krb5_context ctx,
+    void *data,
+    const char *name,
+    const char *banner,
+    int num_prompts,
+    krb5_prompt prompts[]
     )
+{
+    int i;
+    krb5_prompt_type *types;
+    krb5_error_code rc =
+	krb5_prompter_posix(ctx, data, name, banner, num_prompts, prompts);
+    if (!rc && (types = krb5_get_prompt_types(ctx)))
+	for (i = 0; i < num_prompts; i++)
+	    if ((types[i] == KRB5_PROMPT_TYPE_PASSWORD) ||
+		(types[i] == KRB5_PROMPT_TYPE_NEW_PASSWORD_AGAIN))
+	    {
+#ifdef KRB5_KRB4_COMPAT
+		strncpy(stash_password, prompts[i].reply->data,
+			sizeof(stash_password));
+		got_password = 1;
+#endif
+	    }
+    return rc;
+}
+
+int
+k5_kinit(opts, k5)
+    struct k_opts* opts;
+    struct k5_data* k5;
 {
     char* progname = progname_v5;
     int notix = 1;
     krb5_keytab keytab = 0;
     krb5_creds my_creds;
     krb5_error_code code = 0;
-    krb5_flags options = KRB5_DEFAULT_OPTIONS;
+    krb5_get_init_creds_opt options;
 
     if (!got_k5)
-        goto cleanup;
+	return 0;
 
+    krb5_get_init_creds_opt_init(&options);
     memset(&my_creds, 0, sizeof(my_creds));
 
-    if (opts->rlife)
-    {
-        options |= KDC_OPT_RENEWABLE;
-        my_creds.times.renew_till = now + opts->rlife;
-    }
+    /*
+      From this point on, we can goto cleanup because my_creds is
+      initialized.
+    */
 
+    if (opts->lifetime)
+	krb5_get_init_creds_opt_set_tkt_life(&options, opts->lifetime);
+    if (opts->rlife)
+	krb5_get_init_creds_opt_set_renew_life(&options, opts->rlife);
     if (opts->forwardable)
-    {
-        options |= KDC_OPT_FORWARDABLE;
-    }
+	krb5_get_init_creds_opt_set_forwardable(&options, 1);
     if (opts->not_forwardable)
-    {
-        options &= ~KDC_OPT_FORWARDABLE;
-    }
+	krb5_get_init_creds_opt_set_forwardable(&options, 0);
     if (opts->proxiable)
-    {
-        options |= KDC_OPT_PROXIABLE;
-    }
+	krb5_get_init_creds_opt_set_proxiable(&options, 1);
     if (opts->not_proxiable)
+	krb5_get_init_creds_opt_set_proxiable(&options, 0);
+    if (opts->addresses)
     {
-        options &= ~KDC_OPT_PROXIABLE;
+	krb5_address **addresses = NULL;
+	code = krb5_os_localaddr(k5->ctx, &addresses);
+	if (code != 0) {
+	    com_err(progname, code, "getting local addresses");
+	    goto cleanup;
+	}
+	krb5_get_init_creds_opt_set_address_list(&options, addresses);
+	krb5_free_addresses(k5->ctx, addresses);
     }
-    if (opts->starttime)
-    {
-        options |= KDC_OPT_POSTDATED;
-        my_creds.times.starttime = opts->starttime;
-        my_creds.times.endtime = opts->starttime + opts->lifetime;
-    } else {
-        my_creds.times.endtime = now + opts->lifetime;
-    }
+    if (opts->no_addresses)
+	krb5_get_init_creds_opt_set_address_list(&options, NULL);
 
     if ((opts->action == INIT_KT) && opts->keytab_name)
     {
-        code = pkrb5_kt_resolve(k5->ctx, opts->keytab_name, &keytab);
-        if (code != 0) {
-            pcom_err(progname, code, "resolving keytab %s", 
-                     opts->keytab_name);
-            goto cleanup;
-        }
-    }
-
-    switch (opts->action)
-    {
-    case INIT_PW:
-    case INIT_KT:
-        my_creds.client = k5->me;
-        if (!opts->service_name) {
-            if (code = pkrb5_build_principal_ext(k5->ctx, &my_creds.server,
-                                                 krb5_princ_realm(k5->ctx, k5->me)->length,
-                                                 krb5_princ_realm(k5->ctx, k5->me)->data,
-                                                 KRB5_TGS_NAME_SIZE, 
-                                                 KRB5_TGS_NAME,
-                                                 krb5_princ_realm(k5->ctx, k5->me)->length,
-                                                 krb5_princ_realm(k5->ctx, k5->me)->data,
-                                                 0))
-            {
-                pcom_err(progname, code, "while building server name");
-                goto cleanup;
-            }
-        } else {
-            if (code = pkrb5_parse_name(k5->ctx, opts->service_name, 
-                                        &my_creds.server))
-            {
-                pcom_err(progname, code, "while parsing service name %s",
-                         opts->service_name);
-                goto cleanup;
-            }
-        }
+	code = krb5_kt_resolve(k5->ctx, opts->keytab_name, &keytab);
+	if (code != 0) {
+	    com_err(progname, code, "resolving keytab %s", 
+		    opts->keytab_name);
+	    goto cleanup;
+	}
     }
 
     switch (opts->action) {
     case INIT_PW:
-	code = pkrb5_get_in_tkt_with_password(k5->ctx, options, 0, 0, 0,
-                                              password, 0, &my_creds, 0);
+	code = krb5_get_init_creds_password(k5->ctx, &my_creds, k5->me,
+					    0, kinit_prompter, 0,
+					    opts->starttime, 
+					    opts->service_name,
+					    &options);
 	break;
     case INIT_KT:
-	code = pkrb5_get_in_tkt_with_keytab(k5->ctx, options, 0, 0, 0,
-                                            keytab, 0, &my_creds, 0);
+	code = krb5_get_init_creds_keytab(k5->ctx, &my_creds, k5->me,
+					  keytab,
+					  opts->starttime, 
+					  opts->service_name,
+					  &options);
 	break;
     case VALIDATE:
-	code = pkrb5_get_validated_creds(k5->ctx, &my_creds, k5->me, k5->cc,
-                                         opts->service_name);
+	code = krb5_get_validated_creds(k5->ctx, &my_creds, k5->me, k5->cc,
+					opts->service_name);
 	break;
     case RENEW:
-	code = pkrb5_get_renewed_creds(k5->ctx, &my_creds, k5->me, k5->cc,
-                                       opts->service_name);
+	code = krb5_get_renewed_creds(k5->ctx, &my_creds, k5->me, k5->cc,
+				      opts->service_name);
 	break;
     }
 
     if (code) {
-        char *doing = 0;
-        switch (opts->action) {
-        case INIT_PW:
-        case INIT_KT:
-            doing = "getting initial credentials";
-            break;
-        case VALIDATE:
-            doing = "validating credentials";
-            break;
-        case RENEW:
-            doing = "renewing credentials";
-            break;
-        }
+	char *doing = 0;
+	switch (opts->action) {
+	case INIT_PW:
+	case INIT_KT:
+	    doing = "getting initial credentials";
+	    break;
+	case VALIDATE:
+	    doing = "validating credentials";
+	    break;
+	case RENEW:
+	    doing = "renewing credentials";
+	    break;
+	}
 
-	// If got code == KRB5_AP_ERR_V4_REPLY && got_k4, we should
-        // let the user know that maybe he/she wants -4.
-        if (code == KRB5KRB_AP_ERR_V4_REPLY && got_k4)
-            pcom_err(progname, code, "while %s\n"
-                     "The KDC doesn't support v5.  "
-                     "You may want the -4 option in the future",
-                     doing);
-        else if (code == KRB5KRB_AP_ERR_BAD_INTEGRITY)
-            fprintf(stderr, "%s: Password incorrect while %s\n", progname,
-                    doing);
+	/* If got code == KRB5_AP_ERR_V4_REPLY && got_k4, we should
+	   let the user know that maybe he/she wants -4. */
+	if (code == KRB5KRB_AP_ERR_V4_REPLY && got_k4)
+	    com_err(progname, code, "while %s\n"
+		    "The KDC doesn't support v5.  "
+		    "You may want the -4 option in the future",
+		    doing);
+	else if (code == KRB5KRB_AP_ERR_BAD_INTEGRITY)
+	    fprintf(stderr, "%s: Password incorrect while %s\n", progname,
+		    doing);
 	else
-            pcom_err(progname, code, "while %s", doing);
-        goto cleanup;
+	    com_err(progname, code, "while %s", doing);
+	goto cleanup;
+    }
+
+    if (!opts->lifetime) {
+	/* We need to figure out what lifetime to use for Kerberos 4. */
+	opts->lifetime = my_creds.times.endtime - my_creds.times.authtime;
     }
 
     if (code = krb5_cc_initialize(k5->ctx, k5->cc, k5->me)) {
-        pcom_err(progname, code, "when initializing cache %s",
-                 opts->cache_name?opts->cache_name:"");
-        goto cleanup;
+	com_err(progname, code, "when initializing cache %s",
+		opts->k5_cache_name?opts->k5_cache_name:"");
+	goto cleanup;
     }
 
     if (code = krb5_cc_store_cred(k5->ctx, k5->cc, &my_creds)) {
-        pcom_err(progname, code, "while storing credentials");
-        goto cleanup;
+	com_err(progname, code, "while storing credentials");
+	goto cleanup;
     }
 
     notix = 0;
 
  cleanup:
+    if (my_creds.client == k5->me) {
+	my_creds.client = 0;
+    }
+    krb5_free_cred_contents(k5->ctx, &my_creds);
     if (keytab)
 	krb5_kt_close(k5->ctx, keytab);
-
-    if (my_creds.client == k5->me) {
-        my_creds.client = 0;
-    }
-    // XXX - free my_creds...
     return notix?0:1;
 }
 
 int
-k4_kinit(
-    struct k_opts* opts,
-    struct k4_data* k4,
-    char* password
-    )
+k4_kinit(opts, k4, ctx)
+    struct k_opts* opts;
+    struct k4_data* k4;
+    krb5_context ctx;
 {
+#ifdef KRB5_KRB4_COMPAT
     char* progname = progname_v4;
     int k_errno = 0;
+#endif
 
     if (!got_k4)
-        return 0;
+	return 0;
+
+    if (opts->starttime)
+	return 0;
+
+#ifdef KRB5_KRB4_COMPAT
+    if (!k4->lifetime)
+	k4->lifetime = opts->lifetime;
+    if (!k4->lifetime)
+	k4->lifetime = KRB4_BACKUP_DEFAULT_LIFE_SECS;
+
+    k4->lifetime /= (5 * 60);
+    if (k4->lifetime < 1)
+	k4->lifetime = 1;
+    if (k4->lifetime > 255)
+	k4->lifetime = 255;
 
     switch (opts->action)
     {
     case INIT_PW:
-        k_errno = pkrb_get_pw_in_tkt(k4->aname, k4->inst, k4->realm, "krbtgt", 
-                                     k4->realm, opts->lifetime / (5 * 60), 
-                                     password);
+	if (!got_password) {
+	    int pwsize = sizeof(stash_password);
+	    krb5_error_code code;
+	    char prompt[1024];
 
-        if (k_errno) {
-            fprintf(stderr, "%s: %s\n", progname, 
-                    pget_krb_err_txt_entry(k_errno));
-            if (authed_k5)
-                fprintf(stderr, "Maybe your KDC does not support v4.  "
-                        "Try the -5 option next time.\n");
-            return 0;
-        }
-        return 1;
+	    sprintf(prompt, "Password for %s: ", opts->principal_name);
+	    stash_password[0] = 0;
+	    /*
+	      Note: krb5_read_password does not actually look at the
+	      context, so we're ok even if we don't have a context.  If
+	      we cannot dynamically load krb5, we can substitute any
+	      decent read password function instead of the krb5 one.
+	    */
+	    code = krb5_read_password(ctx, prompt, 0, stash_password, &pwsize);
+	    if (code || pwsize == 0)
+	    {
+		fprintf(stderr, "Error while reading password for '%s'\n",
+			opts->principal_name);
+		memset(stash_password, 0, sizeof(stash_password));
+		return 0;
+	    }
+	    got_password = 1;
+	}
+	k_errno = krb_get_pw_in_tkt(k4->aname, k4->inst, k4->realm, "krbtgt", 
+				    k4->realm, k4->lifetime, stash_password);
+
+	if (k_errno) {
+	    fprintf(stderr, "%s: %s\n", progname, 
+		    krb_get_err_text(k_errno));
+	    if (authed_k5)
+		fprintf(stderr, "Maybe your KDC does not support v4.  "
+			"Try the -5 option next time.\n");
+	    return 0;
+	}
+	return 1;
+#ifndef HAVE_KRB524
     case INIT_KT:
-        fprintf(stderr, "%s: srvtabs are not yet supported\n", progname);
-        return 0;
-    case  RENEW:
-        fprintf(stderr, "%s: renewal of krb4 tickets are not yet supported\n", progname);
-        return 0;
-    default:
-        return 0;
+	fprintf(stderr, "%s: srvtabs are not supported\n", progname);
+	return 0;
+    case RENEW:
+	fprintf(stderr, "%s: renewal of krb4 tickets is not supported\n",
+		progname);
+	return 0;
+#endif
     }
+#endif
+    return 0;
 }
 
 char*
-getvprogname(
-    char v
-    )
+getvprogname(v)
+    char *v;
 {
-    int len = strlen(progname) + 5;
+    int len = strlen(progname) + 2 + strlen(v) + 2;
     char *ret = malloc(len);
     if (ret)
-        sprintf(ret, "%s(v%c)", progname, v);
+	sprintf(ret, "%s(v%s)", progname, v);
     else
-        ret = progname;
+	ret = progname;
     return ret;
 }
 
-void
+#ifdef HAVE_KRB524
+/* Convert krb5 tickets to krb4. */
+int try_convert524(k5)
+    struct k5_data* k5;
+{
+    char * progname = progname_v524;
+    krb5_error_code code = 0;
+    int icode = 0;
+    krb5_principal kpcserver = 0;
+    krb5_creds *v5creds = 0;
+    krb5_creds increds;
+    CREDENTIALS v4creds;
+
+    if (!got_k4 || !got_k5)
+	return 0;
+
+    memset((char *) &increds, 0, sizeof(increds));
+    /*
+      From this point on, we can goto cleanup because increds is
+      initialized.
+    */
+
+    /* or do this directly with krb524_convert_creds_kdc */
+    krb524_init_ets(k5->ctx);
+
+    if ((code = krb5_build_principal(k5->ctx,
+				     &kpcserver, 
+				     krb5_princ_realm(k5->ctx, k5->me)->length,
+				     krb5_princ_realm(k5->ctx, k5->me)->data,
+				     "krbtgt",
+				     krb5_princ_realm(k5->ctx, k5->me)->data,
+				     NULL))) {
+	com_err(progname, code,
+		"while creating service principal name");
+	goto cleanup;
+    }
+
+    increds.client = k5->me;
+    increds.server = kpcserver;
+    /* Prevent duplicate free calls.  */
+    kpcserver = 0;
+
+    increds.times.endtime = 0;
+    increds.keyblock.enctype = ENCTYPE_DES_CBC_CRC;
+    if ((code = krb5_get_credentials(k5->ctx, 0, 
+				     k5->cc,
+				     &increds, 
+				     &v5creds))) {
+	com_err(progname, code,
+		"getting V5 credentials");
+	goto cleanup;
+    }
+    if ((icode = krb524_convert_creds_kdc(k5->ctx,
+					  v5creds,
+					  &v4creds))) {
+	com_err(progname, icode, 
+		"converting to V4 credentials");
+	goto cleanup;
+    }
+    /* this is stolen from the v4 kinit */
+    /* initialize ticket cache */
+    if ((icode = in_tkt(v4creds.pname, v4creds.pinst)
+	 != KSUCCESS)) {
+	com_err(progname, icode,
+		"trying to create the V4 ticket file");
+	goto cleanup;
+    }
+    /* stash ticket, session key, etc. for future use */
+    if ((icode = krb_save_credentials(v4creds.service,
+				      v4creds.instance,
+				      v4creds.realm, 
+				      v4creds.session,
+				      v4creds.lifetime,
+				      v4creds.kvno,
+				      &(v4creds.ticket_st), 
+				      v4creds.issue_date))) {
+	com_err(progname, icode,
+		"trying to save the V4 ticket");
+	goto cleanup;
+    }
+
+ cleanup:
+    memset(&v4creds, 0, sizeof(v4creds));
+    if (v5creds)
+	krb5_free_creds(k5->ctx, v5creds);
+    increds.client = 0;
+    krb5_free_cred_contents(k5->ctx, &increds);
+    if (kpcserver)
+	krb5_free_principal(k5->ctx, kpcserver);
+    return !(code || icode);
+}
+#endif /* HAVE_KRB524 */
+
+int
 main(argc, argv)
     int argc;
     char **argv;
@@ -799,40 +1056,53 @@ main(argc, argv)
     struct k_opts opts;
     struct k5_data k5;
     struct k4_data k4;
-    char password[255];
 
-    fix_progname(argv);
-    progname_v5 = getvprogname('5');
-    progname_v4 = getvprogname('4');
-    now = time(0);
+    progname = GET_PROGNAME(argv[0]);
+    progname_v5 = getvprogname("5");
+#ifdef KRB5_KRB4_COMPAT
+    progname_v4 = getvprogname("4");
+    progname_v524 = getvprogname("524");
+#endif
 
     /* Ensure we can be driven from a pipe */
     if(!isatty(fileno(stdin)))
-        setvbuf(stdin, 0, _IONBF, 0);
+	setvbuf(stdin, 0, _IONBF, 0);
     if(!isatty(fileno(stdout)))
-        setvbuf(stdout, 0, _IONBF, 0);
+	setvbuf(stdout, 0, _IONBF, 0);
     if(!isatty(fileno(stderr)))
-        setvbuf(stderr, 0, _IONBF, 0);
+	setvbuf(stderr, 0, _IONBF, 0);
 
+    /*
+      This is where we would put in code to dynamically load Kerberos
+      libraries.  Currenlty, we just get them implicitly.
+    */
     if (!LoadFuncs(COMERR_DLL, ce_fi, 0, 0, 1, 0, 1))
         pcom_err = fake_com_err;
     got_k5 = LoadFuncs(KRB5_DLL, k5_fi, 0, 0, 1, 0, 1);
+#ifdef KRB5_KRB4_COMPAT
     got_k4 = LoadFuncs(KRB4_DLL, k4_fi, 0, 0, 1, 0, 1);
+#endif
+
+    if (!pkrb5_string_to_deltat)
+	pkrb5_string_to_deltat = k_string_to_deltat;
+    if (!pkrb5_string_to_timestamp)
+	pkrb5_string_to_timestamp = k_string_to_timestamp;
+    if (!pkrb5_read_password)
+	pkrb5_read_password = k_read_password;
 
     memset(&opts, 0, sizeof(opts));
-    opts.lifetime = KRB5_DEFAULT_LIFE;
     opts.action = INIT_PW;
 
     {
-        DECL_FUNC_PTR(Leash_get_default_lifetime);
-        FUNC_INFO leash_fi[] = {
-            MAKE_FUNC_INFO(Leash_get_default_lifetime),
-            END_FUNC_INFO
-        };
-        DWORD lifetime;
-        if (LoadFuncs(LEASH_DLL, leash_fi, 0, 0, 1, 0, 1) &&
-            (lifetime = pLeash_get_default_lifetime()))
-            opts.lifetime = lifetime * 60;
+	DECL_FUNC_PTR(Leash_get_default_lifetime);
+	FUNC_INFO leash_fi[] = {
+	    MAKE_FUNC_INFO(Leash_get_default_lifetime),
+	    END_FUNC_INFO
+	};
+	DWORD lifetime;
+	if (LoadFuncs(LEASH_DLL, leash_fi, 0, 0, 1, 0, 1) &&
+	    (lifetime = pLeash_get_default_lifetime()))
+	    opts.lifetime = lifetime * 60;
     }
 
     memset(&k5, 0, sizeof(k5));
@@ -843,38 +1113,26 @@ main(argc, argv)
     got_k5 = k5_begin(&opts, &k5, &k4);
     got_k4 = k4_begin(&opts, &k4);
 
-    if (opts.action == INIT_PW)
-    {
-        char prompt[255];
-        int pwsize = sizeof(password);
-        krb5_error_code code;
-
-        sprintf(prompt, "Password for %s: ", opts.principal_name);
-        password[0] = 0;
-        code = read_console_password(prompt, 0, password, &pwsize);
-        if (code || pwsize == 0)
-        {
-            fprintf(stderr, "Error while reading password for '%s'\n",
-                    opts.principal_name);
-            memset(password, 0, sizeof(password));
-            exit(1);
-        }
-    }
-
-    authed_k5 = k5_kinit(&opts, &k5, password);
-    authed_k4 = k4_kinit(&opts, &k4, password);
-
-    memset(password, 0, sizeof(password));
+    authed_k5 = k5_kinit(&opts, &k5);
+#ifdef HAVE_KRB524
+    if (authed_k5)
+	authed_k4 = try_convert524(&k5);
+#endif
+    if (!authed_k4)
+	authed_k4 = k4_kinit(&opts, &k4, k5.ctx);
+#ifdef KRB5_KRB4_COMPATH
+    memset(stash_password, 0, sizeof(stash_password));
+#endif
 
     if (authed_k5 && opts.verbose)
-        fprintf(stderr, "Authenticated to Kerberos v5\n");
+	fprintf(stderr, "Authenticated to Kerberos v5\n");
     if (authed_k4 && opts.verbose)
-        fprintf(stderr, "Authenticated to Kerberos v4\n");
+	fprintf(stderr, "Authenticated to Kerberos v4\n");
 
     k5_end(&k5);
     k4_end(&k4);
 
     if ((got_k5 && !authed_k5) || (got_k4 && !authed_k4))
-        exit(1);
-    exit(0);
+	exit(1);
+    return 0;
 }

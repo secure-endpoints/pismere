@@ -1,0 +1,16 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=ccdump
+TARGETTYPE=EXE
+TARGETSS=console
+
+OBJS= \
+	$(O)\ccdump.obj
+
+USE_DEFAULTLIB=1
+LIBS=krbcc32.lib
+LIB_PATHS=..\..\src\dll\$(O)
+
+INCLUDES=..\..\include

@@ -90,10 +90,13 @@ RC_DEBUG_DEF=
 RC_DEBUG_DEF=-DDEBUG
 !endif
 
+KRB4_USE_DNS=1
+
 !ifdef KRB4_USE_DNS
 DNS_FLAGS=-DWSHELPER -DUSE_DNS
-WSHELPER_LIB=..\..\..\..\wshelper\wshelper\$(O)\wshelp32.lib
-WSHELPER_INC=..\..\..\..\wshelper\include
+WSHELPER_PATH=$(PISMERE)\athena\wshelper
+WSHELPER_LIB=$(WSHELPER_PATH)\wshload\$(O)\wshload.lib
+WSHELPER_INC=$(WSHELPER_PATH)\include
 !else
 DNS_FLAGS=
 WSHELPER_LIB=
@@ -101,7 +104,8 @@ WSHELPER_INC=.
 !endif
 
 INCLUDES=..\include;..\..\include;..\..\..\leash\include;..\..\..\krbcc\include;$(WSHELPER_INC)
-LIBS=..\cnsdes\$(O)\desw32.lib ..\com_err\$(O)\cerrw32.lib $(STD_LIBS) wsock32.lib version.lib ..\..\..\krbcc\krbcc32\$(O)\krbcc32.lib $(WSHELPER_LIB)
+DEP_LIBS=..\cnsdes\$(O)\desw32.lib ..\com_err\$(O)\cerrw32.lib $(PISMERE)\target\lib\$(T)\krbcc32.lib $(WSHELPER_LIB)
+LIBS=$(STD_LIBS) wsock32.lib version.lib $(DEP_LIBS)
 
-C_FLAGS=-DAFS -DPC -DPLATFORM=win32 -DBSDSOCK -DWINSOCK -DNOLEASHCOMPAT -DWINDOWS -DGUIONLY -DMM_CACHE -DCRED_TYPE_IN_UNION $(DNS_FLAGS)
-RC_FLAGS= -Dwin32 -DWINSOCK -DDES $(RC_DEBUG_DEF)
+C_DEFINE=-DAFS -DPC -DPLATFORM=win32 -DBSDSOCK -DWINSOCK -DNOLEASHCOMPAT -DWINDOWS -DGUIONLY -DMM_CACHE -DCRED_TYPE_IN_UNION $(DNS_FLAGS)
+RC_DEFINE=-Dwin32 -DWINSOCK -DDES $(RC_DEBUG_DEF)

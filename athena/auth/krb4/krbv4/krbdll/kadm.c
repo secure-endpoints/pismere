@@ -31,9 +31,9 @@
 extern LPSTR FAR PASCAL get_krb_err_txt_entry(int i);
 
 #ifdef DEBUG01 /* in the prototype file now. */
-extern int kadm_check_pw(des_cblock newkey, char *pwstring, 
+extern int kadm_check_pw(des_cblock newkey, char *pwstring,
                          u_char **retstring);
-extern int kadm_change_pw2(des_cblock newkey, char *pwstring, 
+extern int kadm_change_pw2(des_cblock newkey, char *pwstring,
                            u_char **retstring);
 
 #endif
@@ -86,15 +86,15 @@ long get_pw_in_tkt(username, password)
     char instance[INST_SZ+1];
     char realm[REALM_SZ+1];
     char emsg[256];
-  
+
     status = 0; /* just to be sure */
-  
+
     do_kadmin_init();
-  
+
     *name = '\0';
     *instance = '\0';
     *realm = '\0';
-  
+
     if (status = kname_parse(name, instance, realm, username)) {
 #ifdef DEBUG01
         wsprintf(emsg, "kerberos error: %s\n", get_krb_err_txt_entry(status));
@@ -103,26 +103,28 @@ long get_pw_in_tkt(username, password)
 #endif
         return status;
     }
-  
+
     if (!realm[0]) strcpy(realm, current_realm);
     if (!realm[0]) strcpy(realm, default_realm);
-  
+
     status = krb_get_pw_in_tkt(name, instance, realm, PWSERV_NAME,
                                KADM_SINST, 2, password);
     return(status);
 }
 
+long kadm_change_your_password(
+    char *principal, char *old_password,
+    char *new_password, 
 #ifdef WINDOWS
-long kadm_change_your_password(LPSTR principal, LPSTR old_password,
-			       LPSTR new_password, HANDLE FAR * hInfo_desc)
+    HANDLE* pinfo_desc
 #else
-    long kadm_change_your_password(char *principal, char *old_password,
-                                   char *new_password, char **pinfo_desc)
+    char** pinfo_desc
 #endif
+    )
 {
     des_cblock new_key;
     char *ret_st;
-  
+
     char    aname[ANAME_SZ];
     char    inst[INST_SZ];
     char    realm[REALM_SZ];
@@ -130,41 +132,39 @@ long kadm_change_your_password(LPSTR principal, LPSTR old_password,
     long    k_errno;
 #ifdef WINDOWS
     HANDLE old_ticket = 0;
-    HANDLE hTmp = 0;
 #else
     char *old_ticket = 0;
-    char *hTmp = 0;
 #endif
-    LPSTR info_desc;
-  
+    char* info_desc = 0;
+
     inst[0] = '\0';
     realm[0] = '\0';
-  
+
     if (principal &&
         (k_errno = kname_parse(aname, inst, realm, principal))
         != KSUCCESS) {
         return KRBERR(k_errno);
     }
-  
+
     if (k_gethostname(buf, LEN)) {
         return KRBERR(k_errno);
     }
     if (!*realm && krb_get_lrealm(realm, 1)) {
         return LSH_FAILEDREALM;
     }
-  
+
     if ((!*aname) || (!k_isname(aname)))
         return LSH_INVPRINCIPAL;
-  
+
     /* optional instance */
     if (!k_isinst(inst))
         return LSH_INVINSTANCE;
-  
+
     if (!k_isrealm(realm))
         return LSH_INVREALM;
-  
+
     do_kadmin_init();
-  
+
 #if !defined(OS2) && !defined(WIN32) && defined(TKT_KERBMEM)    /* XXX */
     k_errno = kadm_copy_tickets(principal, &old_ticket);
 #endif
@@ -172,14 +172,14 @@ long kadm_change_your_password(LPSTR principal, LPSTR old_password,
         free(old_ticket);
         old_ticket = NULL;
     }
-  
+
     k_errno = get_pw_in_tkt(principal, old_password);
     if (k_errno != 0) goto out;
-  
+
     if ((k_errno = kadm_init_link(PWSERV_NAME, KADM_SINST, realm))
         != KADM_SUCCESS)
         goto out;
-  
+
 #ifdef NOENCRYPTION
     bzero((char *) new_key, sizeof(des_cblock));
     new_key[0] = (unsigned char) 1;
@@ -199,9 +199,9 @@ long kadm_change_your_password(LPSTR principal, LPSTR old_password,
     }
 #else /*the MIT way*/
     (void) des_string_to_key(new_password, new_key);
-#endif //AFS
-#endif
-  
+#endif /* AFS */
+#endif /* NOENCRYPTION */
+
     /*  wade - this will not work *ret_st = NULL;
         ret_st = NULL;
     */
@@ -214,55 +214,44 @@ long kadm_change_your_password(LPSTR principal, LPSTR old_password,
             MessageBox( NULL, (LPSTR) tmp_buf, (LPSTR) "Weak Password", MB_OK | MB_ICONSTOP );
         } else {
             MessageBox( NULL, (LPSTR) "You selected a weak password, please "
-                        "select a better one.", (LPSTR) "Weak Password", 
+                        "select a better one.", (LPSTR) "Weak Password",
                         MB_OK | MB_ICONSTOP );
         }
     }
-  
-#else
+
+#else /* ! CHECK_ONLY */
     k_errno = kadm_change_pw2(new_key, new_password, &ret_st);
-    if( k_errno != 0 ){
+    if (k_errno != 0) {
 #ifdef DEBUG01
-        if( ret_st != NULL ){
+        if (ret_st != NULL) {
             char tmp_buf[1024];
             wsprintf( (LPSTR) tmp_buf, (LPSTR) ret_st );
-            MessageBox( NULL, (LPSTR) tmp_buf, (LPSTR) "Weak Password", MB_OK | MB_ICONSTOP );
+            MessageBox(NULL, tmp_buf, "Weak Password",
+                       MB_OK | MB_ICONSTOP );
         } else {
-            MessageBox( NULL, (LPSTR) "You selected a weak password, please select a better one.", (LPSTR) "Weak Password", MB_OK | MB_ICONSTOP );
+            MessageBox(NULL,
+                       "You selected a weak password, "
+                       "please select a better one.",
+                       "Weak Password",
+                       MB_OK | MB_ICONSTOP);
         }
-#else
+#else /* ! DEBUG01 */
+        /* This is the "normal" code path */
+        if (ret_st && pinfo_desc) {
 #ifdef WINDOWS
-        hTmp = GlobalAlloc( GMEM_FIXED | GMEM_ZEROINIT, lstrlen(ret_st) );
+            info_desc = GlobalAlloc(GMEM_FIXED | GMEM_ZEROINIT,
+                                    lstrlen(ret_st));
 #else
-        hTmp = malloc(lstrlen(ret_st));
+            info_desc = malloc(lstrlen(ret_st));
 #endif
-        if( hTmp != NULL ){
-#ifdef WINDOWS
-            info_desc = GlobalLock(hTmp);
-#else
-            info_desc = hTmp;
-#endif
-            if( info_desc != NULL )
-                lstrcpyn( info_desc, ret_st, lstrlen(ret_st) );
-      
-#ifdef WINDOWS
-            GlobalUnlock(hTmp);
-            *hInfo_desc = hTmp;
-#else
+            if (info_desc)
+                lstrcpyn(info_desc, ret_st, lstrlen(ret_st));
             *pinfo_desc = info_desc;
-#endif
-        } else {
-#ifdef WINDOWS
-            GlobalFree(hTmp);
-            hInfo_desc = NULL;
-#else
-            *pinfo_desc = NULL;
-#endif
         }
+#endif /* ! DEBUG01 */
     }
-#endif
-#endif
-  
+#endif /* ! CHECK_ONLY */
+
  out:
 #if !defined(OS2) && !defined(WIN32) && defined(TKT_KERBMEM) /* XXX */
     kadm_copy_back_tickets( old_ticket, principal);
@@ -293,21 +282,21 @@ kadm_change_password(admin_name, username, new_password)
 {
     Kadm_vals old, new;
     int k_errno;
-  
+
     do_kadmin_init();
-  
+
     k_errno = setvals(&old, username);
     if (k_errno != KADM_SUCCESS)        return(k_errno);
-  
+
     new = old;
-  
+
     SET_FIELD(KADM_DESKEY,new.fields);
-  
+
     if (princ_exists(old.name, old.instance, current_realm) != PE_NO) {
         /* get the admin's password */
         if (get_admin_ticket(admin_name) != GOOD_PW)
             return(-1);
-    
+
         if (get_key(&new.key_low, &new.key_high, SWAP, new_password) == GOOD_PW) {
             k_errno = kadm_mod(&old, &new);
             return(k_errno);
@@ -320,7 +309,7 @@ kadm_change_password(admin_name, username, new_password)
 #endif
             }
     else return(KDC_PR_UNKNOWN);
-  
+
     return(0);
 }
 
@@ -336,15 +325,15 @@ kadm_add_new_key(admin_name, target_name, target_password)
 {
     Kadm_vals new;
     int k_errno;
-  
+
     do_kadmin_init();
-  
+
     k_errno = setvals(&new, target_name);
     if (k_errno != KADM_SUCCESS)
         return(k_errno);
-  
+
     SET_FIELD(KADM_DESKEY,new.fields);
-  
+
     if (princ_exists(new.name, new.instance, current_realm) != PE_YES) {
         /* get the admin's password */
         if (get_admin_ticket(admin_name) !=
@@ -393,18 +382,18 @@ void do_kadmin_init()
     (void) sprintf(tktstring, "/tmp/tkt_adm_%d",getpid());
     krb_set_tkt_string(tktstring);
 #endif
-  
+
     if (!inited) {
         *default_realm = '\0';
         *current_realm = '\0';
-    
+
         /*
          * This is only as a default/initial realm; we don't care
          * about failure.
          */
         if (krb_get_lrealm(default_realm, 1) != KSUCCESS)
             strcpy(default_realm, KRB_REALM);
-    
+
         /*
          * If we can reach the local realm, initialize to it.  Otherwise,
          * don't initialize.
@@ -414,7 +403,7 @@ void do_kadmin_init()
             bzero(current_realm, sizeof(current_realm));
         else
             strcpy(current_realm, default_realm);
-    
+
         inited = 1;
     }
 }
@@ -430,14 +419,14 @@ get_admin_ticket(admin_name, admin_password)
     CREDENTIALS c;
 #endif
     char msg[256];
-  
+
     int k_errno;
     int ticket_life = 1;  /* minimum ticket lifetime */
-  
+
     *name = '\0';
     *instance = '\0';
     *realm = '\0';
-  
+
     if (k_errno = kname_parse(name, instance, realm, admin_name)) {
 #ifdef DEBUG01
         wsprintf(msg, "kerberos error: %s\n", (LPSTR) get_krb_err_txt_entry(k_errno));
@@ -446,10 +435,10 @@ get_admin_ticket(admin_name, admin_password)
         return KRBERR(k_errno);
         /* return(k_errno); */
     }
-  
+
     if (!realm[0]) strcpy(realm, current_realm);
     if (!realm[0]) strcpy(realm, default_realm);
-  
+
 #ifndef NO_MULTIPLE
     if (multiple) {
         /* If admin tickets exist and are valid, just exit. */
@@ -465,10 +454,10 @@ get_admin_ticket(admin_name, admin_password)
         ticket_life = DEFAULT_TKT_LIFE;
     }
 #endif
-  
+
     k_errno = krb_get_pw_in_tkt(name, instance, current_realm, PWSERV_NAME,
                                 KADM_SINST, ticket_life, admin_password);
-  
+
 #ifdef DEBUG01
     switch(k_errno) {
     case GT_PW_OK:
@@ -497,10 +486,10 @@ princ_exists(name, instance, realm)
 char *instance;
 char *realm;
 {
-    int k_errno;  
-  
+    int k_errno;
+
     k_errno = krb_get_pw_in_tkt(name, instance, realm, "krbtgt", realm, 1, "");
-  
+
     if ((k_errno == KSUCCESS) || (k_errno == INTK_BADPW))
         return(PE_YES);
     else if (k_errno == KDC_PR_UNKNOWN)
@@ -516,22 +505,22 @@ int byteswap;
 char *password;
 {
     des_cblock newkey;
-  
+
 #ifdef NOENCRYPTION
     bzero((char *) newkey, sizeof(newkey));
 #else
     des_string_to_key(password, newkey);
 #endif
-  
+
     bcopy((char *) newkey,(char *)low,4);
     bcopy((char *)(((long *) newkey) + 1), (char *)high,4);
-  
+
     bzero((char *) newkey, sizeof(newkey));
-  
+
 #ifdef NOENCRYPTION
     *low = 1;
 #endif
-  
+
     if (byteswap != DONTSWAP) {
         *low = htonl(*low);
         *high = htonl(*high);
@@ -548,10 +537,10 @@ char *string;
     char realm[REALM_SZ];
     int k_errno = KADM_SUCCESS;
     char msg[256];
-  
+
     bzero(vals, sizeof(*vals));
     bzero(realm, sizeof(realm));
-  
+
     SET_FIELD(KADM_NAME,vals->fields);
     SET_FIELD(KADM_INST,vals->fields);
     if (k_errno = kname_parse(vals->name, vals->instance, realm, string)) {

@@ -2,7 +2,7 @@
 #include "leashdll.h"
 #include <krb.h>
 #include <leashwin.h>
-#include "lsh_pwd.h"
+#include "leash-int.h"
 
 HINSTANCE hLeashInst;
 
@@ -175,6 +175,11 @@ FUNC_INFO service_fi[] = {
     END_FUNC_INFO
 };
 
+HINSTANCE hAfsTokens = 0;
+HINSTANCE hAfsConf = 0;
+HINSTANCE hComErr = 0;
+HINSTANCE hService = 0;
+
 BOOL WINAPI
 DllMain(
     HANDLE hinstDLL,
@@ -183,7 +188,6 @@ DllMain(
     )
 {
     WNDCLASS	wndclass;
-    HINSTANCE	hHandle;
 
     hLeashInst = hinstDLL;
 
@@ -193,11 +197,11 @@ DllMain(
     {
         LoadFuncs(KRB4_DLL, k4_fi, &hKrb4, 0, 1, 0, 0);
         LoadFuncs(KRB5_DLL, k5_fi, &hKrb5, 0, 1, 0, 0);
-        if (LoadFuncs(AFSTOKENS_DLL, afst_fi, &hHandle, 0, 1, 0, 0))
-            if (!LoadFuncs(AFSCONF_DLL, afsc_fi, 0, 0, 1, 0, 0))
-                UnloadFuncs(afst_fi, hHandle);
-        LoadFuncs(COMERR_DLL, ce_fi, 0, 0, 0, 1, 0);
-        LoadFuncs(SERVICE_DLL, service_fi, 0, 0, 1, 0, 0);
+        if (LoadFuncs(AFSTOKENS_DLL, afst_fi, &hAfsTokens, 0, 1, 0, 0))
+            if (!LoadFuncs(AFSCONF_DLL, afsc_fi, &hAfsConf, 0, 1, 0, 0))
+                UnloadFuncs(afst_fi, hAfsTokens);
+        LoadFuncs(COMERR_DLL, ce_fi, &hComErr, 0, 0, 1, 0);
+        LoadFuncs(SERVICE_DLL, service_fi, &hService, 0, 1, 0, 0);
 
         /*
          * Register window class for the MITPasswordControl that
@@ -225,6 +229,18 @@ DllMain(
         return 1;  
     }
     case DLL_PROCESS_DETACH:
+        if (hKrb4)
+            FreeLibrary(hKrb4);
+        if (hKrb5)
+            FreeLibrary(hKrb5);
+        if (hAfsTokens)
+            FreeLibrary(hAfsTokens);
+        if (hAfsConf)
+            FreeLibrary(hAfsConf);
+        if (hComErr)
+            FreeLibrary(hComErr);
+        if (hService)
+            FreeLibrary(hService);
         return 1;
     default:
         return 1;

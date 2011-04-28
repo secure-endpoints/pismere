@@ -9,9 +9,12 @@ TARGETSS=console
 OBJS= \
 	$(O)\kdestroy.obj
 
-LIBS=..\$(O)\kuser.lib advapi32.lib
+LIBS=..\$(O)\kuser.lib advapi32.lib \
+	$(PISMERE)\athena\util\lib\getopt\$(O)\getopt.lib
 INCLUDES=..;..\..\krb5\src\include;..\..\krb4\include;\
-	$(PISMERE)\athena\util\loadfuncs
+	$(PISMERE)\athena\util\loadfuncs;$(PISMERE)\athena\util\lib\getopt
 
 USE_DEFAULTLIB=1
 RES=$(O)\kdestroy.res
+
+C_DEFINE=-DKRB5_KRB4_COMPAT

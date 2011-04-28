@@ -12,7 +12,8 @@ OBJS= \
 	$(O)\lshfunc.obj \
 	$(O)\timesync.obj \
 	$(O)\winerr.obj \
-	$(O)\winutil.obj
+	$(O)\winutil.obj \
+	$(O)\registry.obj
 
 RES=$(O)\lsh_pwd.res
 
@@ -21,15 +22,13 @@ LIBS=$(STD_LIBS) wsock32.lib \
 
 INCLUDES="..\include";..\..\krb5\src\include;..\..\krb4\include;"..\..\afsauth\include";"..\..\..\wshelper\include";..\..\..\util\loadfuncs
 
-C_FLAGS= \
+C_DEFINE= \
 !ifndef MIT_ONLY
 	-DNO_AFS \
 !endif
 	-DWINSOCK \
 	-DWIN32   \
-	-DWINDOWS \
-	-GX       # C++ EH
+	-DWINDOWS
 
 USE_LIBC_DLL=1
-
 DEF_FILE=leashw32.def

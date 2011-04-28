@@ -1,0 +1,15 @@
+#
+# see makefile.html for instuctions.
+#
+
+NAME=getopt
+TARGETTYPE=LIB
+TARGETSS=console
+
+OBJS= \
+	$(O)\getopt.obj \
+	$(O)\getopt_long.obj
+
+USE_DEFAULTLIB=1
+
+PLACE=getopt.h

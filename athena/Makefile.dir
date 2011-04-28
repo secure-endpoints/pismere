@@ -1,7 +1,3 @@
-DIRS=util\loadfuncs
-
-!ifdef MIT_ONLY
-DIRS=$(DIRS) vs
-!endif
-
-DIRS=$(DIRS) wshelper auth
+DIRS=util\loadfuncs util\lib\getopt vs wshelper auth zephyr\winzephyr \
+	front\frontrpc util print moiradev afs\extra
+OPTDIRS=front\frontrpc util print moiradev afs\extra

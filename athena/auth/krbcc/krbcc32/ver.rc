@@ -1,4 +1,0 @@
-#define VER_FILEDESCRIPTION_STR 	"Kerberos Credendials Cache DLL"
-
-#include <kerberos.ver>
-#include <ver.inc>

@@ -301,7 +301,9 @@ void CMainFrame::OnHelp()
 }
 */
 
+/*
 void CMainFrame::OnContextHelp()
 {
 
 }
+*/

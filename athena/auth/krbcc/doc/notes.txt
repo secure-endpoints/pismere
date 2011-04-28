@@ -1,0 +1,28 @@
+			    krbcc32 Notes
+			    -------------
+
+For architectural and implementation information, see "krbcc32
+Architecture" and "krbcc32 Implementation" in architecture.txt and
+implementation.txt, respectively.
+
+Build Options:
+-------------
+
+You can rebuild src/lib/memory.cxx with DEBUG_MEMORY=1 to enable debug
+output for memory allocations.  The default is to have that off for
+both builds since that generates a lot of debug output.
+
+On VC++, C++, standards:
+-----------------------
+
+It turns out that you cannot output to cerr while the CRT is
+initializing.  Therefore, make sure your new operator does not try to
+output to cerr during the init process.  Using printf seems ok,
+however.
+
+Useful Examples:
+---------------
+
+secfile - from MSDN (last seen in April 2000)
+rpcsvc - from MSDN (last seen in April 2000)
+textsid - from MSDN (last seen in April 2000)

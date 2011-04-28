@@ -9,7 +9,7 @@ $0 = fileparse($0);
 
 sub main
 {
-    Getopt::Long::Configure('bundling', 'no_auto_abbrev', 
+    Getopt::Long::Configure('bundling', 'no_auto_abbrev',
 			    'no_getopt_compat', 'require_order',
 			    'ignore_case', 'pass_through',
 			    'prefix_pattern=(--|-|\+|\/)',
@@ -32,7 +32,7 @@ sub main
     my $p = $ENV{PATH};
     my $s = $Config{path_sep};
     my @d = split(/$s/, $p);
-    my @e = split(/$s/, lc($ENV{PATHEXT}));
+    my @e = split(/$s/, lc($ENV{PATHEXT} || '.bat;.exe;.com'));
     my @f = ($f, map { $f.$_; } @e);
     my $found = 0;
     foreach my $d (@d) {

@@ -1,0 +1,258 @@
+[ uuid (f4862da3-a764-4a7c-8c03-85f0e0c99062),
+    version(1.0),
+    pointer_default(unique)
+]
+
+interface ccapi
+{
+    typedef [context_handle] struct opaque_handle_CTX* HCTX;
+    typedef [context_handle] struct opaque_handle_CACHE* HCACHE;
+    typedef [context_handle] struct opaque_handle_CACHE_ITER* HCACHE_ITER;
+    typedef [context_handle] struct opaque_handle_CRED_ITER* HCRED_ITER;
+
+    typedef char CC_CHAR;
+    typedef unsigned char CC_UCHAR;
+    typedef int CC_INT32;
+    typedef unsigned int CC_UINT32;
+
+    typedef CC_INT32 CC_TIME_T;
+ 
+    enum { STK_AFS = 0, STK_DES = 1 };
+
+    enum {
+        CC_API_VER_1 = 1,
+        CC_API_VER_2 = 2
+    };
+
+    enum {
+        KRB_NAME_SZ = 40,
+        KRB_INSTANCE_SZ = 40,
+        KRB_REALM_SZ = 40,
+        MAX_V4_CRED_LEN = 1250
+    };
+
+    typedef struct _NC_INFO {
+        [string] CC_CHAR* name;
+        [string] CC_CHAR* principal;
+        CC_INT32 vers;
+    } NC_INFO;
+
+    typedef struct _NC_INFO_LIST {
+        CC_UINT32 length;
+        [size_is(length)] NC_INFO* info;
+    } NC_INFO_LIST;
+
+    typedef struct _V4_CRED {
+        CC_UCHAR     kversion;
+        CC_CHAR      principal[KRB_NAME_SZ + 1];
+        CC_CHAR      principal_instance[KRB_INSTANCE_SZ + 1];
+        CC_CHAR      service[KRB_NAME_SZ + 1];
+        CC_CHAR      service_instance[KRB_INSTANCE_SZ + 1];
+        CC_CHAR      realm[KRB_REALM_SZ + 1];
+        CC_UCHAR     session_key[8];
+        CC_INT32  kvno;       // k95 used BYTE skvno
+        CC_INT32  str_to_key; // k4 infers dynamically, k95 stores
+        CC_INT32  issue_date; // k95 called this issue_time
+        CC_INT32  lifetime;   // k95 used LONG expiration_time
+        CC_UINT32 address;    // IP Address of local host
+        CC_INT32  ticket_sz;  // k95 used BYTE, k4 ktext uses int to hold up to 1250
+        CC_UCHAR  ticket[MAX_V4_CRED_LEN];
+    } V4_CRED;
+
+    typedef struct _CC_DATA {
+        CC_UINT32 type;
+        CC_UINT32 length;
+        [size_is(length)] CC_UCHAR* data;
+    } CC_DATA;
+
+    typedef struct _CC_DATA_LIST {
+        CC_UINT32 count;
+        [size_is(count)] CC_DATA* data;
+    } CC_DATA_LIST;
+
+    typedef struct _V5_CRED {
+        [string] CC_CHAR * client;
+        [string] CC_CHAR * server;
+        CC_DATA keyblock;
+        CC_TIME_T authtime;
+        CC_TIME_T starttime;
+        CC_TIME_T endtime;
+        CC_TIME_T renew_till;
+        CC_UINT32 is_skey;
+        CC_UINT32 ticket_flags;
+        CC_DATA_LIST addresses;
+        CC_DATA ticket;
+        CC_DATA second_ticket;
+        CC_DATA_LIST authdata;
+    } V5_CRED;
+
+    typedef [switch_type(CC_INT32)] union _CRED_PTR_UNION {
+        /* XXX - we should us symbolic constants here */
+        [case(1)] V4_CRED* pV4Cred;
+        [case(2)] V5_CRED* pV5Cred;
+    } CRED_PTR_UNION;
+
+    typedef struct _CRED_UNION {
+        CC_INT32 cred_type;
+        [switch_is(cred_type)] CRED_PTR_UNION cred;
+    } CRED_UNION;
+
+    CC_INT32
+    rcc_initialize(
+        [out] HCTX* pctx
+        );
+
+    CC_INT32
+    rcc_shutdown(
+        [in, out] HCTX* pctx
+        );
+
+    CC_INT32
+    rcc_get_change_time(
+        [in] HCTX ctx,
+        [out] CC_TIME_T* time
+        );
+
+    CC_INT32
+    rcc_create(
+        [in] HCTX ctx,
+        [in, string] const CC_CHAR* name,
+        [in, string] const CC_CHAR* principal,
+        [in] CC_INT32 vers,
+        [in] CC_UINT32 flags,
+        [out] HCACHE* pcache
+        );
+
+    CC_INT32
+    rcc_open(
+        [in] HCTX ctx,
+        [in, string] const CC_CHAR* name,
+        [in] CC_INT32 vers,
+        [in] CC_UINT32 flags,
+        [out] HCACHE* pcache
+        );
+
+    CC_INT32
+    rcc_close(
+        [in, out] HCACHE* pcache
+        );
+
+    CC_INT32
+    rcc_destroy(
+        [in, out] HCACHE* pcache
+        );
+
+    CC_INT32
+    rcc_seq_fetch_NCs_begin(
+        [in] HCTX ctx,
+        [out] HCACHE_ITER* piter
+        );
+
+    CC_INT32
+    rcc_seq_fetch_NCs_end(
+        [in, out] HCACHE_ITER* piter
+        );
+
+    CC_INT32
+    rcc_seq_fetch_NCs_next(
+        [in] HCACHE_ITER iter,
+        [out] HCACHE* pcache
+        );
+
+    CC_INT32
+    rcc_seq_fetch_NCs(
+        [in] HCTX ctx,
+        [in, out] HCACHE_ITER* piter,
+        [out] HCACHE* pcache
+        );
+
+    CC_INT32
+    rcc_get_NC_info(
+        [in] HCTX ctx,
+        [out] NC_INFO_LIST** info_list
+        );
+
+#if 0
+    CC_INT32
+    rcc_free_NC_info(
+        [in] CC_UINT32 num_info,
+        [in, out] NC_INFO_LIST** info_list
+        );
+#endif
+
+    CC_INT32
+    rcc_get_name(
+        [in] HCACHE cache,
+        [out, string] CC_CHAR** name
+        );
+
+    CC_INT32
+    rcc_set_principal(
+        [in] HCACHE cache,
+        [in] CC_INT32 vers,
+        [in, string] const CC_CHAR* principal
+        );
+
+    CC_INT32
+    rcc_get_principal(
+        [in] HCACHE cache,
+        [out, string] CC_CHAR** principal
+        );
+
+    CC_INT32
+    rcc_get_cred_version(
+        [in] HCACHE cache,
+        [out] CC_INT32* vers
+        );
+
+    CC_INT32
+    rcc_lock_request(
+        [in] HCACHE cache,
+        [in] CC_INT32 lock_type
+        );
+
+    CC_INT32
+    rcc_store(
+        [in] HCACHE cache,
+        [in] CRED_UNION cred
+        );
+
+    CC_INT32
+    rcc_remove_cred(
+        [in] HCACHE cache,
+        [in] CRED_UNION cred
+        );
+
+    CC_INT32
+    rcc_seq_fetch_creds(
+        [in] HCACHE cache,
+        [in, out] HCRED_ITER* piter,
+        [out] CRED_UNION** cred
+        );
+
+    CC_INT32
+    rcc_seq_fetch_creds_begin(
+        [in] HCACHE cache,
+        [out] HCRED_ITER* piter
+        );
+
+    CC_INT32
+    rcc_seq_fetch_creds_end(
+        [in, out] HCRED_ITER* piter
+        );
+
+    CC_INT32
+    rcc_seq_fetch_creds_next(
+        [in] HCRED_ITER iter,
+        [out] CRED_UNION** cred
+        );
+
+    /* Management */
+
+    CC_UINT32
+    Connect(
+        [in, string] CC_CHAR* name
+        );
+
+    void Shutdown(void);
+}

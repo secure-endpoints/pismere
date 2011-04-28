@@ -86,7 +86,7 @@ krb_try_realm_txt_rr(
     )
 {
     unsigned char answer[2048], *p;
-    char host[MAX_DNS_NAMELEN];
+    char host[MAX_DNS_NAMELEN], *h;
     int size;
     HEADER *hdr;
     int type, class, numanswers, numqueries, rdlen, len;
@@ -96,11 +96,27 @@ krb_try_realm_txt_rr(
      */
 
     if (name == NULL || name[0] == '\0') {
+        if (strlen (prefix) >= sizeof(host)-1)
+	    return KFAILURE;
         strcpy(host,prefix);
     } else {
-        if ( strlen(prefix) + strlen(name) + 2 > MAX_DNS_NAMELEN )
+        if ( strlen(prefix) + strlen(name) + 3 > MAX_DNS_NAMELEN )
             return(KFAILURE);
         sprintf(host,"%s.%s", prefix, name);
+
+        /* Realm names don't (normally) end with ".", but if the query
+        doesn't end with "." and doesn't get an answer as is, the
+        resolv code will try appending the local domain.  Since the
+        realm names are absolutes, let's stop that.  
+
+        But only if a name has been specified.  If we are performing
+        a search on the prefix alone then the intention is to allow
+        the local domain or domain search lists to be expanded.
+        */
+
+        h = host + strlen(host);
+        if ((h > host) && (h[-1] != '.') && ((h - host + 1) < sizeof(host)))
+            strcpy(h, ".");
     }
 
     size = res_search(host, C_IN, T_TXT, answer, sizeof(answer));

@@ -14,8 +14,8 @@ class CAfsProperties : public CDialog
 {
 // Construction
 private:
-    CString m_newAfsStatus; 
-    CString m_oldAfsStatus; 
+    UINT m_newAfsStatus; 
+    UINT m_oldAfsStatus; 
     CWinApp *m_pApp; 
 
 public:

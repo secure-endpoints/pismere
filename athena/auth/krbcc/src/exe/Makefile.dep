@@ -1,0 +1,31 @@
+ccapi_s.c: \
+	..\inc\ccapi.h \
+
+procs.cxx: \
+	..\inc\autolock.hxx \
+	..\inc\cacheapi.h \
+	..\inc\ccapi.h \
+	..\inc\debug.h \
+	..\inc\debug.hxx \
+	..\inc\marshall.hxx \
+	.\handlemap.hxx \
+
+rundown.cxx: \
+	..\inc\ccapi.h \
+	..\inc\debug.h \
+
+server.cxx: \
+	..\inc\autolock.hxx \
+	..\inc\ccapi.h \
+	..\inc\debug.h \
+	..\inc\init.hxx \
+	..\inc\name.h \
+	..\inc\opts.hxx \
+	..\inc\testapi.h \
+	..\inc\util.h \
+
+ver.rc: \
+	$(PISMERE)\athena\include\export.ver \
+	$(PISMERE)\athena\include\kerberos.ver \
+	$(PISMERE)\scripts\build\inc\ver.inc \
+
