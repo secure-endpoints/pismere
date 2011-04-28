@@ -1,0 +1,11 @@
+NAME=guiwrap-test
+TARGETTYPE=EXE
+TARGETSS=console
+
+OBJS= \
+	$(O)\test.obj
+
+USE_DEFAULTLIB=1
+LIBS=user32.lib
+
+NO_PLACE=1

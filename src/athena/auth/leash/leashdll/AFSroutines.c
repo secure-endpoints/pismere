@@ -30,6 +30,7 @@ typedef struct {
 } afsconf_cell;
 
 DWORD   AfsOnLine = 1;
+extern  DWORD AfsAvailable;
 
 int not_an_API_LeashAFSGetToken(TICKETINFO * ticketinfo, TicketList** ticketList, char * kprinc);
 DWORD GetServiceStatus(LPSTR lpszMachineName, LPSTR lpszServiceName, DWORD *lpdwCurrentState);
@@ -56,7 +57,7 @@ Leash_afs_unlog(
     char    HostName[64];
     DWORD   CurrentState;
 
-    if (GetAfsStatus(&AfsOnLine) && !AfsOnLine)
+    if (!AfsAvailable || GetAfsStatus(&AfsOnLine) && !AfsOnLine)
         return(0);
 
     CurrentState = 0;
@@ -114,7 +115,7 @@ not_an_API_LeashAFSGetToken(
     if ( !kerberosPrincipal )
         kerberosPrincipal = "";
 
-    if (GetAfsStatus(&AfsOnLine) && !AfsOnLine)
+    if (!AfsAvailable || GetAfsStatus(&AfsOnLine) && !AfsOnLine)
         return(0);
 
     CurrentState = 0;
@@ -210,10 +211,15 @@ not_an_API_LeashAFSGetToken(
             sprintf(Buffer,"%s@%s",UserName,CellName);
             if (!ticketinfo->principal[0] || !stricmp(Buffer,kerberosPrincipal)) {
                 strcpy(ticketinfo->principal, Buffer);
-                ticketinfo->btickets = GOOD_TICKETS;
                 ticketinfo->issue_date = 0;
                 ticketinfo->lifetime = atoken.endTime;
                 ticketinfo->renew_till = 0;
+
+                _tzset();
+                if ( ticketinfo->lifetime - time(0) <= 0L )
+                    ticketinfo->btickets = EXPD_TICKETS;
+                else
+                    ticketinfo->btickets = GOOD_TICKETS;
             }
         }
     }
@@ -238,7 +244,6 @@ Leash_afs_klog(
     KTEXT_ST	ticket;
     struct ktc_principal	aserver;
     struct ktc_principal	aclient;
-    char	username[BUFSIZ];	/* To hold client username structure */
     char	realm_of_user[REALM_SZ]; /* Kerberos realm of user */
     char	realm_of_cell[REALM_SZ]; /* Kerberos realm of cell */
     char	local_cell[MAXCELLCHARS+1];
@@ -252,6 +257,8 @@ Leash_afs_klog(
     DWORD       CurrentState;
     char        HostName[64];
     BOOL        try_krb5 = 0;
+    int         retry = 0;
+    int         len;
 #ifndef NO_KRB5
     krb5_context  context = 0;
     krb5_ccache  _krb425_ccache = 0;
@@ -261,7 +268,7 @@ Leash_afs_klog(
     krb5_principal client_principal = 0;
 #endif /* NO_KRB5 */
 
-    if (GetAfsStatus(&AfsOnLine) && !AfsOnLine)
+    if (!AfsAvailable || GetAfsStatus(&AfsOnLine) && !AfsOnLine)
         return(0);
 
     if ( !realm ) realm = "";
@@ -380,6 +387,86 @@ Leash_afs_klog(
             goto use_krb4;
         }
 
+        /* This code inserts the entire K5 ticket into the token
+         * No need to perform a krb524 translation which is 
+         * commented out in the code below
+         */
+        if ( k5creds->ticket.length > MAXKTCTICKETLEN )
+            goto try_krb524d;
+
+        memset(&aserver, '\0', sizeof(aserver));
+        strncpy(aserver.name, ServiceName, MAXKTCNAMELEN - 1);
+        strncpy(aserver.cell, CellName, MAXKTCREALMLEN - 1);
+
+        memset(&atoken, '\0', sizeof(atoken));
+        atoken.kvno = RXKAD_TKT_TYPE_KERBEROS_V5;
+        atoken.startTime = k5creds->times.starttime;
+        atoken.endTime = k5creds->times.endtime;
+        memcpy(&atoken.sessionKey, k5creds->keyblock.contents, k5creds->keyblock.length);
+        atoken.ticketLen = k5creds->ticket.length;
+        memcpy(atoken.ticket, k5creds->ticket.data, atoken.ticketLen);
+
+      retry_gettoken5:
+        rc = ktc_GetToken(&aserver, &btoken, sizeof(btoken), &aclient);
+        if (rc != 0 && rc != KTC_NOENT && rc != KTC_NOCELL) {
+            if ( rc == KTC_NOCM && retry < 20 ) {
+                Sleep(500);
+                retry++;
+                goto retry_gettoken5;
+            }
+            goto try_krb524d;
+        }
+
+        if (atoken.kvno == btoken.kvno &&
+             atoken.ticketLen == btoken.ticketLen &&
+             !memcmp(&atoken.sessionKey, &btoken.sessionKey, sizeof(atoken.sessionKey)) &&
+             !memcmp(atoken.ticket, btoken.ticket, atoken.ticketLen)) 
+        {
+            /* Success */
+            pkrb5_free_creds(context, k5creds);
+            pkrb5_free_context(context);
+            return(0);
+        }
+
+        // * Reset the "aclient" structure before we call ktc_SetToken.
+        // * This structure was first set by the ktc_GetToken call when
+        // * we were comparing whether identical tokens already existed.
+
+        len = min(k5creds->client->data[0].length,MAXKTCNAMELEN - 1);
+        strncpy(aclient.name, k5creds->client->data[0].data, len);
+        aclient.name[len] = '\0';
+
+        if ( k5creds->client->length > 1 ) {
+            char * p;
+            strcat(aclient.name, ".");
+            p = aclient.name + strlen(aclient.name);
+            len = min(k5creds->client->data[1].length,MAXKTCNAMELEN - strlen(aclient.name) - 1);
+            strncpy(p, k5creds->client->data[1].data, len);
+            p[len] = '\0';
+        }
+        aclient.instance[0] = '\0';
+
+        strcpy(aclient.cell, realm_of_cell);
+
+        len = min(k5creds->client->realm.length,strlen(realm_of_cell));
+        if ( strncmp(realm_of_cell, k5creds->client->realm.data, len) ) {
+            char * p;
+            strcat(aclient.name, "@");
+            p = aclient.name + strlen(aclient.name);
+            len = min(k5creds->client->realm.length,MAXKTCNAMELEN - strlen(aclient.name) - 1);
+            strncpy(p, k5creds->client->realm.data, len);
+            p[len] = '\0';
+        }
+
+        rc = ktc_SetToken(&aserver, &atoken, &aclient, 0);
+        if (!rc) {
+            /* Success */
+            pkrb5_free_creds(context, k5creds);
+            pkrb5_free_context(context);
+            return(0);
+        }
+
+      try_krb524d:
         /* This requires krb524d to be running with the KDC */
         r = pkrb524_convert_creds_kdc(context, k5creds, &creds);
         pkrb5_free_creds(context, k5creds);
@@ -428,13 +515,6 @@ Leash_afs_klog(
     strncpy(aserver.name, ServiceName, MAXKTCNAMELEN - 1);
     strncpy(aserver.cell, CellName, MAXKTCNAMELEN - 1);
 
-    strcpy(username, creds.pname);
-    if (creds.pinst[0]) 
-    {
-        strcat(username, ".");
-        strcat(username, creds.pinst);
-    }
-
     memset(&atoken, '\0', sizeof(atoken));
     atoken.kvno = creds.kvno;
     atoken.startTime = creds.issue_date;
@@ -456,9 +536,22 @@ Leash_afs_klog(
     // * This structure was first set by the ktc_GetToken call when
     // * we were comparing whether identical tokens already existed.
 
-    strncpy(aclient.name, username, MAXKTCNAMELEN - 1);
+    strncpy(aclient.name, creds.pname, MAXKTCNAMELEN - 1);
+    if (creds.pinst[0])
+    {
+        strncat(aclient.name, ".", MAXKTCNAMELEN - 1);
+        strncat(aclient.name, creds.pinst, MAXKTCNAMELEN - 1);
+    }
     strcpy(aclient.instance, "");
-    strncpy(aclient.cell, creds.realm, MAXKTCREALMLEN - 1);
+
+    if ( strcmp(realm_of_cell, creds.realm) ) 
+    {
+        strncat(aclient.name, "@", MAXKTCNAMELEN - 1);
+        strncpy(aclient.name, creds.realm, MAXKTCREALMLEN - 1);
+    }
+    aclient.name[MAXKTCREALMLEN-1] = '\0';
+
+    strcpy(aclient.cell, CellName);
 
     // * NOTE: On WIN32, the order of SetToken params changed...
     // * to   ktc_SetToken(&aserver, &aclient, &atoken, 0)
@@ -495,15 +588,17 @@ static char *afs_realm_of_cell(afsconf_cell *cellconfig)
         return 0;
 
 #ifndef NO_KRB5
-    r = pkrb5_init_context(&ctx); 
-    if ( !r )
-        r = pkrb5_get_host_realm(ctx, cellconfig->hostName[0], &realmlist);
-    if ( !r && realmlist && realmlist[0] ) {
-        strcpy(krbrlm, realmlist[0]);
-        pkrb5_free_host_realm(ctx, realmlist);
+    if ( pkrb5_init_context ) {
+        r = pkrb5_init_context(&ctx); 
+        if ( !r )
+            r = pkrb5_get_host_realm(ctx, cellconfig->hostName[0], &realmlist);
+        if ( !r && realmlist && realmlist[0] ) {
+            strcpy(krbrlm, realmlist[0]);
+            pkrb5_free_host_realm(ctx, realmlist);
+        }
+        if (ctx)
+            pkrb5_free_context(ctx);
     }
-    if (ctx)
-        pkrb5_free_context(ctx);
 #endif /* NO_KRB5 */
 
     if ( !krbrlm[0] ) {

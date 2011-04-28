@@ -5,6 +5,8 @@ PLACE= \
 	src\lib\$(O)\krb5_32.dll \
 	src\lib\$(O)\gssapi32.dll \
 	src\lib\$(O)\xpprof32.dll \
+    src\clients\kvno\$(O)\kvno.exe \
+    src\clients\kpasswd\$(O)\kpasswd.exe \
 	src\windows\cns\$(O)\krb5.exe \
 	src\windows\gss\$(O)\gss.exe \
 	src\windows\ms2mit\$(O)\ms2mit.exe
@@ -66,6 +68,8 @@ clean-krb524:
 
 PLACE_OPTIONAL=\
 	src\appl\gssftp\ftp\$(O)\ftp.exe \
+    src\appl\gss-sample\$(O)\gss-server.exe \
+    src\appl\gss-sample\$(O)\gss-client.exe \
 	src\krb524\$(O)\krb524.dll \
 	src\krb524\$(O)\k524init.exe
 

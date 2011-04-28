@@ -1,11 +1,11 @@
 /*
-* $Id: aklog.c,v 1.9 2003/12/05 16:22:52 jaltman Exp $
+* $Id: aklog.c,v 1.12 2004/03/31 08:22:25 jaltman Exp $
 *
 * Copyright 1990,1991 by the Massachusetts Institute of Technology
 * For distribution and copying rights, see the file "mit-copyright.h"
 */
 
-static const char rcsid[] = "$Id: aklog.c,v 1.9 2003/12/05 16:22:52 jaltman Exp $";
+static const char rcsid[] = "$Id: aklog.c,v 1.12 2004/03/31 08:22:25 jaltman Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -149,7 +149,7 @@ static int force = FALSE;	/* Bash identical tokens? */
 static linked_list authedcells;	/* List of cells already logged to */
 
 #ifdef AKLOG_KRB5
-static int usev5 = FALSE;   /* use kerberos 5? */
+static int usev5 = TRUE;   /* use kerberos 5? */
 
 static krb5_ccache _krb425_ccache;
 #endif
@@ -351,8 +351,9 @@ static int get_v5cred(krb5_context context,
     if (r)
         return((int)r);
 
-/*       This requires krb524d to be running with the KDC */
-    r = krb5_524_convert_creds(context, *creds, c);
+    /* This requires krb524d to be running with the KDC */
+    if (c != NULL)
+        r = krb5_524_convert_creds(context, *creds, c);
     return((int)r);
 }
 #endif
@@ -576,11 +577,11 @@ static int auth_to_cell(char *cell, char *realm)
 	{ /* using krb5 */
 		if (dflag)
 			printf("Getting v5 tickets: %s/%s@%s\n", name, instance, realm_of_cell);
-		status = get_v5cred(context, name, instance, realm_of_cell, &c, &v5cred);
+		status = get_v5cred(context, name, instance, realm_of_cell, NULL, &v5cred);
 		if (status == KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN) {
 			if (dflag)
 				printf("Getting v5 tickets: %s@%s\n", name, realm_of_cell);
-			status = get_v5cred(context, name, "", realm_of_cell, &c, &v5cred);
+			status = get_v5cred(context, name, "", realm_of_cell, NULL, &v5cred);
 		}
 	}
 	else 
@@ -622,26 +623,53 @@ static int auth_to_cell(char *cell, char *realm)
 	strncpy(aserver.instance, AFSINST, MAXKTCNAMELEN - 1);
 	strncpy(aserver.cell, cell_to_use, MAXKTCREALMLEN - 1);
 
-	strcpy (username, c.pname);
-	if (c.pinst[0])
-	{
-		strcat(username, ".");
-		strcat(username, c.pinst);
-	}
-
-	atoken.kvno = c.kvno;
-	atoken.startTime = c.issue_date;
-	/* ticket lifetime is in five-minutes blocks. */
 #ifdef AKLOG_KRB5
-	if(usev5)
-		atoken.endTime = v5cred->times.endtime;
-	else
-#endif
-		atoken.endTime = c.issue_date + ((unsigned char)c.lifetime * 5 * 60);
+    if (usev5) {
+        /* This code inserts the entire K5 ticket into the token
+        * No need to perform a krb524 translation which is
+        * commented out in the code below
+        */
+        char * p;
+        int len;
+        
+        len = min(v5cred->client->data[0].length,MAXKTCNAMELEN - 1);
+        strncpy(username, v5cred->client->data[0].data, len);
+        username[len] = '\0';
 
-	memcpy(&atoken.sessionKey, c.session, 8);
-	atoken.ticketLen = c.ticket_st.length;
-	memcpy(atoken.ticket, c.ticket_st.dat, atoken.ticketLen);
+        if ( v5cred->client->length > 1 ) {
+            strcat(username, ".");
+            p = username + strlen(username);
+            len = min(v5cred->client->data[1].length,MAXKTCNAMELEN - strlen(username) - 1);
+            strncpy(p, v5cred->client->data[1].data, len);
+            p[len] = '\0';
+        }
+
+        memset(&atoken, '\0', sizeof(atoken));
+        atoken.kvno = RXKAD_TKT_TYPE_KERBEROS_V5;
+        atoken.startTime = v5cred->times.starttime;
+        atoken.endTime = v5cred->times.endtime;
+        memcpy(&atoken.sessionKey, v5cred->keyblock.contents, v5cred->keyblock.length);
+        atoken.ticketLen = v5cred->ticket.length;
+        memcpy(atoken.ticket, v5cred->ticket.data, atoken.ticketLen);
+    } else 
+#endif /* AKLOG_KRB5 */
+    {
+        strcpy (username, c.pname);
+        if (c.pinst[0])
+        {
+            strcat(username, ".");
+            strcat(username, c.pinst);
+        }
+
+        atoken.kvno = c.kvno;
+        atoken.startTime = c.issue_date;
+        /* ticket lifetime is in five-minutes blocks. */
+        atoken.endTime = c.issue_date + ((unsigned char)c.lifetime * 5 * 60);
+
+        memcpy(&atoken.sessionKey, c.session, 8);
+        atoken.ticketLen = c.ticket_st.length;
+        memcpy(atoken.ticket, c.ticket_st.dat, atoken.ticketLen);
+    }
 
 	if (!force &&
 		!ktc_GetToken(&aserver, &btoken, sizeof(btoken), &aclient) &&
@@ -698,6 +726,13 @@ static int auth_to_cell(char *cell, char *realm)
 	*/
 	strncpy(aclient.name, username, MAXKTCNAMELEN - 1);
 	strcpy(aclient.instance, "");
+#ifdef AKLOG_KRB5
+    if (usev5) {
+        int len = min(v5cred->client->realm.length,MAXKTCNAMELEN - 1);
+        strncpy(aclient.cell, v5cred->client->realm.data, len);
+        aclient.cell[len] = '\0';
+    } else
+#endif
 	strncpy(aclient.cell, c.realm, MAXKTCREALMLEN - 1);
 
 	if (dflag)
@@ -988,7 +1023,8 @@ static void usage(void)
 	fprintf(stderr, "you wish to authenticate.\n");
 	fprintf(stderr, "    -noprdb means don't try to determine AFS ID.\n");
 #ifdef AKLOG_KRB5
-	fprintf(stderr, "    -5 or -4 selects whether to use Kerberos V or Kerberos IV\n");
+	fprintf(stderr, "    -5 or -4 selects whether to use Kerberos V or Kerberos IV.\n"
+					"       (default is Kerberos V)\n");
 #endif
 	fprintf(stderr, "    No commandline arguments means ");
 	fprintf(stderr, "authenticate to the local cell.\n");

@@ -10,14 +10,13 @@ HINSTANCE hKrb4 = 0;
 HINSTANCE hKrb5 = 0;
 HINSTANCE hKrb524 = 0;
 HINSTANCE hSecur32 = 0;
-HINSTANCE hAdvApi32 = 0;
-HINSTANCE hAfsTokens = 0;
-HINSTANCE hAfsConf = 0;
 HINSTANCE hComErr = 0;
 HINSTANCE hService = 0;
 HINSTANCE hProfile = 0;
 HINSTANCE hPsapi = 0; 
 HINSTANCE hToolHelp32 = 0; 
+
+DWORD     AfsAvailable = 0;
 
 // krb4 functions
 DECL_FUNC_PTR(get_krb_err_txt_entry);
@@ -357,22 +356,28 @@ DllMain(
         Register_MITPasswordEditControl(hLeashInst);
 
 #ifndef NO_AFS
-	afscompat_init();
-#endif
+        {
+            DWORD AfsStatus = 0;
+            GetAfsStatus(&AfsStatus);
 
+            AfsAvailable = afscompat_init();
+            
+            if ( AfsStatus && !AfsAvailable )
+                SetAfsStatus(0);
+        }
+#endif
         return TRUE;
     }
     case DLL_PROCESS_DETACH:
+#ifndef NO_AFS
+        afscompat_close();
+#endif
         if (hKrb4)
             FreeLibrary(hKrb4);
         if (hKrb5)
             FreeLibrary(hKrb5);
 		if (hProfile)
 			FreeLibrary(hProfile);
-        if (hAfsTokens)
-            FreeLibrary(hAfsTokens);
-        if (hAfsConf)
-            FreeLibrary(hAfsConf);
         if (hComErr)
             FreeLibrary(hComErr);
         if (hService)
@@ -385,9 +390,6 @@ DllMain(
             FreeLibrary(hPsapi);
         if (hToolHelp32)
             FreeLibrary(hToolHelp32);
-#ifndef NO_AFS
-	afscompat_close();
-#endif
 
         return TRUE;
     default:

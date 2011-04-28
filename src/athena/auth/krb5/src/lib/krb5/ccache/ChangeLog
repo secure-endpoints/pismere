@@ -1,3 +1,36 @@
+2004-04-13  Jeffrey Altman <jaltman@mit.edu>
+
+    * ccbase.c:
+      Since we have to reserve all the single letter
+      prefixes make them apply to all platforms
+
+2004-04-13  Jeffrey Altman <jaltman@mit.edu>
+
+    * ccbase.c:
+      On Windows, if there is a ccache name provided without
+      a prefix but which appears to start with a drive letter,
+      treat it as a FILE: ccache instead of failing with a
+      ccache type unknown error.
+     
+2004-04-06  Jeffrey Altman <jaltman@mit.edu>
+
+    * cc_mslsa.c:
+      In at least one case on Win2003 it appears that it is possible 
+      for the logon session to be authenticated via NTLM and yet for
+      there to be Kerberos credentials obtained by the LSA on behalf
+      of the logged in user.  Therefore, we are removing the test 
+      for IsKerberosLogon() within krb5_lcc_resolve()
+      which was meant to avoid the need to perform GetMSTGT() when
+      there was no possibility of credentials being found.
+
+2004-03-31  Jeffrey Altman <jaltman@mit.edu>
+
+    * cc_mslsa.c: Add IsWindows2000() function and use it to return 
+      errors whenever the MSLSA: ccache type is used on platforms
+      older than Windows 2000.  This is needed to prevent calls to
+      the functions loaded from ADVAPI32.DLL and SECUR32.DLL which 
+      do not exist on the Windows 9x platforms.
+
 2004-03-18  Jeffrey Altman <jaltman@mit.edu>
 
    * cc_mslsa.c:

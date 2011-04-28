@@ -2020,9 +2020,7 @@ NewPasswordProc(
 
 				sprintf(principal,"%s@%s",username,realm);
 
-				lsh_errno = Leash_int_checkpwd(principal, password, 1);
-				if (lsh_errno == 0)
-					lsh_errno = Leash_int_changepwd( principal, password, password2, 0, 1);
+                lsh_errno = Leash_int_changepwd(principal, password, password2, 0, 1);
 				if (lsh_errno != 0)
 				{
 					int capslock;

@@ -326,6 +326,9 @@ Leash_changepwd_v5(
     result_string.data = 0;
     result_code_string.data = 0;
 
+    if ( !pkrb5_init_context )
+        goto cleanup;
+
    if (rc = pkrb5_init_context(&context)) {
 #if 0
        com_err(argv[0], ret, "initializing kerberos library");
@@ -806,6 +809,9 @@ Leash_import(void)
             krb5_ccache cc = 0;
             krb5_principal me = 0;
 
+            if ( !pkrb5_init_context )
+                goto cleanup;
+
             code = pkrb5_init_context(&ctx);
             if (code) goto cleanup;
 
@@ -1040,7 +1046,11 @@ not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo,
             ticketinfo->renew_till = 0;
         }
 
-        newtickets = GOOD_TICKETS;
+        _tzset();
+        if ( ticketinfo->issue_date + ticketinfo->lifetime - time(0) <= 0L )
+            newtickets = EXPD_TICKETS;
+        else
+            newtickets = GOOD_TICKETS;
 
         cp = (LPSTR)buf;
         cp += wsprintf(cp, "%s     ",
@@ -2850,7 +2860,8 @@ not_an_API_Leash_AcquireInitialTicketsIfNeeded(krb5_context context, krb5_princi
     char newenv[256];
     char * env = 0;
 
-    if ( getenv("KERBEROSLOGIN_NEVER_PROMPT") ) 
+    if ( getenv("KERBEROSLOGIN_NEVER_PROMPT") ||
+         !pkrb5_init_context )
         return;
 
     ctx = context;
@@ -2933,7 +2944,7 @@ not_an_API_Leash_AcquireInitialTicketsIfNeeded(krb5_context context, krb5_princi
     }
 
     if ( !env && context )
-        putenv("KRB5CCNAME",NULL);
+        putenv("KRB5CCNAME=");
 
     if ( !context )
         pkrb5_free_context(ctx);

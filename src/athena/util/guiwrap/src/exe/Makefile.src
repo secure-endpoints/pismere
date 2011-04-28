@@ -1,0 +1,11 @@
+NAME=guiwrap
+TARGETTYPE=EXE
+TARGETSS=console
+
+OBJS= \
+	$(O)\wrap.obj
+
+USE_DEFAULTLIB=1
+LIBS=user32.lib
+
+USE_CPP_EH=1

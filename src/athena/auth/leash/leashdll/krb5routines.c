@@ -615,11 +615,15 @@ not_an_API_LeashKRB5GetTickets(
             }   
         }
         	
-        ticketinfo->btickets = GOOD_TICKETS;
         ticketinfo->issue_date = KRBv5Credentials.times.starttime;
         ticketinfo->lifetime = KRBv5Credentials.times.endtime - KRBv5Credentials.times.starttime;
         ticketinfo->renew_till = KRBv5Credentials.ticket_flags & TKT_FLG_RENEWABLE ?
             KRBv5Credentials.times.renew_till : 0;
+        _tzset();
+        if ( ticketinfo->issue_date + ticketinfo->lifetime - time(0) <= 0L )
+            ticketinfo->btickets = EXPD_TICKETS;
+        else
+            ticketinfo->btickets = GOOD_TICKETS;
 
     	if (ClientName != NULL)
             (*pkrb5_free_unparsed_name)(ctx, ClientName);
@@ -694,6 +698,9 @@ LeashKRB5_renew(void)
     krb5_principal              server = 0;
     krb5_creds			        my_creds;
     krb5_data                   *realm = 0;
+
+    if ( !pkrb5_init_context )
+        goto cleanup;
 
 	memset(&my_creds, 0, sizeof(krb5_creds));
 
@@ -1140,6 +1147,9 @@ Leash_ms2mit(BOOL save_creds)
     krb5_principal princ = 0;
     char *cache_name=NULL;
     BOOL rc = FALSE;
+
+    if ( !pkrb5_init_context )
+        goto cleanup;
 
     if (code = pkrb5_init_context(&kcontext))
         goto cleanup;

@@ -6,14 +6,14 @@
 </head>
 <body>
 <center>
-<h1>Kerberos for Windows 2.6<br>
+<h1>Kerberos for Windows 2.6.1<br>
 </h1>
 <p>
 </p>
 <h2>Release Notes</h2>
 <p>
 </p>
-<h3>21 March 2004</h3>
+<h3>14 April 2004</h3>
 </center>
 <h3>Table of Contents</h3>
 <ul type="disc">
@@ -123,8 +123,10 @@ failure</li>
   <li>Kerberos 5 Credential Cache Name changes are now functional</li>
 </ul>
 <ul>
-  <li>aklog support for Kerberos 5 credentials has been added [-5
-switch]</li>
+  <li>aklog support for Kerberos 5 credentials has been added and is
+now the default.&nbsp; Use the -4 switch if you wish to use aklog with
+Kerberos 4 credentials.<br>
+  </li>
 </ul>
 <ul>
   <li>krb5_cc api support for accessing the Microsoft Kerberos LSA
@@ -132,7 +134,7 @@ cache in read-only mode.&nbsp; Use a ccache name of "MSLSA:".<br>
   </li>
 </ul>
 <ul>
-  <li>Kerberos 5 library updated to release 1.3.2<br>
+  <li>Kerberos 5 library updated to release 1.3.3 (kfw 2.6.1)<br>
   </li>
 </ul>
 <ul>
@@ -161,7 +163,25 @@ service.</li>
   <li>Improvements to the Winsock Helper Library (WSHELP32.DLL) to
 avoid several problems related to initializing the list of DNS
 servers.&nbsp; Whenever possible the operating system versions of
-resolver functions are used instead of the internal versions.<br>
+resolver functions are used instead of the internal versions.</li>
+</ul>
+<ul>
+  <li>The 2.6.1 release fixes a compatibility issue with Windows 98 and
+ME discovered after the 2.6 release.<br>
+  </li>
+</ul>
+<ul>
+  <li>Leash and aklog obtain AFS tokens via Kerberos 5 without
+requiring the use of a krb524 daemon. (kfw 2.6.1)<br>
+  </li>
+</ul>
+<ul>
+  <li>The Kerberos 5 command line utilities kvno.exe and kpasswd.exe
+are now included in the distribution. (kfw 2.6.1)</li>
+</ul>
+<ul>
+  <li>The Leash Change Password function once again works when
+passwords are expired. (kfw 2.6.1)<br>
   </li>
 </ul>
 <h3>What's New since Kerberos for Windows 2.5<br>
@@ -396,32 +416,8 @@ Kerberos 5 version 1.3.2 distribution.<!-- -------------------------------------
 <hr><a name="requirements"></a>
 <h2>System Requirements</h2>
 <h3>Operating System</h3>
-<p>KfW requires Windows 95, 98, 98SE, ME, NT 4.0, 2000, XP, 2003 or
+<p>KfW requires Windows 98, 98SE, ME, NT 4.0, 2000, XP, 2003 or
 higher.
-</p>
-<h3>Winsock 2</h3>
-<p>KfW requires Winsock 2. All version of Windows newer than Windows
-95 have Winsock 2 built-in. A system running Windows 95 may or may
-not have Winsock 2 already installed. If not, the
-Winsock 2 Update for Windows 95 must be installed. For more information
-about Winsock 2
-on Windows 95, see these Microsoft Knowledge Base articles:
-</p>
-<ul>
-  <li><a
- href="http://support.microsoft.com/support/kb/articles/Q177/7/19.ASP">How
-to Identify Winsock 2.0 Run-Time Components for Windows 95</a> </li>
-  <li><a
- href="http://support.microsoft.com/support/kb/articles/Q182/1/08.ASP">Availability
-of Windows Sockets 2.0 for Windows 95</a> </li>
-  <li><a
- href="http://support.microsoft.com/support/kb/articles/Q184/2/42.ASP">WinSock
-2.0 Installer for Windows 95 (Ws2setup.exe) Update</a> </li>
-</ul>
-<p>To actually download the Winsock 2 Update for Windows 95, go to the
-<a
- href="http://www.microsoft.com/windows95/downloads/contents/wuadmintools/s_wunetworkingtools/w95sockets2/default.asp">Windows
-Socket 2 Update for Windows 95 page</a>.
 </p>
 <h3>Microsoft Redistributable DLLs</h3>
 <p>The following versions or newer of several freely redistributable

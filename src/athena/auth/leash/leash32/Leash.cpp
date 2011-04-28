@@ -848,7 +848,7 @@ CLeashApp::ValidateConfigFiles()
                                            "true");
 
             // Get Windows 2000/XP/2003 Kerberos config
-            if ( m_hKrbLSA )
+            if ( m_hKrbLSA && m_hKrb5DLL )
             {
                 char domain[256]="";
                 HKEY hk=0;
@@ -1184,6 +1184,9 @@ CLeashApp::GetProfileFile(
     )
 {
     char **configFile = NULL;
+    if (!m_hKrb5DLL) 
+        return NULL;
+
     if (pkrb5_get_default_config_files(&configFile)) 
     {
         GetWindowsDirectory(confname,szConfname);

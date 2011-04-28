@@ -457,6 +457,9 @@ VOID CLeashView::OnImportTicket()
 
 UINT CLeashView::ImportTicket(void * hWnd)
 {
+    if ( !CLeashApp::m_hKrb5DLL )
+        return 0;
+
     CSingleLock tgs_lock(&m_tgsReqCriticalSection);
     tgs_lock.Lock();
 
@@ -562,6 +565,9 @@ UINT CLeashView::ImportTicket(void * hWnd)
 
 VOID CLeashView::OnRenewTicket()
 {
+    if ( !CLeashApp::m_hKrb5DLL )
+        return;
+
     CSingleLock lock(&m_tgsReqCriticalSection);
     lock.Lock(250);
     if ( lock.IsLocked() ) {
@@ -574,6 +580,9 @@ VOID CLeashView::OnRenewTicket()
 
 UINT CLeashView::RenewTicket(void * hWnd)
 {
+    if ( !CLeashApp::m_hKrb5DLL )
+        return 0;
+
     CSingleLock tgs_lock(&m_tgsReqCriticalSection);
     tgs_lock.Lock(250);
     CSingleLock lock(&ticketinfo.lockObj);
