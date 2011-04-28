@@ -124,7 +124,7 @@ BOOL CKrb5ConfigFileLocation::OnApply()
         if (IsDlgButtonChecked(IDC_CHECK_CONFIRM_KRB5_EXISTS))
         {
             // Check for extra slashes at end of path
-            LPSTR pSlash = strrchr(m_newConfigFile, '\\');
+            LPSTR pSlash = strrchr(m_newConfigFile.GetBuffer(0), '\\');
             if (pSlash && *(pSlash - 1) == '\\')
             { // don't commit changes 
                 tooManySlashes = TRUE;
@@ -133,6 +133,8 @@ BOOL CKrb5ConfigFileLocation::OnApply()
             { // commit changes, but take out slash at the end of path
                 *pSlash = 0;
             }
+
+            m_newConfigFile.ReleaseBuffer(-1);
 		    
             // Check for invalid path
             Directory directory(m_newConfigFile);

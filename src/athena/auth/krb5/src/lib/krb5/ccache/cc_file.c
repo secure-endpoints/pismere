@@ -77,8 +77,6 @@ etc.
  */
 #include "k5-int.h"
 
-#define NEED_SOCKETS    /* Only for ntohs, etc. */
-#define NEED_LOWLEVEL_IO
 
 #include <stdio.h>
 #include <errno.h>
@@ -445,6 +443,8 @@ krb5_fcc_read_principal(krb5_context context, krb5_ccache id, krb5_principal *pr
 
     k5_assert_locked(&((krb5_fcc_data *) id->data)->lock);
 
+    *princ = NULL;
+
     if (data->version == KRB5_FCC_FVNO_1) {
 	type = KRB5_NT_UNKNOWN;
     } else {
@@ -540,15 +540,18 @@ krb5_fcc_read_addrs(krb5_context context, krb5_ccache id, krb5_address ***addrs)
 	  if ((*addrs)[i] == NULL) {
 	      krb5_free_addresses(context, *addrs);
 	      return KRB5_CC_NOMEM;
-	  }	  
+	  }
+	  (*addrs)[i]->contents = NULL;
 	  kret = krb5_fcc_read_addr(context, id, (*addrs)[i]);
 	  CHECK(kret);
      }
 
      return KRB5_OK;
  errout:
-     if (*addrs)
+     if (*addrs) {
 	 krb5_free_addresses(context, *addrs);
+	 *addrs = NULL;
+     }
      return kret;
 }
 
@@ -595,8 +598,10 @@ krb5_fcc_read_keyblock(krb5_context context, krb5_ccache id, krb5_keyblock *keyb
 
      return KRB5_OK;
  errout:
-     if (keyblock->contents)
+     if (keyblock->contents) {
 	 krb5_xfree(keyblock->contents);
+	 keyblock->contents = NULL;
+     }
      return kret;
 }
 
@@ -634,8 +639,10 @@ krb5_fcc_read_data(krb5_context context, krb5_ccache id, krb5_data *data)
      data->data[data->length] = 0; /* Null terminate, just in case.... */
      return KRB5_OK;
  errout:
-     if (data->data)
+     if (data->data) {
 	 krb5_xfree(data->data);
+	 data->data = NULL;
+     }
      return kret;
 }
 
@@ -677,8 +684,10 @@ krb5_fcc_read_addr(krb5_context context, krb5_ccache id, krb5_address *addr)
 
      return KRB5_OK;
  errout:
-     if (addr->contents)
+     if (addr->contents) {
 	 krb5_xfree(addr->contents);
+	 addr->contents = NULL;
+     }
      return kret;
 }
 
@@ -806,15 +815,18 @@ krb5_fcc_read_authdata(krb5_context context, krb5_ccache id, krb5_authdata ***a)
 	  if ((*a)[i] == NULL) {
 	      krb5_free_authdata(context, *a);
 	      return KRB5_CC_NOMEM;
-	  }	  
+	  }
+	  (*a)[i]->contents = NULL;
 	  kret = krb5_fcc_read_authdatum(context, id, (*a)[i]);
 	  CHECK(kret);
      }
 
      return KRB5_OK;
  errout:
-     if (*a)
+     if (*a) {
 	 krb5_free_authdata(context, *a);
+	 *a = NULL;
+     }
      return kret;
 }
 
@@ -855,8 +867,10 @@ krb5_fcc_read_authdatum(krb5_context context, krb5_ccache id, krb5_authdata *a)
     
      return KRB5_OK;
  errout:
-     if (a->contents)
+     if (a->contents) {
 	 krb5_xfree(a->contents);
+	 a->contents = NULL;
+     }
      return kret;
     
 }
@@ -2216,6 +2230,30 @@ krb5_fcc_set_flags(krb5_context context, krb5_ccache id, krb5_flags flags)
     return ret;
 }
 
+/*
+ * Requires:
+ * id is a cred cache returned by krb5_fcc_resolve or
+ * krb5_fcc_generate_new, but has not been opened by krb5_fcc_initialize.
+ *
+ * Modifies:
+ * id (mutex only; temporary)
+ * 
+ * Effects:
+ * Returns the operational flags of id.
+ */
+static krb5_error_code KRB5_CALLCONV
+krb5_fcc_get_flags(krb5_context context, krb5_ccache id, krb5_flags *flags)
+{
+    krb5_error_code ret = KRB5_OK;
+
+    ret = k5_mutex_lock(&((krb5_fcc_data *) id->data)->lock);
+    if (ret)
+	return ret;
+    *flags = ((krb5_fcc_data *) id->data)->flags;
+    k5_mutex_unlock(&((krb5_fcc_data *) id->data)->lock);
+    return ret;
+}
+
 
 static krb5_error_code
 krb5_fcc_interpret(krb5_context context, int errnum)
@@ -2263,6 +2301,9 @@ krb5_fcc_interpret(krb5_context context, int errnum)
     case ENXIO:
     default:
 	retval = KRB5_CC_IO;		/* XXX */
+	krb5_set_error_message(context, retval,
+			       "Credentials cache I/O operation failed (%s)",
+			       strerror(errnum));
     }
     return retval;
 }
@@ -2284,6 +2325,7 @@ const krb5_cc_ops krb5_fcc_ops = {
      krb5_fcc_end_seq_get,
      krb5_fcc_remove_cred,
      krb5_fcc_set_flags,
+     krb5_fcc_get_flags,
 };
 
 #if defined(_WIN32)
@@ -2344,4 +2386,11 @@ const krb5_cc_ops krb5_cc_file_ops = {
      krb5_fcc_end_seq_get,
      krb5_fcc_remove_cred,
      krb5_fcc_set_flags,
+     krb5_fcc_get_flags,
+     NULL,
+     NULL,
+     NULL,
+     NULL,
+     NULL,
+     NULL,
 };

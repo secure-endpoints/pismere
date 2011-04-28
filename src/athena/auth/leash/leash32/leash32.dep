@@ -4,9 +4,9 @@
 	"..\..\krb5\src\include\com_err.h"\
 	"..\..\krb5\src\include\k5-int.h"\
 	"..\..\krb5\src\include\krb5.h"\
-	"..\..\krb5\src\include\krb5\autoconf.h"\
-	"..\..\krb5\src\include\krb5\kdb.h"\
-	"..\..\krb5\src\include\krb5\osconf.h"\
+	"..\..\krb5\src\include\autoconf.h"\
+	"..\..\krb5\src\include\kdb.h"\
+	"..\..\krb5\src\include\osconf.h"\
 	"..\..\krb5\src\include\profile.h"\
 	"..\..\krb5\src\include\win-mac.h"\
 	".\CLeashDragListBox.h"\
@@ -39,9 +39,9 @@
 	"..\..\krb5\src\include\com_err.h"\
 	"..\..\krb5\src\include\k5-int.h"\
 	"..\..\krb5\src\include\krb5.h"\
-	"..\..\krb5\src\include\krb5\autoconf.h"\
-	"..\..\krb5\src\include\krb5\kdb.h"\
-	"..\..\krb5\src\include\krb5\osconf.h"\
+	"..\..\krb5\src\include\autoconf.h"\
+	"..\..\krb5\src\include\kdb.h"\
+	"..\..\krb5\src\include\osconf.h"\
 	"..\..\krb5\src\include\profile.h"\
 	"..\..\krb5\src\include\win-mac.h"\
 	".\CLeashDragListBox.h"\
@@ -122,9 +122,9 @@
 	"..\..\krb5\src\include\com_err.h"\
 	"..\..\krb5\src\include\k5-int.h"\
 	"..\..\krb5\src\include\krb5.h"\
-	"..\..\krb5\src\include\krb5\autoconf.h"\
-	"..\..\krb5\src\include\krb5\kdb.h"\
-	"..\..\krb5\src\include\krb5\osconf.h"\
+	"..\..\krb5\src\include\autoconf.h"\
+	"..\..\krb5\src\include\kdb.h"\
+	"..\..\krb5\src\include\osconf.h"\
 	"..\..\krb5\src\include\profile.h"\
 	"..\..\krb5\src\include\win-mac.h"\
 	".\Krb5Properties.h"\
@@ -163,9 +163,9 @@
 	"..\..\krb5\src\include\com_err.h"\
 	"..\..\krb5\src\include\k5-int.h"\
 	"..\..\krb5\src\include\krb5.h"\
-	"..\..\krb5\src\include\krb5\autoconf.h"\
-	"..\..\krb5\src\include\krb5\kdb.h"\
-	"..\..\krb5\src\include\krb5\osconf.h"\
+	"..\..\krb5\src\include\autoconf.h"\
+	"..\..\krb5\src\include\kdb.h"\
+	"..\..\krb5\src\include\osconf.h"\
 	"..\..\krb5\src\include\profile.h"\
 	"..\..\krb5\src\include\win-mac.h"\
 	".\CLeashDragListBox.h"\
@@ -187,9 +187,9 @@
 	"..\..\krb5\src\include\com_err.h"\
 	"..\..\krb5\src\include\k5-int.h"\
 	"..\..\krb5\src\include\krb5.h"\
-	"..\..\krb5\src\include\krb5\autoconf.h"\
-	"..\..\krb5\src\include\krb5\kdb.h"\
-	"..\..\krb5\src\include\krb5\osconf.h"\
+	"..\..\krb5\src\include\autoconf.h"\
+	"..\..\krb5\src\include\kdb.h"\
+	"..\..\krb5\src\include\osconf.h"\
 	"..\..\krb5\src\include\profile.h"\
 	"..\..\krb5\src\include\win-mac.h"\
 	".\CLeashDragListBox.h"\
@@ -237,9 +237,9 @@
 	"..\..\krb5\src\include\com_err.h"\
 	"..\..\krb5\src\include\k5-int.h"\
 	"..\..\krb5\src\include\krb5.h"\
-	"..\..\krb5\src\include\krb5\autoconf.h"\
-	"..\..\krb5\src\include\krb5\kdb.h"\
-	"..\..\krb5\src\include\krb5\osconf.h"\
+	"..\..\krb5\src\include\autoconf.h"\
+	"..\..\krb5\src\include\kdb.h"\
+	"..\..\krb5\src\include\osconf.h"\
 	"..\..\krb5\src\include\profile.h"\
 	"..\..\krb5\src\include\win-mac.h"\
 	".\CLeashDragListBox.h"\
@@ -261,9 +261,9 @@
 	"..\..\krb5\src\include\com_err.h"\
 	"..\..\krb5\src\include\k5-int.h"\
 	"..\..\krb5\src\include\krb5.h"\
-	"..\..\krb5\src\include\krb5\autoconf.h"\
-	"..\..\krb5\src\include\krb5\kdb.h"\
-	"..\..\krb5\src\include\krb5\osconf.h"\
+	"..\..\krb5\src\include\autoconf.h"\
+	"..\..\krb5\src\include\kdb.h"\
+	"..\..\krb5\src\include\osconf.h"\
 	"..\..\krb5\src\include\profile.h"\
 	"..\..\krb5\src\include\win-mac.h"\
 	".\CLeashDragListBox.h"\

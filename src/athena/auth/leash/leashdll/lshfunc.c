@@ -796,6 +796,7 @@ GetSecurityLogonSessionData(PSECURITY_LOGON_SESSION_DATA * ppSessionData)
     TOKEN_STATISTICS Stats;
     DWORD   ReqLen;
     BOOL    Success;
+    PSECURITY_LOGON_SESSION_DATA pSessionData;
 
     if (!ppSessionData)
         return FALSE;
@@ -810,10 +811,11 @@ GetSecurityLogonSessionData(PSECURITY_LOGON_SESSION_DATA * ppSessionData)
     if ( !Success )
         return FALSE;
 
-    Status = pLsaGetLogonSessionData( &Stats.AuthenticationId, ppSessionData );
-    if ( FAILED(Status) || !ppSessionData )
+    Status = pLsaGetLogonSessionData( &Stats.AuthenticationId, &pSessionData );
+    if ( FAILED(Status) || !pSessionData )
         return FALSE;
 
+	*ppSessionData = pSessionData;
     return TRUE;
 }
 
@@ -853,6 +855,60 @@ IsKerberosLogon(VOID)
     return Success;
 }
 
+static BOOL
+IsWindowsVista (void)
+{
+    static BOOL fChecked = FALSE;
+    static BOOL fIsVista = FALSE;
+
+    if (!fChecked)
+    {
+        OSVERSIONINFO Version;
+
+        memset (&Version, 0x00, sizeof(Version));
+        Version.dwOSVersionInfoSize = sizeof(Version);
+
+        if (GetVersionEx (&Version))
+        {
+            if (Version.dwPlatformId == VER_PLATFORM_WIN32_NT && Version.dwMajorVersion >= 6)
+                fIsVista = TRUE;
+        }
+        fChecked = TRUE;
+    }
+
+    return fIsVista;
+}
+
+static BOOL
+IsProcessUacLimited (void)
+{
+    static BOOL fChecked = FALSE;
+    static BOOL fIsUAC = FALSE;
+
+    if (!fChecked)
+    {
+        NTSTATUS Status = 0;
+        HANDLE  TokenHandle;
+        DWORD   ElevationLevel;
+        DWORD   ReqLen;
+        BOOL    Success;
+
+        if (IsWindowsVista()) {
+            Success = OpenProcessToken( GetCurrentProcess(), TOKEN_QUERY, &TokenHandle );
+            if ( Success ) {
+                Success = GetTokenInformation( TokenHandle,
+                                               TokenOrigin+1 /* ElevationLevel */,
+                                               &ElevationLevel, sizeof(DWORD), &ReqLen );
+                CloseHandle( TokenHandle );
+                if ( Success && ElevationLevel == 3 /* Limited */ )
+                    fIsUAC = TRUE;
+            }
+        }
+        fChecked = TRUE;
+    }
+    return fIsUAC;
+
+}
 
 // This looks really ugly because it is.  The result of IsKerberosLogon()
 // does not prove whether or not there are Kerberos tickets available to 
@@ -865,10 +921,20 @@ IsKerberosLogon(VOID)
 // tickets available.  Therefore, if IsKerberosLogon() is not TRUE we 
 // must call Leash_ms2mit() but we still do not want to call it in a 
 // tight loop so we cache the response and assume it won't change.
+
+// 2007-03-21
+// And the nightmare goes on.  On Vista the Lsa call we use to determine
+// whether or not Kerberos was used for logon fails to return and worse
+// corrupts the stack.  Therefore, we must now test to see if the 
+// operating system is Vista and skip the call to IsKerberosLogon()
+// if it is.
 long FAR
 Leash_importable(void)
 {
-    if ( IsKerberosLogon() )
+    if (IsProcessUacLimited())
+	return FALSE;
+
+    if ( !IsWindowsVista() && IsKerberosLogon() )
         return TRUE;
     else {
         static int response = -1;
@@ -1618,36 +1684,85 @@ Leash_get_default_lifetime(
     char env[32];
     DWORD result;
 
-    if(GetEnvironmentVariable("LIFETIME",env,sizeof(env)))
+
+    if (GetEnvironmentVariable("LIFETIME",env,sizeof(env)))
     {
         return atoi(env);
     }
 
+
     if (get_default_lifetime_from_registry(HKEY_CURRENT_USER, &result) ||
         get_default_lifetime_from_registry(HKEY_LOCAL_MACHINE, &result))
     {
-        return result;
+	return result;
     }
 
     if ( hKrb5 ) {
         CHAR confname[MAX_PATH];
+
         if (!get_profile_file(confname, sizeof(confname)))
         {
             profile_t profile;
             const char *filenames[2];
-            char *value=0;
             long retval;
+
             filenames[0] = confname;
             filenames[1] = NULL;        
             if (!pprofile_init(filenames, &profile)) {
-                retval = pprofile_get_string(profile, "libdefaults","ticket_lifetime", 0, 0, &value);
-                if ( value ) {
-                    result = atoi(value);
+                char * value = NULL;
+
+                retval = pprofile_get_string(profile, "libdefaults", "ticket_lifetime", NULL, NULL, &value);
+                if (retval == 0 && value) {
+                    krb5_deltat d;
+
+		    retval = pkrb5_string_to_deltat(value, &d);
+
+                    if (retval == KRB5_DELTAT_BADFORMAT) {
+                        /* Historically some sites use relations of
+                           the form 'ticket_lifetime = 24000' where
+                           the unit is left out but is assumed to be
+                           seconds. Then there are other sites which
+                           use the form 'ticket_lifetime = 600' where
+                           the unit is assumed to be minutes.  While
+                           these are technically wrong (a unit needs
+                           to be specified), we try to accomodate for
+                           this using the safe assumption that the
+                           unit is seconds and tack an 's' to the end
+                           and see if that works. */
+
+			/* Of course, Leash is one of the platforms 
+			   that historically assumed no units and minutes
+			   so this change is going to break some people
+			   but its better to be consistent. */
+                        size_t cch;
+                        char buf[256];
+
+			do {
+			    cch = strlen(value) + 2; /* NUL and new 's' */
+			    if (cch > sizeof(buf))
+				break;
+
+			    strcpy(buf, value);
+			    strcat(buf, "s");
+
+			    retval = pkrb5_string_to_deltat(buf, &d);
+
+			    if (retval == 0) {
+				result = d / 60;
+			    }
+			} while(0);
+                    } else if (retval == 0) {
+                        result = d / 60;
+                    }
+
                     pprofile_release_string(value);
-                    pprofile_release(profile);
-                    return result;
                 }
                 pprofile_release(profile);
+		/* value has been released but we can still use a check for 
+		 * non-NULL to see if we were able to read a value.
+		 */
+		if (retval == 0 && value)
+		    return result;
             }
         }
     }
@@ -1741,19 +1856,64 @@ Leash_get_default_renew_till(
         {
             profile_t profile;
             const char *filenames[2];
-            char *value=0;
+            int value=0;
             long retval;
             filenames[0] = confname;
             filenames[1] = NULL;        
-            if (!pprofile_init(filenames, &profile)) {
-                retval = pprofile_get_string(profile, "libdefaults","renew_lifetime", 0, 0, &value);
-                if ( value ) {
-                    result = atoi(value);
+            
+	    if (!pprofile_init(filenames, &profile)) {
+                char * value = NULL;
+            
+		retval = pprofile_get_string(profile, "libdefaults", "renew_lifetime", NULL, NULL, &value);
+                if (retval == 0 && value) {
+                    krb5_deltat d;
+
+		    retval = pkrb5_string_to_deltat(value, &d);
+		    if (retval == KRB5_DELTAT_BADFORMAT) {
+                        /* Historically some sites use relations of
+                           the form 'ticket_lifetime = 24000' where
+                           the unit is left out but is assumed to be
+                           seconds. Then there are other sites which
+                           use the form 'ticket_lifetime = 600' where
+                           the unit is assumed to be minutes.  While
+                           these are technically wrong (a unit needs
+                           to be specified), we try to accomodate for
+                           this using the safe assumption that the
+                           unit is seconds and tack an 's' to the end
+                           and see if that works. */
+
+			/* Of course, Leash is one of the platforms 
+			   that historically assumed no units and minutes
+			   so this change is going to break some people
+			   but its better to be consistent. */
+                        size_t cch;
+                        char buf[256];
+			do {
+			    cch = strlen(value) + 2; /* NUL and new 's' */
+			    if (cch > sizeof(buf))
+				break;
+
+			    strcpy(buf, value);
+			    strcat(buf, "s");
+
+			    retval = pkrb5_string_to_deltat(buf, &d);
+			    if (retval == 0) {
+				result = d / 60;
+			    }
+			} while(0);
+                    } else if (retval == 0) {
+			result = d / 60;
+                    }
                     pprofile_release_string(value);
-                    pprofile_release(profile);
-                    return result;
                 }
-                pprofile_release(profile);
+		pprofile_release(profile);
+		/* value has been released but we can still use a check for 
+		 * non-NULL to see if we were able to read a value.
+		 */
+		if (retval == 0 && value)
+		    return result;
+
+		pprofile_release(profile);
             }
         }
     }
@@ -3260,6 +3420,7 @@ acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
     TICKETINFO   	ticketinfo;
     krb5_context        ctx;
     DWORD 		dwMsLsaImport = Leash_get_default_mslsa_import();
+    DWORD		gle;
     char ccachename[272]="";
     char loginenv[16];
     BOOL prompt;
@@ -3269,28 +3430,41 @@ acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
 
     ctx = context;
 
-    GetEnvironmentVariable("KRB5CCNAME", ccachename, sizeof(ccachename));    
-    if ( (GetLastError() == ERROR_ENVVAR_NOT_FOUND) && context ) {
+    SetLastError(0);
+    GetEnvironmentVariable("KRB5CCNAME", ccachename, sizeof(ccachename));
+    gle = GetLastError();
+    if ( (gle == ERROR_ENVVAR_NOT_FOUND) && context ) {
 	SetEnvironmentVariable("KRB5CCNAME", pkrb5_cc_default_name(ctx));
+	GetEnvironmentVariable("KRB5CCNAME", ccachename, sizeof(ccachename));
     }
 
     not_an_API_LeashKRB5GetTickets(&ticketinfo,&list,&ctx);
     not_an_API_LeashFreeTicketList(&list);
 
     if ( ticketinfo.btickets != GOOD_TICKETS && 
-         Leash_get_default_mslsa_import() && Leash_importable() ) {
+         dwMsLsaImport && Leash_importable() ) {
         // We have the option of importing tickets from the MSLSA
         // but should we?  Do the tickets in the MSLSA cache belong 
-        // to the default realm used by Leash?  If so, import.  
+        // to the default realm used by Leash?  Does the default 
+	// ccache name specify a principal name?  Only import if we
+	// aren't going to break the default identity as specified
+	// by the user in Network Identity Manager.
         int import = 0;
+	BOOL isCCPrinc;
 
-        if ( dwMsLsaImport == 1 ) {             /* always import */
+	/* Determine if the default ccachename is principal name.  If so, don't
+	* import the MSLSA: credentials into it unless the names match.
+	*/
+	isCCPrinc = (strncmp("API:",ccachename, 4) == 0 && strchr(ccachename, '@'));
+
+        if ( dwMsLsaImport == 1 && !isCCPrinc ) { /* always import */
             import = 1;
-        } else if ( dwMsLsaImport == 2 ) {      /* import when realms match */
+        } else if ( dwMsLsaImport ) {      	  /* import when realms match */
             krb5_error_code code;
-            krb5_ccache mslsa_ccache=0;
-            krb5_principal princ = 0;
-            char ms_realm[128] = "", *def_realm = 0, *r;
+            krb5_ccache mslsa_ccache=NULL;
+            krb5_principal princ = NULL;
+	    char *mslsa_principal = NULL; 
+            char ms_realm[128] = "", *def_realm = NULL, *r;
             int i;
 
             if (code = pkrb5_cc_resolve(ctx, "MSLSA:", &mslsa_ccache))
@@ -3307,9 +3481,16 @@ acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
             if (code = pkrb5_get_default_realm(ctx, &def_realm))
                 goto cleanup;
 
-            import = !strcmp(def_realm, ms_realm);
+	    if (code = pkrb5_unparse_name(ctx, princ, &mslsa_principal)) 
+		goto cleanup;
+
+            import = (!isCCPrinc && !strcmp(def_realm, ms_realm)) || 
+		(isCCPrinc && !strcmp(&ccachename[4], mslsa_principal));
 
           cleanup:
+	    if (mslsa_principal)
+		pkrb5_free_unparsed_name(ctx, mslsa_principal);
+
             if (def_realm)
                 pkrb5_free_default_realm(ctx, def_realm);
 
@@ -3328,13 +3509,16 @@ acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
         }
     }
 
-    if ( prompt && ticketinfo.btickets != GOOD_TICKETS ) 
+    if ( prompt && ticketinfo.btickets != GOOD_TICKETS ) {
 	acquire_tkt_send_msg(ctx, NULL, ccachename, NULL, ccname, cclen);
+    } else if (ccachename[0] && ccname) {
+	strncpy(ccname, ccachename, cclen);
+	ccname[cclen-1] = '\0';
+    }
 
-    if ( !ccachename[0] && context )
-        SetEnvironmentVariable("KRB5CCNAME",NULL);
-    else if ( ccname && strcmp(ccachename,ccname) )
+    if ( ccname && strcmp(ccachename,ccname) ) {
 	SetEnvironmentVariable("KRB5CCNAME",ccname);
+    }
 
     if ( !context )
         pkrb5_free_context(ctx);
@@ -3349,89 +3533,93 @@ acquire_tkt_for_princ(krb5_context context, krb5_principal desiredPrincipal,
     TICKETINFO   	ticketinfo;
     krb5_context        ctx;
     DWORD 		dwMsLsaImport = Leash_get_default_mslsa_import();
-    char ccachename[272]="";
-    char loginenv[16];
-    BOOL prompt;
+    DWORD		gle;
+    char 		ccachename[272]="";
+    char 		loginenv[16];
+    BOOL 		prompt;
+    char 		*name = NULL;
 
     GetEnvironmentVariable("KERBEROSLOGIN_NEVER_PROMPT", loginenv, sizeof(loginenv));
     prompt = (GetLastError() == ERROR_ENVVAR_NOT_FOUND);
 
     ctx = context;
 
+    SetLastError(0);
     GetEnvironmentVariable("KRB5CCNAME", ccachename, sizeof(ccachename));    
-    if ( (GetLastError() == ERROR_ENVVAR_NOT_FOUND) && context ) {
+    gle = GetLastError();
+    if ( (gle == ERROR_ENVVAR_NOT_FOUND) && context ) {
 	SetEnvironmentVariable("KRB5CCNAME", pkrb5_cc_default_name(ctx));
+	GetEnvironmentVariable("KRB5CCNAME", ccachename, sizeof(ccachename));
     }
 
     not_an_API_LeashKRB5GetTickets(&ticketinfo,&list,&ctx);
     not_an_API_LeashFreeTicketList(&list);
 
+    pkrb5_unparse_name(ctx, desiredPrincipal, &name);
+	
     if ( ticketinfo.btickets != GOOD_TICKETS && 
-         Leash_get_default_mslsa_import() && Leash_importable() ) {
+         dwMsLsaImport && Leash_importable() ) {
         // We have the option of importing tickets from the MSLSA
-        // but should we?  Do the tickets in the MSLSA cache belong 
-        // to the default realm used by Leash?  If so, import.  
+        // but should we?  Does the MSLSA principal match the requested
+	// principal?  If not, there is no benefit to importing.
         int import = 0;
+	krb5_error_code code;
+	krb5_ccache mslsa_ccache=NULL;
+	krb5_principal princ = NULL;
 
-        if ( dwMsLsaImport == 1 ) {             /* always import */
-            import = 1;
-        } else if ( dwMsLsaImport == 2 ) {      /* import when realms match */
-            krb5_error_code code;
-            krb5_ccache mslsa_ccache=0;
-            krb5_principal princ = 0;
-            char ms_realm[128] = "", *def_realm = 0, *r;
-            int i;
+	if (code = pkrb5_cc_resolve(ctx, "MSLSA:", &mslsa_ccache))
+	    goto cleanup;
 
-            if (code = pkrb5_cc_resolve(ctx, "MSLSA:", &mslsa_ccache))
-                goto cleanup;
+	if (code = pkrb5_cc_get_principal(ctx, mslsa_ccache, &princ))
+	    goto cleanup;
 
-            if (code = pkrb5_cc_get_principal(ctx, mslsa_ccache, &princ))
-                goto cleanup;
+	import = pkrb5_principal_compare(ctx, desiredPrincipal, princ);
 
-            for ( r=ms_realm, i=0; i<krb5_princ_realm(ctx, princ)->length; r++, i++ ) {
-                *r = krb5_princ_realm(ctx, princ)->data[i];
-            }
-            *r = '\0';
+      cleanup:
+	if (princ)
+	    pkrb5_free_principal(ctx, princ);
 
-            if (code = pkrb5_get_default_realm(ctx, &def_realm))
-                goto cleanup;
+	if (mslsa_ccache)
+	    pkrb5_cc_close(ctx, mslsa_ccache);
 
-            import = !strcmp(def_realm, ms_realm);
-
-          cleanup:
-            if (def_realm)
-                pkrb5_free_default_realm(ctx, def_realm);
-
-            if (princ)
-                pkrb5_free_principal(ctx, princ);
-
-            if (mslsa_ccache)
-                pkrb5_cc_close(ctx, mslsa_ccache);
-        }
 
         if ( import ) {
-            Leash_import();
+	    /* Construct a new default ccache name into which the MSLSA:
+	     * credentials can be imported, set the default ccache to that
+	     * ccache, and then only import if that ccache does not already 
+	     * contain valid tickets */
+	    sprintf(ccachename, "API:%s", name);
+
+	    SetEnvironmentVariable("KRB5CCNAME", ccachename);
 
             not_an_API_LeashKRB5GetTickets(&ticketinfo,&list,&ctx);
             not_an_API_LeashFreeTicketList(&list);
-        }
+
+	    if (ticketinfo.btickets != GOOD_TICKETS) {
+		Leash_import();
+
+		not_an_API_LeashKRB5GetTickets(&ticketinfo,&list,&ctx);
+		not_an_API_LeashFreeTicketList(&list);
+	    }
+	}
     }
 
     if (prompt) {
-	char * name = NULL;
-
-	pkrb5_unparse_name(ctx, desiredPrincipal, &name);
-	
-	if (ticketinfo.btickets != GOOD_TICKETS || strcmp(name,ticketinfo.principal))
+	if (ticketinfo.btickets != GOOD_TICKETS || strcmp(name,ticketinfo.principal)) {
 	    acquire_tkt_send_msg(ctx, NULL, ccachename, desiredPrincipal, ccname, cclen);
-
-	if (name)
-	    pkrb5_free_unparsed_name(ctx, name);
+	} else if (ccachename[0] && ccname) {
+	    strncpy(ccname, ccachename, cclen);
+	    ccname[cclen-1] = '\0';
+	}
     }
-    if ( !ccachename[0] && context )
-        SetEnvironmentVariable("KRB5CCNAME",NULL);
-    else if ( ccname && strcmp(ccachename,ccname) )
+    
+    if ( ccname && strcmp(ccachename,ccname) ) {
 	SetEnvironmentVariable("KRB5CCNAME",ccname);
+    }
+
+
+    if (name)
+	pkrb5_free_unparsed_name(ctx, name);
 
     if ( !context )
         pkrb5_free_context(ctx);

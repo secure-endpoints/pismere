@@ -4,7 +4,7 @@
 #             in the build tree.
 #
 # Copyright (c) 2004,2005,2006 Massachusetts Institute of Technology
-# Copyright (c) 2006 Secure Endpoints Inc.
+# Copyright (c) 2006,2007 Secure Endpoints Inc.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -46,9 +46,9 @@ KHIMAIRA_WIN32_CONFIG=1
 
 # Version info
 NETIDMGR_VERSION_MAJOR=1
-NETIDMGR_VERSION_MINOR=1
-NETIDMGR_VERSION_PATCH=8
-NETIDMGR_VERSION_AUX=0
+NETIDMGR_VERSION_MINOR=2
+NETIDMGR_VERSION_PATCH=0
+NETIDMGR_VERSION_AUX=2
 NETIDMGR_RELEASEDESC=
 
 # The API version.  This number must be incremented each time the API
@@ -58,7 +58,7 @@ NETIDMGR_RELEASEDESC=
 #
 # Changes to the API version numbers should be documented in
 # apiversion.txt at the root of the source tree.
-NETIDMGR_VERSION_API=6
+NETIDMGR_VERSION_API=8
 
 # Minimum backwards compatible version.  API versions from
 # NETIDMGR_VERSION_API_MINCOMPAT through NETIDMGR_VERSION_API
@@ -221,6 +221,10 @@ khcwarn=/Wp64
 khcwarn=$(khcwarn) /WX
 !endif
 
+!if "$(CPU)" == "i386"
+khdefines=$(khdefines) -D_USE_32BIT_TIME_T
+!endif
+
 #DEBUG_SYMBOLS
 ldebug=$(ldebug) /DEBUG
 cdebug=$(cdebug) -Os -Zi
@@ -324,7 +328,8 @@ MT=mt.exe -nologo
 _VC_MANIFEST_EMBED_EXE= \
 if exist $@.manifest $(MT) -outputresource:$@;1 -manifest $@.manifest
 
-_VC_MANIFEST_EMBED_DLL=$(_VC_MANIFEST_EMBED_EXE)
+_VC_MANIFEST_EMBED_DLL= \
+if exist $@.manifest $(MT) -outputresource:$@;2 -manifest $@.manifest
 
 # Note that if you are merging manifests, then the VS generated
 # manifest should be cleaned up after calling _VC_MANIFEST_EMBED_???.

@@ -1,5 +1,6 @@
 /*
 * Copyright (c) 2005 Massachusetts Institute of Technology
+* Copyright (c) 2007 Secure Endpoints Inc.
 *
 * Permission is hereby granted, free of charge, to any person
 * obtaining a copy of this software and associated documentation
@@ -25,8 +26,7 @@
 /* $Id$ */
 
 #include<windows.h>
-#include<khdefs.h>
-#include<kherror.h>
+#include<netidmgr.h>
 #include<dynimport.h>
 
 HINSTANCE hKrb4 = 0;
@@ -87,6 +87,7 @@ DECL_FUNC_PTR(krb5_get_init_creds_opt_set_renew_life);
 DECL_FUNC_PTR(krb5_get_init_creds_opt_set_forwardable);
 DECL_FUNC_PTR(krb5_get_init_creds_opt_set_proxiable);
 DECL_FUNC_PTR(krb5_get_init_creds_opt_set_address_list);
+DECL_FUNC_PTR(krb5_get_init_creds_opt_set_change_password_prompt);
 DECL_FUNC_PTR(krb5_get_init_creds_password);
 DECL_FUNC_PTR(krb5_get_prompt_types);
 DECL_FUNC_PTR(krb5_build_principal_ext);
@@ -143,6 +144,7 @@ DECL_FUNC_PTR(krb5_free_host_realm);
 DECL_FUNC_PTR(krb5_c_random_make_octets);
 DECL_FUNC_PTR(krb5_free_addresses);
 DECL_FUNC_PTR(krb5_free_default_realm);
+DECL_FUNC_PTR(krb5_string_to_deltat);
 
 // Krb524 functions
 DECL_FUNC_PTR(krb524_init_ets);
@@ -159,12 +161,14 @@ DECL_FUNC_PTR(profile_release);
 DECL_FUNC_PTR(profile_get_subsection_names);
 DECL_FUNC_PTR(profile_free_list);
 DECL_FUNC_PTR(profile_get_string);
+DECL_FUNC_PTR(profile_get_integer);
 DECL_FUNC_PTR(profile_get_values);
 DECL_FUNC_PTR(profile_get_relation_names);
 DECL_FUNC_PTR(profile_clear_relation);
 DECL_FUNC_PTR(profile_add_relation);
 DECL_FUNC_PTR(profile_update_relation);
 DECL_FUNC_PTR(profile_release_string);
+DECL_FUNC_PTR(profile_rename_section);
 
 // Service functions
 DECL_FUNC_PTR(OpenSCManagerA);
@@ -231,6 +235,7 @@ FUNC_INFO k5_fi[] = {
     MAKE_FUNC_INFO(krb5_get_init_creds_opt_set_forwardable),
     MAKE_FUNC_INFO(krb5_get_init_creds_opt_set_proxiable),
     MAKE_FUNC_INFO(krb5_get_init_creds_opt_set_address_list),
+    MAKE_FUNC_INFO(krb5_get_init_creds_opt_set_change_password_prompt),
     MAKE_FUNC_INFO(krb5_get_init_creds_password),
     MAKE_FUNC_INFO(krb5_get_prompt_types),
     MAKE_FUNC_INFO(krb5_build_principal_ext),
@@ -287,6 +292,7 @@ FUNC_INFO k5_fi[] = {
     MAKE_FUNC_INFO(krb5_free_host_realm),
     MAKE_FUNC_INFO(krb5_c_random_make_octets),
     MAKE_FUNC_INFO(krb5_free_default_realm),
+    MAKE_FUNC_INFO(krb5_string_to_deltat),
     END_FUNC_INFO
 };
 
@@ -303,12 +309,14 @@ FUNC_INFO profile_fi[] = {
     MAKE_FUNC_INFO(profile_get_subsection_names),
     MAKE_FUNC_INFO(profile_free_list),
     MAKE_FUNC_INFO(profile_get_string),
+    MAKE_FUNC_INFO(profile_get_integer),
     MAKE_FUNC_INFO(profile_get_values),
     MAKE_FUNC_INFO(profile_get_relation_names),
     MAKE_FUNC_INFO(profile_clear_relation),
     MAKE_FUNC_INFO(profile_add_relation),
     MAKE_FUNC_INFO(profile_update_relation),
     MAKE_FUNC_INFO(profile_release_string),
+    MAKE_FUNC_INFO(profile_rename_section),
     END_FUNC_INFO
 };
 
@@ -362,30 +370,36 @@ khm_int32 init_imports(void) {
     OSVERSIONINFO osvi;
     int imp_rv = 1;
 
-#define CKRV if(!imp_rv) goto _err_ret
+#define CKRV(m)           \
+  do {                    \
+    if(!imp_rv) {         \
+      _reportf(L"Can't locate all required exports from module [%S]", (m)); \
+      goto _err_ret;      \
+    }                     \
+ } while (FALSE)
 
 #ifndef _WIN64
     imp_rv = LoadFuncs(KRB4_DLL, k4_fi, &hKrb4, 0, 1, 0, 0);
-    CKRV;
+    CKRV(KRB4_DLL);
 #endif
 
     imp_rv = LoadFuncs(KRB5_DLL, k5_fi, &hKrb5, 0, 1, 0, 0);
-    CKRV;
+    CKRV(KRB5_DLL);
 
     imp_rv = LoadFuncs(COMERR_DLL, ce_fi, &hComErr, 0, 0, 1, 0);
-    CKRV;
+    CKRV(COMERR_DLL);
 
     imp_rv = LoadFuncs(SERVICE_DLL, service_fi, &hService, 0, 1, 0, 0);
-    CKRV;
+    CKRV(SERVICE_DLL);
 
     imp_rv = LoadFuncs(SECUR32_DLL, lsa_fi, &hSecur32, 0, 1, 1, 1);
-    CKRV;
+    CKRV(SECUR32_DLL);
 
     imp_rv = LoadFuncs(KRB524_DLL, k524_fi, &hKrb524, 0, 1, 1, 1);
-    CKRV;
+    CKRV(KRB524_DLL);
 
     imp_rv = LoadFuncs(PROFILE_DLL, profile_fi, &hProfile, 0, 1, 0, 0);
-    CKRV;
+    CKRV(PROFILE_DLL);
 
     imp_rv = LoadFuncs(CCAPI_DLL, ccapi_fi, &hCCAPI, 0, 1, 0, 0);
     /* CCAPI_DLL is optional.  No error check. */
@@ -403,7 +417,7 @@ khm_int32 init_imports(void) {
     {
         // Windows 9x
         imp_rv = LoadFuncs(TOOLHELPDLL, toolhelp_fi, &hToolHelp32, 0, 1, 0, 0);
-        CKRV;
+        CKRV(TOOLHELPDLL);
 
         hPsapi = 0;
     }             
@@ -411,7 +425,7 @@ khm_int32 init_imports(void) {
     {
         // Windows NT
         imp_rv = LoadFuncs(PSAPIDLL, psapi_fi, &hPsapi, 0, 1, 0, 0);
-        CKRV;
+        CKRV(PSAPIDLL);
 
         hToolHelp32 = 0;
     }

@@ -21,7 +21,7 @@
  */
 
 /*
- * $Id: import_name.c 17392 2005-09-22 17:26:04Z tlyu $
+ * $Id: import_name.c 18015 2006-05-17 05:26:12Z raeburn $
  */
 
 #include "gssapiP_krb5.h"
@@ -61,7 +61,7 @@ krb5_gss_import_name(minor_status, input_name_buffer,
    struct passwd *pw;
 #endif
 
-   code = krb5_init_context(&context);
+   code = krb5_gss_init_context(&context);
    if (code) {
        *minor_status = code;
        return GSS_S_FAILURE;

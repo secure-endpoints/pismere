@@ -3,6 +3,18 @@
 #include <windows.h>
 #define SECURITY_WIN32
 #include <security.h>
+
+/* _WIN32_WINNT must be 0x0501 or greater to pull in definition of
+ * all required LSA data types when the Vista SDK NtSecAPI.h is used. 
+ */
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0501
+#else
+#if _WIN32_WINNT < 0x0501
+#undef _WIN32_WINNT 
+#define _WIN32_WINNT 0x0501
+#endif
+#endif
 #include <ntsecapi.h>
 #include <stdio.h>
 #include <string.h>

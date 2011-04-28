@@ -25,21 +25,6 @@
 
 #else /* ! RES_ONLY */
 
-#define SIZEOF_INT      4
-#define SIZEOF_SHORT    2
-#define SIZEOF_LONG     4
-
-#include <windows.h>
-#include <limits.h>
-
-#ifndef SIZE_MAX    /* in case Microsoft defines max size of size_t */
-#ifdef  MAX_SIZE    /* Microsoft defines MAX_SIZE as max size of size_t */
-#define SIZE_MAX MAX_SIZE
-#else
-#define SIZE_MAX UINT_MAX
-#endif
-#endif
-
 /* To ensure backward compatibility of the ABI use 32-bit time_t on 
  * 32-bit Windows. 
  */
@@ -53,6 +38,21 @@
 #endif /* _TIME_T_DEFINED */
 #define _USE_32BIT_TIME_T
 #endif 
+#endif
+
+#define SIZEOF_INT      4
+#define SIZEOF_SHORT    2
+#define SIZEOF_LONG     4
+
+#include <windows.h>
+#include <limits.h>
+
+#ifndef SIZE_MAX    /* in case Microsoft defines max size of size_t */
+#ifdef  MAX_SIZE    /* Microsoft defines MAX_SIZE as max size of size_t */
+#define SIZE_MAX MAX_SIZE
+#else
+#define SIZE_MAX UINT_MAX
+#endif
 #endif
 
 #ifndef KRB5_CALLCONV
@@ -81,6 +81,17 @@ typedef int              int32_t;
 #if _INTEGRAL_MAX_BITS >= 64
 typedef unsigned __int64 uint64_t;
 typedef __int64          int64_t;
+#endif
+#ifndef SSIZE_T_DEFINED
+#ifdef ssize_t
+#undef ssize_t
+#endif
+#ifdef _WIN64
+typedef __int64		 ssize_t;
+#else
+typedef _W64 int 	 ssize_t;
+#endif
+#define SSIZE_T_DEFINED
 #endif
 #endif /* KRB5_SYSTYPES__ */
 

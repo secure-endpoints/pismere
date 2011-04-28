@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2005 Massachusetts Institute of Technology
+ * Copyright (c) 2007 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -105,6 +106,28 @@ LRESULT khm_toolbar_notify(LPNMHDR notice) {
         }
         break;
 
+    case TBN_DROPDOWN:
+        {
+            LPNMTOOLBAR nmtb = (LPNMTOOLBAR) notice;
+            RECT r;
+
+            GetWindowRect(khui_hwnd_standard_toolbar, &r);
+            if (nmtb->iItem == KHUI_ACTION_DESTROY_CRED) {
+                khm_menu_show_panel(KHUI_MENU_DESTROY_CRED,
+                                    r.left + nmtb->rcButton.left,
+                                    r.top + nmtb->rcButton.bottom);
+            } else if (nmtb->iItem == KHUI_ACTION_RENEW_CRED) {
+                khm_menu_show_panel(KHUI_MENU_RENEW_CRED,
+                                    r.left + nmtb->rcButton.left,
+                                    r.top + nmtb->rcButton.bottom);
+            } else {
+                return TBDDRET_NODEFAULT;
+            }
+
+            return TBDDRET_DEFAULT;
+        }
+        break;
+
     case NM_CUSTOMDRAW:
         {
             LPNMTBCUSTOMDRAW nmcd = (LPNMTBCUSTOMDRAW) notice;
@@ -155,11 +178,14 @@ LRESULT khm_toolbar_notify(LPNMHDR notice) {
                     return CDRF_DODEFAULT;
 
                 CopyRect(&r, &(nmcd->nmcd.rc));
-                r.left += ((r.right - r.left) - 
-                           KHUI_TOOLBAR_IMAGE_WIDTH) / 2;
+                r.left += ((r.bottom - r.top) -
+                          KHUI_TOOLBAR_IMAGE_HEIGHT) / 2;
                 r.top += ((r.bottom - r.top) -
                           KHUI_TOOLBAR_IMAGE_HEIGHT) / 2;
-                
+#if 0
+                r.left += ((r.right - r.left) - 
+                           KHUI_TOOLBAR_IMAGE_WIDTH) / 2;
+#endif
                 khui_ilist_draw(ilist_toolbar, 
                                 iidx, 
                                 nmcd->nmcd.hdc, 
@@ -312,22 +338,16 @@ void khm_create_standard_toolbar(HWND rebar) {
     if (!def) {
 #ifdef DEBUG
         assert(FALSE);
-#else
-        return;
 #endif
+        return;
     }
 
-    hwtb = CreateWindowEx(0
-#if (_WIN32_IE >= 0x0501)
-                          | TBSTYLE_EX_MIXEDBUTTONS
-#endif
-                          ,
+    hwtb = CreateWindowEx(0 ,
                           TOOLBARCLASSNAME,
                           (LPWSTR) NULL,
                           WS_CHILD |
                           TBSTYLE_FLAT |
                           TBSTYLE_AUTOSIZE | 
-                          TBSTYLE_LIST |
                           TBSTYLE_TOOLTIPS |
                           CCS_NORESIZE | 
                           CCS_NOPARENTALIGN |
@@ -340,10 +360,14 @@ void khm_create_standard_toolbar(HWND rebar) {
     if(!hwtb) {
 #ifdef DEBUG
         assert(FALSE);
-#else
-        return;
 #endif
+        return;
     }
+
+#if (_WIN32_IE >= 0x0501)
+    SendMessage(hwtb, TB_SETEXTENDEDSTYLE, 0,
+                TBSTYLE_EX_MIXEDBUTTONS | TBSTYLE_EX_DRAWDDARROWS);
+#endif
 
     hiList = ImageList_Create(
         KHUI_TOOLBAR_IMAGE_WIDTH,
@@ -396,7 +420,9 @@ void khm_create_standard_toolbar(HWND rebar) {
             act = khui_find_action(aref->action);
             khui_add_action_to_toolbar(hwtb, 
                                        act, 
-                                       KHUI_TOOLBAR_ADD_BITMAP, 
+                                       KHUI_TOOLBAR_ADD_BITMAP |
+                                       ((aref->flags & KHUI_ACTIONREF_SUBMENU)?
+                                        KHUI_TOOLBAR_ADD_DROPDOWN: 0),
                                        hiList);
         }
         aref ++;

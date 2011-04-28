@@ -1,7 +1,6 @@
 #ifdef KRB4
 #include <kerberosIV/krb.h>
 #endif
-#define NEED_SOCKETS
 #include "k5-int.h"
 
 #ifdef KRB4

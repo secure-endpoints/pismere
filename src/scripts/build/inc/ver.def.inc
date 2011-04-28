@@ -237,7 +237,7 @@
 #ifdef EXPORT
 #define EXPORT_TAG  " (Export Version)"
 #else
-#define EXPORT_TAG  " (Domestic Use Only)"
+#define EXPORT_TAG
 #endif
 
 #else           /* Not Export Controlled */

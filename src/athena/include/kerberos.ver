@@ -1,14 +1,16 @@
 #define VER_PROD_MAJOR 3
-#define VER_PROD_MINOR 1
+#define VER_PROD_MINOR 2
 #define VER_PROD_REV   0
 
 #define VER_PROD_MAJOR_STR  "3"
-#define VER_PROD_MINOR_STR  "1"
+#define VER_PROD_MINOR_STR  "2"
 #define VER_PROD_REV_STR    "0"
 
 #define VER_PRODUCTNAME_STR "MIT Kerberos for Windows"
 
 #include <export.ver>
 
-#define BETA 2
-#define BETA_STR "2"
+#if 0
+#define BETA 3
+#define BETA_STR "3"
+#endif

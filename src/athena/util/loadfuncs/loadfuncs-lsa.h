@@ -37,7 +37,7 @@ TYPEDEF_FUNC(
     (NTSTATUS)
     );
 TYPEDEF_FUNC(
-    ULONG,
+    NTSTATUS,
     NTAPI,
     LsaGetLogonSessionData,
     (PLUID, PSECURITY_LOGON_SESSION_DATA*)

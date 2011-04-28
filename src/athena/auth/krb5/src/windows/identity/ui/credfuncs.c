@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2005 Massachusetts Institute of Technology
+ * Copyright (c) 2007 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -33,6 +34,7 @@ static HANDLE in_dialog_evt = NULL;
 static LONG init_dialog = 0;
 static khm_int32 dialog_result = 0;
 static wchar_t dialog_identity[KCDB_IDENT_MAXCCH_NAME];
+static khui_new_creds * dialog_nc = NULL;
 
 static void
 dialog_sync_init(void) {
@@ -64,9 +66,28 @@ khm_cred_begin_dialog(void) {
 
     EnterCriticalSection(&cs_dialog);
 
-    if (in_dialog)
+    if (in_dialog) {
         rv = FALSE;
-    else {
+
+        /* if a dialog is being displayed and we got a another request
+           to show one, we bring the existing one to the
+           foreground. */
+        if (dialog_nc && dialog_nc->hwnd) {
+            khm_int32 t = 0;
+
+            if (KHM_SUCCEEDED(khc_read_int32(NULL,
+                                             L"CredWindow\\Windows\\NewCred\\ForceToTop",
+                                             &t)) &&
+                t != 0) {
+
+                khm_activate_main_window();
+
+                SetWindowPos(dialog_nc->hwnd, HWND_TOP, 0, 0, 0, 0,
+                             (SWP_NOMOVE | SWP_NOSIZE));
+            }
+        }
+
+    } else {
         rv = TRUE;
         in_dialog = TRUE;
         ResetEvent(in_dialog_evt);
@@ -86,6 +107,10 @@ khm_cred_end_dialog(khui_new_creds * nc) {
         SetEvent(in_dialog_evt);
     }
     dialog_result = nc->result;
+#ifdef DEBUG
+    assert(dialog_nc == nc);
+#endif
+    dialog_nc = NULL;
     if (nc->subtype == KMSG_CRED_NEW_CREDS &&
         nc->n_identities > 0 &&
         nc->identities[0]) {
@@ -155,7 +180,11 @@ khm_cred_wait_for_dialog(DWORD timeout, khm_int32 * result,
     return rv;
 }
 
-/* completion handler for KMSG_CRED messages */
+/* Completion handler for KMSG_CRED messages.  We control the overall
+   logic of credentials acquisition and other operations here.  Once a
+   credentials operation is triggered, each successive message
+   completion notification will be used to dispatch the messages for
+   the next step in processing the operation. */
 void KHMAPI 
 kmsg_cred_completion(kmq_message *m)
 {
@@ -182,7 +211,7 @@ kmsg_cred_completion(kmq_message *m)
         nc = (khui_new_creds *) m->vparam;
 
         /* khm_cred_dispatch_process_message() deals with the case
-           where there are not credential types that wants to
+           where there are no credential types that wants to
            participate in this operation. */
         khm_cred_dispatch_process_message(nc);
         break;
@@ -280,6 +309,8 @@ kmsg_cred_completion(kmq_message *m)
 
                 if (nc->subtype == KMSG_CRED_NEW_CREDS) {
 
+                    khui_alert_set_type(alert, KHUI_ALERTTYPE_ACQUIREFAIL);
+
                     cb = sizeof(w_idname);
                     if (nc->n_identities == 0 ||
                         KHM_FAILED(kcdb_identity_get_name(nc->identities[0],
@@ -292,9 +323,16 @@ kmsg_cred_completion(kmq_message *m)
                                    ws_tfmt, ARRAYLENGTH(ws_tfmt));
                         StringCbPrintf(ws_title, sizeof(ws_title),
                                        ws_tfmt, w_idname);
+                        khui_alert_set_ctx(alert,
+                                           KHUI_SCOPE_IDENT,
+                                           nc->identities[0],
+                                           KCDB_CREDTYPE_INVALID,
+                                           NULL);
                     }
 
                 } else if (nc->subtype == KMSG_CRED_PASSWORD) {
+
+                    khui_alert_set_type(alert, KHUI_ALERTTYPE_CHPW);
 
                     cb = sizeof(w_idname);
                     if (nc->n_identities == 0 ||
@@ -307,9 +345,16 @@ kmsg_cred_completion(kmq_message *m)
                                    ws_tfmt, ARRAYLENGTH(ws_tfmt));
                         StringCbPrintf(ws_title, sizeof(ws_title),
                                        ws_tfmt, w_idname);
+                        khui_alert_set_ctx(alert,
+                                           KHUI_SCOPE_IDENT,
+                                           nc->identities[0],
+                                           KCDB_CREDTYPE_INVALID,
+                                           NULL);
                     }
 
                 } else if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
+
+                    khui_alert_set_type(alert, KHUI_ALERTTYPE_RENEWFAIL);
 
                     cb = sizeof(w_idname);
                     if (nc->ctx.identity == NULL ||
@@ -322,6 +367,11 @@ kmsg_cred_completion(kmq_message *m)
                                    ws_tfmt, ARRAYLENGTH(ws_tfmt));
                         StringCbPrintf(ws_title, sizeof(ws_title),
                                        ws_tfmt, w_idname);
+                        khui_alert_set_ctx(alert,
+                                           KHUI_SCOPE_IDENT,
+                                           nc->ctx.identity,
+                                           KCDB_CREDTYPE_INVALID,
+                                           NULL);
                     }
 
                 } else {
@@ -340,6 +390,22 @@ kmsg_cred_completion(kmq_message *m)
 
                 if(evt->suggestion)
                     khui_alert_set_suggestion(alert, evt->suggestion);
+
+                if (nc->subtype == KMSG_CRED_RENEW_CREDS &&
+                    nc->ctx.identity != NULL) {
+
+                    khm_int32 n_cmd;
+
+                    n_cmd = khm_get_identity_new_creds_action(nc->ctx.identity);
+
+                    if (n_cmd != 0) {
+                        khui_alert_add_command(alert, n_cmd);
+                        khui_alert_add_command(alert, KHUI_PACTION_CLOSE);
+
+                        khui_alert_set_flags(alert, KHUI_ALERT_FLAG_DISPATCH_CMD,
+                                             KHUI_ALERT_FLAG_DISPATCH_CMD);
+                    }
+                }
 
                 khui_alert_show(alert);
                 khui_alert_release(alert);
@@ -366,25 +432,37 @@ kmsg_cred_completion(kmq_message *m)
         /* all is done. */
         {
             khui_new_creds * nc;
+            khm_boolean continue_cmdline = TRUE;
 
             nc = (khui_new_creds *) m->vparam;
 
             if (nc->subtype == KMSG_CRED_NEW_CREDS ||
                 nc->subtype == KMSG_CRED_PASSWORD) {
 
-                /*
-                if (nc->subtype == KMSG_CRED_NEW_CREDS)
-                    khui_context_reset();
-                */
-
                 khm_cred_end_dialog(nc);
+
+            } else if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
+
+                /* if this is a renewal that was triggered while we
+                   were processing the commandline, then we need to
+                   update the pending renewal count. */
+
+                if (khm_startup.processing) {
+                    LONG renewals;
+                    renewals = InterlockedDecrement(&khm_startup.pending_renewals);
+
+                    if (renewals != 0) {
+                        continue_cmdline = FALSE;
+                    }
+                }
             }
 
             khui_cw_destroy_cred_blob(nc);
 
             kmq_post_message(KMSG_CRED, KMSG_CRED_REFRESH, 0, 0);
 
-            kmq_post_message(KMSG_ACT, KMSG_ACT_CONTINUE_CMDLINE, 0, 0);
+            if (continue_cmdline)
+                kmq_post_message(KMSG_ACT, KMSG_ACT_CONTINUE_CMDLINE, 0, 0);
         }
         break;
 
@@ -415,7 +493,35 @@ kmsg_cred_completion(kmq_message *m)
         break;
 
     case KMSG_CRED_IMPORT:
-        kmq_post_message(KMSG_ACT, KMSG_ACT_CONTINUE_CMDLINE, 0, 0);
+        {
+            khm_boolean continue_cmdline = FALSE;
+            LONG pending_renewals;
+
+            /* once an import operation ends, we have to trigger a
+               renewal so that other plug-ins that didn't participate
+               in the import operation can have a chance at getting
+               the necessary credentials.
+
+               If we are in the middle of processing the commandline,
+               we have to be a little bit careful.  We can't issue a
+               commandline conituation message right now because the
+               import action is still ongoing (since the renewals are
+               part of the action).  Once the renewals have completed,
+               the completion handler will automatically issue a
+               commandline continuation message.  However, if there
+               were no identities to renew, then we have to issue the
+               message ourselves.
+            */
+
+            InterlockedIncrement(&khm_startup.pending_renewals);
+
+            khm_cred_renew_all_identities();
+
+            pending_renewals = InterlockedDecrement(&khm_startup.pending_renewals);
+
+            if (pending_renewals == 0 && khm_startup.processing)
+                kmq_post_message(KMSG_ACT, KMSG_ACT_CONTINUE_CMDLINE, 0, 0);
+        }
         break;
 
     case KMSG_CRED_REFRESH:
@@ -504,6 +610,106 @@ void khm_cred_destroy_creds(khm_boolean sync, khm_boolean quiet)
     _end_task();
 }
 
+void khm_cred_destroy_identity(khm_handle identity)
+{
+    khui_action_context * pctx;
+    wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
+    khm_size cb;
+
+    if (identity == NULL)
+        return;
+
+    pctx = PMALLOC(sizeof(*pctx));
+#ifdef DEBUG
+    assert(pctx);
+#endif
+
+    khui_context_create(pctx,
+                        KHUI_SCOPE_IDENT,
+                        identity,
+                        KCDB_CREDTYPE_INVALID,
+                        NULL);
+
+    cb = sizeof(idname);
+    kcdb_identity_get_name(identity, idname, &cb);
+
+    _begin_task(KHERR_CF_TRANSITIVE);
+    _report_sr1(KHERR_NONE, IDS_CTX_DESTROY_ID, _dupstr(idname));
+    _describe();
+
+    kmq_post_message(KMSG_CRED,
+                     KMSG_CRED_DESTROY_CREDS,
+                     0,
+                     (void *) pctx);
+
+    _end_task();
+}
+
+void khm_cred_renew_all_identities(void)
+{
+    khm_size count;
+    khm_size cb = 0;
+    khm_size n_idents = 0;
+    khm_int32 rv;
+    wchar_t * ident_names = NULL;
+    wchar_t * this_ident;
+
+    kcdb_credset_get_size(NULL, &count);
+
+    /* if there are no credentials, we just skip over the renew
+       action. */
+
+    if (count == 0)
+        return;
+
+    ident_names = NULL;
+
+    while (TRUE) {
+        if (ident_names) {
+            PFREE(ident_names);
+            ident_names = NULL;
+        }
+
+        cb = 0;
+        rv = kcdb_identity_enum(KCDB_IDENT_FLAG_EMPTY, 0,
+                                NULL,
+                                &cb, &n_idents);
+
+        if (n_idents == 0 || rv != KHM_ERROR_TOO_LONG ||
+            cb == 0)
+            break;
+
+        ident_names = PMALLOC(cb);
+        ident_names[0] = L'\0';
+
+        rv = kcdb_identity_enum(KCDB_IDENT_FLAG_EMPTY, 0,
+                                ident_names,
+                                &cb, &n_idents);
+
+        if (KHM_SUCCEEDED(rv))
+            break;
+    }
+
+    if (ident_names) {
+        for (this_ident = ident_names;
+             this_ident && *this_ident;
+             this_ident = multi_string_next(this_ident)) {
+            khm_handle ident;
+
+            if (KHM_FAILED(kcdb_identity_create(this_ident, 0,
+                                                &ident)))
+                continue;
+
+            khm_cred_renew_identity(ident);
+
+            kcdb_identity_release(ident);
+        }
+
+        PFREE(ident_names);
+        ident_names = NULL;
+    }
+}
+
 void khm_cred_renew_identity(khm_handle identity)
 {
     khui_new_creds * c;
@@ -521,6 +727,12 @@ void khm_cred_renew_identity(khm_handle identity)
     _begin_task(KHERR_CF_TRANSITIVE);
     _report_sr0(KHERR_NONE, IDS_CTX_RENEW_CREDS);
     _describe();
+
+    /* if we are calling this while processing startup actions, we
+       need to keep track of how many we have issued. */
+    if (khm_startup.processing) {
+        InterlockedIncrement(&khm_startup.pending_renewals);
+    }
 
     kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) c);
 
@@ -545,6 +757,12 @@ void khm_cred_renew_cred(khm_handle cred)
     _report_sr0(KHERR_NONE, IDS_CTX_RENEW_CREDS);
     _describe();
 
+    /* if we are calling this while processing startup actions, we
+       need to keep track of how many we have issued. */
+    if (khm_startup.processing) {
+        InterlockedIncrement(&khm_startup.pending_renewals);
+    }
+
     kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) c);
 
     _end_task();
@@ -563,6 +781,12 @@ void khm_cred_renew_creds(void)
     _report_sr0(KHERR_NONE, IDS_CTX_RENEW_CREDS);
     _describe();
 
+    /* if we are calling this while processing startup actions, we
+       need to keep track of how many we have issued. */
+    if (khm_startup.processing) {
+        InterlockedIncrement(&khm_startup.pending_renewals);
+    }
+
     kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) c);
 
     _end_task();
@@ -579,6 +803,7 @@ void khm_cred_change_password(wchar_t * title)
 
     khui_cw_create_cred_blob(&nc);
     nc->subtype = KMSG_CRED_PASSWORD;
+    dialog_nc = nc;
 
     khui_context_get(&nc->ctx);
 
@@ -629,6 +854,31 @@ void khm_cred_change_password(wchar_t * title)
     }
 }
 
+void
+khm_cred_obtain_new_creds_for_ident(khm_handle ident, wchar_t * title)
+{
+    khui_action_context ctx;
+
+    if (ident == NULL)
+        khm_cred_obtain_new_creds(title);
+
+    khui_context_get(&ctx);
+
+    khui_context_set(KHUI_SCOPE_IDENT,
+                     ident,
+                     KCDB_CREDTYPE_INVALID,
+                     NULL,
+                     NULL,
+                     0,
+                     NULL);
+
+    khm_cred_obtain_new_creds(title);
+
+    khui_context_set_indirect(&ctx);
+
+    khui_context_release(&ctx);
+}
+
 void khm_cred_obtain_new_creds(wchar_t * title)
 {
     khui_new_creds * nc;
@@ -640,6 +890,7 @@ void khm_cred_obtain_new_creds(wchar_t * title)
 
     khui_cw_create_cred_blob(&nc);
     nc->subtype = KMSG_CRED_NEW_CREDS;
+    dialog_nc = nc;
 
     khui_context_get(&nc->ctx);
 
@@ -911,73 +1162,37 @@ khm_cred_process_startup_actions(void) {
         if (khm_startup.import) {
             khm_cred_import();
             khm_startup.import = FALSE;
+
+            /* we also set the renew command to false here because we
+               trigger a renewal for all the identities at the end of
+               the import operation anyway. */
+            khm_startup.renew = FALSE;
             break;
         }
 
         if (khm_startup.renew) {
-            khm_size count;
-            wchar_t * ident_names = NULL;
-            wchar_t * this_ident;
-
-            kcdb_credset_get_size(NULL, &count);
+            LONG pending_renewals;
 
             /* if there are no credentials, we just skip over the
                renew action. */
 
             khm_startup.renew = FALSE;
 
-            if (count != 0) {
-                khm_size cb = 0;
-                khm_size n_idents = 0;
-                khm_int32 rv;
+            InterlockedIncrement(&khm_startup.pending_renewals);
 
-                ident_names = NULL;
+            khm_cred_renew_all_identities();
 
-                while (TRUE) {
-                    if (ident_names) {
-                        PFREE(ident_names);
-                        ident_names = NULL;
-                    }
+            pending_renewals = InterlockedDecrement(&khm_startup.pending_renewals);
 
-                    cb = 0;
-                    rv = kcdb_identity_enum(KCDB_IDENT_FLAG_EMPTY, 0,
-                                            NULL,
-                                            &cb, &n_idents);
-
-                    if (n_idents == 0 || rv != KHM_ERROR_TOO_LONG ||
-                        cb == 0)
-                        break;
-
-                    ident_names = PMALLOC(cb);
-
-                    rv = kcdb_identity_enum(KCDB_IDENT_FLAG_EMPTY, 0,
-                                            ident_names,
-                                            &cb, &n_idents);
-
-                    if (KHM_SUCCEEDED(rv))
-                        break;
-                }
-
-                if (ident_names) {
-                    for (this_ident = ident_names;
-                         this_ident && *this_ident;
-                         this_ident = multi_string_next(this_ident)) {
-                        khm_handle ident;
-
-                        if (KHM_FAILED(kcdb_identity_create(this_ident, 0,
-                                                            &ident)))
-                            continue;
-
-                        khm_cred_renew_identity(ident);
-
-                        kcdb_identity_release(ident);
-                    }
-
-                    PFREE(ident_names);
-                    ident_names = NULL;
-                }
+            if (pending_renewals != 0)
                 break;
-            }
+
+            /* if there were no pending renewals, then we just fall
+               through. This means that either there were no
+               identities to renew, or all the renewals completed.  If
+               all the renewals completed, then the commandline
+               contiuation message wasn't triggered.  Either way, we
+               must fall through if the count is zero. */
         }
 
         if (khm_startup.destroy) {
@@ -1041,6 +1256,9 @@ khm_cred_process_startup_actions(void) {
         /* when we get here, then we are all done with the command
            line stuff */
         khm_startup.processing = FALSE;
+        khm_startup.remote = FALSE;
+
+        kmq_post_message(KMSG_ACT, KMSG_ACT_END_CMDLINE, 0, 0);
     } while(FALSE);
 
     if (defident)
@@ -1054,7 +1272,9 @@ khm_cred_begin_startup_actions(void) {
     if (khm_startup.seen)
         return;
 
-    if (KHM_SUCCEEDED(khc_open_space(NULL, L"CredWindow", 0, &csp_cw))) {
+    if (!khm_startup.remote &&
+        KHM_SUCCEEDED(khc_open_space(NULL, L"CredWindow", 0, &csp_cw))) {
+
         khm_int32 t = 0;
 
         khc_read_int32(csp_cw, L"Autoinit", &t);

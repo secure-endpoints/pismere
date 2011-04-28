@@ -217,7 +217,7 @@ void CKrb4RealmHostMaintenance::ResetDefaultRealmComboBox()
 	// Check for Host
 	// don't use KRB4 - krb_get_krbhst - would have to re-logon, on file location 
 	// change, to use this function
-	extern krb_get_krbhst(char* h, char* r, int n);
+	extern int krb_get_krbhst(char* h, char* r, int n);
 	if (KFAILURE == krb_get_krbhst(krbhst, krbrlm, 1))
 	{
 		MessageBox("We can't find the Host Server for your Default Realm!!!", 

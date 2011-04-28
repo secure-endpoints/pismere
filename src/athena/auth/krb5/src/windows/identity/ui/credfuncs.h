@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2005 Massachusetts Institute of Technology
+ * Copyright (c) 2007 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -34,6 +35,12 @@ void
 khm_cred_destroy_creds(khm_boolean sync,
                        khm_boolean quiet);
 
+void
+khm_cred_destroy_identity(khm_handle identity);
+
+void
+khm_cred_renew_all_identities(void);
+
 void 
 khm_cred_renew_identity(khm_handle identity);
 
@@ -45,6 +52,9 @@ khm_cred_renew_creds(void);
 
 void 
 khm_cred_obtain_new_creds(wchar_t * window_title);
+
+void
+khm_cred_obtain_new_creds_for_ident(khm_handle ident, wchar_t * title);
 
 void 
 khm_cred_set_default(void);

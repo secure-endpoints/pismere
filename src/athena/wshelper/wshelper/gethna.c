@@ -217,10 +217,11 @@ DNS_STATUS doquery(const char* queryname, struct hostent* host)
     PDNS_RECORD pDnsRecord, pDnsIter; 
     DNS_FREE_TYPE freetype ;
     struct in_addr host_addr;
-	char querynamecp[DNS_MAX_NAME_BUFFER_LENGTH ];
+    char querynamecp[DNS_MAX_NAME_BUFFER_LENGTH];
+    size_t len;
     
-	freetype =  DnsFreeRecordListDeep;
-	strcpy(querynamecp, queryname);
+    freetype =  DnsFreeRecordListDeep;
+    strcpy(querynamecp, queryname);
     status = DnsQuery_A(queryname,          //pointer to OwnerName 
 			DNS_TYPE_A,         //Type of the record to be queried
                         DNS_QUERY_STANDARD,
@@ -229,20 +230,28 @@ DNS_STATUS doquery(const char* queryname, struct hostent* host)
                         NULL);              //reserved for future use
     
     if (status)
-		return status;
+	return status;
 
-     for (pDnsIter = pDnsRecord; pDnsIter; pDnsIter=pDnsIter->pNext) {
-		/* if we get an A record, keep it */
-		if (pDnsIter->wType == DNS_TYPE_A && stricmp(querynamecp, pDnsIter->pName)==0) 
-			break;
-                        
-		/* if we get a CNAME, look for a corresponding A record */
-		if (pDnsIter->wType == DNS_TYPE_CNAME && stricmp(queryname, pDnsIter->pName)==0) {
-			strcpy(querynamecp, pDnsIter->Data.CNAME.pNameHost);
-		}
-	 }
-	if (pDnsIter == NULL)
-		return DNS_ERROR_RCODE_NAME_ERROR;
+    /* If the query name includes a trailing separator in order to prevent
+     * a local domain search, remove the separator during the file name
+     * comparisons. */
+    len = strlen(querynamecp);
+    if (querynamecp[len-1] == '.')
+	querynamecp[len-1] = '\0';
+
+    for (pDnsIter = pDnsRecord; pDnsIter; pDnsIter=pDnsIter->pNext) {
+	/* if we get an A record, keep it */
+	if (pDnsIter->wType == DNS_TYPE_A && stricmp(querynamecp, pDnsIter->pName)==0) 
+	    break;
+
+	/* if we get a CNAME, look for a corresponding A record */
+	if (pDnsIter->wType == DNS_TYPE_CNAME && stricmp(queryname, pDnsIter->pName)==0) {
+	    strcpy(querynamecp, pDnsIter->Data.CNAME.pNameHost);
+	}
+    }
+    if (pDnsIter == NULL)
+	return DNS_ERROR_RCODE_NAME_ERROR;
+
     strcpy(host->h_name, pDnsIter->pName);
     host->h_addrtype = AF_INET;
     host->h_length = sizeof(u_long);

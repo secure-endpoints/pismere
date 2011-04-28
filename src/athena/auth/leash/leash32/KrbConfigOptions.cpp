@@ -82,7 +82,7 @@ static char far * near parse_str(char far*buffer,char far*result)
         return buffer;
 }
 
-krb_get_krbhst(char* h, char* r, int n)
+int krb_get_krbhst(char* h, char* r, int n)
 {
 	char lbstorage[BUFSIZ];
     char tr[REALM_SZ];

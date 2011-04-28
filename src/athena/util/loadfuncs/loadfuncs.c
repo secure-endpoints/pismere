@@ -18,7 +18,7 @@ UnloadFuncs(
     int n;
     if (fi)
         for (n = 0; fi[n].func_ptr_var; n++)
-            *(fi[n].func_ptr_var) = 0;
+            *(fi[n].func_ptr_var) = NULL;
     if (h) FreeLibrary(h);
 }
 
@@ -51,7 +51,7 @@ LoadFuncs(
     if (pindex) *pindex = -1;
 
     for (n = 0; fi[n].func_ptr_var; n++)
-	*(fi[n].func_ptr_var) = 0;
+	*(fi[n].func_ptr_var) = NULL;
 
     if (silent)
 	em = SetErrorMode(SEM_FAILCRITICALERRORS);
@@ -77,7 +77,7 @@ LoadFuncs(
     if (pindex) *pindex = last_i;
     if (error && cleanup && !go_on) {
 	for (i = 0; i < n; i++) {
-	    *(fi[i].func_ptr_var) = 0;
+	    *(fi[i].func_ptr_var) = NULL;
 	}
 	FreeLibrary(h);
 	return 0;

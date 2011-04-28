@@ -1458,6 +1458,14 @@ TYPEDEF_FUNC(
     );
 
 TYPEDEF_FUNC(
+    void,
+    KRB5_CALLCONV,
+    krb5_get_init_creds_opt_set_change_password_prompt,
+    (krb5_get_init_creds_opt *opt,
+     int prompt)
+    );
+
+TYPEDEF_FUNC(
     krb5_error_code,
     KRB5_CALLCONV,
     krb5_get_init_creds_password,

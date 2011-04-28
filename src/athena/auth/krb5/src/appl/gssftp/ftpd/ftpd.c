@@ -176,7 +176,6 @@ extern	char version[];
 extern	char *home;		/* pointer to home directory for glob */
 extern	FILE *ftpd_popen(), *fopen(), *freopen();
 extern	int  ftpd_pclose(), fclose();
-extern	char *getline();
 extern	char cbuf[];
 extern	off_t restart_point;
 
@@ -2143,7 +2142,7 @@ myoob(sig)
 	if (!transflag)
 		return;
 	cp = tmpline;
-	if (getline(cp, sizeof(tmpline), stdin) == NULL) {
+	if (ftpd_getline(cp, sizeof(tmpline), stdin) == NULL) {
 		reply(221, "You could at least say goodbye.");
 		dologout(0);
 	}
@@ -2396,7 +2395,9 @@ char *adata;
 		char service_name[MAXHOSTNAMELEN+10];
 		char **gservice;
 		struct hostent *hp;
-
+		stat_maj = 0;
+		accept_maj = 0;
+		acquire_maj = 0;
 
 		kerror = radix_encode(adata, gout_buf, &length, 1);
 		if (kerror) {

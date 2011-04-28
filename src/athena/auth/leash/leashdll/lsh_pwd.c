@@ -164,7 +164,7 @@ NetId_dialog(LPLSH_DLGINFO lpdlginfo)
 	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
 				desiredRealm, -1,
 				dlginfo->in.realm, NETID_REALM_SZ);
-	lrc = SendMessage(hNetIdMgr, 32809, 0, (LPARAM) tid);
+	lrc = SendMessage(hNetIdMgr, 32810, 0, (LPARAM) tid);
 
 	UnmapViewOfFile(dlginfo);
 	CloseHandle(hMap);
@@ -270,7 +270,7 @@ NetId_dialog_ex(LPLSH_DLGINFO_EX lpdlginfo)
 	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
 				ccache, -1,
 				dlginfo->in.ccache, NETID_CCACHE_NAME_SZ);
-	lrc = SendMessage(hNetIdMgr, 32809, 0, (LPARAM) tid);
+	lrc = SendMessage(hNetIdMgr, 32810, 0, (LPARAM) tid);
 
 	if (lrc > 0) {
 	    if (lpdlginfo->size == LSH_DLGINFO_EX_V2_SZ) 

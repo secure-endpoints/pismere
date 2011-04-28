@@ -3,9 +3,9 @@
  *
  */
 
-#include    <kadm5/adb.h>
+#include    <k5-int.h>
+#include    <kdb.h>
 #include    <kadm5/server_internal.h>
-#include    <krb5/kdb.h>
 #include    "misc.h"
 
 /*
@@ -129,7 +129,7 @@ check_min_life(void *server_handle, krb5_principal principal,
 
     ret = kadm5_get_principal(handle->lhandle, principal, 
 			      &princ, KADM5_PRINCIPAL_NORMAL_MASK);
-    if(ret != OSA_ADB_OK) 
+    if(ret) 
 	 return ret;
     if(princ.aux_attributes & KADM5_POLICY) {
 	if((ret=kadm5_get_policy(handle->lhandle,
@@ -170,4 +170,13 @@ check_min_life(void *server_handle, krb5_principal principal,
     }
 
     return kadm5_free_principal_ent(handle->lhandle, &princ);
+}
+
+#define MAXPRINCLEN 125
+
+void
+trunc_name(size_t *len, char **dots)
+{
+    *dots = *len > MAXPRINCLEN ? "..." : "";
+    *len = *len > MAXPRINCLEN ? MAXPRINCLEN : *len;
 }

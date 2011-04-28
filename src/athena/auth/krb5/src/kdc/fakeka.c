@@ -54,7 +54,7 @@
 
 #ifndef LINT
 static char rcsid[]=
-	"$Id: fakeka.c 17503 2005-11-29 00:01:49Z tlyu $";
+	"$Id: fakeka.c 18009 2006-05-16 01:45:00Z raeburn $";
 #endif
 
 /*
@@ -1239,7 +1239,7 @@ char **argv;
      * Initialize kerberos stuff and kadm5 stuff.
      */
 
-    if ((code = krb5_init_context(&context))) {
+    if ((code = krb5int_init_context_kdc(&context))) {
 	com_err(argv[0], code, "while initializing Kerberos");
 	exit(1);
     }
@@ -1254,12 +1254,14 @@ char **argv;
 
     if ((code = kadm5_init_with_password(progname, NULL, KADM5_ADMIN_SERVICE,
 					 NULL, KADM5_STRUCT_VERSION,
-					 KADM5_API_VERSION_2, &handle))) {
+					 KADM5_API_VERSION_2,
+					 (char **) NULL, /* db_args */
+					 &handle))) {
 	com_err(argv[0], code, "while initializing Kadm5");
 	exit(1);
     }
 
-    if ((code = kadm5_get_config_params(context, NULL, NULL, NULL,
+    if ((code = kadm5_get_config_params(context, 1, NULL,
 					&realm_params))) {
 	com_err(argv[0], code, "while getting realm parameters");
 	exit(1);

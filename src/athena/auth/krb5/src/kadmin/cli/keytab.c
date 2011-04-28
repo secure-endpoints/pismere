@@ -1,7 +1,7 @@
 /*
  * Copyright 1993 OpenVision Technologies, Inc., All Rights Reserved.
  *
- * $Id: keytab.c 17503 2005-11-29 00:01:49Z tlyu $
+ * $Id: keytab.c 17730 2006-03-11 22:23:28Z raeburn $
  * $Source$
  */
 
@@ -42,7 +42,7 @@ static char *rcsid = "$Header$";
 
 #include <krb5.h>
 #include <kadm5/admin.h>
-#include <krb5/adm_proto.h>
+#include <adm_proto.h>
 #include "kadmin.h"
 
 static int add_principal(void *lhandle, char *keytab_str, krb5_keytab keytab,

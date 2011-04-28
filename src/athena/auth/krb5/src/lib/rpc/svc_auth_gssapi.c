@@ -1,7 +1,7 @@
 /*
  * Copyright 1993 OpenVision Technologies, Inc., All Rights Reserved.
  *
- * $Id: svc_auth_gssapi.c 16768 2004-09-17 21:52:12Z tlyu $
+ * $Id: svc_auth_gssapi.c 18719 2006-10-16 12:17:53Z epeisach $
  *
  */
 
@@ -32,6 +32,7 @@
 
 #include <sys/file.h>
 #include <fcntl.h>
+#include <time.h>
 
 #define INITIATION_TIMEOUT 60*15 /* seconds until partially created */
 				 /* context is destroed */
@@ -972,7 +973,6 @@ void svcauth_gssapi_unset_names(void)
 		    gss_release_cred(&minor_stat, &server_creds_list[i]);
 	  free(server_creds_list);
 	  server_creds_list = NULL;
-	  server_creds_count = 0;
      }
 
      if (server_name_list) {
@@ -981,8 +981,8 @@ void svcauth_gssapi_unset_names(void)
 		    gss_release_name(&minor_stat, &server_name_list[i]);
 	  free(server_name_list);
 	  server_name_list = NULL;
-	  server_creds_count = 0;
      }
+     server_creds_count = 0;
 }
 
 

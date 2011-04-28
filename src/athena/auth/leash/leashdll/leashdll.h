@@ -42,6 +42,18 @@ void FAR Leash_load_com_err_callback(FARPROC,FARPROC,FARPROC);
 #include <windows.h>
 #define SECURITY_WIN32
 #include <security.h>
+
+/* _WIN32_WINNT must be 0x0501 or greater to pull in definition of
+ * all required LSA data types when the Vista SDK NtSecAPI.h is used. 
+ */
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0501
+#else
+#if _WIN32_WINNT < 0x0501
+#undef _WIN32_WINNT 
+#define _WIN32_WINNT 0x0501
+#endif
+#endif
 #include <ntsecapi.h>
 
 extern HINSTANCE hKrb4;
@@ -194,6 +206,8 @@ extern DECL_FUNC_PTR(krb5_get_host_realm);
 extern DECL_FUNC_PTR(krb5_free_host_realm);
 extern DECL_FUNC_PTR(krb5_c_random_make_octets);
 extern DECL_FUNC_PTR(krb5_free_default_realm);
+extern DECL_FUNC_PTR(krb5_principal_compare);
+extern DECL_FUNC_PTR(krb5_string_to_deltat);
 
 // Krb524 functions
 extern DECL_FUNC_PTR(krb524_init_ets);
@@ -210,6 +224,7 @@ extern DECL_FUNC_PTR(profile_get_subsection_names);
 extern DECL_FUNC_PTR(profile_free_list);
 extern DECL_FUNC_PTR(profile_get_string);
 extern DECL_FUNC_PTR(profile_release_string);
+extern DECL_FUNC_PTR(profile_get_integer);
 
 // Service functions
 
