@@ -1,7 +1,7 @@
 /*
  * Copyright 1993 OpenVision Technologies, Inc., All Rights Reserved.
  *
- * $Id: svc_auth_gssapi.c 18719 2006-10-16 12:17:53Z epeisach $
+ * $Id: svc_auth_gssapi.c 19638 2007-06-26 18:29:40Z tlyu $
  *
  */
 
@@ -149,6 +149,8 @@ enum auth_stat gssrpc__svcauth_gssapi(
      rqst->rq_xprt->xp_auth = &svc_auth_none;
      
      memset((char *) &call_res, 0, sizeof(call_res));
+     creds.client_handle.length = 0;
+     creds.client_handle.value = NULL;
      
      cred = &msg->rm_call.cb_cred;
      verf = &msg->rm_call.cb_verf;

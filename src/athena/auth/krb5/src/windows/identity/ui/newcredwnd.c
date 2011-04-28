@@ -30,6 +30,9 @@
 #define OEMRESOURCE
 
 #include<khmapp.h>
+#if _WIN32_WINNT >= 0x0501
+#include<uxtheme.h>
+#endif
 #include<assert.h>
 
 ATOM khui_newcredwnd_cls;
@@ -93,6 +96,8 @@ nc_common_dlg_proc(HWND hwnd,
             khui_nc_wnd_data * d;
             d = (khui_nc_wnd_data *)(LONG_PTR) 
                 GetWindowLongPtr(hwnd, DWLP_USER);
+            if (d == NULL)
+                break;
 
             /* message sent by parent to notify us of something */
             switch(HIWORD(wParam)) {
@@ -1400,6 +1405,11 @@ nc_handle_wm_create(HWND hwnd,
     if (hf_main)
         SendMessage(ncd->tab_wnd, WM_SETFONT, (WPARAM) hf_main, FALSE);
 
+#if _WIN32_WINNT >= 0x0501
+    EnableThemeDialogTexture(ncd->dlg_main,
+                             ETDT_ENABLETAB);
+#endif
+
     {
         RECT r_main;
         RECT r_area;
@@ -1684,6 +1694,8 @@ nc_handle_wm_destroy(HWND hwnd,
     khm_del_dialog(hwnd);
 
     d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+    if (d == NULL)
+        return TRUE;
 
     d->nc->ident_cb(d->nc, WMNC_IDENT_EXIT, NULL, 0, 0, 0);
 
@@ -1701,6 +1713,7 @@ nc_handle_wm_destroy(HWND hwnd,
     d->dlg_main = NULL;
 
     PFREE(d);
+    SetWindowLongPtr(hwnd, CW_PARAM, 0);
 
     return TRUE;
 }
@@ -1714,6 +1727,8 @@ nc_handle_wm_command(HWND hwnd,
     khui_nc_wnd_data * d;
 
     d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+    if (d == NULL)
+        return 0;
 
     switch(HIWORD(wParam)) {
     case BN_CLICKED:
@@ -1885,6 +1900,8 @@ static LRESULT nc_handle_wm_moving(HWND hwnd,
     khui_nc_wnd_data * d;
 
     d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+    if (d == NULL)
+        return FALSE;
 
     nc_notify_types(d->nc, KHUI_WM_NC_NOTIFY, 
                     MAKEWPARAM(0, WMNC_DIALOG_MOVE), (LPARAM) d->nc, TRUE);
@@ -1901,6 +1918,8 @@ static LRESULT nc_handle_wm_nc_notify(HWND hwnd,
     int id;
 
     d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+    if (d == NULL)
+        return FALSE;
 
     switch(HIWORD(wParam)) {
 
@@ -1928,6 +1947,13 @@ static LRESULT nc_handle_wm_nc_notify(HWND hwnd,
         /* we are switching from basic to advanced or vice versa */
 
         if (d->nc->mode == KHUI_NC_MODE_EXPANDED) {
+
+            if (d->current_panel != 0) {
+                d->current_panel = 0;
+                TabCtrl_SetCurSel(d->tab_wnd, 0);
+                nc_layout_new_cred_window(d);
+            }
+
             d->nc->mode = KHUI_NC_MODE_MINI;
         } else {
             d->nc->mode = KHUI_NC_MODE_EXPANDED;
@@ -1964,6 +1990,12 @@ static LRESULT nc_handle_wm_nc_notify(HWND hwnd,
 
 #ifdef DEBUG
                     assert(d->nc->types[i]->hwnd_panel);
+#endif
+#if _WIN32_WINNT >= 0x0501
+                    if (d->nc->types[i]->hwnd_panel) {
+                        EnableThemeDialogTexture(d->nc->types[i]->hwnd_panel,
+                                                 ETDT_ENABLETAB);
+                    }
 #endif
                 }
             }
@@ -2052,12 +2084,24 @@ static LRESULT nc_handle_wm_nc_notify(HWND hwnd,
                                                  tab is the main
                                                  panel. */
 
+            /* we don't enable animations until a specific timeout
+               elapses after showing the window.  We don't need to
+               animate any size changes if the user has barely had a
+               chance to notice the original size. This prevents the
+               new cred window from appearing in an animated state. */
+            SetTimer(hwnd, NC_TIMER_ENABLEANIMATE, ENABLEANIMATE_TIMEOUT, NULL);
+
+            ShowWindow(hwnd, SW_SHOWNORMAL);
+
             /* bring the window to the top, if necessary */
             if (KHM_SUCCEEDED(khc_read_int32(NULL,
                                              L"CredWindow\\Windows\\NewCred\\ForceToTop",
                                              &t)) &&
 
                 t != 0) {
+
+                BOOL sfw = FALSE;
+
                 /* it used to be that the above condition also called
                    !khm_is_dialog_active() to find out whether there
                    was a dialog active.  If there was, we wouldn't try
@@ -2069,22 +2113,30 @@ static LRESULT nc_handle_wm_nc_notify(HWND hwnd,
                    top.  However, if the main window is visible but not
                    active, the main window needs to be activated before a
                    child window can be activated. */
-                khm_activate_main_window();
 
-                SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0,
-                             (SWP_NOMOVE | SWP_NOSIZE));
+                SetActiveWindow(hwnd);
+
+                sfw = SetForegroundWindow(hwnd);
+
+                if (!sfw) {
+                    FLASHWINFO fi;
+
+                    ZeroMemory(&fi, sizeof(fi));
+
+                    fi.cbSize = sizeof(fi);
+                    fi.hwnd = hwnd;
+                    fi.dwFlags = FLASHW_ALL;
+                    fi.uCount = 3;
+                    fi.dwTimeout = 0; /* use the default cursor blink rate */
+
+                    FlashWindowEx(&fi);
+
+                    d->flashing_enabled = TRUE;
+                }
+
+            } else {
+                SetFocus(hwnd);
             }
-
-            ShowWindow(hwnd, SW_SHOWNOACTIVATE);
-
-            /* we don't enable animations until a specific timeout
-               elapses after showing the window.  We don't need to
-               animate any size changes if the user has barely had a
-               chance to notice the original size. This prevents the
-               new cred window from appearing in an animated state. */
-            SetTimer(hwnd, NC_TIMER_ENABLEANIMATE, ENABLEANIMATE_TIMEOUT, NULL);
-
-            SetFocus(hwnd);
 
             if (d->nc->n_identities == 0)
                 break;
@@ -2587,6 +2639,8 @@ static LRESULT nc_handle_wm_timer(HWND hwnd,
     khui_nc_wnd_data * d;
 
     d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+    if (d == NULL)
+        return FALSE;
 
     if (wParam == NC_TIMER_SIZER) {
 
@@ -2702,6 +2756,9 @@ static LRESULT nc_handle_wm_notify(HWND hwnd,
     khui_nc_wnd_data * d;
 
     d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+    if (d == NULL)
+        return FALSE;
+
     nmhdr = (LPNMHDR) lParam;
 
     if (nmhdr->code == TCN_SELCHANGE) {
@@ -2752,6 +2809,8 @@ static LRESULT nc_handle_wm_help(HWND hwnd,
     khui_nc_wnd_data * d;
 
     d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+    if (d == NULL)
+        return FALSE;
 
     hlp = (HELPINFO *) lParam;
 
@@ -2792,12 +2851,52 @@ static LRESULT nc_handle_wm_help(HWND hwnd,
     return TRUE;
 }
 
+static LRESULT nc_handle_wm_activate(HWND hwnd,
+                                     UINT uMsg,
+                                     WPARAM wParam,
+                                     LPARAM lParam) {
+    if (uMsg == WM_MOUSEACTIVATE ||
+        wParam == WA_ACTIVE || wParam == WA_CLICKACTIVE) {
+
+        FLASHWINFO fi;
+        khui_nc_wnd_data * d;
+        DWORD_PTR ex_style;
+
+        d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+
+        if (d && d->flashing_enabled) {
+            ZeroMemory(&fi, sizeof(fi));
+
+            fi.cbSize = sizeof(fi);
+            fi.hwnd = hwnd;
+            fi.dwFlags = FLASHW_STOP;
+
+            FlashWindowEx(&fi);
+
+            d->flashing_enabled = FALSE;
+        }
+
+        ex_style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+
+        if (ex_style & WS_EX_TOPMOST) {
+            SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0,
+                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        }
+    }
+
+    return (uMsg == WM_MOUSEACTIVATE)? MA_ACTIVATE : 0;
+}
+
 static LRESULT CALLBACK nc_window_proc(HWND hwnd,
                                        UINT uMsg,
                                        WPARAM wParam,
                                        LPARAM lParam)
 {
     switch(uMsg) {
+    case WM_MOUSEACTIVATE:
+    case WM_ACTIVATE:
+        return nc_handle_wm_activate(hwnd, uMsg, wParam, lParam);
+
     case WM_CREATE:
         return nc_handle_wm_create(hwnd, uMsg, wParam, lParam);
 
@@ -2857,6 +2956,7 @@ HWND khm_create_newcredwnd(HWND parent, khui_new_creds * c)
 {
     wchar_t wtitle[256];
     HWND hwnd;
+    khm_int32 force_topmost = 0;
 
     if (c->window_title == NULL) {
         if (c->subtype == KMSG_CRED_PASSWORD)
@@ -2871,7 +2971,9 @@ HWND khm_create_newcredwnd(HWND parent, khui_new_creds * c)
                        ARRAYLENGTH(wtitle));
     }
 
-    hwnd = CreateWindowEx(NC_WINDOW_EX_STYLES,
+    khc_read_int32(NULL, L"CredWindow\\Windows\\NewCred\\ForceToTop", &force_topmost);
+
+    hwnd = CreateWindowEx(NC_WINDOW_EX_STYLES | (force_topmost ? WS_EX_TOPMOST : 0),
                           MAKEINTATOM(khui_newcredwnd_cls),
                           ((c->window_title)?c->window_title: wtitle),
                           NC_WINDOW_STYLES,

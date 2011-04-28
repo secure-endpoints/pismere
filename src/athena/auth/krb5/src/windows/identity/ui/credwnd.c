@@ -33,6 +33,8 @@ khm_int32 khui_cw_flag_id;
 
 khm_int32 attr_to_action[KCDB_ATTR_MAX_ID + 1];
 
+khm_int32   bHideWatermarks = 0;
+
 void
 khm_set_cw_element_font(wchar_t * name, LOGFONT * pfont) {
     khm_handle csp_cw = NULL;
@@ -462,6 +464,8 @@ cw_load_view(khui_credwnd_tbl * tbl, wchar_t * view, HWND hwnd) {
                                  &hc_cw)))
         return;
 
+    khc_read_int32(hc_cw, L"HideWatermarks", &bHideWatermarks);
+
     if(KHM_FAILED(khc_open_space(hc_cw, L"Views", KHM_PERM_READ, &hc_vs)))
         goto _exit;
 
@@ -685,7 +689,7 @@ _skip_col:
         COLORREF bg_hdr_warn = RGB(235,235,134);
         COLORREF bg_hdr_crit = RGB(235,184,134);
         COLORREF bg_hdr_exp = RGB(235,134,134);
-        COLORREF bg_hdr_def = RGB(184,235,134);
+        COLORREF bg_hdr_def = GetSysColor(COLOR_WINDOW);
 
         tbl->cr_normal =       GetSysColor(COLOR_WINDOWTEXT);
         tbl->cr_s =            GetSysColor(COLOR_WINDOWTEXT);
@@ -1127,13 +1131,16 @@ cw_timer_proc(HWND hwnd,
     KillTimer(hwnd, idEvent);
 
     tbl = (khui_credwnd_tbl *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
-    r = (khui_credwnd_row *) idEvent;
-    r->flags &= ~KHUI_CW_ROW_TIMERSET;
+    if (tbl == NULL)
+        return;
 
+    r = (khui_credwnd_row *) idEvent;
     nr = (int)(r - tbl->rows);
 
     if(nr < 0 || nr >= tbl->n_rows)
         return;
+
+    r->flags &= ~KHUI_CW_ROW_TIMERSET;
 
     if(r->flags & KHUI_CW_ROW_CRED) {
 
@@ -2271,7 +2278,8 @@ cw_erase_rect(HDC hdc,
         rlogo.right = r_wnd->right;
         rlogo.top = r_wnd->bottom - tbl->kbm_logo_shade.cy;
         rlogo.bottom = r_wnd->bottom;
-        rie = IntersectRect(&ri, r_erase, &rlogo);
+        if (bHideWatermarks)    {rie = FALSE;}
+        else                    {rie = IntersectRect(&ri, r_erase, &rlogo);}
     } else {
         ZeroMemory(&rlogo, sizeof(rlogo));
         ZeroMemory(&ri, sizeof(ri));
@@ -3024,11 +3032,14 @@ cw_wm_destroy(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
     tbl = (khui_credwnd_tbl *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
 
-    cw_save_view(tbl, NULL);
+    if (tbl) {
+        cw_save_view(tbl, NULL);
 
-    cw_unload_view(tbl);
+        cw_unload_view(tbl);
 
-    PFREE(tbl);
+        PFREE(tbl);
+        SetWindowLongPtr(hwnd, 0, 0);
+    }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
@@ -3051,6 +3062,8 @@ cw_wm_paint(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     BOOL has_dc = FALSE;
 
     tbl = (khui_credwnd_tbl *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+    if (tbl == NULL)
+        goto _exit;
 
     if (wParam != 0) {
         /* we assume that if wParam != 0, then that contains a device
@@ -3311,20 +3324,20 @@ cw_wm_size(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     khui_credwnd_tbl * tbl;
 
     tbl = (khui_credwnd_tbl *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+    if (tbl) {
+        cw_update_extents(tbl, TRUE);
 
-    cw_update_extents(tbl, TRUE);
+        GetClientRect(hwnd, &rect);
 
-    GetClientRect(hwnd, &rect);
-
-    if(tbl->hwnd_notif) {
-        SetWindowPos(
-            tbl->hwnd_notif,
-            tbl->hwnd_header,
-            rect.left,
-            tbl->header_height,
-            rect.right - rect.left,
-            tbl->cell_height * 4,
-            0);
+        if(tbl->hwnd_notif) {
+            SetWindowPos(tbl->hwnd_notif,
+                         tbl->hwnd_header,
+                         rect.left,
+                         tbl->header_height,
+                         rect.right - rect.left,
+                         tbl->cell_height * 4,
+                         0);
+        }
     }
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
@@ -3335,6 +3348,9 @@ cw_wm_notify(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     khui_credwnd_tbl * tbl;
     LPNMHDR pnmh;
     tbl = (khui_credwnd_tbl *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+    if (tbl == NULL)
+        return 0;
+
     pnmh = (LPNMHDR) lParam;
     if(pnmh->hwndFrom == tbl->hwnd_header) {
         LPNMHEADER ph;
@@ -3361,6 +3377,9 @@ cw_kmq_wm_dispatch(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
     kmq_wm_begin(lParam, &m);
 
+    if (tbl == NULL)
+        goto _skip_message;
+
     if(m->type == KMSG_CRED) {
         switch (m->subtype) {
         case KMSG_CRED_ROOTDELTA:
@@ -3368,6 +3387,9 @@ cw_kmq_wm_dispatch(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             cw_update_outline(tbl);
             cw_update_extents(tbl, TRUE);
             InvalidateRect(hwnd, NULL, FALSE);
+
+            khui_action_trigger(KHUI_ACTION_LAYOUT_RELOAD, NULL);   /* Hack causes updates to be displayed. */
+
             break;
 
         case KMSG_CRED_PP_BEGIN:
@@ -3572,6 +3594,8 @@ cw_kmq_wm_dispatch(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     _skip_action:
         ;
     }
+
+ _skip_message:
 
     return kmq_wm_end(m, rv);
 }
@@ -4027,6 +4051,8 @@ cw_wm_mouse(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     int nm_state,nm_row,nm_col;
 
     tbl = (khui_credwnd_tbl *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+    if (tbl == NULL)
+        return 0;
 
     /* we are basically trying to capture events where the mouse is
        hovering over one of the 'hotspots'.  There are two kinds of
@@ -4276,6 +4302,9 @@ cw_wm_hscroll(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     int newpos;
 
     tbl = (khui_credwnd_tbl *) (LONG_PTR) GetWindowLongPtr(hwnd, 0);
+    if (tbl == NULL)
+        return 0;
+
     GetClientRect(hwnd, &cr);
     dx = tbl->scr_left;
 
@@ -4437,6 +4466,8 @@ cw_wm_vscroll(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     RECT cr;
 
     tbl = (khui_credwnd_tbl *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+    if (tbl == NULL)
+        return 0;
 
     GetClientRect(hwnd, &cr);
     cr.top += tbl->header_height;
@@ -4567,6 +4598,8 @@ cw_pp_ident_proc(HWND hwnd,
     case WM_COMMAND:
         s = (khui_property_sheet *) (LONG_PTR) 
             GetWindowLongPtr(hwnd, DWLP_USER);
+        if (s == NULL)
+            return 0;
 
         switch(wParam) {
         case MAKEWPARAM(IDC_PP_IDDEF, BN_CLICKED):
@@ -4625,6 +4658,8 @@ cw_pp_ident_proc(HWND hwnd,
             lpp = (LPPSHNOTIFY) lParam;
             s = (khui_property_sheet *) (LONG_PTR) 
                 GetWindowLongPtr(hwnd, DWLP_USER);
+            if (s == NULL)
+                return 0;
 
             switch(lpp->hdr.code) {
             case PSN_APPLY:
@@ -4794,6 +4829,8 @@ cw_properties(HWND hwnd)
 
     khui_context_get(&ctx);
     tbl = (khui_credwnd_tbl *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+    if (tbl == NULL)
+        return 0;
 
     if(ctx.scope == KHUI_SCOPE_NONE) {
         khui_context_release(&ctx);
@@ -4946,6 +4983,8 @@ cw_wm_command(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     khui_credwnd_tbl * tbl;
 
     tbl = (khui_credwnd_tbl *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+    if (tbl == NULL)
+        return 0;
 
     if(HIWORD(wParam) == BN_CLICKED && 
        LOWORD(wParam) == KHUI_HTWND_CTLID) {
@@ -5303,6 +5342,8 @@ cw_wm_contextmenu(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     khui_credwnd_tbl * tbl;
 
     tbl = (khui_credwnd_tbl *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+    if (tbl == NULL)
+        return 0;
 
     GetWindowRect(hwnd, &r);
 

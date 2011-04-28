@@ -362,7 +362,7 @@ enum kherr_context_flags {
                                   threads whose current error context
                                   is this one. */
 
-    KHERR_CFMASK_INITIAL = 0x0000000a,
+    KHERR_CFMASK_INITIAL   = 0x0000000a,
                                 /*!< Allowed initial flags */
 };
 
@@ -379,13 +379,16 @@ enum kherr_context_flags {
     \see kherr_add_ctx_handler()
 */
 enum kherr_ctx_event {
-    KHERR_CTX_BEGIN  = 0x0001,  /*!< A new context was created */
-    KHERR_CTX_DESCRIBE=0x0002,  /*!< A context was described */
-    KHERR_CTX_END    = 0x0004,  /*!< A context was closed */
-    KHERR_CTX_ERROR  = 0x0008,  /*!< A context switched to an error
-                                  state */
-    KHERR_CTX_EVTCOMMIT = 0x0010 /*!< A event was committed into the
-				   context */
+    KHERR_CTX_BEGIN     = 0x00000001, /*!< A new context was created */
+    KHERR_CTX_DESCRIBE  = 0x00000002, /*!< A context was described */
+    KHERR_CTX_END       = 0x00000004, /*!< A context was closed */
+    KHERR_CTX_ERROR     = 0x00000008, /*!< A context switched to an
+                                        error state */
+    KHERR_CTX_EVTCOMMIT = 0x00000010, /*!< A event was committed into
+                                        the context */
+    KHERR_CTX_NEWCHILD  = 0x00000020, /*!< A new child context was created */
+    KHERR_CTX_FOLDCHILD = 0x00000040, /*!< A child context was folded */
+    KHERR_CTX_PROGRESS  = 0x00000080, /*!< Progress marker updated for context */
 };
 
 /*! \brief Context event handler
@@ -577,14 +580,14 @@ KHMEXP void KHMAPI kherr_remove_ctx_handler(kherr_ctx_handler h,
         when the event is freed other than that implied by \a flags.
  */
 KHMEXP kherr_event * KHMAPI kherr_report(
-    enum kherr_severity severity,
+    kherr_severity severity,
     const wchar_t * short_desc,
     const wchar_t * facility,
     const wchar_t * location,
     const wchar_t * long_desC,
     const wchar_t * suggestion,
     khm_int32 facility_id,
-    enum kherr_suggestion suggestion_id,
+    kherr_suggestion suggestion_id,
     kherr_param p1,
     kherr_param p2,
     kherr_param p3,
@@ -603,7 +606,7 @@ KHMEXP kherr_event * KHMAPI kherr_report(
     string against the arguments.
  */
 KHMEXP kherr_event * __cdecl
-kherr_reportf_ex(enum kherr_severity severity,
+kherr_reportf_ex(kherr_severity severity,
                  const wchar_t * facility,
                  khm_int32 facility_id,
 #ifdef _WIN32
@@ -911,10 +914,39 @@ KHMEXP void KHMAPI kherr_set_progress(khm_ui_4 num, khm_ui_4 denom);
 #define _progress(num,denom) kherr_set_progress((num),(denom))
 
 /*! \brief Get the progress meter of the current error context
+
+    This is equivalent to calling kherr_get_progress_i() for the
+    current error context.  I.e. :
+
+    \code
+    kherr_context * ctx;
+
+    ctx = kherr_peek_context();
+    kherr_get_progress_i(ctx, &num, &denom);
+    kherr_release_context(ctx);
+    \endcode
+
+    \see kherr_get_progress_i()
  */
 KHMEXP void KHMAPI kherr_get_progress(khm_ui_4 * num, khm_ui_4 * denom);
 
 /*! \brief Get the progress meter of an error context
+
+    The progress meter for the current context can be set by calling
+    kherr_set_progress() (or using the ::_progress macro).  The
+    progress value returned by this function is as follows:
+
+    If one or more of the following conditions are true, then the
+    returned progress values are the values set for the context using
+    the most recent call to kherr_set_progress():
+
+    - if the numerator and the denominator are non-zero
+
+    - if the ::KHERR_CF_OWN_PROGRESS flag is set for the context.
+
+    Otherwise, the function will calculate the progress by enumerating
+    all the child context for the context and summing up the
+    normalized numerators and the denominators for them.
  */
 KHMEXP void KHMAPI kherr_get_progress_i(kherr_context * c, khm_ui_4 * num, khm_ui_4 * denom);
 

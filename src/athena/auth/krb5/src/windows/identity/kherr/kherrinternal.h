@@ -27,10 +27,15 @@
 #ifndef __KHIMAIRA_KHERRORINTERNAL_H
 #define __KHIMAIRA_KHERRORINTERNAL_H
 
+#define _NIMLIB_
+
 #include<windows.h>
 #include<kherr.h>
 #include<utils.h>
 #include<strsafe.h>
+
+#define IS_KHERR_CTX(c) ((c) && (c)->magic == KHERR_CONTEXT_MAGIC)
+#define IS_KHERR_EVENT(e) ((e) && (e)->magic == KHERR_EVENT_MAGIC)
 
 typedef struct tag_kherr_thread {
     khm_size nc_ctx;

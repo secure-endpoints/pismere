@@ -1,2 +1,2 @@
-#define VER_BUILDNUM  7005
-#define VER_BUILDSTR "kfw-3_2_0"
+#define VER_BUILDNUM  7006
+#define VER_BUILDSTR "kfw-3_2_1"
