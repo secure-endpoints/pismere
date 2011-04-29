@@ -313,6 +313,13 @@ one_addr(krb5_address *a)
     return(retstr);
 }
 
+/*
+ * LeashKRB5GetTickets() treats krbv5Context as an in/out variable.
+ * If the caller does not provide a krb5_context, one will be allocated.
+ * It is up to the caller to ensure that the context is eventually freed.
+ * A context can be returned even if the function returns an error.
+ */
+
 long
 not_an_API_LeashKRB5GetTickets(
     TICKETINFO * ticketinfo,
@@ -323,42 +330,38 @@ not_an_API_LeashKRB5GetTickets(
 #ifdef NO_KRB5
     return(0);
 #else
-    krb5_context	ctx;
-    krb5_ccache		cache;
+    krb5_context	ctx = 0;
+    krb5_ccache		cache = 0;
     krb5_error_code	code;
     krb5_principal	KRBv5Principal;
     krb5_flags		flags = 0;
     krb5_cc_cursor	KRBv5Cursor;
     krb5_creds		KRBv5Credentials;
-    krb5_ticket    *tkt=NULL;
-    int				StartMonth;
-    int				EndMonth;
-    int             RenewMonth;
-    int				StartDay;
-    int				EndDay;
-    int             RenewDay;
-    int             freeContextFlag;
-    char			StartTimeString[256];
-    char			EndTimeString[256];
-    char            RenewTimeString[256];
-    char			fill;
-    char			*ClientName;
-    char			*PrincipalName;
-    char			*sServerName;
-    char			Buffer[256];
-    char			Months[12][4] = {"Jan\0", "Feb\0", "Mar\0", "Apr\0", "May\0", "Jun\0", "Jul\0", "Aug\0", "Sep\0", "Oct\0", "Nov\0", "Dec\0"};
-    char			StartTime[16];
-    char			EndTime[16];
-    char            RenewTime[16];
-    char			temp[128];
-    char			*sPtr;
-    char            *ticketFlag;
-    LPCSTR          functionName;
+    krb5_ticket        *tkt=NULL;
+    int			StartMonth;
+    int			EndMonth;
+    int                 RenewMonth;
+    int			StartDay;
+    int			EndDay;
+    int                 RenewDay;
+    char		StartTimeString[256];
+    char		EndTimeString[256];
+    char                RenewTimeString[256];
+    char		fill;
+    char	       *ClientName;
+    char	       *PrincipalName;
+    char	       *sServerName;
+    char		Buffer[256];
+    char		Months[12][4] = {"Jan\0", "Feb\0", "Mar\0", "Apr\0", "May\0", "Jun\0", "Jul\0", "Aug\0", "Sep\0", "Oct\0", "Nov\0", "Dec\0"};
+    char		StartTime[16];
+    char		EndTime[16];
+    char                RenewTime[16];
+    char		temp[128];
+    char	       *sPtr;
+    char               *ticketFlag;
+    LPCSTR              functionName;
+    TicketList         *list = NULL;
 
-    TicketList* list = NULL;
-
-    ctx = NULL;
-    cache = NULL;
     if ( ticketinfo ) {
         ticketinfo->btickets = NO_TICKETS;
         ticketinfo->principal[0] = '\0';
@@ -377,7 +380,7 @@ not_an_API_LeashKRB5GetTickets(
         if (code != KRB5_FCC_NOFILE && code != KRB5_CC_NOTFOUND)
             Leash_krb5_error(code, "krb5_cc_set_flags()", 0, &ctx,
                                   &cache);
-        else if ((code == KRB5_FCC_NOFILE || code == KRB5_CC_NOTFOUND) && ctx != NULL)
+        else if ((code == KRB5_FCC_NOFILE || code == KRB5_CC_NOTFOUND))
         {
             if (cache != NULL)
                 pkrb5_cc_close(ctx, cache);
@@ -389,7 +392,7 @@ not_an_API_LeashKRB5GetTickets(
     {
         if (code != KRB5_FCC_NOFILE && code != KRB5_CC_NOTFOUND)
             Leash_krb5_error(code, "krb5_cc_get_principal()", 0, &ctx, &cache);
-        else if ((code == KRB5_FCC_NOFILE || code == KRB5_CC_NOTFOUND) && ctx != NULL)
+        else if ((code == KRB5_FCC_NOFILE || code == KRB5_CC_NOTFOUND))
         {
             if (cache != NULL)
                 pkrb5_cc_close(ctx, cache);
@@ -438,7 +441,6 @@ not_an_API_LeashKRB5GetTickets(
     if ((code = pkrb5_cc_start_seq_get(ctx, cache, &KRBv5Cursor)))
     {
         functionName = "krb5_cc_start_seq_get()";
-        freeContextFlag = 1;
         goto on_error;
     }
 
@@ -581,7 +583,9 @@ not_an_API_LeashKRB5GetTickets(
         list->theTicket = (char*) calloc(1, strlen(Buffer)+1);
         if (!list->theTicket)
         {
+#ifdef USE_MESSAGE_BOX
             MessageBox(NULL, "Memory Error", "Error", MB_OK);
+#endif /* USE_MESSAGE_BOX */
             return ENOMEM;
         }
         strcpy(list->theTicket, Buffer);
@@ -594,7 +598,9 @@ not_an_API_LeashKRB5GetTickets(
             list->tktEncType = (char*) calloc(1, strlen(Buffer)+1);
             if (!list->tktEncType)
             {
+#ifdef USE_MESSAGE_BOX
                 MessageBox(NULL, "Memory Error", "Error", MB_OK);
+#endif /* USE_MESSAGE_BOX */
                 return ENOMEM;
             }
             strcpy(list->tktEncType, Buffer);
@@ -609,7 +615,9 @@ not_an_API_LeashKRB5GetTickets(
         list->keyEncType = (char*) calloc(1, strlen(Buffer)+1);
         if (!list->keyEncType)
         {
+#ifdef USE_MESSAGE_BOX
             MessageBox(NULL, "Memory Error", "Error", MB_OK);
+#endif /* USE_MESSAGE_BOX */
             return ENOMEM;
         }
         strcpy(list->keyEncType, Buffer);
@@ -620,7 +628,9 @@ not_an_API_LeashKRB5GetTickets(
 				n++;
             list->addrList = calloc(1, n * sizeof(char *));
             if (!list->addrList) {
+#ifdef USE_MESSAGE_BOX
                 MessageBox(NULL, "Memory Error", "Error", MB_OK);
+#endif /* USE_MESSAGE_BOX */
                 return ENOMEM;
             }
             list->addrCount = n;
@@ -629,7 +639,9 @@ not_an_API_LeashKRB5GetTickets(
                 list->addrList[n] = (char*) calloc(1, strlen(Buffer)+1);
                 if (!list->addrList[n])
                 {
+#ifdef USE_MESSAGE_BOX
                     MessageBox(NULL, "Memory Error", "Error", MB_OK);
+#endif /* USE_MESSAGE_BOX */
                     return ENOMEM;
                 }
                 strcpy(list->addrList[n], Buffer);
@@ -671,7 +683,6 @@ not_an_API_LeashKRB5GetTickets(
         if ((code = pkrb5_cc_end_seq_get(ctx, cache, &KRBv5Cursor)))
         {
             functionName = "krb5_cc_end_seq_get()";
-            freeContextFlag = 1;
             goto on_error;
         }
 
@@ -682,14 +693,12 @@ not_an_API_LeashKRB5GetTickets(
         if ((code = pkrb5_cc_set_flags(ctx, cache, flags)))
         {
             functionName = "krb5_cc_set_flags()";
-            freeContextFlag = 1;
             goto on_error;
         }
     }
     else
     {
         functionName = "krb5_cc_next_cred()";
-        freeContextFlag = 1;
         goto on_error;
     }
 
@@ -702,8 +711,7 @@ not_an_API_LeashKRB5GetTickets(
     return(code);
 
  on_error:
-
-    Leash_krb5_error(code, functionName, freeContextFlag, &(*krbv5Context), &cache);
+    Leash_krb5_error(code, functionName, 0, &(*krbv5Context), &cache);
     return(code);
 #endif //!NO_KER5
 }
@@ -1009,25 +1017,26 @@ int Leash_krb5_initialize(krb5_context *ctx, krb5_ccache *cache)
     return(0);
 #else
 
-    LPCSTR          functionName;
-    int             freeContextFlag;
+    LPCSTR          functionName = NULL;
+    int             freeContextFlag = 0;
     krb5_error_code	rc;
     krb5_flags          flags;
 
     if (pkrb5_init_context == NULL)
         return 1;
 
-    if (*ctx == 0 && (rc = (*pkrb5_init_context)(ctx)))
-    {
-        functionName = "krb5_init_context()";
-        freeContextFlag = 0;
-        goto on_error;
+    if (*ctx == 0) {
+        if (rc = (*pkrb5_init_context)(ctx))
+        {
+            functionName = "krb5_init_context()";
+            goto on_error;
+        }
+        freeContextFlag = 1;
     }
 
     if (*cache == 0 && (rc = pkrb5_cc_default(*ctx, cache)))
     {
         functionName = "krb5_cc_default()";
-        freeContextFlag = 1;
         goto on_error;
     }
 #ifdef KRB5_TC_NOTICKET
@@ -1064,6 +1073,7 @@ Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
 #ifdef NO_KRB5
     return 0;
 #else
+#ifdef USE_MESSAGE_BOX
     char message[256];
     const char *errText;
     int krb5Error = ((int)(rc & 255));
@@ -1088,15 +1098,16 @@ Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
     MessageBox(NULL, message, "Kerberos Five", MB_OK | MB_ICONERROR |
                MB_TASKMODAL |
                MB_SETFOREGROUND);
-    if (FreeContextFlag == 1)
-    {
-        if (*ctx != NULL)
-        {
-            if (*cache != NULL) {
-                pkrb5_cc_close(*ctx, *cache);
-                *cache = NULL;
-            }
+#endif /* USE_MESSAGE_BOX */
 
+    if (*ctx != NULL)
+    {
+        if (*cache != NULL) {
+            pkrb5_cc_close(*ctx, *cache);
+            *cache = NULL;
+        }
+
+        if (FreeContextFlag) {
             pkrb5_free_context(*ctx);
             *ctx = NULL;
         }

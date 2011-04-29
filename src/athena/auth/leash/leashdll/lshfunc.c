@@ -127,10 +127,11 @@ leash_error_message(
         p += n;
         size -= n;
     }
+#ifdef USE_MESSAGE_BOX
     if ( displayMB )
         MessageBox(NULL, message, "Leash", MB_OK | MB_ICONERROR | MB_TASKMODAL |
                     MB_SETFOREGROUND);
-
+#endif /* USE_MESSAGE_BOX */
     if (rc5) return rc5;
     if (rc4) return rc4;
     if (rcL) return rcL;
@@ -1262,7 +1263,9 @@ not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo,
         list->theTicket = (char*) calloc(1, sizeof(buf));
         if (!list->theTicket)
         {
+#ifdef USE_MESSAGE_BOX
             MessageBox(NULL, "Memory Error", "Error", MB_OK);
+#endif /* USE_MESSAGE_BOX */
             return ENOMEM;
         }
 
@@ -1298,6 +1301,7 @@ cleanup:
 
     ticketinfo->btickets = newtickets;
 
+#ifdef USE_MESSAGE_BOX
     if (k_errno)
     {
         CHAR message[256];
@@ -1313,6 +1317,7 @@ cleanup:
         MessageBox(NULL, message, "Kerberos Four",
                    MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_SETFOREGROUND);
     }
+#endif /* USE_MESSAGE_BOX */
     return k_errno;
 #endif
 }
@@ -3554,7 +3559,7 @@ acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
 	ccname[cclen-1] = '\0';
     }
 
-    if ( ccname && strcmp(ccachename,ccname) ) {
+    if ( ccname && ccname[0] && strcmp(ccachename,ccname) ) {
 	SetEnvironmentVariable("KRB5CCNAME",ccname);
     }
 
@@ -3651,7 +3656,7 @@ acquire_tkt_for_princ(krb5_context context, krb5_principal desiredPrincipal,
 	}
     }
 
-    if ( ccname && strcmp(ccachename,ccname) ) {
+    if ( ccname && ccanme[0] && strcmp(ccachename,ccname) ) {
 	SetEnvironmentVariable("KRB5CCNAME",ccname);
     }
 
