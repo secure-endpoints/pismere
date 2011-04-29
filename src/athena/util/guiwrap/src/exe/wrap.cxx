@@ -13,7 +13,7 @@ class CFindInfo {
         char* title;
         char* wclass;
 
-        CFindItem(char* t, char* w):title(strdup(t)),wclass(strdup(w)) {}
+        CFindItem(char* t, char* w):title(_strdup(t)),wclass(_strdup(w)) {}
         ~CFindItem() { free(title); free(wclass); }
     };
     std::list<CFindItem*> items;
