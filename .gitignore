@@ -1,0 +1,9 @@
+/src/athena/auth/krb5
+*.obj
+*.ilk
+*.pdb
+*.lib
+*.dll
+*.exe
+*.chm
+rs_state.ini
