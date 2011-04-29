@@ -1,4 +1,36 @@
+# ignore the krb5 tree which is grafted from another repository
 /src/athena/auth/krb5
+
+# ignore object file build directories
+src/athena/auth/krbcc/src/CCacheLib/Sources/obj/
+src/athena/auth/krbcc/src/dll/obj/
+src/athena/auth/krbcc/src/exe/obj/
+src/athena/auth/krbcc/src/lib/obj/
+src/athena/auth/krbcc/src/test/obj/
+src/athena/auth/kuser/kdestroy/obj/
+src/athena/auth/kuser/kinit/obj/
+src/athena/auth/kuser/klist/obj/
+src/athena/auth/kuser/obj/
+src/athena/auth/leash/leashdll/obj/
+src/athena/util/guiwrap/src/exe/obj/
+src/athena/util/guiwrap/src/test/obj/
+src/athena/util/lib/delaydlls/src/lib/obj/
+src/athena/util/lib/delaydlls/src/test/dll/obj/
+src/athena/util/lib/delaydlls/src/test/exe/obj/
+src/athena/util/lib/getopt/obj/
+src/athena/util/loadfuncs/obj/
+src/athena/wshelper/wshelper/obj/
+src/athena/wshelper/wshload/obj/
+src/athena/wshelper/wshtest/obj/
+
+# ignore the target file tree
+src/target/
+
+src/athena/build.pl.log
+src/athena/auth/krbcc/src/dll/ccapi_c.c
+src/athena/auth/krbcc/src/exe/ccapi_s.c
+src/athena/auth/krbcc/src/inc/ccapi.h
+
 *.obj
 *.ilk
 *.pdb
