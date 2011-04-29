@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			KrbRealmHostMaintenance.h 
+//	File:			KrbRealmHostMaintenance.h
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	H file for KrbRealmHostMaintenance.cpp. Contains variables and functions 
+//	Description:	H file for KrbRealmHostMaintenance.cpp. Contains variables and functions
 //					for Kerberos Four and Five Properties
 //
 //	History:
@@ -35,9 +35,9 @@ class CKrbRealmHostMaintenance : public CPropertyPage
 private:
 	DECLARE_DYNCREATE(CKrbRealmHostMaintenance)
 	CHAR lineBuf[MAXLINE];
-	CString m_theAdminServerMarked; 
-	CString m_theAdminServer; 
-	BOOL m_isRealmListBoxInFocus;	
+	CString m_theAdminServerMarked;
+	CString m_theAdminServer;
+	BOOL m_isRealmListBoxInFocus;
 	BOOL m_isStart;
     BOOL m_initDnsKdcLookup;
     BOOL m_newDnsKdcLookup;

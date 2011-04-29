@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			LeashFileDialog.cpp 
+//	File:			LeashFileDialog.cpp
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:    CPP file for LeashFileDialog.h. Contains variables and functions 
+//	Description:    CPP file for LeashFileDialog.h. Contains variables and functions
 //					for the Leash File Dialog Box
 //
 //	History:
@@ -40,7 +40,7 @@ CLeashFileDialog::CLeashFileDialog(BOOL bOpenFileDialog, LPCTSTR lpszDefExt, LPC
 	m_ofn.lpstrFileTitle = m_lpstrFileTitle;
 	m_ofn.nMaxFileTitle = MAX_PATH;
 	*m_lpstrFileTitle = 0;
-	BOOL m_startup = TRUE; 
+	BOOL m_startup = TRUE;
 }
 
 
@@ -50,10 +50,10 @@ BEGIN_MESSAGE_MAP(CLeashFileDialog, CFileDialog)
 END_MESSAGE_MAP()
 
 
-BOOL CLeashFileDialog::OnInitDialog() 
+BOOL CLeashFileDialog::OnInitDialog()
 {
 	BOOL bRet = CFileDialog::OnInitDialog();
-	if (bRet == TRUE) 
+	if (bRet == TRUE)
 	{
 		GetParent()->GetDlgItem(IDOK)->SetWindowText("&OK");
 		//GetParent()->GetDlgItem(IDOK)->EnableWindow(FALSE);

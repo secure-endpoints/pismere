@@ -28,10 +28,10 @@
 
 class CLeashAboutBox : public CDialog
 {
-    BOOL m_missingFileError; 
+    BOOL m_missingFileError;
     DWORD SetVersionInfo(UINT id_ver, UINT id_copyright);
     BOOL GetModules95(DWORD processID, BOOL allModules = TRUE);
-    void GetModulesNT(DWORD processID, BOOL allModules = TRUE);	
+    void GetModulesNT(DWORD processID, BOOL allModules = TRUE);
     void HighlightFirstItem();
 
 // Construction

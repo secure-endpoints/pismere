@@ -13,7 +13,7 @@
 	".\Leash.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\Krb4AddToDomainRealmList.cpp : \
 	"..\..\krb4\include\com_err.h"\
@@ -23,7 +23,7 @@
 	".\Leash.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\Krb4AddToRealmHostList.cpp : \
 	"..\..\krb4\include\com_err.h"\
@@ -33,7 +33,7 @@
 	".\Leash.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\Krb4DomainRealmMaintenance.cpp : \
 	"..\..\krb5\src\include\com_err.h"\
@@ -57,7 +57,7 @@
 	".\Leash.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\Krb4EditDomainRealmList.cpp : \
 	"..\..\krb4\include\com_err.h"\
@@ -68,7 +68,7 @@
 	".\Leash.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\Krb4EditRealmHostList.cpp : \
 	"..\..\krb4\include\com_err.h"\
@@ -79,7 +79,7 @@
 	".\Leash.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\Krb4Properties.cpp : \
 	"..\..\..\wshelper\include\arpa\nameser.h"\
@@ -97,7 +97,7 @@
 	".\lglobals.h"\
 	".\reminder.h"\
 	".\StdAfx.h"\
-	
+
 
 .\Krb4RealmHostMaintenance.cpp : \
 	"..\..\krb4\include\com_err.h"\
@@ -116,7 +116,7 @@
 	".\Leash.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\Krb5Properties.cpp : \
 	"..\..\krb5\src\include\com_err.h"\
@@ -132,7 +132,7 @@
 	".\LeashFileDialog.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\KrbAddHostServer.cpp : \
 	"..\..\krb4\include\com_err.h"\
@@ -142,7 +142,7 @@
 	".\Leash.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\KrbAddRealm.cpp : \
 	"..\..\krb4\include\com_err.h"\
@@ -152,7 +152,7 @@
 	".\Leash.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\KrbConfigOptions.cpp : \
 	"..\..\..\wshelper\include\arpa\nameser.h"\
@@ -181,7 +181,7 @@
 	".\lglobals.h"\
 	".\reminder.h"\
 	".\StdAfx.h"\
-	
+
 
 .\KrbDomainRealmMaintenance.cpp : \
 	"..\..\krb5\src\include\com_err.h"\
@@ -204,7 +204,7 @@
 	".\Leash.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\KrbEditHostServer.cpp : \
 	"..\..\krb4\include\com_err.h"\
@@ -215,7 +215,7 @@
 	".\Leash.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\KrbEditRealm.cpp : \
 	"..\..\krb4\include\com_err.h"\
@@ -226,7 +226,7 @@
 	".\Leash.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\KrbProperties.cpp : \
 	"..\..\..\wshelper\include\arpa\nameser.h"\
@@ -255,7 +255,7 @@
 	".\reminder.h"\
 	".\StdAfx.h"\
 	".\KrbMiscConfigOpt.h"\
-	
+
 
 .\KrbRealmHostMaintenance.cpp : \
 	"..\..\krb5\src\include\com_err.h"\
@@ -283,7 +283,7 @@
 	".\lglobals.h"\
 	".\MainFrm.h"\
 	".\StdAfx.h"\
-	
+
 
 .\Leash.cpp : \
 	"..\..\..\wshelper\include\mitwhich.h"\
@@ -299,7 +299,7 @@
 	".\MainFrm.h"\
 	".\reminder.h"\
 	".\StdAfx.h"\
-	
+
 
 .\Leash.rc : \
 	".\res\Leash.rc2"\
@@ -338,7 +338,7 @@
 	".\res\refresh_disabled.ico"\
 	".\res\sync_disabled.ico"\
 	".\res\Leash_toolbar.bmp"\
-	
+
 
 .\LeashAboutBox.cpp : \
 	"..\..\krb5\src\include\com_err.h"\
@@ -349,7 +349,7 @@
 	".\lglobals.h"\
 	".\reminder.h"\
 	".\StdAfx.h"\
-	
+
 
 .\LeashDebugWindow.cpp : \
 	"..\..\krb5\src\include\com_err.h"\
@@ -359,7 +359,7 @@
 	".\LeashDebugWindow.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\LeashDoc.cpp : \
 	"..\..\krb5\src\include\com_err.h"\
@@ -369,7 +369,7 @@
 	".\LeashDoc.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\LeashFileDialog.cpp : \
 	"..\..\krb5\src\include\com_err.h"\
@@ -379,12 +379,12 @@
 	".\LeashFileDialog.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\LeashFrame.cpp : \
 	".\LeashFrame.h"\
 	".\StdAfx.h"\
-	
+
 
 .\LeashMessageBox.cpp : \
 	"..\..\krb5\src\include\com_err.h"\
@@ -394,7 +394,7 @@
 	".\LeashMessageBox.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\LeashProperties.cpp : \
 	"..\..\krb5\src\include\com_err.h"\
@@ -407,7 +407,7 @@
 	".\lglobals.h"\
 	".\reminder.h"\
 	".\StdAfx.h"\
-	
+
 
 .\LeashView.cpp : \
 	"..\..\krb5\src\include\com_err.h"\
@@ -434,7 +434,7 @@
 	".\MainFrm.h"\
 	".\reminder.h"\
 	".\StdAfx.h"\
-	
+
 
 .\lglobals.cpp : \
 	"..\..\krb5\src\include\com_err.h"\
@@ -443,7 +443,7 @@
 	".\Leash.h"\
 	".\lglobals.h"\
 	".\StdAfx.h"\
-	
+
 
 .\MainFrm.cpp : \
 	"..\..\krb5\src\include\com_err.h"\
@@ -454,11 +454,11 @@
 	".\lglobals.h"\
 	".\MainFrm.h"\
 	".\StdAfx.h"\
-	
+
 
 .\StdAfx.cpp : \
 	".\StdAfx.h"\
-	
+
 
 !if 0
 !ifdef MIT_ONLY
@@ -466,7 +466,7 @@
 	"..\..\..\vs\include\v.h"\
 	"..\..\..\vs\include\vs.h"\
 	"..\..\..\vs\include\vs_nt.h"\
-	
+
 !endif
 !endif
 .\KrbMiscConfigOpt.cpp : \
@@ -478,4 +478,4 @@
 	".\lglobals.h"\
 	".\reminder.h"\
 	".\StdAfx.h"\
-	
+

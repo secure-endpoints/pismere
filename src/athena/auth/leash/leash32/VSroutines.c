@@ -6,7 +6,7 @@
 #include <vs.h>
 
 #define ININAME	"leash.ini"
-	
+
 int VScheckVersion(HWND hWnd, HANDLE hThisInstance)
 {
     VS_Request		vrequest;
@@ -30,11 +30,11 @@ int VScheckVersion(HWND hWnd, HANDLE hThisInstance)
     size = GetFileVersionInfoSize((LPSTR) szFilename, &hVersionInfoID);
     hVersionInfo = GlobalAlloc(GHND, size);
     lpVersionInfo = GlobalLock(hVersionInfo);
-    retval = GetFileVersionInfo(szFilename, hVersionInfoID, size, 
+    retval = GetFileVersionInfo(szFilename, hVersionInfoID, size,
                                 lpVersionInfo);
-    retval = VerQueryValue(lpVersionInfo, "\\VarFileInfo\\Translation", 
+    retval = VerQueryValue(lpVersionInfo, "\\VarFileInfo\\Translation",
                            (LPSTR FAR *)&lpLangInfo, &dumint);
-    wsprintf(szVerQ, "\\StringFileInfo\\%04x%04x\\", 
+    wsprintf(szVerQ, "\\StringFileInfo\\%04x%04x\\",
              LOWORD(*lpLangInfo), HIWORD(*lpLangInfo));
     cp = szVerQ + lstrlen(szVerQ);
     lstrcpy(cp, "ProductName");
@@ -43,7 +43,7 @@ int VScheckVersion(HWND hWnd, HANDLE hThisInstance)
 
     retval = VerQueryValue(lpVersionInfo, szVerQ, &lpAppVersion, &dumint);
     hcursor = SetCursor(LoadCursor((HINSTANCE)NULL, IDC_WAIT));
-    vrequest = VSFormRequest(lpAppName, lpAppVersion, ININAME, NULL, hWnd, 
+    vrequest = VSFormRequest(lpAppName, lpAppVersion, ININAME, NULL, hWnd,
                              V_CHECK_AND_LOG);
     if ((ok_to_continue = (ReqStatus(vrequest) != V_E_CANCEL))
         && v_complain((status = VSProcessRequest(vrequest)), ININAME))

@@ -4,20 +4,20 @@
 /////////////////////////////////////////////////////////////////////////////
 // CLeashDragListBox
 
-//#include "AFXCMN.h" 
+//#include "AFXCMN.h"
 
 class CLeashDragListBox : public CDragListBox
 {
 	//DECLARE_DYNAMIC(CDragListBoxCLeashDragListBox)
 
 	CListBox* m_pOtherListBox;
-	CPropertyPage* m_pPage; 
+	CPropertyPage* m_pPage;
 
 // Constructors
 public:
 	CLeashDragListBox();
 	void initOtherListbox(CPropertyPage* pPage, CListBox* pOtherListBox);
-	
+
 // Attributes
 	//int ItemFromPt(CPoint pt, BOOL bAutoScroll = TRUE) const;
 

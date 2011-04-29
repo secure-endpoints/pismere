@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			Krb5Properties.h 
+//	File:			Krb5Properties.h
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	H file for Krb5Properties.cpp. Contains variables and functions 
+//	Description:	H file for Krb5Properties.cpp. Contains variables and functions
 //					for Kerberos Five Properties
 //
 //	History:
@@ -30,8 +30,8 @@ class CKrb5ConfigFileLocation : public CPropertyPage
 // Construction
 private:
 	DECLARE_DYNCREATE(CKrb5ConfigFileLocation)
-	CString m_initConfigFile; 
-	CString m_initTicketFile; 
+	CString m_initConfigFile;
+	CString m_initTicketFile;
 	CString m_newConfigFile;
 	CString m_newTicketFile;
 	BOOL m_startupPage1;
@@ -78,7 +78,7 @@ protected:
 class CKrb5ConfigOptions : public CPropertyPage
 {
 // Construction
-private:	
+private:
 	DECLARE_DYNCREATE(CKrb5ConfigOptions)
 	INT m_initForwardable;
 	INT m_newForwardable;

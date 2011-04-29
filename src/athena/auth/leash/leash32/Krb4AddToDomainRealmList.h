@@ -1,8 +1,8 @@
-//	File:			Krb4AddToDomainRealmList.h 
+//	File:			Krb4AddToDomainRealmList.h
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	H file for Krb4AddToDomainRealmList.cpp. Contains variables and functions 
+//	Description:	H file for Krb4AddToDomainRealmList.cpp. Contains variables and functions
 //					for Kerberos Four Properties
 //
 //	History:
@@ -38,7 +38,7 @@ public:
 
 	CString GetNewRealm() {return m_newRealm;}
 	CString GetNewDomainHost() {return m_newDomainHost;}
-	
+
 // Dialog Data
 	//{{AFX_DATA(CKrb4AddToDomainRealmList)
 	enum { IDD = IDD_KRB4_ADD_DOMAINREALMNAME };

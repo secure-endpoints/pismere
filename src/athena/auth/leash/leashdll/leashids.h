@@ -26,7 +26,7 @@
 #define ID_PRINCIPAL			301
 #define ID_OLDPASSWORD			302
 #define ID_CONFIRMPASSWORD1		303
-#define ID_CONFIRMPASSWORD2		304   
+#define ID_CONFIRMPASSWORD2		304
 #define ID_PICFRAME				305
 
 #define ID_PRINCCAPTION			311
@@ -40,7 +40,7 @@
 #define ID_RESTART			351
 
 #define ID_CLOSEME			380
-                            
+
 // *** About dialog stuff
 #define ID_LEASH_CPYRT		400
 #define ID_LEASH_AUTHOR		401
@@ -48,7 +48,7 @@
 #define ID_KERB_AUTHOR		403
 #define ID_LEGALESE			404
 #define ID_ASSISTANCE		405
-                            
+
 // *** Keyboard accelerator crud
 #define ID_HELP					1000
 #define ID_CONTEXTSENSITIVEHELP	1001

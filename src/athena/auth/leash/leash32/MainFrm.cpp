@@ -3,8 +3,8 @@
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:    CPP file for MainFrm.h. Contains variables and functions 
-//					for Leash 
+//	Description:    CPP file for MainFrm.h. Contains variables and functions
+//					for Leash
 //
 //	History:
 //
@@ -38,7 +38,7 @@ CToolBar   CMainFrame::m_wndToolBar;
 CImageList CMainFrame::m_imageList;
 CImageList CMainFrame::m_disabledImageList;
 BOOL	   CMainFrame::m_isMinimum;
-BOOL       CMainFrame::m_isBeingResized; 
+BOOL       CMainFrame::m_isBeingResized;
 int        CMainFrame::m_whatSide;
 
 IMPLEMENT_DYNCREATE(CMainFrame, CLeashFrame)
@@ -90,14 +90,14 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (CLeashFrame::OnCreate(lpCreateStruct) == -1)
 		return -1;
-	
-    ShowWindow(SW_HIDE);
-        
-/* NT4 and NT5 aren't shipped with a version of MFC that supports 
-// 'CreateEx()' as of 2/1/99
-#if _MFC_VER > 0x0421 
 
-	if (!m_wndToolBar.CreateEx(this) || 
+    ShowWindow(SW_HIDE);
+
+/* NT4 and NT5 aren't shipped with a version of MFC that supports
+// 'CreateEx()' as of 2/1/99
+#if _MFC_VER > 0x0421
+
+	if (!m_wndToolBar.CreateEx(this) ||
 		!m_wndToolBar.LoadToolBar(IDR_MAINFRAME))
 	{
 		TRACE0("Failed to create toolbar\n");
@@ -106,25 +106,25 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 #else
 
-	if (!m_wndToolBar.Create(this) || 
+	if (!m_wndToolBar.Create(this) ||
 		!m_wndToolBar.LoadToolBar(IDR_MAINFRAME))
 	{
 		TRACE0("Failed to create toolbar\n");
 		return -1;      // fail to create
 	}
 
-#endif 	
+#endif
 */
 
-	if (!m_wndToolBar.Create(this) || 
+	if (!m_wndToolBar.Create(this) ||
 		!m_wndToolBar.LoadToolBar(IDR_MAINFRAME))
 	{
-		MessageBox("There is problem creating the Leash Toolbar!", 
+		MessageBox("There is problem creating the Leash Toolbar!",
                    "Error", MB_OK);
         TRACE0("Failed to create toolbar\n");
 		return -1;      // fail to create
 	}
-	
+
     // Create an image list of Icons so that we can use the best color
     // depth available on the system and then assign this new list to
     // be used instead of the single bitmap file assigned to the toolbar
@@ -149,19 +149,19 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
         ilcColor = ILC_COLOR16;
     else if ( bitsPerPixel >= 8 )
         ilcColor = ILC_COLOR8;
-    else 
+    else
         ilcColor = ILC_COLOR;
 
     m_imageList.Create(18, 18, ilcColor | ILC_MASK, 8, 4);
     m_imageList.SetBkColor(GetSysColor(COLOR_BTNFACE));
 
-    hIcon[0] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_INIT); 
-    hIcon[1] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_RENEW); 
-    hIcon[2] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_IMPORT); 
-    hIcon[3] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_DESTROY); 
-    hIcon[4] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_PASSWORD); 
-    hIcon[5] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_REFRESH); 
-    hIcon[6] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_SYNC); 
+    hIcon[0] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_INIT);
+    hIcon[1] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_RENEW);
+    hIcon[2] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_IMPORT);
+    hIcon[3] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_DESTROY);
+    hIcon[4] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_PASSWORD);
+    hIcon[5] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_REFRESH);
+    hIcon[6] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_SYNC);
 
     for (n = 0; n < 7; n++)
     {
@@ -172,13 +172,13 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
     m_disabledImageList.Create(18, 18, ilcColor | ILC_MASK, 8, 4);
     m_disabledImageList.SetBkColor(GetSysColor(COLOR_INACTIVECAPTIONTEXT));
 
-    hIcon[0] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_INIT_DISABLED); 
-    hIcon[1] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_RENEW_DISABLED); 
-    hIcon[2] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_IMPORT_DISABLED); 
-    hIcon[3] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_DESTROY_DISABLED); 
-    hIcon[4] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_PASSWORD_DISABLED); 
-    hIcon[5] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_REFRESH_DISABLED); 
-    hIcon[6] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_SYNC_DISABLED); 
+    hIcon[0] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_INIT_DISABLED);
+    hIcon[1] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_RENEW_DISABLED);
+    hIcon[2] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_IMPORT_DISABLED);
+    hIcon[3] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_DESTROY_DISABLED);
+    hIcon[4] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_PASSWORD_DISABLED);
+    hIcon[5] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_REFRESH_DISABLED);
+    hIcon[6] = AfxGetApp()->LoadIcon(IDI_TOOLBAR_SYNC_DISABLED);
 
     for (n = 0; n < 7; n++)
     {
@@ -190,7 +190,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		!m_wndStatusBar.SetIndicators(indicators,
 		  (CLeashApp::m_hAfsDLL ? 4 : 3)))
 	{
-		MessageBox("There is problem creating the Leash Status Bar!", 
+		MessageBox("There is problem creating the Leash Status Bar!",
                    "Error", MB_OK);
         TRACE0("Failed to create status bar\n");
 		return -1;      // fail to create
@@ -232,10 +232,10 @@ BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 
     CString strText = AfxGetApp()->GetProfileString(CLeashFrame::s_profileHeading,
                                                     CLeashFrame::s_profileRect);
-    if (!strText.IsEmpty()) 
+    if (!strText.IsEmpty())
     {
         CRect rect;
-        
+
         rect.left = atoi((const char*) strText);
         rect.top = atoi((const char*) strText + 5);
         rect.right = atoi((const char*) strText + 10);
@@ -255,7 +255,7 @@ BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
         if ( cs.cy <= 0 )
             cs.cy = CLeashFrame::s_rectDefault.bottom;
     }
-    else 
+    else
     {
         cs.cx = CLeashFrame::s_rectDefault.right;
         cs.cy = CLeashFrame::s_rectDefault.bottom;
@@ -286,7 +286,7 @@ BOOL CMainFrame::PreCreateWindow(CREATESTRUCT& cs)
 
 BOOL CMainFrame::ShowTaskBarButton(BOOL bVisible)
 {
-    if (!m_bOwnerCreated) 
+    if (!m_bOwnerCreated)
         return FALSE;
 
     if (bVisible) {
@@ -299,7 +299,7 @@ BOOL CMainFrame::ShowTaskBarButton(BOOL bVisible)
         ShowWindow(SW_SHOW);
     }
     return TRUE;
-} 
+}
 
 /////////////////////////////////////////////////////////////////////////////
 // CMainFrame diagnostics
@@ -309,7 +309,7 @@ void CMainFrame::AssertValid() const
 {
 	CLeashFrame::AssertValid();
 }
-	
+
 void CMainFrame::Dump(CDumpContext& dc) const
 {
 	CLeashFrame::Dump(dc);
@@ -320,14 +320,14 @@ void CMainFrame::Dump(CDumpContext& dc) const
 /////////////////////////////////////////////////////////////////////////////
 // CMainFrame message handlers
 
-void CMainFrame::OnResetWindowSize() 
+void CMainFrame::OnResetWindowSize()
 {
     WINDOWPLACEMENT wndpl;
 	wndpl.length = sizeof(WINDOWPLACEMENT);
-	
+
     if (!GetWindowPlacement(&wndpl))
     {
-        MessageBox("There is a problem getting Leash Window size!", 
+        MessageBox("There is a problem getting Leash Window size!",
                    "Error", MB_OK);
         return;
     }
@@ -337,15 +337,15 @@ void CMainFrame::OnResetWindowSize()
 	m_whatSide = SKIP_MINSIZE;
 
     if (!SetWindowPlacement(&wndpl))
-    { 
-        MessageBox("There is a problem setting Leash Window size!", 
+    {
+        MessageBox("There is a problem setting Leash Window size!",
                    "Error", MB_OK);
     }
 
 	m_whatSide = RESET_MINSIZE;
 }
 
-void CMainFrame::OnSizing(UINT fwSide, LPRECT pRect) 
+void CMainFrame::OnSizing(UINT fwSide, LPRECT pRect)
 { // Keeps track of Leash window size for function CMainFrame::RecalcLayout
 	m_winRectLeft = pRect->left;
 	m_winRectTop = pRect->top;
@@ -354,26 +354,26 @@ void CMainFrame::OnSizing(UINT fwSide, LPRECT pRect)
 
 	if (m_whatSide)
 	  m_whatSide = fwSide;
-	
+
 	CLeashFrame::OnSizing(fwSide, pRect);
 }
 
-void CMainFrame::RecalcLayout(BOOL bNotify) 
-{ // MINSIZE - Insurance that we have a minimum Leash window size 
-	int width = MIN_RIGHT - MIN_LEFT; 
-	int height = MIN_BOTTOM - MIN_TOP;	
+void CMainFrame::RecalcLayout(BOOL bNotify)
+{ // MINSIZE - Insurance that we have a minimum Leash window size
+	int width = MIN_RIGHT - MIN_LEFT;
+	int height = MIN_BOTTOM - MIN_TOP;
 
     BOOL change = FALSE;
 	WINDOWPLACEMENT wndpl;
 	wndpl.length = sizeof(WINDOWPLACEMENT);
-	    
+
     if (!GetWindowPlacement(&wndpl))
     {
-        MessageBox("There is a problem getting Leash Window size!", 
+        MessageBox("There is a problem getting Leash Window size!",
                    "Error", MB_OK);
         return;
     }
-	
+
 	if (m_whatSide)
 	{
 		if ((m_winRectRight - m_winRectLeft) < width)
@@ -392,26 +392,26 @@ void CMainFrame::RecalcLayout(BOOL bNotify)
                 wndpl.rcNormalPosition.top = wndpl.rcNormalPosition.bottom - height;
                 change = TRUE;
 			} else if (m_whatSide == BOTTOM_SIDE) {
-                wndpl.rcNormalPosition.bottom = wndpl.rcNormalPosition.top + height;		
+                wndpl.rcNormalPosition.bottom = wndpl.rcNormalPosition.top + height;
                 change = TRUE;
             }
 		}
 	}
-	
+
     if ( change ) {
         if (!SetWindowPlacement(&wndpl))
         {
-            MessageBox("There is a problem setting Leash Window size!", 
+            MessageBox("There is a problem setting Leash Window size!",
                         "Error", MB_OK);
         }
     }
     m_isBeingResized = TRUE;
-        
+
     CLeashFrame::RecalcLayout(bNotify);
 }
 
 
-void CMainFrame::OnGetMinMaxInfo(MINMAXINFO FAR* lpMMI) 
+void CMainFrame::OnGetMinMaxInfo(MINMAXINFO FAR* lpMMI)
 {
     lpMMI->ptMinTrackSize.x = 650;
     lpMMI->ptMinTrackSize.y = 240;
@@ -423,7 +423,7 @@ void CMainFrame::OnClose(void)
     CLeashFrame::OnClose();
 }
 
-LRESULT CMainFrame::WindowProc(UINT message, WPARAM wParam, LPARAM lParam) 
+LRESULT CMainFrame::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
     BOOL oldMin = m_isMinimum;
  	switch(message)

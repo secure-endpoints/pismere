@@ -21,7 +21,7 @@ CLeashDragListBox::~CLeashDragListBox()
 
 void CLeashDragListBox::initOtherListbox(CPropertyPage* pPage, CListBox* pOtherListBox)
 {
-	m_pPage = pPage;  
+	m_pPage = pPage;
 	m_pOtherListBox = pOtherListBox;
 }
 
@@ -78,44 +78,44 @@ void CLeashDragListBox::Dropped(int nSrcIndex, CPoint pt)
 	SetCurSel(nDestIndex);
 
 	// Save new order of items to profile linklist
-	char theSection[REALM_SZ + 1];								 
-	const char*  adminServer[] = {"realms", theSection, ADMIN_SERVER, NULL}; 
-	const char* Section[] = {"realms", theSection, NULL}; 
-	const char** adminServ = adminServer;	
+	char theSection[REALM_SZ + 1];
+	const char*  adminServer[] = {"realms", theSection, ADMIN_SERVER, NULL};
+	const char* Section[] = {"realms", theSection, NULL};
+	const char** adminServ = adminServer;
 	const char** section = Section;
-	const char* valueSection[] = {"realms", theSection, "kdc", NULL}; 
+	const char* valueSection[] = {"realms", theSection, "kdc", NULL};
 	const char** valueSec = valueSection;
 	CString theValue;
 	CHAR hostServer[MAX_HSTNM];
 
 	if (LB_ERR == m_pOtherListBox->GetText(m_pOtherListBox->GetCurSel(), theSection))
       ASSERT(0);
-	
-	long retval = pprofile_rename_section(CLeashApp::m_krbv5_profile, 
+
+	long retval = pprofile_rename_section(CLeashApp::m_krbv5_profile,
 										   section, NULL);
-	if (retval) 
+	if (retval)
 	{
 		MessageBox("Dropped::There is on error, profile will not be saved!!!\
-                   \nIf this error persist, contact your administrator.", 
+                   \nIf this error persist, contact your administrator.",
 				   "Leash", MB_OK);
 		return;
 	}
 
-	retval = pprofile_add_relation(CLeashApp::m_krbv5_profile, 
+	retval = pprofile_add_relation(CLeashApp::m_krbv5_profile,
 								    section, NULL);
-	if (retval) 
+	if (retval)
 	{
 		MessageBox("Dropped::There is on error, profile will not be saved!!!\
-                    \nIf this error persist, contact your administrator.", 
+                    \nIf this error persist, contact your administrator.",
 				   "Leash", MB_OK);
 		return;
 	}
-	
+
 	for (INT maxItems = GetCount(), item = 0; item < maxItems; item++)
 	{
 		GetText(item, hostServer);
 		//strcpy(hostServer, theValue);
-		
+
 		if (strstr(hostServer, ADMIN_SERVER))
 		{
 			char* pAdmin = strchr(hostServer, ' ');
@@ -124,23 +124,23 @@ void CLeashDragListBox::Dropped(int nSrcIndex, CPoint pt)
 			else
 			  ASSERT(0);
 
-			retval = pprofile_add_relation(CLeashApp::m_krbv5_profile, 
+			retval = pprofile_add_relation(CLeashApp::m_krbv5_profile,
 											adminServ, hostServer);
-			if (retval) 
+			if (retval)
 			{
 				MessageBox("Dropped::There is on error, profile will not be saved!!!\
-                           \nIf this error persist, contact your administrator.", 
+                           \nIf this error persist, contact your administrator.",
 						   "Leash", MB_OK);
 				return;
 			}
 		}
 
-		retval = pprofile_add_relation(CLeashApp::m_krbv5_profile, 
+		retval = pprofile_add_relation(CLeashApp::m_krbv5_profile,
 										valueSec, hostServer);
-		if (retval) 
+		if (retval)
 		{
 			MessageBox("Dropped::There is on error, profile will not be saved!!!\
-                       \nIf this error persist, contact your administrator.", 
+                       \nIf this error persist, contact your administrator.",
 					   "Leash", MB_OK);
 			return;
 		}

@@ -116,9 +116,9 @@ void CAfsProperties::OnRadioAfsDisabled()
 void CAfsProperties::OnHelp()
 {
 #ifdef CALL_HTMLHELP
-    AfxGetApp()->HtmlHelp(HID_AFS_PROPERTIES_COMMAND); 	
+    AfxGetApp()->HtmlHelp(HID_AFS_PROPERTIES_COMMAND);
 #else
-    AfxGetApp()->WinHelp(HID_AFS_PROPERTIES_COMMAND); 	
+    AfxGetApp()->WinHelp(HID_AFS_PROPERTIES_COMMAND);
 #endif
 }
 

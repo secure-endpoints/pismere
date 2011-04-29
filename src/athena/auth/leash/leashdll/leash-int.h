@@ -44,8 +44,8 @@ long
 Leash_int_kinit_ex(
     krb5_context ctx,
     HWND hParent,
-    char * principal, 
-    char * password, 
+    char * principal,
+    char * password,
     int lifetime,
     int forwardable,
     int proxiable,
@@ -64,8 +64,8 @@ Leash_int_checkpwd(
 
 long
 Leash_int_changepwd(
-    char * principal, 
-    char * password, 
+    char * principal,
+    char * password,
     char * newpassword,
     char** result_string,
     int    displayErrors
@@ -80,7 +80,7 @@ int
 Leash_krb5_kinit(
     krb5_context,
     HWND hParent,
-    char * principal_name, 
+    char * principal_name,
     char * password,
     krb5_deltat lifetime,
     DWORD       forwardable,
@@ -94,7 +94,7 @@ long
 Leash_convert524(
     krb5_context ctx
     );
-    
+
 int
 Leash_afs_unlog(
     void
@@ -102,13 +102,13 @@ Leash_afs_unlog(
 
 int
 Leash_afs_klog(
-    char *, 
-    char *, 
-    char *, 
+    char *,
+    char *,
+    char *,
     int
     );
 
-int 
+int
 LeashKRB5_renew(void);
 
 LONG
@@ -159,7 +159,7 @@ BOOL GetSecurityLogonSessionData(PSECURITY_LOGON_SESSION_DATA * ppSessionData);
 BOOL IsKerberosLogon(VOID);
 
 #ifndef NO_KRB5
-int Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName, 
+int Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
                      int FreeContextFlag, krb5_context *ctx,
                      krb5_ccache *cache);
 int Leash_krb5_initialize(krb5_context *, krb5_ccache *);
@@ -302,7 +302,7 @@ cc_free_NC_info,
 );
 #define CCAPI_DLL   "krbcc32.dll"
 
-/* The following definitions are summarized from KRB4, KRB5, Leash32, and 
+/* The following definitions are summarized from KRB4, KRB5, Leash32, and
  * Leashw32 modules.  They are current as of KfW 2.6.2.  There is no
  * guarrantee that changes to other modules will be updated in this list.
  */

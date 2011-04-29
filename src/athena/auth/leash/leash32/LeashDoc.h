@@ -3,8 +3,8 @@
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:    H file for LeashDoc.cpp. Contains variables and functions 
-//					for Leash 
+//	Description:    H file for LeashDoc.cpp. Contains variables and functions
+//					for Leash
 //
 //	History:
 //

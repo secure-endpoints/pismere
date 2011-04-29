@@ -20,7 +20,7 @@ CKrbAddHostServer::CKrbAddHostServer(CWnd* pParent /*=NULL*/)
 {
 	m_newHost = _T("");
 	m_startup = TRUE;
-	
+
 	//{{AFX_DATA_INIT(CKrbAddHostServer)
 		// NOTE: the ClassWizard will add member initialization here
 	//}}AFX_DATA_INIT
@@ -46,32 +46,32 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CKrbAddHostServer message handlers
 
-void CKrbAddHostServer::OnOK() 
+void CKrbAddHostServer::OnOK()
 {
 	m_newHost.TrimLeft();
 	m_newHost.TrimRight();
-	
+
 	if (m_newHost.IsEmpty())
 	{ // stay
-		MessageBox("OnOK:: Server Hosting a KDC must be filled in!", 
+		MessageBox("OnOK:: Server Hosting a KDC must be filled in!",
                     "Error", MB_OK);
 	}
 	else if (-1 != m_newHost.Find(' '))
 	{ // stay
 		MessageBox("OnOK::Illegal space found!", "Error", MB_OK);
 	}
-	else	
-	  CDialog::OnOK(); // exit	
+	else
+	  CDialog::OnOK(); // exit
 }
 
-void CKrbAddHostServer::OnChangeEditKdcHost() 
+void CKrbAddHostServer::OnChangeEditKdcHost()
 {
 	if (!m_startup)
 	  GetDlgItemText(IDC_EDIT_KDC_HOST, m_newHost);
 }
 
-void CKrbAddHostServer::OnShowWindow(BOOL bShow, UINT nStatus) 
+void CKrbAddHostServer::OnShowWindow(BOOL bShow, UINT nStatus)
 {
 	CDialog::OnShowWindow(bShow, nStatus);
-	m_startup = FALSE;	
+	m_startup = FALSE;
 }

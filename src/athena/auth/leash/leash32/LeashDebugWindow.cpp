@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			LeashDebugWindow.cpp  
+//	File:			LeashDebugWindow.cpp
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	CPP file for LeashDebugWindow.h. Contains variables and functions 
+//	Description:	CPP file for LeashDebugWindow.h. Contains variables and functions
 //					for the Leash Debug Window
 //
 //	History:
@@ -66,122 +66,122 @@ END_MESSAGE_MAP()
 // CLeashDebugWindow message handlers
 
 
-BOOL CLeashDebugWindow::Create(const LPCSTR debugFilePath) 
+BOOL CLeashDebugWindow::Create(const LPCSTR debugFilePath)
 {
 	m_debugFilePath = debugFilePath;
-	return CDialog::Create(CLeashDebugWindow::IDD);	
+	return CDialog::Create(CLeashDebugWindow::IDD);
 }
 
 
-void CLeashDebugWindow::OnCancel()  
+void CLeashDebugWindow::OnCancel()
 {
-	if (m_pView != NULL) 
+	if (m_pView != NULL)
 	{
-		CWinApp* pApp; 
+		CWinApp* pApp;
 		pApp = AfxGetApp();
-		pApp->WriteProfileInt("Settings", "DebugWindow", FALSE_FLAG); 
-		m_pView->PostMessage(WM_GOODBYE, IDCANCEL);	// modeless case 
+		pApp->WriteProfileInt("Settings", "DebugWindow", FALSE_FLAG);
+		m_pView->PostMessage(WM_GOODBYE, IDCANCEL);	// modeless case
         pset_krb_debug(OFF);
 	    pset_krb_ap_req_debug(OFF);
     }
-	else 
+	else
 	{
 		CDialog::OnCancel(); // modal case
 	}
 }
 
-void CLeashDebugWindow::OnOK() 
+void CLeashDebugWindow::OnOK()
 {
-	if (m_pView != NULL) 
+	if (m_pView != NULL)
 	{
-		// modeless case 
+		// modeless case
 		UpdateData(TRUE);
 		m_pView->PostMessage(WM_GOODBYE, IDOK);
 	}
-	else 
+	else
 	{
 		CDialog::OnOK(); // modal case
 	}
 }
 
-BOOL CLeashDebugWindow::OnInitDialog() 
+BOOL CLeashDebugWindow::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-	
-	// Set Debug flags 
+
+	// Set Debug flags
 	pset_krb_debug(ON); //(int)m_debugListBox.GetSafeHwnd()
-    pset_krb_ap_req_debug(ON);	
-	
-	if (*m_debugFilePath != 0) 
+    pset_krb_ap_req_debug(ON);
+
+	if (*m_debugFilePath != 0)
 	  SetDlgItemText(IDC_LOG_FILE_LOCATION_TEXT, m_debugFilePath);
     else
 	  SetDlgItemText(IDC_LOG_FILE_LOCATION_TEXT, "Not Available");
 
 	if (!m_debugListBox.GetCount())
 	  GetDlgItem(IDC_COPY_TO_CLIPBOARD)->EnableWindow(FALSE);
-	
+
 	m_CopyButton = FALSE;
-	
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	              // EXCEPTION: OCX Property Pages should return FALSE
 }
 
-void CLeashDebugWindow::OnShowWindow(BOOL bShow, UINT nStatus) 
+void CLeashDebugWindow::OnShowWindow(BOOL bShow, UINT nStatus)
 {
 	CDialog::OnShowWindow(bShow, nStatus);
 }
 
-void CLeashDebugWindow::OnCopyToClipboard() 
+void CLeashDebugWindow::OnCopyToClipboard()
 {
     if (!OpenClipboard())
 	{
         MessageBox("Unable to open Clipboard!", "Error", MB_OK);
-		return; 
+		return;
 	}
-    
-	EmptyClipboard(); 
- 
-    int maxItems = m_debugListBox.GetCount();
-	const int MAX_MEM = maxItems * 90; // 90 chars per line seems safe like a safe bet	
 
-	HGLOBAL hDebugText = GlobalAlloc(GMEM_DDESHARE | GMEM_MOVEABLE, MAX_MEM); 
-    if (NULL != hDebugText) 
-    { 
+	EmptyClipboard();
+
+    int maxItems = m_debugListBox.GetCount();
+	const int MAX_MEM = maxItems * 90; // 90 chars per line seems safe like a safe bet
+
+	HGLOBAL hDebugText = GlobalAlloc(GMEM_DDESHARE | GMEM_MOVEABLE, MAX_MEM);
+    if (NULL != hDebugText)
+    {
 		CString listboxItem;
-		LPSTR pDebugText = (LPSTR) GlobalLock(hDebugText); 
+		LPSTR pDebugText = (LPSTR) GlobalLock(hDebugText);
 		if (!pDebugText)
 		{
 		    MessageBox("Unable to write to Clipboard!", "Error", MB_OK);
 			ASSERT(pDebugText);
-			return; 
+			return;
 		}
-    
+
 		*pDebugText = 0;
 		for (int xItem = 0; xItem < maxItems; xItem++)
 		{
 			m_debugListBox.GetText(xItem, listboxItem);
-			strcat(pDebugText, listboxItem); 
+			strcat(pDebugText, listboxItem);
 			strcat(pDebugText, "\r\n");
 		}
-	
-		GlobalUnlock(hDebugText); 
-    } 
 
-    if (NULL != hDebugText) 
-        SetClipboardData(CF_TEXT, hDebugText); 
-   
-	CloseClipboard(); 
-	MessageBox("Copy to Clipboard was Successful!\r\n Paste it in your favorite editor.", 
+		GlobalUnlock(hDebugText);
+    }
+
+    if (NULL != hDebugText)
+        SetClipboardData(CF_TEXT, hDebugText);
+
+	CloseClipboard();
+	MessageBox("Copy to Clipboard was Successful!\r\n Paste it in your favorite editor.",
                 "Note", MB_OK);
 }
 
-BOOL CLeashDebugWindow::PreTranslateMessage(MSG* pMsg) 
+BOOL CLeashDebugWindow::PreTranslateMessage(MSG* pMsg)
 {
 	if (!m_CopyButton && m_debugListBox.GetCount())
-	{  
-		m_CopyButton = TRUE; 
+	{
+		m_CopyButton = TRUE;
 		GetDlgItem(IDC_COPY_TO_CLIPBOARD)->EnableWindow(TRUE);
 	}
-	
+
 	return CDialog::PreTranslateMessage(pMsg);
 }

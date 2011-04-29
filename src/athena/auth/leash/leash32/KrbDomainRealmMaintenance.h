@@ -16,7 +16,7 @@ class CKrbDomainRealmMaintenance : public CPropertyPage
 private:
 	BOOL m_dupEntiesError;
 	BOOL CheckForDupDomain(CString& newDomainHost);
-	
+
 public:
 	CKrbDomainRealmMaintenance(CWnd* pParent = NULL);   // standard constructor
 

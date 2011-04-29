@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			LeashFileDialog.h 
+//	File:			LeashFileDialog.h
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:    H file for LeashFileDialog.cpp. Contains variables and functions 
+//	Description:    H file for LeashFileDialog.cpp. Contains variables and functions
 //					for the Leash File Dialog Box
 //
 //	History:
@@ -30,7 +30,7 @@ class CLeashFileDialog : public CFileDialog
 	DECLARE_DYNAMIC(CLeashFileDialog)
 
 private:
-	CHAR m_lpstrFileTitle[MAX_PATH];  
+	CHAR m_lpstrFileTitle[MAX_PATH];
 	BOOL m_startup;
 
 public:

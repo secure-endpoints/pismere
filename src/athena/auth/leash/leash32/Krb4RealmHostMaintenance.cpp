@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			Krb4RealmHostMaintenance.cpp 
+//	File:			Krb4RealmHostMaintenance.cpp
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	CPP file for Krb4RealmHostMaintenance.h. Contains variables and functions 
+//	Description:	CPP file for Krb4RealmHostMaintenance.h. Contains variables and functions
 //					for Kerberos Four Properties
 //
 //	History:
@@ -68,15 +68,15 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CKrb4RealmHostMaintenance message handlers
 
-BOOL CKrb4RealmHostMaintenance::OnInitDialog() 
+BOOL CKrb4RealmHostMaintenance::OnInitDialog()
 {
 	CPropertyPage::OnInitDialog();
-	
+
 	CStdioFile krbCon;
-	if (!krbCon.Open(CKrbProperties::m_krbPath, CFile::modeReadWrite)) 
-	{ // can't find file, so lets set some defaults	
-		
-		m_RealmHostList.AddString(KRB_REALM	" " KRB_MASTER);	
+	if (!krbCon.Open(CKrbProperties::m_krbPath, CFile::modeReadWrite))
+	{ // can't find file, so lets set some defaults
+
+		m_RealmHostList.AddString(KRB_REALM	" " KRB_MASTER);
 	}
 	else
 	{
@@ -86,24 +86,24 @@ BOOL CKrb4RealmHostMaintenance::OnInitDialog()
 		{
 			if (!krbCon.ReadString(lineBuf, sizeof(lineBuf)))
 			  break;
-				
+
 			*(lineBuf + strlen(lineBuf) - 1) = 0;
 
 			if (!strchr(lineBuf, ' ') && !strchr(lineBuf, '\t'))
 			{ // found a defective line
-				m_defectiveLines++; 
+				m_defectiveLines++;
 			}
 
             if ( !strncmp(".KERBEROS.OPTION.",lineBuf,17) ) {
                 char * p = &lineBuf[17];
-                while (isspace(*p)) 
+                while (isspace(*p))
                     p++;
                 if (!strcmp("dns",p))
                     m_initDnsKdcLookup = m_newDnsKdcLookup = 1;
             } else {
                 if (LB_ERR == m_RealmHostList.AddString(lineBuf))
                 {
-                    LeashErrorBox("OnInitDialog::Can't read Configuration File", 
+                    LeashErrorBox("OnInitDialog::Can't read Configuration File",
                                    CKrbProperties::m_krbPath);
                     krbCon.Close();
                     return FALSE;
@@ -113,7 +113,7 @@ BOOL CKrb4RealmHostMaintenance::OnInitDialog()
 
 		krbCon.Close();
 	}
-			
+
 	m_RealmHostList.SetCurSel(0);
 
 	if (!m_RealmHostList.GetCount())
@@ -121,18 +121,18 @@ BOOL CKrb4RealmHostMaintenance::OnInitDialog()
 		GetDlgItem(ID_BUTTON_KRB4_REALM_HOST_REMOVE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_BUTTON_KRB4_REALM_HOST_EDIT)->EnableWindow(FALSE);
 	}
-	
-	return TRUE;  
+
+	return TRUE;
 }
 
 BOOL CKrb4RealmHostMaintenance::OnApply()
 {
 	CStdioFile krbCon;
-	if (!krbCon.Open(CKrbProperties::m_krbPath, CFile::modeCreate | 
+	if (!krbCon.Open(CKrbProperties::m_krbPath, CFile::modeCreate |
 														 CFile::modeNoTruncate |
-														 CFile::modeReadWrite)) 
-	{	
-		LeashErrorBox("OnApply::Can't open Configuration File", 
+														 CFile::modeReadWrite))
+	{
+		LeashErrorBox("OnApply::Can't open Configuration File",
 					  CKrbProperties::m_krbPath);
 		return TRUE;
 	}
@@ -140,10 +140,10 @@ BOOL CKrb4RealmHostMaintenance::OnApply()
 	memset(lineBuf, '\0', sizeof(lineBuf));
 	if (!krbCon.ReadString(lineBuf, sizeof(lineBuf)))
 	{
-//-----ADL----///strcpy(lineBuf, CKrb4ConfigOptions::m_newDefaultRealm);		
-		strcat(lineBuf, "\n"); 
+//-----ADL----///strcpy(lineBuf, CKrb4ConfigOptions::m_newDefaultRealm);
+		strcat(lineBuf, "\n");
 	}
-	
+
 	krbCon.SetLength(0);
 	krbCon.WriteString(lineBuf);
 	for (INT maxItems = m_RealmHostList.GetCount(), item = 0; item < maxItems; item++)
@@ -151,7 +151,7 @@ BOOL CKrb4RealmHostMaintenance::OnApply()
 		memset(lineBuf, '\0', sizeof(lineBuf));
 		if (!m_RealmHostList.GetText(item, lineBuf))
           break;
-			
+
 		krbCon.WriteString(lineBuf);
 		krbCon.WriteString("\n");
 	}
@@ -163,12 +163,12 @@ BOOL CKrb4RealmHostMaintenance::OnApply()
 	return TRUE;
 }
 
-void CKrb4RealmHostMaintenance::OnOK() 
+void CKrb4RealmHostMaintenance::OnOK()
 {
 	CPropertyPage::OnOK();
 }
 
-void CKrb4RealmHostMaintenance::OnCancel() 
+void CKrb4RealmHostMaintenance::OnCancel()
 {
 	CPropertyPage::OnCancel();
 }
@@ -182,14 +182,14 @@ void CKrb4RealmHostMaintenance::OnCheckDnsKdcLookup()
 void CKrb4RealmHostMaintenance::ResetDefaultRealmComboBox()
 { // krb4 is loaded without krb5
 	CHAR lineBuf[REALM_SZ + MAX_HSTNM + 20];
-	
+
 	int maxItems = m_RealmHostList.GetCount();
 
 	CKrbConfigOptions::m_krbRealmEditbox.ResetContent();
 
-	for (int xItems = 0; xItems < maxItems; xItems++)	
+	for (int xItems = 0; xItems < maxItems; xItems++)
 	{
-		m_RealmHostList.GetText(xItems, lineBuf);	
+		m_RealmHostList.GetText(xItems, lineBuf);
 
 		LPSTR space = strchr(lineBuf, ' ');
 		if (space)
@@ -201,7 +201,7 @@ void CKrb4RealmHostMaintenance::ResetDefaultRealmComboBox()
 		{ // no dups
 			if (LB_ERR == CKrbConfigOptions::m_krbRealmEditbox.AddString(lineBuf))
 			{
-				MessageBox("OnInitDialog::Can't add to Kerberos Realm Combobox", 
+				MessageBox("OnInitDialog::Can't add to Kerberos Realm Combobox",
 						   "Leash", MB_OK);
 				return;
 			}
@@ -210,17 +210,17 @@ void CKrb4RealmHostMaintenance::ResetDefaultRealmComboBox()
 
 	CHAR krbhst[MAX_HSTNM + 1];
 	CHAR krbrlm[REALM_SZ + 1];
-		
+
 	strcpy(krbrlm, CKrbConfigOptions::m_newDefaultRealm);
 	memset(krbhst, '\0', sizeof(krbhst));
 
 	// Check for Host
-	// don't use KRB4 - krb_get_krbhst - would have to re-logon, on file location 
+	// don't use KRB4 - krb_get_krbhst - would have to re-logon, on file location
 	// change, to use this function
 	extern int krb_get_krbhst(char* h, char* r, int n);
 	if (KFAILURE == krb_get_krbhst(krbhst, krbrlm, 1))
 	{
-		MessageBox("We can't find the Host Server for your Default Realm!!!", 
+		MessageBox("We can't find the Host Server for your Default Realm!!!",
                     "Leash", MB_OK);
 		return;
 	}
@@ -228,36 +228,36 @@ void CKrb4RealmHostMaintenance::ResetDefaultRealmComboBox()
 	CKrbConfigOptions::m_hostServer = krbhst;
 }
 
-void CKrb4RealmHostMaintenance::OnButtonRealmHostAdd() 
+void CKrb4RealmHostMaintenance::OnButtonRealmHostAdd()
 {
 	CKrb4AddToRealmHostList addToRealmHostList;
-	
+
 	if (IDOK == addToRealmHostList.DoModal())
 	{
 		if (addToRealmHostList.GetNewRealm().IsEmpty())
 		  ASSERT(0);
-			
+
 		CString newLine;
-		newLine = addToRealmHostList.GetNewRealm() + " " + addToRealmHostList.GetNewHost();  			
-	    
+		newLine = addToRealmHostList.GetNewRealm() + " " + addToRealmHostList.GetNewHost();
+
 		if (addToRealmHostList.GetNewAdmin())
 		  newLine += " admin server";
-		
+
 		// We don't want duplicate items in Listbox
 		if (LB_ERR != m_RealmHostList.FindStringExact(-1, newLine))
-		{ // found duplicate item in Listbox 
+		{ // found duplicate item in Listbox
 			LeashErrorBox("OnButtonRealmHostAdd::Found a Duplicate Item!\nCan't add to List",
-						  newLine);					
+						  newLine);
 			return;
 		}
 
-		
+
 		m_RealmHostList.InsertString(0, newLine);
 		m_RealmHostList.SetCurSel(0);
 		SetModified(TRUE);
 
 		ResetDefaultRealmComboBox();
-		
+
 		if (1 == m_RealmHostList.GetCount())
 		{
 			GetDlgItem(ID_BUTTON_KRB4_REALM_HOST_REMOVE)->EnableWindow();
@@ -265,30 +265,30 @@ void CKrb4RealmHostMaintenance::OnButtonRealmHostAdd()
 		}
 	}
 }
-	
-void CKrb4RealmHostMaintenance::OnButtonRealmHostEdit() 
+
+void CKrb4RealmHostMaintenance::OnButtonRealmHostEdit()
 {
 	INT selItemIndex = m_RealmHostList.GetCurSel();
 	LPSTR pSelItem = new char[m_RealmHostList.GetTextLen(selItemIndex) + 1];
 	if (!pSelItem)
 	  ASSERT(0);
 
-	CString selItem; 
+	CString selItem;
 	m_RealmHostList.GetText(selItemIndex, selItem);
 	strcpy(pSelItem, selItem);
 
 	CKrb4EditRealmHostList editRealmHostList(pSelItem);
 	delete [] pSelItem;
-	
+
 	if (IDOK == editRealmHostList.DoModal())
 	{
 		CString editedItem = editRealmHostList.GetEditedItem();
-		if (0 != selItem.CompareNoCase(editedItem) && 
-			LB_ERR != m_RealmHostList.FindStringExact(-1, editedItem)) 
+		if (0 != selItem.CompareNoCase(editedItem) &&
+			LB_ERR != m_RealmHostList.FindStringExact(-1, editedItem))
 		{
 			LeashErrorBox("OnButtonRealmHostEdit::Found a Duplicate!\nCan't add to List",
-							  editedItem);					
-			
+							  editedItem);
+
 			return;
 		}
 
@@ -301,73 +301,73 @@ void CKrb4RealmHostMaintenance::OnButtonRealmHostEdit()
 	}
 }
 
-void CKrb4RealmHostMaintenance::OnButtonRealmHostRemove() 
+void CKrb4RealmHostMaintenance::OnButtonRealmHostRemove()
 {
-	if (IDYES != AfxMessageBox("You are about to remove an item from the list!\n\nContinue?", 
+	if (IDYES != AfxMessageBox("You are about to remove an item from the list!\n\nContinue?",
 		                       MB_YESNO))
 	  return;
 
-	INT curSel = m_RealmHostList.GetCurSel();	
-	m_RealmHostList.DeleteString(curSel);  // Single Sel Listbox		
-	
+	INT curSel = m_RealmHostList.GetCurSel();
+	m_RealmHostList.DeleteString(curSel);  // Single Sel Listbox
+
 	if (-1 == m_RealmHostList.SetCurSel(curSel))
 	  m_RealmHostList.SetCurSel(curSel - 1);
-	
+
 	SetModified(TRUE);
 
 	ResetDefaultRealmComboBox();
-	
+
 	if (!m_RealmHostList.GetCount())
 	{
 		GetDlgItem(ID_BUTTON_KRB4_REALM_HOST_REMOVE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_BUTTON_KRB4_REALM_HOST_EDIT)->EnableWindow(FALSE);
 	}
-	
+
 	/* For Mult. Sel Listbox
 	const LONG MAX_SEL_BUF = m_RealmHostList.GetSelCount();
 	LPINT selectBuf = new INT[MAX_SEL_BUF];
-		
+
 	for (INT maxSelected = m_RealmHostList.GetSelItems(MAX_SEL_BUF, selectBuf), del=0, sel=0;
 	     sel < maxSelected; sel++)
 	{
 		if (LB_ERR == m_RealmHostList.DeleteString(*(selectBuf + sel) - del))
 		  MessageBox("Help", "Error", MB_OK);
 		else
-		  del++; 
+		  del++;
 	}
-		
+
 	delete selectBuf;
 	*/
 }
 
-void CKrb4RealmHostMaintenance::OnSelchangeListRemoveHost() 
+void CKrb4RealmHostMaintenance::OnSelchangeListRemoveHost()
 {
-	//SetModified(TRUE);	
+	//SetModified(TRUE);
 }
 
 
-void CKrb4RealmHostMaintenance::OnDblclkListRemoveHost() 
+void CKrb4RealmHostMaintenance::OnDblclkListRemoveHost()
 {
-	OnButtonRealmHostEdit(); 	
+	OnButtonRealmHostEdit();
 }
 
-BOOL CKrb4RealmHostMaintenance::PreTranslateMessage(MSG* pMsg) 
+BOOL CKrb4RealmHostMaintenance::PreTranslateMessage(MSG* pMsg)
 {
 	if (m_defectiveLines)
 	{
 		if (m_defectiveLines == 1)
-		  LeashErrorBox("Found a defective entry in file", 
+		  LeashErrorBox("Found a defective entry in file",
 						CKrbProperties::m_krbPath, "Warning");
 	    else if (m_defectiveLines > 1)
-	      LeashErrorBox("Found more then one defective entry in file", 
+	      LeashErrorBox("Found more then one defective entry in file",
 						CKrbProperties::m_krbPath, "Warning");
 	}
 
-	m_defectiveLines = 0;	
+	m_defectiveLines = 0;
 	return CPropertyPage::PreTranslateMessage(pMsg);
 }
 
-void CKrb4RealmHostMaintenance::OnButtonRealmhostMaintHelp2() 
+void CKrb4RealmHostMaintenance::OnButtonRealmhostMaintHelp2()
 {
-	MessageBox("No Help Available!", "Note", MB_OK);	
+	MessageBox("No Help Available!", "Note", MB_OK);
 }

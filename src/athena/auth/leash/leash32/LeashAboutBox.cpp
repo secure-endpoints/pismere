@@ -116,7 +116,7 @@ void CLeashAboutBox::GetModulesNT(DWORD processID, BOOL allModules)
     unsigned int i;
 
     // Get a list of all the modules in this process.
-    hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, 
+    hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
                            FALSE, processID);
 
     if (pEnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded))
@@ -126,7 +126,7 @@ void CLeashAboutBox::GetModulesNT(DWORD processID, BOOL allModules)
             char szModName[2048];
 
             // Get the full path to the module's file.
-            if (pGetModuleFileNameEx(hProcess, hMods[i], szModName, 
+            if (pGetModuleFileNameEx(hProcess, hMods[i], szModName,
                                      sizeof(szModName)))
             {
                 lstrcpy(checkName, szModName);

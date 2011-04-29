@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			LeashMessageBox.h 
+//	File:			LeashMessageBox.h
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:    H file for LeashMessageBox.cpp. Contains variables and functions 
+//	Description:    H file for LeashMessageBox.cpp. Contains variables and functions
 //					for the Leash Special Message Dialog Box
 //
 //	History:
@@ -31,13 +31,13 @@ class CLeashMessageBox : public CDialog
 {
 private:
 	static DWORD m_dwTime;
-	static void CALLBACK MessageBoxTimer(HWND hwnd, UINT uiMsg, UINT idEvent, DWORD dwTime);   
+	static void CALLBACK MessageBoxTimer(HWND hwnd, UINT uiMsg, UINT idEvent, DWORD dwTime);
 
 	// Construction
 public:
 	CLeashMessageBox(CWnd* pParent = NULL,            const CString msgText = "Place your message here!!!",
 					 DWORD dwTime = 0);
-	~CLeashMessageBox(); 
+	~CLeashMessageBox();
 
 // Dialog Data
 	//{{AFX_DATA(CLeashMessageBox)

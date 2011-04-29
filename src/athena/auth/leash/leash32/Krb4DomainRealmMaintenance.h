@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			Krb4DomainRealmMaintenance.h 
+//	File:			Krb4DomainRealmMaintenance.h
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	H file for Krb4DomainRealmMaintenance.cpp. Contains variables and functions 
+//	Description:	H file for Krb4DomainRealmMaintenance.cpp. Contains variables and functions
 //					for Kerberos Four Properties
 //
 //	History:
@@ -32,7 +32,7 @@ private:
 	DECLARE_DYNCREATE(CKrb4DomainRealmMaintenance)
 	CHAR lineBuf[MAXLINE];
 	INT m_defectiveLines;
-	
+
 public:
 	CKrb4DomainRealmMaintenance();   // standard constructor
 	virtual ~CKrb4DomainRealmMaintenance();

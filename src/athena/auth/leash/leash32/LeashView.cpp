@@ -10,7 +10,7 @@
 //
 // MM/DD/YY	Inits	Description of Change
 // 12/02/98	ADL		Original
-// 20030508     JEA     Added 
+// 20030508     JEA     Added
 //*****************************************************************************
 
 #include "stdafx.h"
@@ -25,7 +25,7 @@
 #include "LeashMessageBox.h"
 #include "LeashAboutBox.h"
 #include "Krb4Properties.h"
-#include "Krb5Properties.h"	
+#include "Krb5Properties.h"
 #include "LeashProperties.h"
 #include "KrbProperties.h"
 #include "AfsProperties.h"
@@ -144,15 +144,15 @@ CFormView(CLeashView::IDD)
     m_upperCaseRealm = 0;
     m_lowTicketAlarm = 0;
     m_importedTickets = 0;
-    
+
     m_pDebugWindow = NULL;
     m_pDebugWindow = new CLeashDebugWindow(this);
     if (!m_pDebugWindow)
     {
-        AfxMessageBox("There is a problem with the Leash Debug Window!", 
+        AfxMessageBox("There is a problem with the Leash Debug Window!",
                    MB_OK|MB_ICONSTOP);
     }
-    
+
     m_debugStartUp = TRUE;
     m_isMinimum = FALSE;
     m_lowTicketAlarmSound = FALSE;
@@ -185,7 +185,7 @@ CLeashView::~CLeashView()
 #endif
     // destroys window if not already destroyed
     if (m_pDebugWindow)
-        delete m_pDebugWindow; 
+        delete m_pDebugWindow;
 }
 
 BOOL CLeashView::PreCreateWindow(CREATESTRUCT& cs)
@@ -292,8 +292,8 @@ VOID CALLBACK EXPORT CLeashView::TimerProc(HWND hWnd, UINT nMsg,
 }
 
 VOID  CLeashView::ApplicationInfoMissingMsg()
-{ 
-    AfxMessageBox("There is a problem finding Leash application information!", 
+{
+    AfxMessageBox("There is a problem finding Leash application information!",
                MB_OK|MB_ICONSTOP);
 }
 
@@ -354,12 +354,12 @@ VOID CLeashView::OnShowWindow(BOOL bShow, UINT nStatus)
     if (!CLeashApp::m_hAfsDLL)
     {
         // No AFS installed
-        SetDlgItemText(IDC_LABEL_KERB_TICKETS, 
+        SetDlgItemText(IDC_LABEL_KERB_TICKETS,
                        "Your Kerberos Tickets (Issued/Expires/[Renew]/Principal)");
-    } else 
+    } else
     {
         // AFS installed
-        SetDlgItemText(IDC_LABEL_KERB_TICKETS, 
+        SetDlgItemText(IDC_LABEL_KERB_TICKETS,
                        "Your Kerberos Tickets and AFS Tokens (Issued/Expires/[Renew]/Principal)");
 
     }
@@ -371,7 +371,7 @@ VOID CLeashView::OnInitTicket()
 {
     try {
         InitTicket(m_hWnd);
-    } 
+    }
     catch(...) {
         AfxMessageBox("Ticket Getting operation already in progress", MB_OK, 0);
     }
@@ -395,7 +395,7 @@ UINT CLeashView::InitTicket(void * hWnd)
 #endif
         throw("Unable to lock ticketinfo");
     }
-	
+
     char * principal = ticketinfo.Krb5.principal;
     if (!*principal)
         principal = ticketinfo.Krb4.principal;
@@ -426,7 +426,7 @@ UINT CLeashView::InitTicket(void * hWnd)
 
     if (!hWnd)
     {
-        AfxMessageBox("There is a problem finding the Leash Window!", 
+        AfxMessageBox("There is a problem finding the Leash Window!",
                    MB_OK|MB_ICONSTOP);
 #ifndef KRB5_TC_NOTICKET
         ReleaseMutex(m_tgsReqMutex);
@@ -438,10 +438,10 @@ UINT CLeashView::InitTicket(void * hWnd)
     ReleaseMutex(m_tgsReqMutex);
 #endif
     int result = pLeash_kinit_dlg_ex((HWND)hWnd, &ldi);
-    
+
     if (-1 == result)
     {
-        AfxMessageBox("There is a problem getting tickets!", 
+        AfxMessageBox("There is a problem getting tickets!",
                    MB_OK|MB_ICONSTOP);
     }
     else if ( result )
@@ -475,7 +475,7 @@ VOID CLeashView::OnImportTicket()
 {
     try {
         ImportTicket(m_hWnd);
-    } 
+    }
     catch(...) {
         AfxMessageBox("Ticket Getting operation already in progress", MB_OK|MB_ICONWARNING, 0);
     }
@@ -529,22 +529,22 @@ UINT CLeashView::ImportTicket(void * hWnd)
 
     if (princ)
         pkrb5_free_principal(CLeashApp::m_krbv5_context, princ);
-    
+
     if (mslsa_ccache)
         pkrb5_cc_close(CLeashApp::m_krbv5_context, mslsa_ccache);
 
     if ( code == 0 ) {
-        if (warning) 
+        if (warning)
         {
             INT whatToDo;
-#ifndef KRB5_TC_NOTICKET	 
+#ifndef KRB5_TC_NOTICKET
             ReleaseMutex(m_tgsReqMutex);
 #endif
             if (!CLeashApp::m_hAfsDLL || !CLeashApp::m_hKrb4DLL)
                 whatToDo = AfxMessageBox("You are about to replace your existing ticket(s)\n"
                                           "with a ticket imported from the Windows credential cache!",
                                           MB_OKCANCEL, 0);
-            else	
+            else
                 whatToDo = AfxMessageBox("You are about to replace your existing ticket(s)/token(s)"
                                           "with ticket imported from the Windows credential cache!",
                                           MB_OKCANCEL, 0);
@@ -568,7 +568,7 @@ UINT CLeashView::ImportTicket(void * hWnd)
 #ifndef KRB5_TC_NOTICKET
                 ReleaseMutex(m_tgsReqMutex);
 #endif
-                AfxMessageBox("There is a problem importing tickets!", 
+                AfxMessageBox("There is a problem importing tickets!",
                                MB_OK|MB_ICONSTOP);
                 ::SendMessage((HWND)hWnd,WM_COMMAND, ID_UPDATE_DISPLAY, 0);
                 m_importedTickets = 0;
@@ -596,7 +596,7 @@ UINT CLeashView::ImportTicket(void * hWnd)
 #ifndef KRB5_TC_NOTICKET
                 if (WaitForSingleObject( m_tgsReqMutex, INFINITE ) != WAIT_OBJECT_0)
                     throw("Unable to lock tgsReqMutex");
-#endif 
+#endif
                 if (WaitForSingleObject( ticketinfo.lockObj, INFINITE ) != WAIT_OBJECT_0) {
 #ifndef KRB5_TC_NOTICKET
                     ReleaseMutex(m_tgsReqMutex);
@@ -611,18 +611,18 @@ UINT CLeashView::ImportTicket(void * hWnd)
                     ReleaseMutex(ticketinfo.lockObj);
                     AfxBeginThread(InitTicket,hWnd);
                 } else {
-                    ReleaseMutex(ticketinfo.lockObj);  
+                    ReleaseMutex(ticketinfo.lockObj);
                     m_importedTickets = 1;
                     m_autoRenewalAttempted = 0;
                 }
             }
-        } 
+        }
 #ifndef KRB5_TC_NOTICKET
         else {
             ReleaseMutex(m_tgsReqMutex);
         }
 #endif
-    } 
+    }
 #ifndef KRB5_TC_NOTICKET
     else {
         ReleaseMutex(m_tgsReqMutex);
@@ -638,7 +638,7 @@ VOID CLeashView::OnRenewTicket()
 
     try {
         RenewTicket(m_hWnd);
-    } 
+    }
     catch(...) {
         AfxMessageBox("Ticket Getting operation already in progress", MB_OK|MB_ICONWARNING, 0);
     }
@@ -699,7 +699,7 @@ UINT CLeashView::RenewTicket(void * hWnd)
 
     if ( !strcmp(ticketinfo.Krb5.principal, pname) )
         m_importedTickets = 1;
-    
+
   cleanup:
     ReleaseMutex(ticketinfo.lockObj);
 
@@ -708,7 +708,7 @@ UINT CLeashView::RenewTicket(void * hWnd)
 
     if (princ)
         pkrb5_free_principal(CLeashApp::m_krbv5_context, princ);
-    
+
     if (mslsa_ccache)
         pkrb5_cc_close(CLeashApp::m_krbv5_context, mslsa_ccache);
 
@@ -732,17 +732,17 @@ VOID CLeashView::OnDestroyTicket()
     BOOL b_destroy =ticketinfo.Krb4.btickets || ticketinfo.Krb5.btickets || ticketinfo.Afs.btickets;
     ReleaseMutex(ticketinfo.lockObj);
 
-    if (b_destroy) 
+    if (b_destroy)
     {
         INT whatToDo;
-		
+
         if (!CLeashApp::m_hAfsDLL)
-            whatToDo = AfxMessageBox("You are about to destroy your ticket(s)!", 
+            whatToDo = AfxMessageBox("You are about to destroy your ticket(s)!",
                                      MB_OKCANCEL, 0);
-        else	
+        else
             whatToDo = AfxMessageBox("You are about to destroy your ticket(s)/token(s)!",
                                      MB_OKCANCEL, 0);
-		
+
         if (whatToDo == IDOK)
         {
             pLeash_kdestroy();
@@ -754,15 +754,15 @@ VOID CLeashView::OnDestroyTicket()
     m_autoRenewalAttempted = 0;
 }
 
-VOID CLeashView::OnChangePassword() 
+VOID CLeashView::OnChangePassword()
 {
     if (!m_hWnd)
     {
-        AfxMessageBox("There is a problem finding the Leash Window!", 
+        AfxMessageBox("There is a problem finding the Leash Window!",
                    MB_OK|MB_ICONSTOP);
         return;
     }
-    
+
     if (WaitForSingleObject( ticketinfo.lockObj, INFINITE ) != WAIT_OBJECT_0)
         throw("Unable to lock ticketinfo");
 
@@ -800,7 +800,7 @@ VOID CLeashView::OnChangePassword()
     int result = pLeash_changepwd_dlg_ex(m_hWnd, &ldi);
     if (-1 == result)
     {
-        AfxMessageBox("There is a problem changing password!", 
+        AfxMessageBox("There is a problem changing password!",
                    MB_OK|MB_ICONSTOP);
     }
 }
@@ -812,7 +812,7 @@ VOID CLeashView::OnUpdateDisplay()
     m_pTree = (CTreeCtrl*) GetDlgItem(IDC_TREEVIEW);
     if (!m_pTree)
     {
-        AfxMessageBox("There is a problem finding the Ticket Tree!", 
+        AfxMessageBox("There is a problem finding the Ticket Tree!",
                     MB_OK|MB_ICONSTOP);
         return;
     }
@@ -820,7 +820,7 @@ VOID CLeashView::OnUpdateDisplay()
     m_pImageList = &m_imageList;
     if (!m_pImageList)
     {
-        AfxMessageBox("There is a problem finding images for the Ticket Tree!", 
+        AfxMessageBox("There is a problem finding images for the Ticket Tree!",
                    MB_OK|MB_ICONSTOP);
         return;
     }
@@ -861,7 +861,7 @@ VOID CLeashView::OnUpdateDisplay()
             CHAR confname[MAX_PATH];
             if (CLeashApp::GetProfileFile(confname, sizeof(confname)))
             {
-                AfxMessageBox("Can't locate Kerberos Five Config. file!", 
+                AfxMessageBox("Can't locate Kerberos Five Config. file!",
                            MB_OK|MB_ICONSTOP);
             }
 
@@ -883,8 +883,8 @@ VOID CLeashView::OnUpdateDisplay()
             principal = "";
         afsError = pLeashAFSGetToken(&ticketinfo.Afs, &m_listAfs, principal);
     }
-    
-    /* 
+
+    /*
      * Update Ticket Status for Krb4 and Krb5 so that we may use their state
      * to select the appropriate Icon for the Parent Node
      */
@@ -943,7 +943,7 @@ VOID CLeashView::OnUpdateDisplay()
         ticketIconStatusKrb5 = ACTIVE_CLOCK;
         ticketIconStatus_SelectedKrb5 = ACTIVE_CLOCK;
         iconStatusKrb5 = ACTIVE_TICKET;
-    } else 
+    } else
     {
         ticketIconStatusKrb5 = EXPIRED_CLOCK;
         ticketIconStatus_SelectedKrb5 = EXPIRED_CLOCK;
@@ -974,13 +974,13 @@ VOID CLeashView::OnUpdateDisplay()
         ticketIconStatusAfs = ACTIVE_CLOCK;
         ticketIconStatus_SelectedAfs = ACTIVE_CLOCK;
         iconStatusAfs = ACTIVE_TICKET;
-    } else 
+    } else
     {
         ticketIconStatusAfs = EXPIRED_CLOCK;
         ticketIconStatus_SelectedAfs = EXPIRED_CLOCK;
         iconStatusAfs = TICKET_NOT_INSTALLED;
     }
-    
+
     // Tree Structure common values
     m_pTree->DeleteAllItems();
 
@@ -1140,7 +1140,7 @@ VOID CLeashView::OnUpdateDisplay()
         m_tvinsert.item.iImage = TICKET_NOT_INSTALLED;
         m_tvinsert.item.iSelectedImage = TICKET_NOT_INSTALLED;
     }
-    
+
     if (!afsError && CLeashApp::m_hAfsDLL && m_tvinsert.item.pszText)
     { // AFS installed
 
@@ -1213,7 +1213,7 @@ VOID CLeashView::OnUpdateDisplay()
         {
             CToolBarCtrl *_toolBar = NULL;
             CToolBarCtrl& toolBar = CMainFrame::m_wndToolBar.GetToolBarCtrl();
-            _toolBar = &toolBar; 
+            _toolBar = &toolBar;
             if (_toolBar)
             {
                 toolBar.SetState(ID_DESTROY_TICKET, TBSTATE_INDETERMINATE);
@@ -1234,7 +1234,7 @@ VOID CLeashView::OnUpdateDisplay()
         {
             CToolBarCtrl *_toolBar = NULL;
             CToolBarCtrl& toolBar = CMainFrame::m_wndToolBar.GetToolBarCtrl();
-            _toolBar = &toolBar; 
+            _toolBar = &toolBar;
             if (_toolBar)
             {
                 toolBar.SetState(ID_DESTROY_TICKET, TBSTATE_ENABLED);
@@ -1264,88 +1264,88 @@ VOID CLeashView::OnActivateView(BOOL bActivate, CView* pActivateView,
         CFormView::OnActivateView(bActivate, pActivateView, pDeactiveView);
         return;
     }
-	
+
     // The following code has put here because at the time
     // 'checking and unchecking' a menuitem with the
     // 'OnUpdate.....(CCmdUI* pCmdUI) functions' were unreliable
     // in CLeashView -->> Better done in CMainFrame
     if( CLeashApp::m_hProgram != 0 )
     {
-        m_hMenu = ::GetMenu(CLeashApp::m_hProgram); 
+        m_hMenu = ::GetMenu(CLeashApp::m_hProgram);
     } else {
         return;
     }
     if( m_hMenu == NULL )
     {
-        AfxMessageBox("There is a problem finding the Leash main menu!", 
+        AfxMessageBox("There is a problem finding the Leash main menu!",
                    MB_OK|MB_ICONSTOP);
         return;
     }
     if (!m_largeIcons)
-        check = CheckMenuItem(m_hMenu, ID_LARGE_ICONS, MF_CHECKED); 
+        check = CheckMenuItem(m_hMenu, ID_LARGE_ICONS, MF_CHECKED);
     else
-        check = CheckMenuItem(m_hMenu, ID_LARGE_ICONS, MF_UNCHECKED); 
-		
+        check = CheckMenuItem(m_hMenu, ID_LARGE_ICONS, MF_UNCHECKED);
+
     if( check != MF_CHECKED || check != MF_UNCHECKED )
     {
         m_debugStartUp = 1;
     }
 
     if (!m_destroyTicketsOnExit)
-        check = CheckMenuItem(m_hMenu, ID_KILL_TIX_ONEXIT, MF_UNCHECKED); 
+        check = CheckMenuItem(m_hMenu, ID_KILL_TIX_ONEXIT, MF_UNCHECKED);
     else
-        check = CheckMenuItem(m_hMenu, ID_KILL_TIX_ONEXIT, MF_CHECKED); 
-	
+        check = CheckMenuItem(m_hMenu, ID_KILL_TIX_ONEXIT, MF_CHECKED);
+
     if (!m_upperCaseRealm)
-        check = CheckMenuItem(m_hMenu, ID_UPPERCASE_REALM, MF_UNCHECKED); 
+        check = CheckMenuItem(m_hMenu, ID_UPPERCASE_REALM, MF_UNCHECKED);
     else
-        check = CheckMenuItem(m_hMenu, ID_UPPERCASE_REALM, MF_CHECKED); 
-	
+        check = CheckMenuItem(m_hMenu, ID_UPPERCASE_REALM, MF_CHECKED);
+
     if (!m_lowTicketAlarm)
     {
         m_lowTicketAlarmSound = FALSE;
-		
+
         if (m_hMenu)
-            CheckMenuItem(m_hMenu, ID_LOW_TICKET_ALARM, MF_UNCHECKED); 
+            CheckMenuItem(m_hMenu, ID_LOW_TICKET_ALARM, MF_UNCHECKED);
     }
     else
     {
         m_lowTicketAlarmSound = TRUE;
         if (m_hMenu)
-            CheckMenuItem(m_hMenu, ID_LOW_TICKET_ALARM, MF_CHECKED); 
+            CheckMenuItem(m_hMenu, ID_LOW_TICKET_ALARM, MF_CHECKED);
     }
 
     if (!m_autoRenewTickets)
     {
         if (m_hMenu)
-            CheckMenuItem(m_hMenu, ID_AUTO_RENEW, MF_UNCHECKED); 
+            CheckMenuItem(m_hMenu, ID_AUTO_RENEW, MF_UNCHECKED);
     }
     else
     {
         if (m_hMenu)
-            CheckMenuItem(m_hMenu, ID_AUTO_RENEW, MF_CHECKED); 
+            CheckMenuItem(m_hMenu, ID_AUTO_RENEW, MF_CHECKED);
     }
 
     m_debugWindow = m_pApp->GetProfileInt("Settings", "DebugWindow", 0);
     if (!m_debugWindow)
-        check = CheckMenuItem(m_hMenu, ID_DEBUG_MODE, MF_UNCHECKED); 	
+        check = CheckMenuItem(m_hMenu, ID_DEBUG_MODE, MF_UNCHECKED);
     else
-        check = CheckMenuItem(m_hMenu, ID_DEBUG_MODE, MF_CHECKED); 
+        check = CheckMenuItem(m_hMenu, ID_DEBUG_MODE, MF_CHECKED);
 
     m_alreadyPlayed = TRUE;
     if (m_pApp)
     {
         m_debugWindow = m_pApp->GetProfileInt("Settings", "DebugWindow", 0);
-	    
+
         if (m_hMenu)
         {
             if (!m_debugWindow)
             {
-                CheckMenuItem(m_hMenu, ID_DEBUG_MODE, MF_UNCHECKED); 	
+                CheckMenuItem(m_hMenu, ID_DEBUG_MODE, MF_UNCHECKED);
             }
             else
             {
-                CheckMenuItem(m_hMenu, ID_DEBUG_MODE, MF_CHECKED); 
+                CheckMenuItem(m_hMenu, ID_DEBUG_MODE, MF_CHECKED);
             }
         }
     }
@@ -1353,7 +1353,7 @@ VOID CLeashView::OnActivateView(BOOL bActivate, CView* pActivateView,
     {
         ApplicationInfoMissingMsg();
     }
-    
+
     m_alreadyPlayed = TRUE;
 
     if (!CKrbProperties::KrbPropertiesOn)
@@ -1361,33 +1361,33 @@ VOID CLeashView::OnActivateView(BOOL bActivate, CView* pActivateView,
 
     if (m_debugStartUp)
     {
-        OnDebugMode(); 
+        OnDebugMode();
     }
 
-    m_debugStartUp = FALSE; 
+    m_debugStartUp = FALSE;
 
     CFormView::OnActivateView(bActivate, pActivateView, pDeactiveView);
 }
 
-VOID CLeashView::OnDebugMode() 
+VOID CLeashView::OnDebugMode()
 {
-    if (!pset_krb_debug) 
-        return;	
-	
+    if (!pset_krb_debug)
+        return;
+
     if (!m_pDebugWindow)
     {
-        AfxMessageBox("There is a problem with the Leash Debug Window!", 
+        AfxMessageBox("There is a problem with the Leash Debug Window!",
                    MB_OK|MB_ICONSTOP);
         return;
     }
-  
-        
+
+
     // Check all possible 'KRB' system varables, then reset (delete) debug file
     CHAR*  Env[] = {"TEMP", "TMP", "HOME", NULL};
     CHAR** pEnv = Env;
     CHAR debugFilePath[MAX_PATH];
-    *debugFilePath = 0; 
-	
+    *debugFilePath = 0;
+
     while (*pEnv)
     {
         CHAR* ptestenv = getenv(*pEnv);
@@ -1395,14 +1395,14 @@ VOID CLeashView::OnDebugMode()
         {
             // reset debug file
             strcpy(debugFilePath, ptestenv);
-            strcat(debugFilePath, "\\LshDebug.log"); 
+            strcat(debugFilePath, "\\LshDebug.log");
             remove(debugFilePath);
-            break;			
+            break;
         }
 
         pEnv++;
     }
-	
+
     if (!m_debugStartUp)
     {
         if (m_debugWindow%2 == 0)
@@ -1415,12 +1415,12 @@ VOID CLeashView::OnDebugMode()
     {
         ApplicationInfoMissingMsg();
     }
-    else if (!m_debugWindow) 
+    else if (!m_debugWindow)
     {
         if (m_hMenu)
-            CheckMenuItem(m_hMenu, ID_DEBUG_MODE, MF_UNCHECKED); 
-		
-        m_pApp->WriteProfileInt("Settings", "DebugWindow", FALSE_FLAG);			
+            CheckMenuItem(m_hMenu, ID_DEBUG_MODE, MF_UNCHECKED);
+
+        m_pApp->WriteProfileInt("Settings", "DebugWindow", FALSE_FLAG);
         m_pDebugWindow->DestroyWindow();
         pset_krb_debug(OFF);
         pset_krb_ap_req_debug(OFF);
@@ -1429,15 +1429,15 @@ VOID CLeashView::OnDebugMode()
     else
     {
         if (m_hMenu)
-            CheckMenuItem(m_hMenu, ID_DEBUG_MODE, MF_CHECKED); 
-	
-        m_pApp->WriteProfileInt("Settings", "DebugWindow", TRUE_FLAG);			
+            CheckMenuItem(m_hMenu, ID_DEBUG_MODE, MF_CHECKED);
+
+        m_pApp->WriteProfileInt("Settings", "DebugWindow", TRUE_FLAG);
     }
-	
+
     // Creates the Debug dialog if not created already
-    if (m_pDebugWindow->GetSafeHwnd() == 0) 
+    if (m_pDebugWindow->GetSafeHwnd() == 0)
     { // displays the Debug Window
-        m_pDebugWindow->Create(debugFilePath); 
+        m_pDebugWindow->Create(debugFilePath);
     }
 }
 
@@ -1459,20 +1459,20 @@ VOID CLeashView::OnLargeIcons()
         else
             m_largeIcons = ON;
     }
-	
+
     x = y = SMALL_ICONS;
-    
+
     if (!m_pApp)
         ApplicationInfoMissingMsg();
-    else   
+    else
     {
         if (!m_largeIcons)
         {
             if (m_hMenu)
                 CheckMenuItem(m_hMenu, ID_LARGE_ICONS, MF_CHECKED);
-		    
+
             x = y = LARGE_ICONS;
-		    
+
 	    if (!m_startup)
 	    {
                 m_pApp->WriteProfileInt("Settings", "LargeIcons", TRUE_FLAG);
@@ -1481,17 +1481,17 @@ VOID CLeashView::OnLargeIcons()
         else
         {
             if (m_hMenu)
-                CheckMenuItem(m_hMenu, ID_LARGE_ICONS, MF_UNCHECKED); 
+                CheckMenuItem(m_hMenu, ID_LARGE_ICONS, MF_UNCHECKED);
 
             x = y = SMALL_ICONS;
-    	
+
             if (!m_startup)
             {
                 m_pApp->WriteProfileInt("Settings", "LargeIcons", FALSE_FLAG);
             }
-        }	
-    }	    
-	
+        }
+    }
+
     HICON hIcon[IMAGE_COUNT];
     for (n = 0; n < IMAGE_COUNT; n++)
     {
@@ -1499,7 +1499,7 @@ VOID CLeashView::OnLargeIcons()
     }
 
     m_imageList.DeleteImageList( );
-    
+
     UINT bitsPerPixel = GetDeviceCaps( ::GetDC(::GetDesktopWindow()), BITSPIXEL);
     UINT ilcColor;
     if ( bitsPerPixel >= 32 )
@@ -1510,30 +1510,30 @@ VOID CLeashView::OnLargeIcons()
         ilcColor = ILC_COLOR16;
     else if ( bitsPerPixel >= 8 )
         ilcColor = ILC_COLOR8;
-    else 
+    else
         ilcColor = ILC_COLOR;
     m_imageList.Create(x, y, ilcColor | ILC_MASK, IMAGE_COUNT, 1);
     m_imageList.SetBkColor(GetSysColor(COLOR_WINDOW));
 
-    hIcon[ACTIVE_TRAY_ICON] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_GOOD); 
-    hIcon[LOW_TRAY_ICON] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_LOW); 
-    hIcon[EXPIRED_TRAY_ICON] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_EXPIRED); 
-    hIcon[NONE_TRAY_ICON]  = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_NONE); 
-    hIcon[ACTIVE_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_PRINCIPAL_GOOD); 
-    hIcon[LOW_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_PRINCIPAL_LOW); 
-    hIcon[EXPIRED_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_PRINCIPAL_EXPIRED); 
-    hIcon[NONE_PARENT_NODE]  = AfxGetApp()->LoadIcon(IDI_LEASH_PRINCIPAL_NONE); 
+    hIcon[ACTIVE_TRAY_ICON] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_GOOD);
+    hIcon[LOW_TRAY_ICON] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_LOW);
+    hIcon[EXPIRED_TRAY_ICON] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_EXPIRED);
+    hIcon[NONE_TRAY_ICON]  = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_NONE);
+    hIcon[ACTIVE_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_PRINCIPAL_GOOD);
+    hIcon[LOW_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_PRINCIPAL_LOW);
+    hIcon[EXPIRED_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_PRINCIPAL_EXPIRED);
+    hIcon[NONE_PARENT_NODE]  = AfxGetApp()->LoadIcon(IDI_LEASH_PRINCIPAL_NONE);
     hIcon[ACTIVE_TICKET] = AfxGetApp()->LoadIcon(IDI_TICKETTYPE_GOOD);
     hIcon[LOW_TICKET] = AfxGetApp()->LoadIcon(IDI_TICKETTYPE_LOW);
     hIcon[EXPIRED_TICKET] = AfxGetApp()->LoadIcon(IDI_TICKETTYPE_EXPIRED);
-    hIcon[TICKET_NOT_INSTALLED] = AfxGetApp()->LoadIcon(IDI_TICKETTYPE_NOTINSTALLED); 
+    hIcon[TICKET_NOT_INSTALLED] = AfxGetApp()->LoadIcon(IDI_TICKETTYPE_NOTINSTALLED);
     hIcon[ACTIVE_CLOCK] = AfxGetApp()->LoadIcon(IDI_TICKET_GOOD);
     hIcon[LOW_CLOCK] = AfxGetApp()->LoadIcon(IDI_TICKET_LOW);
     hIcon[EXPIRED_CLOCK] = AfxGetApp()->LoadIcon(IDI_TICKET_EXPIRED);
     hIcon[TKT_ADDRESS] = AfxGetApp()->LoadIcon(IDI_LEASH_TICKET_ADDRESS);
     hIcon[TKT_SESSION] = AfxGetApp()->LoadIcon(IDI_LEASH_TICKET_SESSION);
     hIcon[TKT_ENCRYPTION] = AfxGetApp()->LoadIcon(IDI_LEASH_TICKET_ENCRYPTION);
-	
+
     for (n = 0; n < IMAGE_COUNT; n++)
     {
         if ( !hIcon[n] ) {
@@ -1543,7 +1543,7 @@ VOID CLeashView::OnLargeIcons()
         }
         m_imageList.Add(hIcon[n]);
     }
-	
+
     m_pTree = (CTreeCtrl*) GetDlgItem(IDC_TREEVIEW);
     m_pTree->SetItemHeight(y+2);
 
@@ -1557,25 +1557,25 @@ VOID CLeashView::OnKillTixOnExit()
         m_destroyTicketsOnExit = ON;
     else
         m_destroyTicketsOnExit = OFF;
-	
+
     if (m_pApp)
     {
         if (!m_destroyTicketsOnExit)
         {
             if (m_hMenu)
-                CheckMenuItem(m_hMenu, ID_KILL_TIX_ONEXIT, MF_UNCHECKED); 
-		    
-            AfxMessageBox("Tickets will be not be destroyed upon exiting Leash!!!", 
+                CheckMenuItem(m_hMenu, ID_KILL_TIX_ONEXIT, MF_UNCHECKED);
+
+            AfxMessageBox("Tickets will be not be destroyed upon exiting Leash!!!",
                        MB_OK|MB_ICONWARNING);
-            m_pApp->WriteProfileInt("Settings", "DestroyTicketsOnExit", 
-                                    FALSE_FLAG);			
+            m_pApp->WriteProfileInt("Settings", "DestroyTicketsOnExit",
+                                    FALSE_FLAG);
         }
         else
         {
             if (m_hMenu)
-                CheckMenuItem(m_hMenu, ID_KILL_TIX_ONEXIT, MF_CHECKED); 
-		    
-            AfxMessageBox("All tickets/tokens will be destroyed upon exiting Leash!!!", 
+                CheckMenuItem(m_hMenu, ID_KILL_TIX_ONEXIT, MF_CHECKED);
+
+            AfxMessageBox("All tickets/tokens will be destroyed upon exiting Leash!!!",
                        MB_OK|MB_ICONWARNING);
             m_pApp->WriteProfileInt("Settings", "DestroyTicketsOnExit", TRUE_FLAG);
         }
@@ -1592,24 +1592,24 @@ VOID CLeashView::OnUppercaseRealm()
         m_upperCaseRealm = ON;
     else
         m_upperCaseRealm = OFF;
-	
+
     if (!m_pApp)
     {
         ApplicationInfoMissingMsg();
     }
     else if (!m_upperCaseRealm)
-    {  
-        pLeash_set_default_uppercaserealm(FALSE_FLAG);			
-		
+    {
+        pLeash_set_default_uppercaserealm(FALSE_FLAG);
+
         if (m_hMenu)
-            CheckMenuItem(m_hMenu, ID_UPPERCASE_REALM, MF_UNCHECKED); 
+            CheckMenuItem(m_hMenu, ID_UPPERCASE_REALM, MF_UNCHECKED);
     }
     else
     {
-        pLeash_set_default_uppercaserealm(TRUE_FLAG);			
-		
+        pLeash_set_default_uppercaserealm(TRUE_FLAG);
+
         if (m_hMenu)
-            CheckMenuItem(m_hMenu, ID_UPPERCASE_REALM, MF_CHECKED); 
+            CheckMenuItem(m_hMenu, ID_UPPERCASE_REALM, MF_CHECKED);
     }
 }
 
@@ -1635,7 +1635,7 @@ VOID CLeashView::OnDestroy()
     {
         if (pLeash_kdestroy())
         {
-            AfxMessageBox("There is a problem destroying tickets!", 
+            AfxMessageBox("There is a problem destroying tickets!",
                        MB_OK|MB_ICONSTOP);
         }
     }
@@ -1773,7 +1773,7 @@ LRESULT CLeashView::OnTrayIcon(WPARAM wParam, LPARAM lParam)
                  !CLeashApp::m_hAfsDLL)
                 nFlags = MF_STRING | MF_GRAYED;
             else
-                nFlags = MF_STRING;          
+                nFlags = MF_STRING;
             menu->AppendMenu(nFlags, ID_RENEW_TICKET, "&Renew Tickets");
             if (!CLeashApp::m_hKrbLSA || !pLeash_importable())
                 nFlags = MF_STRING | MF_GRAYED;
@@ -1966,10 +1966,10 @@ void CLeashView::SetTrayIcon(int nim, int state)
         if ( !bIconInit ) {
             // The state is reported as the parent node value although
             // we want to use the Tray Version of the icons
-            hIcon[ACTIVE_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_GOOD); 
-            hIcon[LOW_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_LOW); 
-            hIcon[EXPIRED_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_EXPIRED); 
-            hIcon[NONE_PARENT_NODE]  = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_NONE); 
+            hIcon[ACTIVE_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_GOOD);
+            hIcon[LOW_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_LOW);
+            hIcon[EXPIRED_PARENT_NODE] = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_EXPIRED);
+            hIcon[NONE_PARENT_NODE]  = AfxGetApp()->LoadIcon(IDI_LEASH_TRAY_NONE);
             bIconInit = TRUE;
         }
 
@@ -2113,7 +2113,7 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
                 else if (EXPIRED_TICKETS == ticketinfo.Krb4.btickets)
                 {
 #ifndef NO_KRB5
-                    if (ticketinfo.Krb5.btickets && 
+                    if (ticketinfo.Krb5.btickets &&
                          EXPIRED_TICKETS != ticketinfo.Krb5.btickets &&
                          m_autoRenewTickets &&
                          !m_autoRenewalAttempted &&
@@ -2222,7 +2222,7 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
                 else if (EXPIRED_TICKETS == ticketinfo.Afs.btickets)
                 {
 #ifndef NO_KRB5
-                    if (ticketinfo.Krb5.btickets && 
+                    if (ticketinfo.Krb5.btickets &&
                          EXPIRED_TICKETS != ticketinfo.Krb5.btickets &&
                          m_autoRenewTickets &&
                          !m_autoRenewalAttempted &&
@@ -2328,8 +2328,8 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
 #ifndef NO_KRB5
             if ( m_ticketStatusKrb5 == TWENTY_MINUTES_LEFT &&
                  m_autoRenewTickets && !m_autoRenewalAttempted && ticketinfo.Krb5.renew_till &&
-                 (ticketinfo.Krb5.issue_date + ticketinfo.Krb5.renew_till - LeashTime() > 20 * 60)) 
-            {   
+                 (ticketinfo.Krb5.issue_date + ticketinfo.Krb5.renew_till - LeashTime() > 20 * 60))
+            {
                 m_autoRenewalAttempted = 1;
                 ReleaseMutex(ticketinfo.lockObj);
                 AfxBeginThread(RenewTicket,m_hWnd);
@@ -2338,13 +2338,13 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
 #endif /* NO_KRB5 */
 
             BOOL warningKrb5 = m_ticketStatusKrb5 > NO_TICKETS &&
-                m_ticketStatusKrb5 < TWENTY_MINUTES_LEFT && 
+                m_ticketStatusKrb5 < TWENTY_MINUTES_LEFT &&
                     !m_warningOfTicketTimeLeftKrb5;
             BOOL warningKrb4 = m_ticketStatusKrb4 > NO_TICKETS &&
-                m_ticketStatusKrb4 < TWENTY_MINUTES_LEFT && 
+                m_ticketStatusKrb4 < TWENTY_MINUTES_LEFT &&
                     !m_warningOfTicketTimeLeftKrb4;
             BOOL warningAfs = m_ticketStatusAfs > NO_TICKETS &&
-                m_ticketStatusAfs < TWENTY_MINUTES_LEFT && 
+                m_ticketStatusAfs < TWENTY_MINUTES_LEFT &&
                     !m_warningOfTicketTimeLeftAfs;
 
             // Play warning message only once per each case statement above
@@ -2376,7 +2376,7 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
 
                 ReleaseMutex(ticketinfo.lockObj);
                 AlarmBeep();
-                CLeashMessageBox leashMessageBox(!CMainFrame::m_isMinimum ? GetDesktopWindow() : NULL, 
+                CLeashMessageBox leashMessageBox(!CMainFrame::m_isMinimum ? GetDesktopWindow() : NULL,
                                                   lowTicketWarning, 100000);
                 leashMessageBox.DoModal();
                 if (WaitForSingleObject( ticketinfo.lockObj, 100 ) != WAIT_OBJECT_0)
@@ -2413,7 +2413,7 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
             if (CLeashApp::m_hKrb5DLL) {
                 if ( ticketinfo.Krb5.btickets )
                     strTimeDate = ( "Leash: "
-                                    "[" + ticketStatusKrb5 + "]" + 
+                                    "[" + ticketStatusKrb5 + "]" +
                                     " - [" + ticketinfo.Krb5.principal + "]");
                 else
                     strTimeDate = "Leash: Kerb-5 No Tickets";
@@ -2458,7 +2458,7 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
         CWnd *heading = GetDlgItem(IDC_LABEL_KERB_TICKETS);
         if (!heading->GetWindowPlacement(&headingWndpl))
         {
-            AfxMessageBox("There is a problem getting Leash Heading size!", 
+            AfxMessageBox("There is a problem getting Leash Heading size!",
                        MB_OK|MB_ICONSTOP);
             return CFormView::PreTranslateMessage(pMsg);;
          }
@@ -2467,7 +2467,7 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
         VERIFY(m_pTree);
         if (!m_pTree)
         {
-            AfxMessageBox("There is a problem finding the Ticket Tree!", 
+            AfxMessageBox("There is a problem finding the Ticket Tree!",
                        MB_OK|MB_ICONSTOP);
             return CFormView::PreTranslateMessage(pMsg);
         }
@@ -2477,14 +2477,14 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
 
         WINDOWPLACEMENT wndpl;
         wndpl.length = sizeof(WINDOWPLACEMENT);
-        
+
         if (!GetWindowPlacement(&wndpl))
         {
-            AfxMessageBox("There is a problem getting Leash Window size!", 
+            AfxMessageBox("There is a problem getting Leash Window size!",
                        MB_OK|MB_ICONSTOP);
             return CFormView::PreTranslateMessage(pMsg);
         }
-	
+
 
         wndpl.rcNormalPosition.top = rect.top + headingWndpl.rcNormalPosition.bottom;
         wndpl.rcNormalPosition.right = rect.right;
@@ -2494,11 +2494,11 @@ BOOL CLeashView::PreTranslateMessage(MSG* pMsg)
 
         if (!m_pTree->SetWindowPlacement(&wndpl))
         {
-            AfxMessageBox("There is a problem setting Leash ticket Tree size!", 
+            AfxMessageBox("There is a problem setting Leash ticket Tree size!",
                        MB_OK|MB_ICONSTOP);
         }
-	
-               
+
+
         UpdateWindow();
 
 #ifdef COOL_SCROLL
@@ -2642,8 +2642,8 @@ VOID CLeashView::OnLowTicketAlarm()
         m_lowTicketAlarm = ON;
     else
         m_lowTicketAlarm = OFF;
-	
-	
+
+
     if (!m_pApp)
     {
         ApplicationInfoMissingMsg();
@@ -2651,17 +2651,17 @@ VOID CLeashView::OnLowTicketAlarm()
     else if (!m_lowTicketAlarm)
     {
         if (m_hMenu)
-            CheckMenuItem(m_hMenu, ID_LOW_TICKET_ALARM, MF_UNCHECKED); 
-		
-        m_pApp->WriteProfileInt("Settings", "LowTicketAlarm", FALSE_FLAG);			
+            CheckMenuItem(m_hMenu, ID_LOW_TICKET_ALARM, MF_UNCHECKED);
+
+        m_pApp->WriteProfileInt("Settings", "LowTicketAlarm", FALSE_FLAG);
     }
     else
     {
         if (m_hMenu)
-            CheckMenuItem(m_hMenu, ID_LOW_TICKET_ALARM, MF_CHECKED); 
-		
-        m_pApp->WriteProfileInt("Settings", "LowTicketAlarm", TRUE_FLAG);						
-    }	
+            CheckMenuItem(m_hMenu, ID_LOW_TICKET_ALARM, MF_CHECKED);
+
+        m_pApp->WriteProfileInt("Settings", "LowTicketAlarm", TRUE_FLAG);
+    }
 }
 
 VOID CLeashView::OnAutoRenew()
@@ -2670,8 +2670,8 @@ VOID CLeashView::OnAutoRenew()
         m_autoRenewTickets = ON;
     else
         m_autoRenewTickets = OFF;
-	
-	
+
+
     if (!m_pApp)
     {
         ApplicationInfoMissingMsg();
@@ -2679,28 +2679,28 @@ VOID CLeashView::OnAutoRenew()
     else if (!m_autoRenewTickets)
     {
         if (m_hMenu)
-            CheckMenuItem(m_hMenu, ID_AUTO_RENEW, MF_UNCHECKED); 
-		
-        m_pApp->WriteProfileInt("Settings", "AutoRenewTickets", FALSE_FLAG);			
+            CheckMenuItem(m_hMenu, ID_AUTO_RENEW, MF_UNCHECKED);
+
+        m_pApp->WriteProfileInt("Settings", "AutoRenewTickets", FALSE_FLAG);
         m_autoRenewTickets = FALSE;
     }
     else
     {
         if (m_hMenu)
-            CheckMenuItem(m_hMenu, ID_AUTO_RENEW, MF_CHECKED); 
-		
-        m_pApp->WriteProfileInt("Settings", "AutoRenewTickets", TRUE_FLAG);						
+            CheckMenuItem(m_hMenu, ID_AUTO_RENEW, MF_CHECKED);
+
+        m_pApp->WriteProfileInt("Settings", "AutoRenewTickets", TRUE_FLAG);
         m_autoRenewTickets = TRUE;
-    }	
+    }
     m_autoRenewalAttempted = 0;
 }
 
 VOID CLeashView::AlarmBeep()
 {
-	if (m_lowTicketAlarmSound) 
+	if (m_lowTicketAlarmSound)
 	{
-		::Beep(2000, 200); 
-		::Beep(200, 200); 
+		::Beep(2000, 200);
+		::Beep(200, 200);
 		::Beep(700, 200);
 	}
 }

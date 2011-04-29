@@ -2,7 +2,7 @@
 // File:	KrbMiscConfigOpt.cpp
 // By:		Paul B. Hill
 // Created:	08/12/1999
-// Copyright:	@1999 Massachusetts Institute of Technology - All rights 
+// Copyright:	@1999 Massachusetts Institute of Technology - All rights
 //		reserved.
 // Description: CPP file for KrbMiscConfigOpt.cpp.  Contains variables
 //		and functions for Kerberos Properties.
@@ -16,7 +16,7 @@
 #include "stdafx.h"
 #include "Leash.h"
 #include "KrbProperties.h"
-#include "KrbMiscConfigOpt.h" 
+#include "KrbMiscConfigOpt.h"
 #include "LeashFileDialog.h"
 #include "LeashMessageBox.h"
 #include "lglobals.h"
@@ -152,7 +152,7 @@ VOID CKrbMiscConfigOpt::DoDataExchange(CDataExchange* pDX)
 }
 
 
-BOOL CKrbMiscConfigOpt::OnInitDialog() 
+BOOL CKrbMiscConfigOpt::OnInitDialog()
 {
     CPropertyPage::OnInitDialog();
 
@@ -282,13 +282,13 @@ BOOL CKrbMiscConfigOpt::OnInitDialog()
         GetDlgItem(IDC_EDIT_RENEW_MAX_M)->EnableWindow(FALSE);
     }
 
-    
-    m_initUseKrb4 = m_newUseKrb4 = (CLeashApp::m_hKrb4DLL ? pLeash_get_default_use_krb4() : 0); 
+
+    m_initUseKrb4 = m_newUseKrb4 = (CLeashApp::m_hKrb4DLL ? pLeash_get_default_use_krb4() : 0);
 	CheckDlgButton(IDC_CHECK_REQUEST_KRB4, m_initUseKrb4);
     if ( !CLeashApp::m_hKrb4DLL )
         GetDlgItem(IDC_CHECK_REQUEST_KRB4)->EnableWindow(FALSE);
 
-    m_initKinitPreserve = m_newKinitPreserve = pLeash_get_default_preserve_kinit_settings(); 
+    m_initKinitPreserve = m_newKinitPreserve = pLeash_get_default_preserve_kinit_settings();
 	CheckDlgButton(IDC_CHECK_PRESERVE_KINIT_OPTIONS, m_initKinitPreserve);
 
     return(TRUE);
@@ -314,7 +314,7 @@ BOOL CKrbMiscConfigOpt::OnApply()
 		 m_initKinitPreserve == m_newKinitPreserve
 		 )
         return TRUE;
-	
+
     if ( lifemin > lifemax ) {
         MessageBox("The Minimum Ticket Lifetime must be less than the Maximum Ticket Lifetime.",
                     "Leash", MB_OK);
@@ -357,13 +357,13 @@ BOOL CKrbMiscConfigOpt::OnApply()
 	m_initDefaultLifeMaxDay = m_newDefaultLifeMaxDay;
 	m_initDefaultLifeMaxHr  = m_newDefaultLifeMaxHr ;
 	m_initDefaultLifeMaxMin = m_newDefaultLifeMaxMin;
-	
+
 	m_DefaultRenewMin = renewmin;
 	pLeash_set_default_renew_min(m_DefaultRenewMin);
 	m_initDefaultRenewMinDay = m_newDefaultRenewMinDay;
 	m_initDefaultRenewMinHr  = m_newDefaultRenewMinHr ;
 	m_initDefaultRenewMinMin = m_newDefaultRenewMinMin;
-	
+
 	m_DefaultRenewMax = renewmax;
 	pLeash_set_default_renew_max(m_DefaultRenewMax);
 	m_initDefaultRenewMaxDay = m_newDefaultRenewMaxDay;
@@ -380,7 +380,7 @@ BOOL CKrbMiscConfigOpt::OnApply()
     {
         MessageBox("The ticket lifetime is being controlled by the environment "
                    "variable LIFETIME instead of the registry. Leash cannot modify "
-                   "the environment. Use the System control panel instead.", 
+                   "the environment. Use the System control panel instead.",
                     "Leash", MB_OK);
         return(FALSE);
     }
@@ -413,7 +413,7 @@ BOOL CKrbMiscConfigOpt::OnApply()
 	return TRUE;
 }
 
-void CKrbMiscConfigOpt::OnSelchangeEditDefaultLifeTime() 
+void CKrbMiscConfigOpt::OnSelchangeEditDefaultLifeTime()
 {
 	static int in_progress = 0;
     if (!in_progress && !m_startupPage2)
@@ -442,7 +442,7 @@ void CKrbMiscConfigOpt::OnSelchangeEditDefaultLifeTime()
     }
 }
 
-void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultLifeTime() 
+void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultLifeTime()
 {
     static int in_progress = 0;
     if (!in_progress && !m_startupPage2)
@@ -473,7 +473,7 @@ void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultLifeTime()
 }
 
 void CKrbMiscConfigOpt::ResetDefaultLifeTimeEditBox()
-{ 
+{
     // Reset Config Tab's Default LifeTime Editbox
 
 	DWORD tmp = m_DefaultLifeTime = pLeash_get_default_lifetime();
@@ -495,7 +495,7 @@ void CKrbMiscConfigOpt::ResetDefaultLifeTimeEditBox()
 }
 
 
-void CKrbMiscConfigOpt::OnSelchangeEditDefaultRenewTill() 
+void CKrbMiscConfigOpt::OnSelchangeEditDefaultRenewTill()
 {
 	static int in_progress = 0;
     if (!in_progress && !m_startupPage2)
@@ -524,7 +524,7 @@ void CKrbMiscConfigOpt::OnSelchangeEditDefaultRenewTill()
     }
 }
 
-void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultRenewTill() 
+void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultRenewTill()
 {
     static int in_progress = 0;
     if (!in_progress && !m_startupPage2)
@@ -555,7 +555,7 @@ void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultRenewTill()
 }
 
 void CKrbMiscConfigOpt::ResetDefaultRenewTillEditBox()
-{ 
+{
     // Reset Config Tab's Default RenewTill Editbox
 
 	DWORD tmp = m_DefaultRenewTill = pLeash_get_default_lifetime();
@@ -606,7 +606,7 @@ void CKrbMiscConfigOpt::OnSelchangeEditDefaultLifeMin()
     }
 }
 
-void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultLifeMin() 
+void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultLifeMin()
 {
     static int in_progress = 0;
     if (!in_progress && !m_startupPage2)
@@ -637,7 +637,7 @@ void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultLifeMin()
 }
 
 void CKrbMiscConfigOpt::ResetDefaultLifeMinEditBox()
-{ 
+{
     // Reset Config Tab's Default LifeMin Editbox
 
 	DWORD tmp = m_DefaultLifeMin = pLeash_get_default_life_min();
@@ -658,7 +658,7 @@ void CKrbMiscConfigOpt::ResetDefaultLifeMinEditBox()
 	::SetDlgItemText(::GetForegroundWindow(), IDC_EDIT_LIFE_MIN_M, m_newDefaultLifeMinMin);
 }
 
-void CKrbMiscConfigOpt::OnSelchangeEditDefaultLifeMax() 
+void CKrbMiscConfigOpt::OnSelchangeEditDefaultLifeMax()
 {
 	static int in_progress = 0;
     if (!in_progress && !m_startupPage2)
@@ -688,7 +688,7 @@ void CKrbMiscConfigOpt::OnSelchangeEditDefaultLifeMax()
 	}
 }
 
-void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultLifeMax() 
+void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultLifeMax()
 {
 	static int in_progress = 0;
     if (!in_progress && !m_startupPage2)
@@ -719,7 +719,7 @@ void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultLifeMax()
 }
 
 void CKrbMiscConfigOpt::ResetDefaultLifeMaxEditBox()
-{ 
+{
     // Reset Config Tab's Default LifeMax Editbox
 
 	DWORD tmp = m_DefaultLifeMax = pLeash_get_default_life_min();
@@ -740,7 +740,7 @@ void CKrbMiscConfigOpt::ResetDefaultLifeMaxEditBox()
 	::SetDlgItemText(::GetForegroundWindow(), IDC_EDIT_LIFE_MAX_M, m_newDefaultLifeMaxMin);
 }
 
-void CKrbMiscConfigOpt::OnSelchangeEditDefaultRenewMin() 
+void CKrbMiscConfigOpt::OnSelchangeEditDefaultRenewMin()
 {
 	static int in_progress = 0;
     if (!in_progress && !m_startupPage2)
@@ -770,7 +770,7 @@ void CKrbMiscConfigOpt::OnSelchangeEditDefaultRenewMin()
 	}
 }
 
-void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultRenewMin() 
+void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultRenewMin()
 {
 	static int in_progress = 0;
     if (!in_progress && !m_startupPage2)
@@ -801,7 +801,7 @@ void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultRenewMin()
 }
 
 void CKrbMiscConfigOpt::ResetDefaultRenewMinEditBox()
-{ 
+{
     // Reset Config Tab's Default RenewMin Editbox
 
 	DWORD tmp = m_DefaultRenewMin = pLeash_get_default_life_min();
@@ -822,7 +822,7 @@ void CKrbMiscConfigOpt::ResetDefaultRenewMinEditBox()
 	::SetDlgItemText(::GetForegroundWindow(), IDC_EDIT_RENEW_MIN_M, m_newDefaultRenewMinMin);
 }
 
-void CKrbMiscConfigOpt::OnSelchangeEditDefaultRenewMax() 
+void CKrbMiscConfigOpt::OnSelchangeEditDefaultRenewMax()
 {
 	static int in_progress = 0;
     if (!in_progress && !m_startupPage2)
@@ -852,7 +852,7 @@ void CKrbMiscConfigOpt::OnSelchangeEditDefaultRenewMax()
 	}
 }
 
-void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultRenewMax() 
+void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultRenewMax()
 {
 	static int in_progress = 0;
     if (!in_progress && !m_startupPage2)
@@ -883,7 +883,7 @@ void CKrbMiscConfigOpt::OnEditKillfocusEditDefaultRenewMax()
 }
 
 void CKrbMiscConfigOpt::ResetDefaultRenewMaxEditBox()
-{ 
+{
     // Reset Config Tab's Default RenewMax Editbox
 
 	DWORD tmp = m_DefaultRenewMax = pLeash_get_default_life_min();
@@ -941,7 +941,7 @@ void CKrbMiscConfigOpt::OnShowWindow(BOOL bShow, UINT nStatus)
 	SetDlgItemText(IDC_EDIT_RENEW_MAX_M, m_newDefaultRenewMaxMin);
 }
 
-BOOL CKrbMiscConfigOpt::PreTranslateMessage(MSG* pMsg) 
+BOOL CKrbMiscConfigOpt::PreTranslateMessage(MSG* pMsg)
 {
     if (!m_startupPage2)
     {
@@ -955,7 +955,7 @@ BOOL CKrbMiscConfigOpt::PreTranslateMessage(MSG* pMsg)
         }
     }
 
-    m_startupPage2 = FALSE;	
+    m_startupPage2 = FALSE;
     return CPropertyPage::PreTranslateMessage(pMsg);
 }
 

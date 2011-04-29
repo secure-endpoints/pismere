@@ -1,10 +1,10 @@
 //	**************************************************************************************
-//	File:			Leash.h 
+//	File:			Leash.h
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	H file for Leash.cpp. Contains variables and functions 
-//					for Leash 
+//	Description:	H file for Leash.cpp. Contains variables and functions
+//					for Leash
 //
 //	History:
 //
@@ -90,20 +90,20 @@ private:
 	CString		m_leashDLL;
 	CString		m_krbDLL;
     CString     m_helpFile;
-	CString		m_msgError;	 
+	CString		m_msgError;
 
 	BOOL		InitDLLs();
 	BOOL		FirstInstance();
 
 public:
-	static HWND			m_hProgram; 	
-	static HINSTANCE	m_hLeashDLL; 
-	static HINSTANCE	m_hKrb4DLL; 
-	static HINSTANCE	m_hKrb5DLL; 
+	static HWND			m_hProgram;
+	static HINSTANCE	m_hLeashDLL;
+	static HINSTANCE	m_hKrb4DLL;
+	static HINSTANCE	m_hKrb5DLL;
 	static HINSTANCE	m_hKrb5ProfileDLL;
 	static HINSTANCE	m_hAfsDLL;
-	static HINSTANCE	m_hPsapi;     
-	static HINSTANCE	m_hToolHelp32; 
+	static HINSTANCE	m_hPsapi;
+	static HINSTANCE	m_hToolHelp32;
 	static krb5_context m_krbv5_context;
 	static profile_t    m_krbv5_profile;
 	static HINSTANCE    m_hKrbLSA;

@@ -3,7 +3,7 @@
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	CPP file for KrbProperties.h. Contains variables and functions 
+//	Description:	CPP file for KrbProperties.h. Contains variables and functions
 //					for Kerberos Four Properties
 //
 //	History:
@@ -41,17 +41,17 @@ CString CKrb4ConfigFileLocation::m_newKrbrealmFile;
 
 CKrb4ConfigFileLocation::CKrb4ConfigFileLocation() : CPropertyPage(CKrb4ConfigFileLocation::IDD)
 {
-    m_newTicketFile = _T(""); 
-    m_newKrbFile = _T("");   
-    m_newKrbrealmFile = _T("");  	
-    m_initKrbFile = _T("");   
-    m_initKrbrealmFile = _T("");  	
-    m_initTicketFile = _T(""); 
+    m_newTicketFile = _T("");
+    m_newKrbFile = _T("");
+    m_newKrbrealmFile = _T("");
+    m_initKrbFile = _T("");
+    m_initKrbrealmFile = _T("");
+    m_initTicketFile = _T("");
     m_noKrbrealmFileStartupWarning = FALSE;
     m_noKrbFileStartupWarning = FALSE;
 
     m_startupPage1 = TRUE;
-	
+
 	//{{AFX_DATA_INIT(CKrb4ConfigFileLocation)
 	//}}AFX_DATA_INIT
 }
@@ -60,21 +60,21 @@ CKrb4ConfigFileLocation::~CKrb4ConfigFileLocation()
 {
 }
 
-BOOL CKrb4ConfigFileLocation::OnInitDialog() 
+BOOL CKrb4ConfigFileLocation::OnInitDialog()
 {
 	CPropertyPage::OnInitDialog();
-	
+
 	INT krbCreate = 0;
 	INT krbrealmCreate = 0;
     CHAR krb_path[MAX_PATH];
 	CHAR krbrealm_path[MAX_PATH];
     CHAR ticketName[MAX_PATH];
 	unsigned int krb_path_sz = sizeof(krb_path);
-    unsigned int krbrealm_path_sz = sizeof(krbrealm_path); 
+    unsigned int krbrealm_path_sz = sizeof(krbrealm_path);
     CString strMessage;
-    
 
-	// Set KRB.CON 
+
+	// Set KRB.CON
 	memset(krb_path, '\0', sizeof(krb_path));
  	if (!pkrb_get_krbconf2(krb_path, &krb_path_sz))
 	{ // Error has happened
@@ -82,24 +82,24 @@ BOOL CKrb4ConfigFileLocation::OnInitDialog()
 	}
 	else
 	{ // normal find
-		m_initKrbFile = krb_path;  
-	    m_newKrbFile = m_initKrbFile;  
-        SetDlgItemText(IDC_EDIT_KRB_LOC, m_initKrbFile); 
+		m_initKrbFile = krb_path;
+	    m_newKrbFile = m_initKrbFile;
+        SetDlgItemText(IDC_EDIT_KRB_LOC, m_initKrbFile);
     }
-	
-    // Set KRBREALM.CON 
+
+    // Set KRBREALM.CON
     memset(krbrealm_path, '\0', sizeof(krbrealm_path));
     if (!pkrb_get_krbrealm2(krbrealm_path, &krbrealm_path_sz))
-	{   
+	{
         // Error has happened
 		m_noKrbrealmFileStartupWarning = TRUE;
 	}
 	else
-	{   
+	{
         // normal find
-		m_initKrbrealmFile = krbrealm_path;  
+		m_initKrbrealmFile = krbrealm_path;
         m_newKrbrealmFile = m_initKrbrealmFile;
-        SetDlgItemText(IDC_EDIT_KRBREALM_LOC, m_initKrbrealmFile); 
+        SetDlgItemText(IDC_EDIT_KRBREALM_LOC, m_initKrbrealmFile);
     }
 
 	if (pLeash_get_lock_file_locations() ||
@@ -115,88 +115,88 @@ BOOL CKrb4ConfigFileLocation::OnInitDialog()
         GetDlgItem(IDC_STATIC_CONFILES)->ShowWindow(FALSE);
     }
 
-    
+
     // Set TICKET.KRB file Editbox
     *ticketName = NULL;
 	pkrb_set_tkt_string(0);
-    
-    char *pticketName = ptkt_string(); 
-    if (pticketName) 
-        strcpy(ticketName, pticketName); 
-	
+
+    char *pticketName = ptkt_string();
+    if (pticketName)
+        strcpy(ticketName, pticketName);
+
     if (!*ticketName)
 	{
 		LeashErrorBox("OnInitDialog::Can't locate ticket file", TICKET_FILE);
 	}
 	else
-	{ 
+	{
         m_initTicketFile = m_newTicketFile = ticketName;
-		m_ticketEditBox.ReplaceSel(m_initTicketFile); 
+		m_ticketEditBox.ReplaceSel(m_initTicketFile);
 	}
 
 	if (getenv("KRBTKFILE"))
         GetDlgItem(IDC_EDIT_TICKET_FILE)->EnableWindow(FALSE);
     else
         GetDlgItem(IDC_STATIC_TXT)->ShowWindow(FALSE);
-    
-    return FALSE;  
+
+    return FALSE;
 }
 
 BOOL CKrb4ConfigFileLocation::OnApply()
 {
 	// Krb.con
-    if (0 != m_initKrbFile.CompareNoCase(m_newKrbFile)) 
+    if (0 != m_initKrbFile.CompareNoCase(m_newKrbFile))
     {
         // Commit changes
-        if (SetRegistryVariable("krb.conf", m_newKrbFile, 
+        if (SetRegistryVariable("krb.conf", m_newKrbFile,
             "Software\\MIT\\Kerberos4"))
         {
             MessageBox("Failed to set \"Krb.conf\"!", "Error", MB_OK);
         }
-               
+
         m_initKrbFile = m_newKrbFile;
     }
-    
+
     // Krbrealms.con
-    if (0 != m_initKrbrealmFile.CompareNoCase(m_newKrbrealmFile)) 
+    if (0 != m_initKrbrealmFile.CompareNoCase(m_newKrbrealmFile))
     {
         // Commit changes
-        if (SetRegistryVariable("krb.realms", m_newKrbrealmFile, 
+        if (SetRegistryVariable("krb.realms", m_newKrbrealmFile,
             "Software\\MIT\\Kerberos4"))
         {
             MessageBox("Failed to set \"krb.realms\"!", "Error", MB_OK);
         }
-               
+
         m_initKrbrealmFile = m_newKrbrealmFile;
     }
-    
+
     // Ticket file
-	if (0 != m_initTicketFile.CompareNoCase(m_newTicketFile))	  
+	if (0 != m_initTicketFile.CompareNoCase(m_newTicketFile))
 	{
         if (getenv("KRBTKFILE"))
         {
             // Just in case they set (somehow) KRBTKFILE while this box is up
             MessageBox("OnApply::Ticket file is set in your System's\
-                        Environment!\nYou must first remove it.", 
+                        Environment!\nYou must first remove it.",
                         "Error", MB_OK);
 
             return TRUE;
         }
-        
+
         // Commit changes
-        if (SetRegistryVariable("ticketfile", m_newTicketFile, 
+        if (SetRegistryVariable("ticketfile", m_newTicketFile,
             "Software\\MIT\\Kerberos4"))
         {
             MessageBox("Failed to set \"ticketfile\"!", "Error", MB_OK);
         }
-               
+
         m_initTicketFile = m_newTicketFile;
 	}
 
     return TRUE;
 }
 
-VOID CKrb4ConfigFileLocation::OnOK() 
+VOID CKrb4ConfigFileLocation::OnOK()
 {
 	CPropertyPage::OnOK();
 }
@@ -209,47 +209,47 @@ VOID CKrb4ConfigFileLocation::DoDataExchange(CDataExchange* pDX)
 	//{{AFX_DATA_MAP(CKrb4ConfigFileLocation)
 	DDX_Control(pDX, IDC_EDIT_TICKET_FILE, m_ticketEditBox);
 	//}}AFX_DATA_MAP
-} 
+}
 
 
-VOID CKrb4ConfigFileLocation::OnButtonKrbBrowse() 
+VOID CKrb4ConfigFileLocation::OnButtonKrbBrowse()
 {
 	CString msg;
-	msg.Format("Select %s Location", KRB_FILE);	
-    
+	msg.Format("Select %s Location", KRB_FILE);
+
     CString krb_path = "*.*";
 	CLeashFileDialog dlgFile(TRUE, NULL, krb_path, "Kerbereos Four Config. File (.con)");
-    dlgFile.m_ofn.lpstrTitle = msg;		
-        
-    if (IDOK == dlgFile.DoModal()) 	
+    dlgFile.m_ofn.lpstrTitle = msg;
+
+    if (IDOK == dlgFile.DoModal())
 	{
 		//m_newKrbFile = dlgFile.GetSelectedFileName();
         m_newKrbFile= dlgFile.GetPathName();
 		SetDlgItemText(IDC_EDIT_KRB_LOC, m_newKrbFile);
-        SetModified(TRUE);				
+        SetModified(TRUE);
     }
 }
 
-VOID CKrb4ConfigFileLocation::OnButtonKrbrealmBrowse() 
+VOID CKrb4ConfigFileLocation::OnButtonKrbrealmBrowse()
 {
 	CString msg;
 	msg.Format("Select %s Location", KRBREALM_FILE);
 
     CString krbrealm_path = "*.*";
     CLeashFileDialog dlgFile(TRUE, NULL, krbrealm_path, "Kerbereos Four Config. File (.con)");
-    dlgFile.m_ofn.lpstrTitle = msg;		
-        
-    if (IDOK == dlgFile.DoModal()) 	
+    dlgFile.m_ofn.lpstrTitle = msg;
+
+    if (IDOK == dlgFile.DoModal())
 	{
 		//m_krbrealmFile = dlgFile.GetSelectedFileName();
 		m_newKrbrealmFile = dlgFile.GetPathName();
 		SetDlgItemText(IDC_EDIT_KRB_KRBREALM_LOC, m_newKrbrealmFile);
-        SetModified(TRUE);				
+        SetModified(TRUE);
     }
 }
 
 /*
-VOID CKrb4ConfigFileLocation::OnButtonTicketfileBrowse() 
+VOID CKrb4ConfigFileLocation::OnButtonTicketfileBrowse()
 {
 	CString ticketPath = *.*";
 	CLeashFileDialog dlgFile(TRUE, NULL, ticketPath, "Kerberos Four Ticket File (.con)");
@@ -258,20 +258,20 @@ VOID CKrb4ConfigFileLocation::OnButtonTicketfileBrowse()
 	dlgFile.m_ofn.lpstrTitle = msg;
 	while (TRUE)
 	{
-		if (IDOK == dlgFile.DoModal()) 	
+		if (IDOK == dlgFile.DoModal())
 		{
-			m_newTicketFile = dlgFile.GetPathName();	
+			m_newTicketFile = dlgFile.GetPathName();
 			SetDlgItemText(IDC_EDIT_TICKET_FILE, m_newTicketFile);
 			SetModified(TRUE);
-			break;	
-		}			
+			break;
+		}
 		else
 		  break;
 	}
 }
 */
 
-void CKrb4ConfigFileLocation::OnChangeEditKrbLoc() 
+void CKrb4ConfigFileLocation::OnChangeEditKrbLoc()
 {
 	if (!m_startupPage1)
 	{
@@ -280,7 +280,7 @@ void CKrb4ConfigFileLocation::OnChangeEditKrbLoc()
 	}
 }
 
-void CKrb4ConfigFileLocation::OnChangeEditKrbrealmLoc() 
+void CKrb4ConfigFileLocation::OnChangeEditKrbrealmLoc()
 {
 	if (!m_startupPage1)
 	{
@@ -289,7 +289,7 @@ void CKrb4ConfigFileLocation::OnChangeEditKrbrealmLoc()
 	}
 }
 
-void CKrb4ConfigFileLocation::OnChangeEditTicketFile() 
+void CKrb4ConfigFileLocation::OnChangeEditTicketFile()
 {
 	if (!m_startupPage1)
 	{
@@ -298,12 +298,12 @@ void CKrb4ConfigFileLocation::OnChangeEditTicketFile()
 	}
 }
 
-VOID CKrb4ConfigFileLocation::OnShowWindow(BOOL bShow, UINT nStatus) 
+VOID CKrb4ConfigFileLocation::OnShowWindow(BOOL bShow, UINT nStatus)
 {
     CPropertyPage::OnShowWindow(bShow, nStatus);
 }
 
-VOID CKrb4ConfigFileLocation::OnCancel() 
+VOID CKrb4ConfigFileLocation::OnCancel()
 {
 	CPropertyPage::OnCancel();
 }
@@ -311,13 +311,13 @@ VOID CKrb4ConfigFileLocation::OnCancel()
 void CKrb4ConfigFileLocation::OnHelp()
 {
 #ifdef CALL_HTMLHELP
-    AfxGetApp()->HtmlHelp(HID_KRB4_PROPERTIES_COMMAND); 	
+    AfxGetApp()->HtmlHelp(HID_KRB4_PROPERTIES_COMMAND);
 #else
-    AfxGetApp()->WinHelp(HID_KRB4_PROPERTIES_COMMAND); 	
+    AfxGetApp()->WinHelp(HID_KRB4_PROPERTIES_COMMAND);
 #endif
 }
 
-BOOL CKrb4ConfigFileLocation::PreTranslateMessage(MSG* pMsg) 
+BOOL CKrb4ConfigFileLocation::PreTranslateMessage(MSG* pMsg)
 {
 	// TODO: Add your specialized code here and/or call the base class
 	CString wmsg;
@@ -325,15 +325,15 @@ BOOL CKrb4ConfigFileLocation::PreTranslateMessage(MSG* pMsg)
 	{
         if (m_noKrbFileStartupWarning)
 		{
-			wmsg.Format("OnInitDialog::Can't locate configuration file: %s.", 
+			wmsg.Format("OnInitDialog::Can't locate configuration file: %s.",
 							  KRB_FILE);
 			MessageBox(wmsg, "Leash", MB_OK);
             m_noKrbFileStartupWarning  = FALSE;
 		}
-		
+
         if (m_noKrbrealmFileStartupWarning)
 		{
-			wmsg.Format("OnInitDialog::Can't locate configuration file: %s.", 
+			wmsg.Format("OnInitDialog::Can't locate configuration file: %s.",
 							  KRBREALM_FILE);
 			MessageBox(wmsg, "Leash", MB_OK);
             m_noKrbrealmFileStartupWarning = FALSE;

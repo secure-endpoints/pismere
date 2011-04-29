@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			LeashMessageBox.cpp 
+//	File:			LeashMessageBox.cpp
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:    CPP file for LeashMessageBox.h. Contains variables and functions 
+//	Description:    CPP file for LeashMessageBox.h. Contains variables and functions
 //					for the Leash Special Message Dialog Box
 //
 //	History:
@@ -33,7 +33,7 @@ CLeashMessageBox::CLeashMessageBox(CWnd* pParent, const CString msgText, DWORD d
 	: CDialog(CLeashMessageBox::IDD, pParent)
 {
 	m_dwTime = dwTime;
-	
+
 	//{{AFX_DATA_INIT(CLeashMessageBox)
 	m_messageText = _T(msgText);
 	//}}AFX_DATA_INIT
@@ -61,23 +61,23 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CLeashMessageBox message handlers
 
-void CALLBACK CLeashMessageBox::MessageBoxTimer(HWND hwnd, UINT uiMsg, UINT idEvent, DWORD dwTime)   
+void CALLBACK CLeashMessageBox::MessageBoxTimer(HWND hwnd, UINT uiMsg, UINT idEvent, DWORD dwTime)
 {
-	::KillTimer(hwnd, 2);	
+	::KillTimer(hwnd, 2);
 	::SendMessage(hwnd, WM_CLOSE, 0, 0);
 }
 
-void CLeashMessageBox::OnOK() 
+void CLeashMessageBox::OnOK()
 {
 	KillTimer(2);
     SendMessage(WM_CLOSE, 0, 0);
 }
 
-BOOL CLeashMessageBox::OnInitDialog() 
+BOOL CLeashMessageBox::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 	UINT idTimer = SetTimer(2, m_dwTime, (TIMERPROC)MessageBoxTimer);
-		
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	              // EXCEPTION: OCX Property Pages should return FALSE
 }

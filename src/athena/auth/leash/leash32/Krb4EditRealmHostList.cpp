@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			Krb4EditRealmHostList.cpp 
+//	File:			Krb4EditRealmHostList.cpp
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	CPP file for Krb4EditRealmHostList.h. Contains variables and functions 
+//	Description:	CPP file for Krb4EditRealmHostList.h. Contains variables and functions
 //					for Kerberos Four Properties
 //
 //	History:
@@ -35,14 +35,14 @@ CKrb4EditRealmHostList::CKrb4EditRealmHostList(LPSTR editItem, CWnd* pParent)
 	m_editItem = _T("");
 
 /*
-    // Parse the passed in item 
+    // Parse the passed in item
 	LPSTR pEditItem = editItem;
 	LPSTR findSpace = strchr(editItem, ' ');
 	if (findSpace)
 	  *findSpace = 0;
 	else
 	{
-		 LeashErrorBox("This is a defective entry in file", 
+		 LeashErrorBox("This is a defective entry in file",
 					   CKrb4ConfigFileLocation::m_krbFile);
 		 ASSERT(0);
 		 m_initRealm = m_newRealm = editItem;
@@ -50,13 +50,13 @@ CKrb4EditRealmHostList::CKrb4EditRealmHostList(LPSTR editItem, CWnd* pParent)
 	}
 
 	m_initRealm = m_newRealm = editItem;  // first token
-	
+
 	pEditItem = strchr(editItem, '\0');
 	if (pEditItem)
 	{
 		pEditItem++;
-		findSpace++; 
-	}	
+		findSpace++;
+	}
 	else
 	  ASSERT(0);
 
@@ -67,11 +67,11 @@ CKrb4EditRealmHostList::CKrb4EditRealmHostList(LPSTR editItem, CWnd* pParent)
 	}
 	else
 	{
-		m_initAdmin = m_newAdmin = FALSE;	
-		m_initHost = m_newHost = pEditItem; // second token 
-		return;	
+		m_initAdmin = m_newAdmin = FALSE;
+		m_initHost = m_newHost = pEditItem; // second token
+		return;
 	}
-	
+
 	m_initHost = m_newHost = pEditItem; // second token
 
 	findSpace++;
@@ -79,9 +79,9 @@ CKrb4EditRealmHostList::CKrb4EditRealmHostList(LPSTR editItem, CWnd* pParent)
 	if (pEditItem)
 	{
 		if (strstr(pEditItem, "admin server"))
-		  m_initAdmin = m_newAdmin = TRUE; 	
+		  m_initAdmin = m_newAdmin = TRUE;
 		//else
-		  //;  It must be something else??? :(	
+		  //;  It must be something else??? :(
 	}
 	else
 	  ASSERT(0);
@@ -113,7 +113,7 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CKrb4EditRealmHostList message handlers
 
-BOOL CKrb4EditRealmHostList::OnInitDialog() 
+BOOL CKrb4EditRealmHostList::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
@@ -131,39 +131,39 @@ BOOL CKrb4EditRealmHostList::OnInitDialog()
 
 	//GetDlgItem(IDC_EDIT_DEFAULT_REALM)->EnableWindow();
 	//GetDlgItem(IDC_EDIT_DEFAULT_REALM)->SetFocus();
-		
-	return TRUE;  
+
+	return TRUE;
 }
 
-void CKrb4EditRealmHostList::OnShowWindow(BOOL bShow, UINT nStatus) 
+void CKrb4EditRealmHostList::OnShowWindow(BOOL bShow, UINT nStatus)
 {
 	CDialog::OnShowWindow(bShow, nStatus);
 	m_startup = FALSE;
 }
 
-void CKrb4EditRealmHostList::OnChangeEditDefaultRealm() 
+void CKrb4EditRealmHostList::OnChangeEditDefaultRealm()
 {
 	if (!m_startup)
 	  GetDlgItemText(IDC_EDIT_DEFAULT_REALM, m_newRealm);
 }
 
-void CKrb4EditRealmHostList::OnChangeEditRealmHostname() 
+void CKrb4EditRealmHostList::OnChangeEditRealmHostname()
 {
 	if (!m_startup)
 	  GetDlgItemText(IDC_EDIT_REALM_HOSTNAME, m_newHost);
 }
 
-void CKrb4EditRealmHostList::OnRadioAdminServer() 
+void CKrb4EditRealmHostList::OnRadioAdminServer()
 {
-	m_newAdmin = TRUE;	
+	m_newAdmin = TRUE;
 }
 
-void CKrb4EditRealmHostList::OnRadioNoAdminServer() 
+void CKrb4EditRealmHostList::OnRadioNoAdminServer()
 {
-	m_newAdmin = FALSE;	
+	m_newAdmin = FALSE;
 }
 
-void CKrb4EditRealmHostList::OnOK() 
+void CKrb4EditRealmHostList::OnOK()
 {
 	m_newRealm.TrimLeft();
 	m_newRealm.TrimRight();
@@ -172,7 +172,7 @@ void CKrb4EditRealmHostList::OnOK()
 
 	if (m_newRealm.IsEmpty() || m_newHost.IsEmpty())
 	{ // stay
-		MessageBox("OnOK::Both Realm and Host fields must be filled in!", 
+		MessageBox("OnOK::Both Realm and Host fields must be filled in!",
                     "Leash", MB_OK);
 	}
 	else if (-1 != m_newRealm.Find(' ') || -1 != m_newHost.Find(' '))
@@ -180,7 +180,7 @@ void CKrb4EditRealmHostList::OnOK()
 		MessageBox("OnOK::Illegal space found!", "Leash", MB_OK);
 	}
 
-	else	
+	else
 	  CDialog::OnOK(); // exit
 
 	m_editItem = m_newRealm + " " + m_newHost;

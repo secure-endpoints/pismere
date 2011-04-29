@@ -2,7 +2,7 @@
 // File:	KrbMiscConfigOpt.h
 // By:		Paul B. Hill
 // Created:	08/12/1999
-// Copyright:	@1999 Massachusetts Institute of Technology - All rights 
+// Copyright:	@1999 Massachusetts Institute of Technology - All rights
 //		reserved.
 // Description: H file for KrbMiscConfigOpt.cpp.  Contains variables
 //		and functions for Kerberos Properties.
@@ -19,7 +19,7 @@
 
 #if _MSC_VER >= 1000
 #pragma once
-#endif 
+#endif
 
 
 #include "resource.h"
@@ -67,7 +67,7 @@ private:
 	static CString m_newDefaultLifeMaxHr;
 	static CString m_initDefaultLifeMaxDay;
 	static CString m_newDefaultLifeMaxDay;
-	
+
 	static UINT m_DefaultRenewMin;
 	static CString m_initDefaultRenewMinMin;
 	static CString m_newDefaultRenewMinMin;
@@ -75,7 +75,7 @@ private:
 	static CString m_newDefaultRenewMinHr;
 	static CString m_initDefaultRenewMinDay;
 	static CString m_newDefaultRenewMinDay;
-	
+
 	static UINT m_DefaultRenewMax;
 	static CString m_initDefaultRenewMaxMin;
 	static CString m_newDefaultRenewMaxMin;
@@ -134,12 +134,12 @@ public:
 	//}}AFX_VIRTUAL
 
 	virtual BOOL OnApply();
-	
+
 // Implementation
 protected:
 	// Generated message map functions
 	//{{AFX_MSG(CKrbMiscConfigOpt)
-	virtual BOOL OnInitDialog();	
+	virtual BOOL OnInitDialog();
 	afx_msg void OnShowWindow(BOOL bShow, UINT nStatus);
 	afx_msg void OnEditKillfocusEditDefaultLifeTime();
 	afx_msg void OnResetDefaultLifeTimeEditBox();

@@ -3,7 +3,7 @@
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	CPP file for LeashProperties.h. Contains variables and functions 
+//	Description:	CPP file for LeashProperties.h. Contains variables and functions
 //					for the Leash Properties Dialog Box
 //
 //	History:
@@ -15,7 +15,7 @@
 #include "stdafx.h"
 #include "leash.h"
 #include "LeashProperties.h"
-#include "LeashMessageBox.h" 
+#include "LeashMessageBox.h"
 #include <leashinfo.h>
 #include "lglobals.h"
 #include "reminder.h"
@@ -66,11 +66,11 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CLeashProperties message handlers
 
-BOOL CLeashProperties::OnInitDialog() 
+BOOL CLeashProperties::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-	
-    pLeashGetTimeServerName(timeServer, TIMEHOST); 
+
+    pLeashGetTimeServerName(timeServer, TIMEHOST);
     SetDlgItemText(IDC_EDIT_TIME_SERVER, timeServer);
 
    	if (getenv(TIMEHOST))
@@ -80,7 +80,7 @@ BOOL CLeashProperties::OnInitDialog()
 
     CWinApp * pApp = AfxGetApp();
     if (pApp)
-        m_initMissingFiles = m_newMissingFiles = 
+        m_initMissingFiles = m_newMissingFiles =
             pApp->GetProfileInt("Settings", "CreateMissingConfig", FALSE_FLAG);
     CheckDlgButton(IDC_CHECK_CREATE_MISSING_CFG, m_initMissingFiles);
 
@@ -100,34 +100,34 @@ BOOL CLeashProperties::OnInitDialog()
     return TRUE;
 }
 
-void CLeashProperties::OnOK() 
+void CLeashProperties::OnOK()
 {
 	CString timeServer_;
 	GetDlgItemText(IDC_EDIT_TIME_SERVER, timeServer_);
 
 	if (getenv(TIMEHOST))
-    {   
+    {
         // Check system for TIMEHOST, just in case it gets set (somehow)
-        MessageBox("Can't change the time host unless you remove it from the environment!", 
+        MessageBox("Can't change the time host unless you remove it from the environment!",
                    "Error", MB_OK);
         return;
     }
-    
+
     if( getenv("USEKRB4") !=  NULL)
     {
         MessageBox("Kerberos 4 ticket requests are being controlled by the environment"
                    "variable USEKRB4 instead of the registry. Leash cannot modify"
-                   "the environment. Use the System control panel instead.", 
+                   "the environment. Use the System control panel instead.",
                     "Leash", MB_OK);
         return;
     }
 
     if (SetRegistryVariable(TIMEHOST, timeServer_))
 	{
-		MessageBox("There was an error putting your entry into the Registry!", 
+		MessageBox("There was an error putting your entry into the Registry!",
                    "Error", MB_OK);
     }
-    
+
     if ( m_initMissingFiles != m_newMissingFiles ) {
         CWinApp * pApp = AfxGetApp();
         if (pApp)
@@ -136,7 +136,7 @@ void CLeashProperties::OnOK()
 
         if ( m_newMissingFiles )
             CLeashApp::ValidateConfigFiles();
-    }   
+    }
 
     if ( dw_initMslsaImport != dw_newMslsaImport ) {
 		pLeash_set_default_mslsa_import(dw_newMslsaImport);
@@ -165,18 +165,18 @@ void CLeashProperties::OnRadioMslsaMatchingRealm()
     dw_newMslsaImport = 2;
 }
 
-void CLeashProperties::OnHelp() 
+void CLeashProperties::OnHelp()
 {
 #ifdef CALL_HTMLHELP
-    AfxGetApp()->HtmlHelp(HID_LEASH_PROPERTIES_COMMAND); 	
+    AfxGetApp()->HtmlHelp(HID_LEASH_PROPERTIES_COMMAND);
 #else
-    AfxGetApp()->WinHelp(HID_LEASH_PROPERTIES_COMMAND); 	
+    AfxGetApp()->WinHelp(HID_LEASH_PROPERTIES_COMMAND);
 #endif
 }
 
 void CLeashProperties::OnButtonResetDefaults()
 {
-    if (IDYES != AfxMessageBox("You are about to reset all Leash settings to their default values!\n\nContinue?", 
+    if (IDYES != AfxMessageBox("You are about to reset all Leash settings to their default values!\n\nContinue?",
                                 MB_YESNO))
         return;
 

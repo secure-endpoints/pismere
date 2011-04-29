@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			KrbProperties.h 
+//	File:			KrbProperties.h
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	H file for KrbProperties.cpp. Contains variables and functions 
+//	Description:	H file for KrbProperties.cpp. Contains variables and functions
 //					for Kerberos Four Properties
 //
 //	History:
@@ -22,7 +22,7 @@
 // KrbProperties.h : header file
 //
 
-#include "KrbConfigOptions.h" 
+#include "KrbConfigOptions.h"
 #include "KrbRealmHostMaintenance.h"
 #include "KrbDomainRealmMaintenance.h"
 #include "Krb4DomainRealmMaintenance.h"

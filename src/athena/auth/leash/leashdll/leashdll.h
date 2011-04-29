@@ -6,7 +6,7 @@
 /*
  * This is a hack needed because the real com_err.h does
  * not define err_func.  We need it in the case where
- * we pull in the real com_err instead of the krb4 
+ * we pull in the real com_err instead of the krb4
  * impostor.
  */
 #ifndef _DCNS_MIT_COM_ERR_H
@@ -46,13 +46,13 @@ void FAR Leash_load_com_err_callback(FARPROC,FARPROC,FARPROC);
 #include <security.h>
 
 /* _WIN32_WINNT must be 0x0501 or greater to pull in definition of
- * all required LSA data types when the Vista SDK NtSecAPI.h is used. 
+ * all required LSA data types when the Vista SDK NtSecAPI.h is used.
  */
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
 #else
 #if _WIN32_WINNT < 0x0501
-#undef _WIN32_WINNT 
+#undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
 #endif
 #endif

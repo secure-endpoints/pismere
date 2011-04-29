@@ -1,8 +1,8 @@
-//	File:			Krb4AddToDomainRealmList.cpp 
+//	File:			Krb4AddToDomainRealmList.cpp
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	CPP file for Krb4AddToDomainRealmList.h. Contains variables and functions 
+//	Description:	CPP file for Krb4AddToDomainRealmList.h. Contains variables and functions
 //					for Kerberos Four Properties
 //
 //	History:
@@ -33,7 +33,7 @@ CKrb4AddToDomainRealmList::CKrb4AddToDomainRealmList(CWnd* pParent /*=NULL*/)
 	m_newDomainHost = _T("");
 	m_startup = TRUE;
 
-	
+
 	//{{AFX_DATA_INIT(CKrb4AddToDomainRealmList)
 		// NOTE: the ClassWizard will add member initialization here
 	//}}AFX_DATA_INIT
@@ -60,22 +60,22 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CKrb4AddToDomainRealmList message handlers
 
-void CKrb4AddToDomainRealmList::OnChangeEditDomainhostname() 
+void CKrb4AddToDomainRealmList::OnChangeEditDomainhostname()
 {
 	if (!m_startup)
 	  GetDlgItemText(IDC_EDIT_DOMAINHOSTNAME, m_newDomainHost);
 }
 
-void CKrb4AddToDomainRealmList::OnChangeEditDomainrealmname() 
+void CKrb4AddToDomainRealmList::OnChangeEditDomainrealmname()
 {
 	if (!m_startup)
 	  GetDlgItemText(IDC_EDIT_DOMAINREALMNAME, m_newRealm);
 }
 
-void CKrb4AddToDomainRealmList::OnOK() 
+void CKrb4AddToDomainRealmList::OnOK()
 {
 	//if (m_newRealm.IsEmpty)
-	
+
 	m_newRealm.TrimLeft();
 	m_newRealm.TrimRight();
 	m_newDomainHost.TrimLeft();
@@ -83,27 +83,27 @@ void CKrb4AddToDomainRealmList::OnOK()
 
 	if (m_newRealm.IsEmpty() || m_newDomainHost.IsEmpty())
 	{ // stay
-		MessageBox("OnOK::Both Realm and Domain-Host fields must be filled in!", 
+		MessageBox("OnOK::Both Realm and Domain-Host fields must be filled in!",
                     "Leash", MB_OK);
 	}
 	else if (-1 != m_newRealm.Find(' ') || -1 != m_newDomainHost.Find(' '))
 	{ // stay
 		MessageBox("OnOK::Illegal space found!", "Leash", MB_OK);
 	}
-	else	
+	else
 	  CDialog::OnOK(); // exit
 }
 
-void CKrb4AddToDomainRealmList::OnCancel() 
+void CKrb4AddToDomainRealmList::OnCancel()
 {
-	
+
 	CDialog::OnCancel();
 }
 
-void CKrb4AddToDomainRealmList::OnShowWindow(BOOL bShow, UINT nStatus) 
+void CKrb4AddToDomainRealmList::OnShowWindow(BOOL bShow, UINT nStatus)
 {
 	CDialog::OnShowWindow(bShow, nStatus);
-	m_startup = FALSE;	
+	m_startup = FALSE;
 }
 
 

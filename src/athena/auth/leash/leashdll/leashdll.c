@@ -15,8 +15,8 @@ HINSTANCE hSecur32 = 0;
 HINSTANCE hComErr = 0;
 HINSTANCE hService = 0;
 HINSTANCE hProfile = 0;
-HINSTANCE hPsapi = 0; 
-HINSTANCE hToolHelp32 = 0; 
+HINSTANCE hPsapi = 0;
+HINSTANCE hToolHelp32 = 0;
 HINSTANCE hCcapi = 0;
 
 DWORD     AfsAvailable = 0;
@@ -129,8 +129,8 @@ DECL_FUNC_PTR(com_err);
 DECL_FUNC_PTR(error_message);
 
 // Profile functions
-DECL_FUNC_PTR(profile_init);    
-DECL_FUNC_PTR(profile_release); 
+DECL_FUNC_PTR(profile_init);
+DECL_FUNC_PTR(profile_release);
 DECL_FUNC_PTR(profile_get_subsection_names);
 DECL_FUNC_PTR(profile_free_list);
 DECL_FUNC_PTR(profile_get_string);
@@ -268,7 +268,7 @@ FUNC_INFO k524_fi[] = {
 
 FUNC_INFO profile_fi[] = {
     MAKE_FUNC_INFO(profile_init),
-    MAKE_FUNC_INFO(profile_release), 
+    MAKE_FUNC_INFO(profile_release),
     MAKE_FUNC_INFO(profile_get_subsection_names),
     MAKE_FUNC_INFO(profile_free_list),
     MAKE_FUNC_INFO(profile_get_string),
@@ -341,7 +341,7 @@ DllMain(
 {
     hLeashInst = hinstDLL;
 
-    switch (fdwReason) 
+    switch (fdwReason)
     {
     case DLL_PROCESS_ATTACH:
     {
@@ -373,7 +373,7 @@ DllMain(
             // Windows 9x
             LoadFuncs(TOOLHELPDLL, toolhelp_fi, &hToolHelp32, 0, 1, 0, 0);
             hPsapi = 0;
-        }             
+        }
         else if(osvi.dwPlatformId == VER_PLATFORM_WIN32_NT)
         {
             // Windows NT
@@ -401,7 +401,7 @@ DllMain(
             GetAfsStatus(&AfsStatus);
 
             AfsAvailable = afscompat_init();
-            
+
             if ( AfsStatus && !AfsAvailable )
                 SetAfsStatus(0);
         }

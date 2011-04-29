@@ -3,7 +3,7 @@ ERROR_TABLE lsh
   ERROR_CODE LSH_INVPRINCIPAL, "Principal invalid."
   ERROR_CODE LSH_FAILEDREALM,  "Realm failed."
   ERROR_CODE LSH_INVINSTANCE,  "Instance invalid."
-  ERROR_CODE LSH_INVREALM,     "Realm invalid."    
+  ERROR_CODE LSH_INVREALM,     "Realm invalid."
   ERROR_CODE LSH_EOF,          "Unexpected end of Kerberos memory storage."
   ERROR_CODE LSH_EXPIRESOON,   "Warning! Your Kerberos tickets expire soon."
   ERROR_CODE LSH_NOMATCH,      "You did not type the same new password."

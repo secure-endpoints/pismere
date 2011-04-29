@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			LeashView.h 
+//	File:			LeashView.h
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	H file for LeashView.cpp. Contains variables and functions 
+//	Description:	H file for LeashView.cpp. Contains variables and functions
 //					for the Leash FormView
 //
 //	History:
@@ -36,7 +36,7 @@
 #define LOW_TICKET            4
 #define EXPIRED_TICKET        5
 #define TICKET_NOT_INSTALLED  6
-#define ACTIVE_PARENT_NODE    7 
+#define ACTIVE_PARENT_NODE    7
 #define LOW_PARENT_NODE       8
 #define EXPIRED_PARENT_NODE   9
 #define NONE_PARENT_NODE      10
@@ -60,8 +60,8 @@
 
 #define WM_TRAYICON (WM_USER+100)
 
-enum ticketTimeLeft{NO_TICKETS, ZERO_MINUTES_LEFT, FIVE_MINUTES_LEFT, TEN_MINUTES_LEFT, 
-					FIFTEEN_MINUTES_LEFT, TWENTY_MINUTES_LEFT, PLENTY_OF_TIME, 
+enum ticketTimeLeft{NO_TICKETS, ZERO_MINUTES_LEFT, FIVE_MINUTES_LEFT, TEN_MINUTES_LEFT,
+					FIFTEEN_MINUTES_LEFT, TWENTY_MINUTES_LEFT, PLENTY_OF_TIME,
                     NOT_INSTALLED};
 // Don't change 'NO_TICKET's' value
 
@@ -70,41 +70,41 @@ class CLeashDebugWindow;
 class CLeashView : public CFormView
 {
 private:
-    TicketList*         m_listKrb4; 
-    TicketList*         m_listKrb5; 
+    TicketList*         m_listKrb4;
+    TicketList*         m_listKrb5;
     TicketList*         m_listAfs;
     CLeashDebugWindow*	m_pDebugWindow;
 	CImageList			m_imageList;
-	CImageList			*m_pImageList; 
-    CTreeCtrl*			m_pTree; 
-	CWinApp*			m_pApp; 
+	CImageList			*m_pImageList;
+    CTreeCtrl*			m_pTree;
+	CWinApp*			m_pApp;
 	HTREEITEM			m_hPrincipal;
 	HTREEITEM			m_hKerb4;
 	HTREEITEM			m_hKerb5;
     HTREEITEM           m_hk5tkt;
-	HTREEITEM			m_hAFS; 
+	HTREEITEM			m_hAFS;
 	TV_INSERTSTRUCT		m_tvinsert;
-	HMENU				m_hMenu; 
+	HMENU				m_hMenu;
     BOOL				m_startup;
 	BOOL				m_isMinimum;
-	BOOL				m_debugStartUp;	
+	BOOL				m_debugStartUp;
 	BOOL				m_alreadyPlayed;
     INT					m_upperCaseRealm;
 	INT					m_destroyTicketsOnExit;
 	INT					m_debugWindow;
-	INT					m_largeIcons; 
-	INT					m_lowTicketAlarm; 
+	INT					m_largeIcons;
+	INT					m_lowTicketAlarm;
 	INT					m_hPrincipalState;
 	INT					m_hKerb4State;
 	INT					m_hKerb5State;
-	INT					m_hAFSState; 
+	INT					m_hAFSState;
     BOOL                m_bIconAdded;
     BOOL                m_bIconDeleted;
 
     static INT		   	m_autoRenewTickets;
-    static INT          m_ticketStatusAfs; 
-    static INT          m_ticketStatusKrb4; 
-    static INT          m_ticketStatusKrb5; 
+    static INT          m_ticketStatusAfs;
+    static INT          m_ticketStatusKrb4;
+    static INT          m_ticketStatusKrb5;
     static INT          m_autoRenewalAttempted;
 	static INT			m_warningOfTicketTimeLeftAfs;
 	static INT			m_warningOfTicketTimeLeftKrb4;
@@ -113,24 +113,24 @@ private:
     static INT			m_warningOfTicketTimeLeftLockKrb4;
     static INT			m_warningOfTicketTimeLeftLockKrb5;
     static INT			m_updateDisplayCount;
-    static INT	        m_alreadyPlayedDisplayCount; 
-    static LONG			m_ticketTimeLeft;    
+    static INT	        m_alreadyPlayedDisplayCount;
+    static LONG			m_ticketTimeLeft;
 	static BOOL			m_lowTicketAlarmSound;
     static LONG         m_timerMsgNotInProgress;
 
 	VOID ResetTreeNodes();
     VOID ApplicationInfoMissingMsg();
     VOID GetScrollBarState(CSize sizeClient, CSize& needSb,
-	                       CSize& sizeRange, CPoint& ptMove, 
+	                       CSize& sizeRange, CPoint& ptMove,
                            BOOL bInsideClient);
     VOID UpdateBars();
     VOID GetScrollBarSizes(CSize& sizeSb);
     BOOL GetTrueClientSize(CSize& size, CSize& sizeSb);
-    
+
     //void   GetRowWidthHeight(CDC* pDC, LPCSTR theString, int& nRowWidth,
     //                         int& nRowHeight, int& nCharWidth);
-    static VOID	AlarmBeep(); 
-	static VOID	CALLBACK EXPORT TimerProc(HWND hWnd, UINT nMsg, UINT nIDEvent, 
+    static VOID	AlarmBeep();
+	static VOID	CALLBACK EXPORT TimerProc(HWND hWnd, UINT nMsg, UINT nIDEvent,
                                           DWORD dwTime);
 	static VOID	UpdateTicketTime(TICKETINFO& ticketinfo);
 	static INT	GetLowTicketStatus(int);
@@ -149,8 +149,8 @@ protected: // create from serialization only
 
 // Attributes
 public:
-	static INT   m_forwardableTicket; 
-	static INT   m_proxiableTicket; 
+	static INT   m_forwardableTicket;
+	static INT   m_proxiableTicket;
     static INT   m_renewableTicket;
     static INT   m_noaddressTicket;
     static DWORD m_publicIPAddress;

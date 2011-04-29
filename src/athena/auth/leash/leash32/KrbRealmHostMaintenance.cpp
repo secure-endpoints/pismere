@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			KrbRealmHostMaintenance.cpp 
+//	File:			KrbRealmHostMaintenance.cpp
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	CPP file for KrbRealmHostMaintenance.h. Contains variables and functions 
+//	Description:	CPP file for KrbRealmHostMaintenance.h. Contains variables and functions
 //					for Kerberos Four and Five Properties
 //
 //	History:
@@ -25,7 +25,7 @@
 #include "KrbConfigOptions.h"
 
 #include "lglobals.h"
-#include "MainFrm.h" 
+#include "MainFrm.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -39,10 +39,10 @@ static char THIS_FILE[] = __FILE__;
 
 IMPLEMENT_DYNCREATE(CKrbRealmHostMaintenance, CPropertyPage)
 
-CKrbRealmHostMaintenance::CKrbRealmHostMaintenance() 
+CKrbRealmHostMaintenance::CKrbRealmHostMaintenance()
  : CPropertyPage(CKrbRealmHostMaintenance::IDD)
 {
-	m_isRealmListBoxInFocus	= FALSE;	
+	m_isRealmListBoxInFocus	= FALSE;
 	m_isStart = TRUE;
 	m_theAdminServer = _T("");
 	m_theAdminServerMarked = _T("");
@@ -90,32 +90,32 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CKrbRealmHostMaintenance message handlers
 
-BOOL CKrbRealmHostMaintenance::OnInitDialog() 
+BOOL CKrbRealmHostMaintenance::OnInitDialog()
 {
 	CPropertyPage::OnInitDialog();
 
 	const char*  rootSection[] = {"realms", NULL};
-	const char** rootsec = rootSection;	
-	char **sections = NULL, 
+	const char** rootsec = rootSection;
+	char **sections = NULL,
 		 **cpp = NULL,
           *value = NULL;
-	
-	long retval = pprofile_get_subsection_names(CLeashApp::m_krbv5_profile, 
+
+	long retval = pprofile_get_subsection_names(CLeashApp::m_krbv5_profile,
 						    rootsec, &sections);
-	
+
 	if (retval && PROF_NO_RELATION != retval)
 	{
 		MessageBox("OnInitDialog::There is an error, profile will not be saved!!!\
-                    \nIf this error persist, contact your administrator.", 
+                    \nIf this error persist, contact your administrator.",
 				   "Leash", MB_OK);
 		return TRUE;
-	}	
+	}
 
-	for (cpp = sections; *cpp; cpp++) 
+	for (cpp = sections; *cpp; cpp++)
 	{
 		if (LB_ERR == m_KDCRealmList.AddString(*cpp))
 		{
-			MessageBox("OnInitDialog::Can't add to Kerberos Realm Listbox", 
+			MessageBox("OnInitDialog::Can't add to Kerberos Realm Listbox",
 						"Leash", MB_OK);
 			return FALSE;
 		}
@@ -142,7 +142,7 @@ BOOL CKrbRealmHostMaintenance::OnInitDialog()
     CheckDlgButton(IDC_DNS_KDC, m_initDnsKdcLookup);
 
     // Compaire Krb Four with what's in the Krb Five Profile Linklist
-	// and add to m_KDCRealmList if needed. 
+	// and add to m_KDCRealmList if needed.
 	m_KDCRealmList.SetCurSel(0);
 
 	if (!m_KDCRealmList.GetCount())
@@ -170,18 +170,18 @@ BOOL CKrbRealmHostMaintenance::OnInitDialog()
 		GetDlgItem(IDC_BUTTON_KDCHOST_REMOVE)->EnableWindow();
 		GetDlgItem(IDC_BUTTON_KDCHOST_EDIT)->EnableWindow();
 	}
-	
 
-	return TRUE;  
+
+	return TRUE;
 }
 
 BOOL CKrbRealmHostMaintenance::OnApply()
 {
-    char theSection[REALM_SZ + 1];								 
-    const char*  adminServer[] = {"realms", theSection, ADMIN_SERVER, NULL}; 
+    char theSection[REALM_SZ + 1];
+    const char*  adminServer[] = {"realms", theSection, ADMIN_SERVER, NULL};
     const char*  Section[] = {"realms", theSection, "kdc", NULL}; //theSection
-    const char** section = Section;	
-    const char** adminServ = adminServer;	
+    const char** section = Section;
+    const char** adminServ = adminServer;
 
     if (!CLeashApp::m_krbv5_profile) {
         CHAR confname[MAX_PATH];
@@ -200,84 +200,84 @@ BOOL CKrbRealmHostMaintenance::OnApply()
 	for (INT realm = 0; realm < maxRealms; realm++)
 	{
 		m_KDCRealmList.GetText(realm, theSection);
-		long retval = pprofile_get_values(CLeashApp::m_krbv5_profile, 
+		long retval = pprofile_get_values(CLeashApp::m_krbv5_profile,
 			                               section, &values);
         pprofile_free_list(values);
-        
+
         if (PROF_NO_RELATION == retval)
 		{
-			if (IDYES == AfxMessageBox("One or more Realms do not have any corresponing Servers!!!\n\nContinue?", 
+			if (IDYES == AfxMessageBox("One or more Realms do not have any corresponing Servers!!!\n\nContinue?",
 				MB_YESNO))
 			  break;
 			else
-			  return TRUE; 
+			  return TRUE;
 		}
-		
+
 		if (retval && PROF_NO_RELATION != retval)
 		{
-			MessageBox("OnApply::There is an error, profile will not be saved!!!\nIf this error persist, contact your administrator.", 
+			MessageBox("OnApply::There is an error, profile will not be saved!!!\nIf this error persist, contact your administrator.",
 				       "Error", MB_OK);
 			return TRUE;
-		}	
+		}
     }
     */
 
     long retval = pprofile_flush(CLeashApp::m_krbv5_profile);
- 
+
     if (retval && PROF_NO_RELATION != retval)
 	{
 		MessageBox("OnApply::There is an error, profile will not be saved!!!\
-                    \nIf this error persist, contact your administrator.", 
+                    \nIf this error persist, contact your administrator.",
 				   "Leash", MB_OK);
-	}	
+	}
 
 
     // Save to Kerberos Four config. file "Krb.con"
     CStdioFile krbCon;
-	if (!krbCon.Open(CKrbProperties::m_krbPath, CFile::modeCreate | 
+	if (!krbCon.Open(CKrbProperties::m_krbPath, CFile::modeCreate |
 											    CFile::modeNoTruncate |
-												CFile::modeReadWrite)) 
-	{	
-		LeashErrorBox("OnApply::Can't open Configuration File", 
+												CFile::modeReadWrite))
+	{
+		LeashErrorBox("OnApply::Can't open Configuration File",
 					  CKrbProperties::m_krbPath);
 		return TRUE;
 	}
-	
+
 	krbCon.SetLength(0);
-	
+
 	krbCon.WriteString(CKrbConfigOptions::m_newDefaultRealm);
 	krbCon.WriteString("\n");
-	
+
 	for (INT maxItems = m_KDCRealmList.GetCount(), item = 0; item < maxItems; item++)
 	{
-        char **values = NULL, 
-	    	 **cpp = NULL, 
-	         **admin = NULL;   
+        char **values = NULL,
+	    	 **cpp = NULL,
+	         **admin = NULL;
 
         if (LB_ERR == m_KDCRealmList.GetText(item, theSection))
 		  ASSERT(0);
 
-        retval = pprofile_get_values(CLeashApp::m_krbv5_profile, 
-									  section, &values);	
+        retval = pprofile_get_values(CLeashApp::m_krbv5_profile,
+									  section, &values);
 
         if (retval && PROF_NO_RELATION != retval)
 		{
 			MessageBox("OnApply::There is an error, profile will not be saved!!!\
-                        \nIf this error persist, contact your administrator.", 
+                        \nIf this error persist, contact your administrator.",
 				       "Leash", MB_OK);
-		}	
-		
-	    retval = pprofile_get_values(CLeashApp::m_krbv5_profile, 
-									  adminServ , &admin);	
+		}
+
+	    retval = pprofile_get_values(CLeashApp::m_krbv5_profile,
+									  adminServ , &admin);
 
 		if (retval && PROF_NO_RELATION != retval)
 		{
 			MessageBox("OnApply::There is an error, profile will not be saved!!!\
-                        \nIf this error persist, contact your administrator.", 
+                        \nIf this error persist, contact your administrator.",
 				       "Leash", MB_OK);
-		}	
-        
-        char* pSemiCl = NULL; 
+		}
+
+        char* pSemiCl = NULL;
 		if (admin)
         {
             if (*admin)
@@ -285,38 +285,38 @@ BOOL CKrbRealmHostMaintenance::OnApply()
                 if ((pSemiCl = strchr(*admin, ':')))
 	              *pSemiCl = 0;
             }
-        }       
-        
-        
+        }
+
+
         char hostKdc[MAX_HSTNM];
 		if (values)
-        for (cpp = values; *cpp; cpp++) 
+        for (cpp = values; *cpp; cpp++)
 		{
 			strcpy(hostKdc, *cpp);
-            
+
             if ((pSemiCl = strchr(hostKdc, ':')))
 		      *pSemiCl = 0;
-			
+
             if (admin)
             {
                 if (*admin)
-                {                
+                {
                     if (0 == stricmp(hostKdc, *admin))
                       strcat(hostKdc, " admin server");
                 }
-            }			
-			
+            }
+
             CString kdcHost = theSection;
 			kdcHost += " ";
 			kdcHost += hostKdc;
-			
+
 			krbCon.WriteString(kdcHost);
 			krbCon.WriteString("\n");
 		}
 
     	if (values)
           pprofile_free_list(values);
-        
+
         if (admin)
           pprofile_free_list(admin);
     }
@@ -328,72 +328,72 @@ BOOL CKrbRealmHostMaintenance::OnApply()
     return TRUE;
 }
 
-void CKrbRealmHostMaintenance::OnCancel() 
+void CKrbRealmHostMaintenance::OnCancel()
 {
     CHAR fileName[MAX_PATH];
-    if (CLeashApp::GetProfileFile(fileName, sizeof(fileName)))	
+    if (CLeashApp::GetProfileFile(fileName, sizeof(fileName)))
     {
         MessageBox("Can't locate Kerberos Five Config. file!", "Error", MB_OK);
-        return;    
+        return;
     }
 
-    
-    long retval = 0; 
+
+    long retval = 0;
     if (CLeashApp::m_krbv5_profile)
         pprofile_abandon(CLeashApp::m_krbv5_profile);
-	
+
     /*
-    if (retval) 
+    if (retval)
 	{
 		MessageBox("OnButtonRealmHostAdd::There is an error, profile will not be abandon!!!\
-                    \nIf this error persist, contact your administrator.", 
+                    \nIf this error persist, contact your administrator.",
 				   "Leash", MB_OK);
 		return;
-	}	
-	*/	
-    
+	}
+	*/
+
     const char *filenames[2];
     filenames[0] = fileName;
     filenames[1] = NULL;
-	retval = pprofile_init(filenames, &CLeashApp::m_krbv5_profile); 
-	
-    if (retval) 
+	retval = pprofile_init(filenames, &CLeashApp::m_krbv5_profile);
+
+    if (retval)
 	{
 		MessageBox("OnButtonRealmHostAdd::There is an error, profile will not be initialized!!!\
-                    \nIf this error persist, contact your administrator.", 
+                    \nIf this error persist, contact your administrator.",
 				   "Leash", MB_OK);
 		return;
-	}	
-	
+	}
+
 
 	CPropertyPage::OnCancel();
 }
 
 void CKrbRealmHostMaintenance::OnCheckDnsKdcLookup()
 {
-	const char*  dnsLookupKdc[] = {"libdefaults","dns_lookup_kdc",NULL}; 
+	const char*  dnsLookupKdc[] = {"libdefaults","dns_lookup_kdc",NULL};
 
     m_newDnsKdcLookup = (BOOL)IsDlgButtonChecked(IDC_DNS_KDC);
 
 	long retval = pprofile_clear_relation(CLeashApp::m_krbv5_profile,
 										  dnsLookupKdc);
-	
+
     if (retval && PROF_NO_RELATION != retval)
 	{
 		MessageBox("OnButtonAdminserver::There is an error, profile will not be saved!!!\
-                    \nIf this error persist, contact your administrator.", 
+                    \nIf this error persist, contact your administrator.",
  				   "Error", MB_OK);
 		return;
 	}
 
-	retval = pprofile_add_relation(CLeashApp::m_krbv5_profile, 
-                                    dnsLookupKdc, 
+	retval = pprofile_add_relation(CLeashApp::m_krbv5_profile,
+                                    dnsLookupKdc,
                                     m_newDnsKdcLookup ? "true" : "false");
 
-	if (retval) 
+	if (retval)
 	{ // this might not be a good way to handle this type of error
 		MessageBox("OnButtonAdminserver::There is an error, profile will not be saved!!!\
-                    \nIf this error persist, contact your administrator.", 
+                    \nIf this error persist, contact your administrator.",
 				   "Error", MB_OK);
 		return;
 	}
@@ -403,14 +403,14 @@ void CKrbRealmHostMaintenance::OnCheckDnsKdcLookup()
 void CKrbRealmHostMaintenance::OnButtonRealmHostAdd()
 {
     m_KDCRealmList.SetFocus();
-    
+
     CKrbAddRealm addToRealmHostList;
 	if (IDOK == addToRealmHostList.DoModal())
 	{
-		char theSection[REALM_SZ + 1];								 
-		const char* Section[] = {"realms", theSection, NULL}; 
+		char theSection[REALM_SZ + 1];
+		const char* Section[] = {"realms", theSection, NULL};
 		const char** section = Section;
-		
+
 
 	    if (!CLeashApp::m_krbv5_profile) {
 		CHAR confname[MAX_PATH];
@@ -424,69 +424,69 @@ void CKrbRealmHostMaintenance::OnButtonRealmHostAdd()
 	    }
 
 		CString newRealm; // new section in the profile linklist
-		newRealm = addToRealmHostList.GetNewRealm(); 
+		newRealm = addToRealmHostList.GetNewRealm();
 
-		if (LB_ERR != m_KDCRealmList.FindStringExact(-1, newRealm)) 
+		if (LB_ERR != m_KDCRealmList.FindStringExact(-1, newRealm))
 		{
-			MessageBox("We can't have duplicate Realms!\nYour entry was not saved to list.", 
+			MessageBox("We can't have duplicate Realms!\nYour entry was not saved to list.",
                        "Leash", MB_OK);
 			return;
 		}
-			
+
 		if (addToRealmHostList.GetNewRealm().IsEmpty())
-		  ASSERT(0);	
-		
+		  ASSERT(0);
+
 		strcpy(theSection, newRealm);
-		long retval = pprofile_add_relation(CLeashApp::m_krbv5_profile, 
+		long retval = pprofile_add_relation(CLeashApp::m_krbv5_profile,
 						     section, NULL);
-		
-		if (retval) 
+
+		if (retval)
 		{
 			MessageBox("OnButtonRealmHostAdd::There is an error, profile will not be saved!!!\
-                        \nIf this error persist, contact your administrator.", 
+                        \nIf this error persist, contact your administrator.",
 				       "Leash", MB_OK);
 			return;
-		}	
-		
+		}
+
 		if (LB_ERR == m_KDCRealmList.AddString(newRealm))
 		  ASSERT(0);
-		
-		if (LB_ERR == m_KDCRealmList.SetCurSel(m_KDCRealmList.FindStringExact(-1, newRealm))) 
+
+		if (LB_ERR == m_KDCRealmList.SetCurSel(m_KDCRealmList.FindStringExact(-1, newRealm)))
 		  ASSERT(0);
 
-		MessageBox("You must now add a Kerberos Host Server or Realm you just added will be removed!!!", 
+		MessageBox("You must now add a Kerberos Host Server or Realm you just added will be removed!!!",
 				   "Leash", MB_OK);
-		
+
 		m_KDCHostList.ResetContent();
         if (OnButtonKdchostAddInternal())
-		{ // Cancel 
-			
-			long retval = pprofile_rename_section(CLeashApp::m_krbv5_profile, 
+		{ // Cancel
+
+			long retval = pprofile_rename_section(CLeashApp::m_krbv5_profile,
 												   section, NULL);
 
-			if (retval) 
+			if (retval)
 			{
 				MessageBox("OnButtonRealmHostRemove::There is an error, profile will not be saved!!!\
-                            \nIf this error persist, contact your administrator.", 
+                            \nIf this error persist, contact your administrator.",
 						   "Leash", MB_OK);
 				return;
 			}
-			
+
 			if (LB_ERR == m_KDCRealmList.DeleteString(m_KDCRealmList.GetCurSel()))
 			  ASSERT(0);
-			
+
 			m_KDCRealmList.SetCurSel(0);
 		}
 
-		OnSelchangeListKdcRealm(); 
+		OnSelchangeListKdcRealm();
 		SetModified(TRUE);
-	}	
-	
+	}
+
 	if (1 >= m_KDCRealmList.GetCount())
 	{
 		GetDlgItem(ID_BUTTON_REALM_REMOVE)->EnableWindow(FALSE);
 	}
-	else 
+	else
 	{
 		GetDlgItem(ID_BUTTON_REALM_REMOVE)->EnableWindow();
 		GetDlgItem(IDC_BUTTON_REALM_EDIT)->EnableWindow();
@@ -501,47 +501,47 @@ void CKrbRealmHostMaintenance::OnButtonKdchostAdd()
 bool CKrbRealmHostMaintenance::OnButtonKdchostAddInternal()
 {
 	CString newHost; // new section in the profile linklist
-    CKrbAddHostServer addHostServer; 
+    CKrbAddHostServer addHostServer;
 	if (IDOK == addHostServer.DoModal())
 	{ // OK
-		char theSection[MAX_HSTNM + 1];								 
-		const char* Section[] = {"realms", theSection, "kdc", NULL}; 
+		char theSection[MAX_HSTNM + 1];
+		const char* Section[] = {"realms", theSection, "kdc", NULL};
 		const char** section = Section;
 
 		if (addHostServer.GetNewHost().IsEmpty())
-		  ASSERT(0);	
+		  ASSERT(0);
 
-		newHost = addHostServer.GetNewHost(); 
-				
-		if (LB_ERR != m_KDCHostList.FindStringExact(-1, newHost)) 
+		newHost = addHostServer.GetNewHost();
+
+		if (LB_ERR != m_KDCHostList.FindStringExact(-1, newHost))
 		{
 			MessageBox("We can't have duplicate Host Servers for the same Realm!\
-                        \nYour entry was not saved to list.", 
+                        \nYour entry was not saved to list.",
                        "Leash", MB_OK);
 			return true;
 		}
 
 		m_KDCRealmList.GetText(m_KDCRealmList.GetCurSel(), theSection);
-	    long retval = pprofile_add_relation(CLeashApp::m_krbv5_profile, 
+	    long retval = pprofile_add_relation(CLeashApp::m_krbv5_profile,
 									         section, addHostServer.GetNewHost());
 
-		if (retval) 
+		if (retval)
 		{
 			MessageBox("OnButtonKdchostAdd::There is an error, profile will not be saved!!!\
-                        \nIf this error persist, contact your administrator.", 
+                        \nIf this error persist, contact your administrator.",
 					   "Leash", MB_OK);
 
 			return true;
 		}
-		
+
         if (LB_ERR == m_KDCHostList.AddString(newHost))
 		  ASSERT(0);
 
 		SetModified(TRUE);
-	}	
+	}
 	else
 	  return true;
-	
+
 	if (m_KDCHostList.GetCount() > 1)
     {
         m_KDCHostList.SetCurSel(m_KDCHostList.FindStringExact(-1, newHost));
@@ -550,7 +550,7 @@ bool CKrbRealmHostMaintenance::OnButtonKdchostAddInternal()
 
         GetDlgItem(IDC_BUTTON_KDCHOST_REMOVE)->EnableWindow();
     }
-	
+
     if (1 == m_KDCRealmList.GetCount())
 	{
         GetDlgItem(IDC_BUTTON_KDCHOST_REMOVE)->EnableWindow();
@@ -560,10 +560,10 @@ bool CKrbRealmHostMaintenance::OnButtonKdchostAddInternal()
 	return false;
 }
 
-void CKrbRealmHostMaintenance::OnButtonRealmHostEdit() 
+void CKrbRealmHostMaintenance::OnButtonRealmHostEdit()
 {
 	INT selItemIndex = m_KDCRealmList.GetCurSel();
-	CString selItem; 
+	CString selItem;
 
     m_KDCHostList.SetFocus();
     //m_KDCRealmList.SetFocus();
@@ -574,33 +574,33 @@ void CKrbRealmHostMaintenance::OnButtonRealmHostEdit()
 
 	if (IDOK == editRealmHostList.DoModal())
 	{
-		char theSection[REALM_SZ + 1];								 
-		const char* Section[] = {"realms", theSection, NULL}; 
+		char theSection[REALM_SZ + 1];
+		const char* Section[] = {"realms", theSection, NULL};
 		const char** section = Section;
 
 		CString editedRealm = editRealmHostList.GetEditedItem();
-		
-		if (0 != editedRealm.CompareNoCase(selItem) && 
-			LB_ERR != m_KDCRealmList.FindStringExact(-1, editedRealm)) 
+
+		if (0 != editedRealm.CompareNoCase(selItem) &&
+			LB_ERR != m_KDCRealmList.FindStringExact(-1, editedRealm))
 		{
-			MessageBox("We can't have duplicate Realms!\nYour entry was not saved to list.", 
+			MessageBox("We can't have duplicate Realms!\nYour entry was not saved to list.",
                        "Leash", MB_OK);
 			return;
 		}
-		
-		strcpy(theSection, selItem); 
 
-		long retval = pprofile_rename_section(CLeashApp::m_krbv5_profile, 
+		strcpy(theSection, selItem);
+
+		long retval = pprofile_rename_section(CLeashApp::m_krbv5_profile,
 											   section, editRealmHostList.GetEditedItem());
 
-		if (retval) 
+		if (retval)
 		{
 			MessageBox("OnButtonRealmHostEdit::There is an error, profile will not be saved!!!\
-                        \nIf this error persist, contact your administrator.", 
+                        \nIf this error persist, contact your administrator.",
 					   "Leash", MB_OK);
 			return;
 		}
-		
+
 		m_KDCRealmList.DeleteString(selItemIndex);
 		m_KDCRealmList.AddString(editedRealm);
 		selItemIndex = m_KDCRealmList.FindStringExact(-1, editedRealm);
@@ -611,12 +611,12 @@ void CKrbRealmHostMaintenance::OnButtonRealmHostEdit()
 	}
 }
 
-void CKrbRealmHostMaintenance::OnDblclkListKdcRealm() 
+void CKrbRealmHostMaintenance::OnDblclkListKdcRealm()
 {
 	OnButtonRealmHostEdit();
 }
 
-void CKrbRealmHostMaintenance::OnButtonKdchostEdit() 
+void CKrbRealmHostMaintenance::OnButtonKdchostEdit()
 {
 	INT selItemIndex = m_KDCHostList.GetCurSel();
 	CHAR OLD_VALUE[MAX_HSTNM + 1];
@@ -630,109 +630,109 @@ void CKrbRealmHostMaintenance::OnButtonKdchostEdit()
 	if (pOLD_VALUE)
 	{
 		*pOLD_VALUE = 0;
-		_adminServer = pOLD_VALUE + 1; 
+		_adminServer = pOLD_VALUE + 1;
 	}
-	
+
 	CString selItem = OLD_VALUE;
 	CKrbEditHostServer editHostServerList(selItem);
 
 	if (IDOK == editHostServerList.DoModal())
 	{
-		char theSection[REALM_SZ + 1];								 
-		const char*  adminServer[] = {"realms", theSection, ADMIN_SERVER, NULL}; 
-		const char* Section[] = {"realms", theSection, "kdc", NULL}; 
+		char theSection[REALM_SZ + 1];
+		const char*  adminServer[] = {"realms", theSection, ADMIN_SERVER, NULL};
+		const char* Section[] = {"realms", theSection, "kdc", NULL};
 		const char** section = Section;
-		const char** adminServ = adminServer;	
-		
+		const char** adminServ = adminServer;
+
 		editedHostServer = editHostServerList.GetEditedItem();
 
-		if (0 != editedHostServer.CompareNoCase(selItem) && 
-			LB_ERR != m_KDCHostList.FindStringExact(-1, editedHostServer)) 
+		if (0 != editedHostServer.CompareNoCase(selItem) &&
+			LB_ERR != m_KDCHostList.FindStringExact(-1, editedHostServer))
 		{
 			MessageBox("We can't have duplicate Host Servers for the same Realm!\
-                        \nYour entry was not saved to list.", 
+                        \nYour entry was not saved to list.",
                        "Leash", MB_OK);
 			return;
 		}
-		
+
 		m_KDCHostList.DeleteString(selItemIndex);
 		m_KDCRealmList.GetText(m_KDCRealmList.GetCurSel(), theSection);
-		
+
 		if (!_adminServer.IsEmpty())
 		{ // there is a admin_server
-			editedHostServer += " "; 
+			editedHostServer += " ";
 			editedHostServer += _adminServer;
-		
+
 			long retval = pprofile_update_relation(CLeashApp::m_krbv5_profile,
 													 adminServ, OLD_VALUE,	editHostServerList.GetEditedItem());
-			if (retval) 
+			if (retval)
 			{
 				MessageBox("OnButtonKdchostEdit::There is an error, profile will not be saved!!!\
-                            \nIf this error persist, contact your administrator.", 
+                            \nIf this error persist, contact your administrator.",
 						   "Leash", MB_OK);
 				return;
 			}
 		}
-		
+
 		long retval = pprofile_update_relation(CLeashApp::m_krbv5_profile,
 									        section, OLD_VALUE,	editHostServerList.GetEditedItem());
 
-		if (retval) 
+		if (retval)
 		{
 			MessageBox("OnButtonKdchostEdit::There is an error, profile will not be saved!!!\
-                        \nIf this error persist, contact your administrator.", 
+                        \nIf this error persist, contact your administrator.",
 					   "Leash", MB_OK);
 			return;
 		}
 
 		m_KDCHostList.InsertString(selItemIndex, editedHostServer);
 		m_KDCHostList.SetCurSel(selItemIndex);
-			
-		OnSelchangeListKdcHost(); 
+
+		OnSelchangeListKdcHost();
 		SetModified(TRUE);
 	}
 }
 
-void CKrbRealmHostMaintenance::OnDblclkListKdcHost() 
+void CKrbRealmHostMaintenance::OnDblclkListKdcHost()
 {
 	OnButtonKdchostEdit();
 }
 
-void CKrbRealmHostMaintenance::OnButtonRealmHostRemove() 
+void CKrbRealmHostMaintenance::OnButtonRealmHostRemove()
 {
-	char theSection[REALM_SZ + 1];								 
-	const char* Section[] = {"realms", theSection, NULL}; 
+	char theSection[REALM_SZ + 1];
+	const char* Section[] = {"realms", theSection, NULL};
 	const char** section = Section;
 
     m_KDCRealmList.SetFocus();
     m_KDCRealmList.GetText(m_KDCRealmList.GetCurSel(), theSection);
-	
+
 	CString RealmMsg;
-	RealmMsg.Format("Your about to remove a Realm, \"%s\", and all it's dependents from the list!\n\nContinue?", 
+	RealmMsg.Format("Your about to remove a Realm, \"%s\", and all it's dependents from the list!\n\nContinue?",
 					theSection);
-	
+
 	if (IDYES != AfxMessageBox(RealmMsg, MB_YESNO))
 	  return;
-	
-	long retval = pprofile_rename_section(CLeashApp::m_krbv5_profile, 
+
+	long retval = pprofile_rename_section(CLeashApp::m_krbv5_profile,
 										   section, NULL);
 
-	if (retval) 
+	if (retval)
 	{
 		MessageBox("OnButtonRealmHostRemove::There is an error, profile will not be saved!!!\
-                    \nIf this error persist, contact your administrator.", 
+                    \nIf this error persist, contact your administrator.",
 				   "Leash", MB_OK);
 		return;
 	}
 
 	INT curSel = m_KDCRealmList.GetCurSel();
-	
+
 	if (LB_ERR == m_KDCRealmList.DeleteString(curSel))
-	  ASSERT(0);// Single Sel Listbox		
-	
+	  ASSERT(0);// Single Sel Listbox
+
 	if (-1 == m_KDCRealmList.SetCurSel(curSel))
 	  m_KDCRealmList.SetCurSel(curSel - 1);
-	
+
 	SetModified(TRUE);
 
 	if (!m_KDCRealmList.GetCount())
@@ -748,64 +748,64 @@ void CKrbRealmHostMaintenance::OnButtonRealmHostRemove()
 	  OnSelchangeListKdcRealm();
 }
 
-void CKrbRealmHostMaintenance::OnButtonKdchostRemove() 
+void CKrbRealmHostMaintenance::OnButtonKdchostRemove()
 {
-	char theSection[REALM_SZ + 1];								 
-	const char*  adminServer[] = {"realms", theSection, ADMIN_SERVER, NULL}; 
-	const char* Section[] = {"realms", theSection, "kdc", NULL}; 
+	char theSection[REALM_SZ + 1];
+	const char*  adminServer[] = {"realms", theSection, ADMIN_SERVER, NULL};
+	const char* Section[] = {"realms", theSection, "kdc", NULL};
 	const char** section = Section;
-	const char** adminServ = adminServer;	
+	const char** adminServ = adminServer;
 	CHAR OLD_VALUE[MAX_HSTNM + 1];
 	CString serverHostMsg;
 	CString serverHost;
 	CString _adminServer;
 
     m_KDCHostList.GetText(m_KDCHostList.GetCurSel(), serverHost);
-	serverHostMsg.Format("Your about to remove Server \"%s\" from the list!\n\nContinue?", 
+	serverHostMsg.Format("Your about to remove Server \"%s\" from the list!\n\nContinue?",
 						  serverHost);
-	
+
 	if (IDYES != AfxMessageBox(serverHostMsg, MB_YESNO))
 	  return;
 
 	m_KDCRealmList.GetText(m_KDCRealmList.GetCurSel(), theSection);
 	INT curSel = m_KDCHostList.GetCurSel();
 	m_KDCHostList.GetText(curSel, OLD_VALUE);
-	
+
 	LPSTR pOLD_VALUE = strchr(OLD_VALUE, ' ');
 	if (pOLD_VALUE)
 	{
 		*pOLD_VALUE = 0;
-		_adminServer = pOLD_VALUE + 1; 
+		_adminServer = pOLD_VALUE + 1;
 	}
-	
+
 	long retval = pprofile_update_relation(CLeashApp::m_krbv5_profile,
 										    section, OLD_VALUE, NULL);
 	if (retval)
 	{
 		MessageBox("OnButtonKdchostRemove::There is an error, profile will not be saved!!!\
-                    \nIf this error persist, contact your administrator.", 
+                    \nIf this error persist, contact your administrator.",
 				   "Leash", MB_OK);
 		return;
 	}
-	
+
 	if (!_adminServer.IsEmpty())
 	{ // there is a admin_server
 		retval = pprofile_update_relation(CLeashApp::m_krbv5_profile,
 										   adminServ, OLD_VALUE, NULL);
-		if (retval) 
+		if (retval)
 		{
 			MessageBox("OnButtonKdchostRemove::There is an error, profile will not be saved!!!\
-                        \nIf this error persist, contact your administrator.", 
+                        \nIf this error persist, contact your administrator.",
 					   "Error", MB_OK);
 			return;
 		}
-	}	
-	
-	m_KDCHostList.DeleteString(curSel);  		
-	
+	}
+
+	m_KDCHostList.DeleteString(curSel);
+
 	if (-1 == m_KDCHostList.SetCurSel(curSel))
 	  m_KDCHostList.SetCurSel(curSel - 1);
-	
+
 	SetModified(TRUE);
 
 	if (!m_KDCHostList.GetCount())
@@ -813,45 +813,45 @@ void CKrbRealmHostMaintenance::OnButtonKdchostRemove()
 		GetDlgItem(IDC_BUTTON_KDCHOST_REMOVE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_BUTTON_KDCHOST_EDIT)->EnableWindow(FALSE);
 		GetDlgItem(IDC_BUTTON_ADMINSERVER)->EnableWindow(FALSE);
-		GetDlgItem(IDC_BUTTON_REMOVE_ADMINSERVER)->EnableWindow(FALSE);	
+		GetDlgItem(IDC_BUTTON_REMOVE_ADMINSERVER)->EnableWindow(FALSE);
 	}
 	else if (m_KDCHostList.GetCount() <= 1)
 	  GetDlgItem(IDC_BUTTON_KDCHOST_REMOVE)->EnableWindow(FALSE);
 
-    OnSelchangeListKdcHost(); 
+    OnSelchangeListKdcHost();
 }
 
-BOOL CKrbRealmHostMaintenance::PreTranslateMessage(MSG* pMsg) 
+BOOL CKrbRealmHostMaintenance::PreTranslateMessage(MSG* pMsg)
 {
-	if (m_isStart)	
-	{	
-		OnSelchangeListKdcRealm();	  
+	if (m_isStart)
+	{
+		OnSelchangeListKdcRealm();
 		m_isStart = FALSE;
 	}
-	
+
 	return CPropertyPage::PreTranslateMessage(pMsg);
 }
 
-void CKrbRealmHostMaintenance::OnSelchangeListKdcRealm() 
+void CKrbRealmHostMaintenance::OnSelchangeListKdcRealm()
 {
-	char theSection[REALM_SZ + 1];								 
-	const char*  adminServer[] = {"realms", theSection, ADMIN_SERVER, NULL}; 
+	char theSection[REALM_SZ + 1];
+	const char*  adminServer[] = {"realms", theSection, ADMIN_SERVER, NULL};
 	const char*  Section[] = {"realms", theSection, "kdc", NULL}; //theSection
-	const char** section = Section;	
-	const char** adminServ = adminServer;	
-	char **values = NULL, 
-		 **adminValue = NULL, 
-		 **cpp = NULL; 
-	
+	const char** section = Section;
+	const char** adminServ = adminServer;
+	char **values = NULL,
+		 **adminValue = NULL,
+		 **cpp = NULL;
+
 	m_KDCRealmList.GetText(m_KDCRealmList.GetCurSel(), theSection);
 
-	long retval = pprofile_get_values(CLeashApp::m_krbv5_profile, 
+	long retval = pprofile_get_values(CLeashApp::m_krbv5_profile,
 	                                   section, &values);
 
 	if (retval && PROF_NO_RELATION != retval)
 	{
 		MessageBox("OnSelchangeListKdcRealm::There is an error, profile will not be saved!!!\
-                    \nIf this error persist, contact your administrator.", 
+                    \nIf this error persist, contact your administrator.",
 				   "Error", MB_OK);
 		return;
 	}
@@ -859,13 +859,13 @@ void CKrbRealmHostMaintenance::OnSelchangeListKdcRealm()
 	m_KDCHostList.ResetContent();
 
     if ( !retval && values ) {
-        retval = pprofile_get_values(CLeashApp::m_krbv5_profile, 
+        retval = pprofile_get_values(CLeashApp::m_krbv5_profile,
                                       adminServ, &adminValue);
-	
+
         if (retval && PROF_NO_RELATION != retval)
         {
             MessageBox("OnSelchangeListKdcRealm::There is an error, profile will not be saved!!!\
-                        \nIf this error persist, contact your administrator.", 
+                        \nIf this error persist, contact your administrator.",
                         "Error", MB_OK);
             return;
         }
@@ -873,10 +873,10 @@ void CKrbRealmHostMaintenance::OnSelchangeListKdcRealm()
         m_theAdminServer = _T("");
         m_theAdminServerMarked = _T("");
 
-        for (cpp = values; *cpp; cpp++) 
+        for (cpp = values; *cpp; cpp++)
         {
             CString kdcHost = *cpp;
-		
+
             if (adminValue && 0 == strcmp(*adminValue, *cpp))
             {
                 m_theAdminServer = kdcHost;
@@ -888,9 +888,9 @@ void CKrbRealmHostMaintenance::OnSelchangeListKdcRealm()
 
             if (LB_ERR == m_KDCHostList.AddString(kdcHost))
             {
-                MessageBox("OnSelchangeListKdcRealm::Can't add Realm to Listbox", 
+                MessageBox("OnSelchangeListKdcRealm::Can't add Realm to Listbox",
                             "Error", MB_OK);
-            }		
+            }
         }
 
         pprofile_free_list(values);
@@ -900,98 +900,98 @@ void CKrbRealmHostMaintenance::OnSelchangeListKdcRealm()
         GetDlgItem(IDC_BUTTON_REALM_EDIT)->EnableWindow(FALSE);
     }
     CKrbConfigOptions::ResetDefaultRealmComboBox();
-	
+
 	GetDlgItem(IDC_BUTTON_KDCHOST_REMOVE)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON_KDCHOST_EDIT)->EnableWindow(FALSE);
 }
 
-void CKrbRealmHostMaintenance::OnSelchangeListKdcHost() 
+void CKrbRealmHostMaintenance::OnSelchangeListKdcHost()
 {
 	CString adminServer;
 	m_KDCHostList.GetText(m_KDCHostList.GetCurSel(), adminServer);
-	
+
 	if (-1 != adminServer.Find(ADMIN_SERVER))
 	{
 		GetDlgItem(IDC_BUTTON_ADMINSERVER)->EnableWindow(FALSE);
-		GetDlgItem(IDC_BUTTON_REMOVE_ADMINSERVER)->EnableWindow();	
+		GetDlgItem(IDC_BUTTON_REMOVE_ADMINSERVER)->EnableWindow();
 	}
 	else
 	{
 		GetDlgItem(IDC_BUTTON_ADMINSERVER)->EnableWindow();
-		GetDlgItem(IDC_BUTTON_REMOVE_ADMINSERVER)->EnableWindow(FALSE);	
+		GetDlgItem(IDC_BUTTON_REMOVE_ADMINSERVER)->EnableWindow(FALSE);
 	}
-	
+
 	if (m_KDCHostList.GetCount() > 1)
 	  GetDlgItem(IDC_BUTTON_KDCHOST_REMOVE)->EnableWindow();
 
 	GetDlgItem(IDC_BUTTON_KDCHOST_EDIT)->EnableWindow();
 }
 
-void CKrbRealmHostMaintenance::OnSetfocusListKdcRealm() 
+void CKrbRealmHostMaintenance::OnSetfocusListKdcRealm()
 {
-	GetDlgItem(IDC_BUTTON_ADMINSERVER)->EnableWindow(FALSE);		
-	GetDlgItem(IDC_BUTTON_REMOVE_ADMINSERVER)->EnableWindow(FALSE);	
+	GetDlgItem(IDC_BUTTON_ADMINSERVER)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON_REMOVE_ADMINSERVER)->EnableWindow(FALSE);
 }
 
-void CKrbRealmHostMaintenance::OnButtonAdminserver() 
+void CKrbRealmHostMaintenance::OnButtonAdminserver()
 {
 	// Install new admin.server in profile linklist
-	char theSection[REALM_SZ + 1];								 
-	const char* Section[] = {"realms", theSection, ADMIN_SERVER, NULL}; 
+	char theSection[REALM_SZ + 1];
+	const char* Section[] = {"realms", theSection, ADMIN_SERVER, NULL};
 	const char** section = Section;
 
     m_KDCHostList.SetFocus();
     INT index1 = m_KDCHostList.GetCurSel();
 	INT index2 = m_KDCHostList.FindStringExact(-1, m_theAdminServerMarked);
-	
+
 	if (-1 != index2)
 	{
 		m_KDCHostList.DeleteString(index2);
 		if (LB_ERR == m_KDCHostList.InsertString(index2, m_theAdminServer))
 		{
-			MessageBox("OnButtonAdminserver::Can't add to list!!!", 
+			MessageBox("OnButtonAdminserver::Can't add to list!!!",
 						  "Error, MB_OK");
-		}		
-	}	
+		}
+	}
 
-	CString makeAdmin;								 
+	CString makeAdmin;
 	m_KDCHostList.GetText(index1, makeAdmin);
 	m_KDCHostList.DeleteString(index1);
-	m_theAdminServer = makeAdmin; 
+	m_theAdminServer = makeAdmin;
 	makeAdmin += " ";
-	makeAdmin += ADMIN_SERVER; 
+	makeAdmin += ADMIN_SERVER;
 	m_theAdminServerMarked = makeAdmin;
 
 	if (LB_ERR == m_KDCHostList.InsertString(index1, makeAdmin))
 	{
-		MessageBox("OnButtonAdminserver::Can't add to list!!!", 
+		MessageBox("OnButtonAdminserver::Can't add to list!!!",
 					  "Error, MB_OK");
-	}		
+	}
 
 	m_KDCHostList.SetCurSel(m_KDCHostList.FindStringExact(-1, makeAdmin)); //index2 -1);
 	GetDlgItem(IDC_BUTTON_ADMINSERVER)->EnableWindow(FALSE);
-	GetDlgItem(IDC_BUTTON_REMOVE_ADMINSERVER)->EnableWindow();	
+	GetDlgItem(IDC_BUTTON_REMOVE_ADMINSERVER)->EnableWindow();
 
 	m_KDCRealmList.GetText(m_KDCRealmList.GetCurSel(), theSection);
-	
+
 	long retval = pprofile_clear_relation(CLeashApp::m_krbv5_profile,
 										   section);
-	
+
     if (retval && PROF_NO_RELATION != retval)
 	{
 		MessageBox("OnButtonAdminserver::There is an error, profile will not be saved!!!\
-                    \nIf this error persist, contact your administrator.", 
+                    \nIf this error persist, contact your administrator.",
 				   "Error", MB_OK);
 		return;
 	}
 
-	retval = pprofile_add_relation(CLeashApp::m_krbv5_profile, 
+	retval = pprofile_add_relation(CLeashApp::m_krbv5_profile,
 	 				                section, m_theAdminServer);
 
-	if (retval) 
+	if (retval)
 	{ // this might not be a good way to handle this type of error
 		MessageBox("OnButtonAdminserver::There is an error, profile will not be saved!!!\
-                    \nIf this error persist, contact your administrator.", 
+                    \nIf this error persist, contact your administrator.",
 				   "Error", MB_OK);
 		return;
 	}
@@ -999,49 +999,49 @@ void CKrbRealmHostMaintenance::OnButtonAdminserver()
 	SetModified(TRUE);
 }
 
-void CKrbRealmHostMaintenance::OnButtonRemoveAdminserver() 
+void CKrbRealmHostMaintenance::OnButtonRemoveAdminserver()
 {
 	// Remove admin.server from profile linklist
-	char theSection[REALM_SZ + 1];								 
-	const char* Section[] = {"realms", theSection, ADMIN_SERVER, NULL}; 
+	char theSection[REALM_SZ + 1];
+	const char* Section[] = {"realms", theSection, ADMIN_SERVER, NULL};
 	const char** section = Section;
 
     m_KDCHostList.SetFocus();
     m_KDCRealmList.GetText(m_KDCRealmList.GetCurSel(), theSection);
-	
+
 	long retval = pprofile_clear_relation(CLeashApp::m_krbv5_profile,
 										   section);
-	
+
 	if (retval)
 	{
 		MessageBox("OnButtonRemoveAdminserver::There is an error, profile will not be saved!!!\
-                    \nIf this error persist, contact your administrator.", 
+                    \nIf this error persist, contact your administrator.",
 				   "Error", MB_OK);
 		return;
 	}
 
     INT index = m_KDCHostList.GetCurSel();
 	m_KDCHostList.DeleteString(index);
-    
+
     if (LB_ERR == m_KDCHostList.InsertString(index, m_theAdminServer))
 	{
-		MessageBox("OnButtonRemoveAdminserver::Can't add to list!!!", 
+		MessageBox("OnButtonRemoveAdminserver::Can't add to list!!!",
 					  "Error, MB_OK");
-	
 
-	}		
+
+	}
 
 	m_theAdminServerMarked = m_theAdminServer;
-	m_KDCHostList.SetCurSel(m_KDCHostList.FindStringExact(-1, m_theAdminServer)); 
+	m_KDCHostList.SetCurSel(m_KDCHostList.FindStringExact(-1, m_theAdminServer));
 	GetDlgItem(IDC_BUTTON_ADMINSERVER)->EnableWindow();
-	GetDlgItem(IDC_BUTTON_REMOVE_ADMINSERVER)->EnableWindow(FALSE);	
+	GetDlgItem(IDC_BUTTON_REMOVE_ADMINSERVER)->EnableWindow(FALSE);
 
 	SetModified(TRUE);
 }
 
 
 
-void CKrbRealmHostMaintenance::OnButtonRealmhostMaintHelp() 
+void CKrbRealmHostMaintenance::OnButtonRealmhostMaintHelp()
 {
 	MessageBox("No Help Available!", "Note", MB_OK);
 }

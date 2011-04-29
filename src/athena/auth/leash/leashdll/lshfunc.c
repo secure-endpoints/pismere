@@ -128,7 +128,7 @@ leash_error_message(
         size -= n;
     }
     if ( displayMB )
-        MessageBox(NULL, message, "Leash", MB_OK | MB_ICONERROR | MB_TASKMODAL | 
+        MessageBox(NULL, message, "Leash", MB_OK | MB_ICONERROR | MB_TASKMODAL |
                     MB_SETFOREGROUND);
 
     if (rc5) return rc5;
@@ -252,7 +252,7 @@ make_temp_cache_v5(
         rc = pkrb5_init_context(&ctx);
         if (rc) goto cleanup;
 
-        tmp_cache = make_postfix(pkrb5_cc_default_name(ctx), postfix, 
+        tmp_cache = make_postfix(pkrb5_cc_default_name(ctx), postfix,
                                  &old_cache);
 
         if (!tmp_cache) {
@@ -278,14 +278,14 @@ make_temp_cache_v5(
 
 long
 Leash_checkpwd(
-    char *principal, 
+    char *principal,
     char *password
     )
 {
     return Leash_int_checkpwd(principal, password, 0);
 }
 
-long 
+long
 Leash_int_checkpwd(
     char * principal,
     char * password,
@@ -387,7 +387,7 @@ Leash_changepwd_v5(
    }
 
    if (result_code) {
-       int len = result_code_string.length + 
+       int len = result_code_string.length +
            (result_string.length ? (sizeof(": ") - 1) : 0) +
            result_string.length;
        if (len && error_str) {
@@ -437,7 +437,7 @@ Leash_changepwd_v4(
 
     k_errno = make_temp_cache_v4("_chgpwd");
     if (k_errno) return k_errno;
-    k_errno = pkadm_change_your_password(principal, password, newpassword, 
+    k_errno = pkadm_change_your_password(principal, password, newpassword,
                                          error_str);
     make_temp_cache_v4(0);
     return k_errno;
@@ -452,8 +452,8 @@ Leash_changepwd_v4(
  */
 long
 Leash_changepwd(
-    char * principal, 
-    char * password, 
+    char * principal,
+    char * password,
     char * newpassword,
     char** result_string
     )
@@ -463,8 +463,8 @@ Leash_changepwd(
 
 long
 Leash_int_changepwd(
-    char * principal, 
-    char * password, 
+    char * principal,
+    char * password,
     char * newpassword,
     char** result_string,
     int    displayErrors
@@ -480,10 +480,10 @@ Leash_int_changepwd(
         rc = rc5 = Leash_changepwd_v5(principal, password, newpassword,
                                       &v5_error_str);
 #ifndef NO_KRB4
-    if (hKrb4 && 
+    if (hKrb4 &&
          Leash_get_default_use_krb4() &&
          (!hKrb5 || rc5))
-        rc = rc4 = Leash_changepwd_v4(principal, password, newpassword, 
+        rc = rc4 = Leash_changepwd_v4(principal, password, newpassword,
                                       &v4_error_str);
 #endif
     if (!rc)
@@ -498,10 +498,10 @@ Leash_int_changepwd(
         clean_string(v4_error_str);
 
         if (v5_error_str)
-            len += sizeof(sep) + sizeof(v5_prefix) + strlen(v5_error_str) + 
+            len += sizeof(sep) + sizeof(v5_prefix) + strlen(v5_error_str) +
                 sizeof(sep);
         if (v4_error_str)
-            len += sizeof(sep) + sizeof(v4_prefix) + strlen(v4_error_str) + 
+            len += sizeof(sep) + sizeof(v4_prefix) + strlen(v4_error_str) +
                 sizeof(sep);
         error_str = malloc(len + 1);
         if (error_str) {
@@ -524,8 +524,8 @@ Leash_int_changepwd(
                 *result_string = error_str;
         }
     }
-    return leash_error_message("Error while changing password.", 
-                               rc4, rc4, rc5, 0, error_str, 
+    return leash_error_message("Error while changing password.",
+                               rc4, rc4, rc5, 0, error_str,
                                displayErrors
                                );
 }
@@ -543,8 +543,8 @@ Leash_kinit(
     )
 {
     return Leash_int_kinit_ex( 0, 0,
-                               principal, 
-                               password, 
+                               principal,
+                               password,
                                lifetime,
                                Leash_get_default_forwardable(),
                                Leash_get_default_proxiable(),
@@ -557,8 +557,8 @@ Leash_kinit(
 
 long
 Leash_kinit_ex(
-    char * principal, 
-    char * password, 
+    char * principal,
+    char * password,
     int lifetime,
     int forwardable,
     int proxiable,
@@ -569,8 +569,8 @@ Leash_kinit_ex(
 {
     return Leash_int_kinit_ex( 0, /* krb5 context */
 			       0, /* parent window */
-                               principal, 
-                               password, 
+                               principal,
+                               password,
                                lifetime,
 			       forwardable,
 			       proxiable,
@@ -579,14 +579,14 @@ Leash_kinit_ex(
 			       publicip,
                                0
 			       );
-}	
+}
 
 long
 Leash_int_kinit_ex(
     krb5_context ctx,
     HWND hParent,
-    char * principal, 
-    char * password, 
+    char * principal,
+    char * password,
     int lifetime,
     int forwardable,
     int proxiable,
@@ -596,7 +596,7 @@ Leash_int_kinit_ex(
     int displayErrors
     )
 {
-    LPCSTR  functionName; 
+    LPCSTR  functionName;
     char    aname[ANAME_SZ];
     char    inst[INST_SZ];
     char    realm[REALM_SZ];
@@ -690,7 +690,7 @@ Leash_int_kinit_ex(
         strcat(temp, realm);
     }
 
-    rc5 = Leash_krb5_kinit(ctx, hParent, 
+    rc5 = Leash_krb5_kinit(ctx, hParent,
                             temp, password, lifetime,
                             forwardable,
                             proxiable,
@@ -705,8 +705,8 @@ Leash_int_kinit_ex(
         if ( !rc5 ) {
             if (!Leash_convert524(ctx))
                 rc4 = KFAILURE;
-        } 
-        
+        }
+
         if (rc4 != KSUCCESS) {
             if (pkname_parse == NULL)
             {
@@ -714,7 +714,7 @@ Leash_int_kinit_ex(
             }
 
             err_context = "getting realm";
-            if (!*realm && (rc4  = (int)(*pkrb_get_lrealm)(realm, 1))) 
+            if (!*realm && (rc4  = (int)(*pkrb_get_lrealm)(realm, 1)))
             {
                 functionName = "krb_get_lrealm()";
                 rcL  = LSH_FAILEDREALM;
@@ -744,11 +744,11 @@ Leash_int_kinit_ex(
                 goto cleanup;
             }
 
-            err_context = "fetching ticket";	
-            rc4 = (*pkrb_get_pw_in_tkt)(aname, inst, "", "krbtgt", realm, 
+            err_context = "fetching ticket";
+            rc4 = (*pkrb_get_pw_in_tkt)(aname, inst, "", "krbtgt", realm,
                                          lifetime, password);
             if (rc4) /* XXX: do we want: && (rc != NO_TKT_FIL) as well? */
-            { 
+            {
                 functionName = "krb_get_pw_in_tkt()";
                 rcL = KRBERR(rc4);
                 goto cleanup;
@@ -775,12 +775,12 @@ Leash_int_kinit_ex(
 #endif /* NO_AFS */
 
  cleanup:
-    return leash_error_message("Ticket initialization failed.", 
-                               rcL, 
+    return leash_error_message("Ticket initialization failed.",
+                               rcL,
 #ifdef NO_KRB4
                                0,
 #else
-                               (rc5 && rc4)?KRBERR(rc4):0, 
+                               (rc5 && rc4)?KRBERR(rc4):0,
 #endif
                                rc5, rcA, 0,
                                displayErrors);
@@ -841,11 +841,11 @@ GetSecurityLogonSessionData(PSECURITY_LOGON_SESSION_DATA * ppSessionData)
     return TRUE;
 }
 
-// IsKerberosLogon() does not validate whether or not there are valid tickets in the 
-// cache.  It validates whether or not it is reasonable to assume that if we 
-// attempted to retrieve valid tickets we could do so.  Microsoft does not 
+// IsKerberosLogon() does not validate whether or not there are valid tickets in the
+// cache.  It validates whether or not it is reasonable to assume that if we
+// attempted to retrieve valid tickets we could do so.  Microsoft does not
 // automatically renew expired tickets.  Therefore, the cache could contain
-// expired or invalid tickets.  Microsoft also caches the user's password 
+// expired or invalid tickets.  Microsoft also caches the user's password
 // and will use it to retrieve new TGTs if the cache is empty and tickets
 // are requested.
 
@@ -933,21 +933,21 @@ IsProcessUacLimited (void)
 }
 
 // This looks really ugly because it is.  The result of IsKerberosLogon()
-// does not prove whether or not there are Kerberos tickets available to 
+// does not prove whether or not there are Kerberos tickets available to
 // be imported.  Only the call to Leash_ms2mit() which actually attempts
 // to import tickets can do that.  However, calling Leash_ms2mit() can
 // result in a TGS_REQ being sent to the KDC and since Leash_importable()
 // is called quite often we want to avoid this if at all possible.
 // Unfortunately, we have be shown at least one case in which the primary
-// authentication package was not Kerberos and yet there were Kerberos 
-// tickets available.  Therefore, if IsKerberosLogon() is not TRUE we 
-// must call Leash_ms2mit() but we still do not want to call it in a 
+// authentication package was not Kerberos and yet there were Kerberos
+// tickets available.  Therefore, if IsKerberosLogon() is not TRUE we
+// must call Leash_ms2mit() but we still do not want to call it in a
 // tight loop so we cache the response and assume it won't change.
 
 // 2007-03-21
 // And the nightmare goes on.  On Vista the Lsa call we use to determine
 // whether or not Kerberos was used for logon fails to return and worse
-// corrupts the stack.  Therefore, we must now test to see if the 
+// corrupts the stack.  Therefore, we must now test to see if the
 // operating system is Vista and skip the call to IsKerberosLogon()
 // if it is.
 long FAR
@@ -1020,11 +1020,11 @@ Leash_import(void)
                 rcA = rcB;
 
           cleanup:
-            if (me) 
+            if (me)
                 pkrb5_free_principal(ctx, me);
             if (cc)
                 pkrb5_cc_close(ctx, cc);
-            if (ctx) 
+            if (ctx)
                 pkrb5_free_context(ctx);
         }
 #endif /* NO_AFS */
@@ -1060,7 +1060,7 @@ int com_addr(void)
 {
     long ipAddr;
     char loc_addr[ADDR_SZ];
-    CREDENTIALS cred;    
+    CREDENTIALS cred;
     char service[40];
     char instance[40];
 //    char addr[40];
@@ -1087,13 +1087,13 @@ int com_addr(void)
         break;
     } // while()
     return 0;
-} 
+}
 #endif
 
 long FAR
-not_an_API_LeashFreeTicketList(TicketList** ticketList) 
+not_an_API_LeashFreeTicketList(TicketList** ticketList)
 {
-    TicketList* tempList = *ticketList, *killList; 
+    TicketList* tempList = *ticketList, *killList;
 
     //if (tempList == NULL)
     //return -1;
@@ -1101,7 +1101,7 @@ not_an_API_LeashFreeTicketList(TicketList** ticketList)
     while (tempList)
     {
         killList = tempList;
-           
+
         tempList = (TicketList*)tempList->next;
         free(killList->theTicket);
         if (killList->tktEncType)
@@ -1130,9 +1130,9 @@ not_an_API_LeashFreeTicketList(TicketList** ticketList)
     return 0;
 }
 
-long 
-not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo, 
-                               TicketList** ticketList) 
+long
+not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo,
+                               TicketList** ticketList)
 {
 #ifdef NO_KRB4
     return(KFAILURE);
@@ -1153,7 +1153,7 @@ not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo,
 
     TicketList* list = NULL;
     if ( ticketinfo ) {
-        ticketinfo->btickets = NO_TICKETS; 
+        ticketinfo->btickets = NO_TICKETS;
         ticketinfo->principal[0] = '\0';
     }
 
@@ -1166,7 +1166,7 @@ not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo,
     if (ptf_init == NULL)
         return(KSUCCESS);
 
-    com_addr();                    
+    com_addr();
     err_context = (LPSTR)"tktf1";
 
     // Open ticket file
@@ -1175,9 +1175,9 @@ not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo,
         functionName = "ptf_init()";
         goto cleanup;
     }
-    // Close ticket file 
+    // Close ticket file
     (void) (*ptf_close)();
-    
+
     // We must find the realm of the ticket file here before calling
     // tf_init because since the realm of the ticket file is not
     // really stored in the principal section of the file, the
@@ -1189,10 +1189,10 @@ not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo,
         functionName = "pkrb_get_tf_realm()";
         goto cleanup;
     }
-	
-    // Open ticket file 
+
+    // Open ticket file
     err_context = "tf init";
-    if (k_errno = (*ptf_init)((*ptkt_string)(), R_TKT_FIL)) 
+    if (k_errno = (*ptf_init)((*ptkt_string)(), R_TKT_FIL))
     {
         functionName = "sptf_init()";
         goto cleanup;
@@ -1201,13 +1201,13 @@ not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo,
     open = 1;
     err_context = "tf pname";
 
-    // Get principal name and instance 
-    if ((k_errno = (*ptf_get_pname)(pname)) || (k_errno = (*ptf_get_pinst)(pinst))) 
+    // Get principal name and instance
+    if ((k_errno = (*ptf_get_pname)(pname)) || (k_errno = (*ptf_get_pinst)(pinst)))
     {
         functionName = "ptf_get_pname()";
         goto cleanup;
     }
-	
+
     // You may think that this is the obvious place to get the
     // realm of the ticket file, but it can't be done here as the
     // routine to do this must open the ticket file.  This is why
@@ -1220,22 +1220,22 @@ not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo,
     err_context = "tf cred";
 
     // Get KRB4 tickets
-    while ((k_errno = (*ptf_get_cred)(&c)) == KSUCCESS) 
+    while ((k_errno = (*ptf_get_cred)(&c)) == KSUCCESS)
     {
         if (!list)
         {
             list = (TicketList*) calloc(1, sizeof(TicketList));
-            (*ticketList) = list; 
-        }    
-        else 
+            (*ticketList) = list;
+        }
+        else
         {
             list->next = (struct TicketList*) calloc(1, sizeof(TicketList));
             list = (TicketList*) list->next;
         }
-        
+
         expdate = c.issue_date + c.lifetime * 5L * 60L;
 
-        if (!lstrcmp((LPSTR)c.service, (LPSTR)TICKET_GRANTING_TICKET) && !lstrcmp((LPSTR)c.instance, (LPSTR)prealm)) 
+        if (!lstrcmp((LPSTR)c.service, (LPSTR)TICKET_GRANTING_TICKET) && !lstrcmp((LPSTR)c.instance, (LPSTR)prealm))
         {
             ticketinfo->issue_date = c.issue_date;
             ticketinfo->lifetime = c.lifetime * 5L * 60L;
@@ -1252,7 +1252,7 @@ not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo,
         cp += wsprintf(cp, "%s     ",
                        short_date(&c.issue_date));
         wsprintf(cp, "%s     %s%s%s%s%s",
-                 short_date(&expdate), 
+                 short_date(&expdate),
                  c.service,
                  (c.instance[0] ? "." : ""),
                  c.instance,
@@ -1263,8 +1263,8 @@ not_an_API_LeashKRB4GetTickets(TICKETINFO FAR* ticketinfo,
         if (!list->theTicket)
         {
             MessageBox(NULL, "Memory Error", "Error", MB_OK);
-            return ENOMEM;            
-        }       
+            return ENOMEM;
+        }
 
         strcpy(list->theTicket, buf);
         list->name = NULL;
@@ -1283,8 +1283,8 @@ cleanup:
         return(KSUCCESS);
 
     if (open)
-        (*ptf_close)(); //close ticket file 
-    
+        (*ptf_close)(); //close ticket file
+
     if (k_errno == EOF)
         k_errno = 0;
 
@@ -1297,12 +1297,12 @@ cleanup:
         k_errno = 0;
 
     ticketinfo->btickets = newtickets;
-	
+
     if (k_errno)
     {
         CHAR message[256];
         CHAR errBuf[256];
-        LPCSTR errText; 
+        LPCSTR errText;
 
         if (!Lerror_message)
             return -1;
@@ -1310,7 +1310,7 @@ cleanup:
         errText = err_describe(errBuf, KRBERR(k_errno));
 
         sprintf(message, "%s\n\n%s failed", errText, functionName);
-        MessageBox(NULL, message, "Kerberos Four", 
+        MessageBox(NULL, message, "Kerberos Four",
                    MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_SETFOREGROUND);
     }
     return k_errno;
@@ -1322,9 +1322,9 @@ long FAR Leash_klist(HWND hlist, TICKETINFO FAR *ticketinfo)
 #ifdef NO_KRB4
     return(KFAILURE);
 #else
-    // Don't think this function will be used anymore - ADL 5-15-99    
-    // Old fucntion to put tickets in a listbox control  
-    // Use function  "not_an_API_LeashKRB4GetTickets()" instead! 
+    // Don't think this function will be used anymore - ADL 5-15-99
+    // Old fucntion to put tickets in a listbox control
+    // Use function  "not_an_API_LeashKRB4GetTickets()" instead!
     char    pname[ANAME_SZ];
     char    pinst[INST_SZ];
     char    prealm[REALM_SZ];
@@ -1340,7 +1340,7 @@ long FAR Leash_klist(HWND hlist, TICKETINFO FAR *ticketinfo)
      * Since krb_get_tf_realm will return a ticket_file error,
      * we will call tf_init and tf_close first to filter out
      * things like no ticket file.  Otherwise, the error that
-     * the user would see would be 
+     * the user would see would be
      * klist: can't find realm of ticket file: No ticket file (tf_util)
      * instead of
      * klist: No ticket file (tf_util)
@@ -1348,12 +1348,12 @@ long FAR Leash_klist(HWND hlist, TICKETINFO FAR *ticketinfo)
     if (ptf_init == NULL)
         return(KSUCCESS);
 
-    if (hlist) 
-    { 
+    if (hlist)
+    {
         SendMessage(hlist, WM_SETREDRAW, FALSE, 0L);
         SendMessage(hlist, LB_RESETCONTENT, 0, 0L);
-    }                              
-    com_addr();                    
+    }
+    com_addr();
     newtickets = NO_TICKETS;
 
     err_context = (LPSTR)"tktf1";
@@ -1378,17 +1378,17 @@ long FAR Leash_klist(HWND hlist, TICKETINFO FAR *ticketinfo)
     }
     /* Open ticket file */
     err_context = "tf init";
-    if (k_errno = (*ptf_init)((*ptkt_string)(), R_TKT_FIL)) 
+    if (k_errno = (*ptf_init)((*ptkt_string)(), R_TKT_FIL))
     {
-        goto cleanup;                            
+        goto cleanup;
     }
 
     open = 1;
     err_context = "tf pname";
     /* Get principal name and instance */
-    if ((k_errno = (*ptf_get_pname)(pname)) || (k_errno = (*ptf_get_pinst)(pinst))) 
+    if ((k_errno = (*ptf_get_pname)(pname)) || (k_errno = (*ptf_get_pinst)(pinst)))
     {
-        goto cleanup;             
+        goto cleanup;
     }
 
     /*
@@ -1404,11 +1404,11 @@ long FAR Leash_klist(HWND hlist, TICKETINFO FAR *ticketinfo)
     newtickets = GOOD_TICKETS;
 
     err_context = "tf cred";
-    while ((k_errno = (*ptf_get_cred)(&c)) == KSUCCESS) 
+    while ((k_errno = (*ptf_get_cred)(&c)) == KSUCCESS)
     {
         expdate = c.issue_date + c.lifetime * 5L * 60L;
 
-        if (!lstrcmp((LPSTR)c.service, (LPSTR)TICKET_GRANTING_TICKET) && !lstrcmp((LPSTR)c.instance, (LPSTR)prealm)) 
+        if (!lstrcmp((LPSTR)c.service, (LPSTR)TICKET_GRANTING_TICKET) && !lstrcmp((LPSTR)c.instance, (LPSTR)prealm))
         {
             ticketinfo->issue_date = c.issue_date;
             ticketinfo->lifetime = c.lifetime * 5L * 60L;
@@ -1432,7 +1432,7 @@ cleanup:
     if (open)
         (*ptf_close)(); /* close ticket file */
 
-    if (hlist) 
+    if (hlist)
     {
         SendMessage(hlist, WM_SETREDRAW, TRUE, 0L);
         InvalidateRect(hlist, NULL, TRUE);
@@ -1501,13 +1501,13 @@ LPSTR Leash_get_help_file(void)
 long
 LeashKrb4ErrorMessage(LONG rc, LPCSTR FailedFunctionName)
 {
-    // At this time the Leashw32.dll. takes care of all error messages. We 
-    // may want to add a flag latter on so the .exe can handle it's own 
+    // At this time the Leashw32.dll. takes care of all error messages. We
+    // may want to add a flag latter on so the .exe can handle it's own
     // errors.
 
     CHAR message[256];
     CHAR errBuf[256];
-    LPCSTR errText; 
+    LPCSTR errText;
 
     if (!Lerror_message)
       return -1;
@@ -1515,18 +1515,18 @@ LeashKrb4ErrorMessage(LONG rc, LPCSTR FailedFunctionName)
     errText = err_describe(errBuf, rc);
 
     sprintf(message, "%s\n\n%s failed", errText, FailedFunctionName);
-    MessageBox(NULL, message, "Kerberos Four", MB_OK | 
-                                               MB_ICONERROR | 
-                                               MB_TASKMODAL | 
+    MessageBox(NULL, message, "Kerberos Four", MB_OK |
+                                               MB_ICONERROR |
+                                               MB_TASKMODAL |
                                                MB_SETFOREGROUND);
     return rc;
 }
 #endif
 
-int 
+int
 Leash_debug(
-    int class, 
-    int priority, 
+    int class,
+    int priority,
     char* fmt, ...
     )
 {
@@ -1671,7 +1671,7 @@ get_default_lifetime_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_LIFETIME,
                                    result);
@@ -1702,12 +1702,12 @@ Leash_set_default_lifetime(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_LIFETIME, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_LIFETIME, 0, REG_DWORD,
                        (LPBYTE) &minutes, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -1745,7 +1745,7 @@ Leash_get_default_lifetime(
             long retval;
 
             filenames[0] = confname;
-            filenames[1] = NULL;        
+            filenames[1] = NULL;
             if (!pprofile_init(filenames, &profile)) {
                 char * value = NULL;
 
@@ -1768,7 +1768,7 @@ Leash_get_default_lifetime(
                            unit is seconds and tack an 's' to the end
                            and see if that works. */
 
-			/* Of course, Leash is one of the platforms 
+			/* Of course, Leash is one of the platforms
 			   that historically assumed no units and minutes
 			   so this change is going to break some people
 			   but its better to be consistent. */
@@ -1796,7 +1796,7 @@ Leash_get_default_lifetime(
                     pprofile_release_string(value);
                 }
                 pprofile_release(profile);
-		/* value has been released but we can still use a check for 
+		/* value has been released but we can still use a check for
 		 * non-NULL to see if we were able to read a value.
 		 */
 		if (retval == 0 && value)
@@ -1809,7 +1809,7 @@ Leash_get_default_lifetime(
     if (hmLeash)
     {
         char lifetime[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_LIFE, 
+        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_LIFE,
                        lifetime, sizeof(lifetime)))
         {
             lifetime[sizeof(lifetime) - 1] = 0;
@@ -1826,7 +1826,7 @@ get_default_renew_till_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_RENEW_TILL,
                                    result);
@@ -1857,12 +1857,12 @@ Leash_set_default_renew_till(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_RENEW_TILL, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_RENEW_TILL, 0, REG_DWORD,
                        (LPBYTE) &minutes, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -1897,11 +1897,11 @@ Leash_get_default_renew_till(
             int value=0;
             long retval;
             filenames[0] = confname;
-            filenames[1] = NULL;        
-            
+            filenames[1] = NULL;
+
 	    if (!pprofile_init(filenames, &profile)) {
                 char * value = NULL;
-            
+
 		retval = pprofile_get_string(profile, "libdefaults", "renew_lifetime", NULL, NULL, &value);
                 if (retval == 0 && value) {
                     krb5_deltat d;
@@ -1920,7 +1920,7 @@ Leash_get_default_renew_till(
                            unit is seconds and tack an 's' to the end
                            and see if that works. */
 
-			/* Of course, Leash is one of the platforms 
+			/* Of course, Leash is one of the platforms
 			   that historically assumed no units and minutes
 			   so this change is going to break some people
 			   but its better to be consistent. */
@@ -1945,7 +1945,7 @@ Leash_get_default_renew_till(
                     pprofile_release_string(value);
                 }
 		pprofile_release(profile);
-		/* value has been released but we can still use a check for 
+		/* value has been released but we can still use a check for
 		 * non-NULL to see if we were able to read a value.
 		 */
 		if (retval == 0 && value)
@@ -1960,7 +1960,7 @@ Leash_get_default_renew_till(
     if (hmLeash)
     {
         char renew_till[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_RENEW_TILL, 
+        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_RENEW_TILL,
                        renew_till, sizeof(renew_till)))
         {
             renew_till[sizeof(renew_till) - 1] = 0;
@@ -1977,7 +1977,7 @@ get_default_forwardable_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_FORWARDABLE,
                                    result);
@@ -2008,12 +2008,12 @@ Leash_set_default_forwardable(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_FORWARDABLE, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_FORWARDABLE, 0, REG_DWORD,
                        (LPBYTE) &minutes, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -2049,7 +2049,7 @@ Leash_get_default_forwardable(
             char *value=0;
             long retval;
             filenames[0] = confname;
-            filenames[1] = NULL;        
+            filenames[1] = NULL;
             if (!pprofile_init(filenames, &profile)) {
                 retval = pprofile_get_string(profile, "libdefaults","forwardable", 0, 0, &value);
                 if ( value ) {
@@ -2067,7 +2067,7 @@ Leash_get_default_forwardable(
     if (hmLeash)
     {
         char forwardable[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_FORWARD, 
+        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_FORWARD,
                        forwardable, sizeof(forwardable)))
         {
             forwardable[sizeof(forwardable) - 1] = 0;
@@ -2084,7 +2084,7 @@ get_default_renewable_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_RENEWABLE,
                                    result);
@@ -2115,12 +2115,12 @@ Leash_set_default_renewable(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_RENEWABLE, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_RENEWABLE, 0, REG_DWORD,
                        (LPBYTE) &minutes, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -2155,7 +2155,7 @@ Leash_get_default_renewable(
             char *value=0;
             long retval;
             filenames[0] = confname;
-            filenames[1] = NULL;        
+            filenames[1] = NULL;
             if (!pprofile_init(filenames, &profile)) {
                 retval = pprofile_get_string(profile, "libdefaults","renewable", 0, 0, &value);
                 if ( value ) {
@@ -2173,7 +2173,7 @@ Leash_get_default_renewable(
     if (hmLeash)
     {
         char renewable[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_RENEW, 
+        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_RENEW,
                        renewable, sizeof(renewable)))
         {
             renewable[sizeof(renewable) - 1] = 0;
@@ -2190,7 +2190,7 @@ get_default_noaddresses_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_NOADDRESSES,
                                    result);
@@ -2221,12 +2221,12 @@ Leash_set_default_noaddresses(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_NOADDRESSES, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_NOADDRESSES, 0, REG_DWORD,
                        (LPBYTE) &minutes, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -2254,7 +2254,7 @@ Leash_get_default_noaddresses(
             char *value=0;
             long retval;
             filenames[0] = confname;
-            filenames[1] = NULL;        
+            filenames[1] = NULL;
             if (!pprofile_init(filenames, &profile)) {
                 retval = pprofile_get_string(profile, "libdefaults","noaddresses", 0, "true", &value);
                 if ( value ) {
@@ -2286,7 +2286,7 @@ Leash_get_default_noaddresses(
     if (hmLeash)
     {
         char noaddresses[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_NOADDRESS, 
+        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_NOADDRESS,
                        noaddresses, sizeof(noaddresses)))
         {
             noaddresses[sizeof(noaddresses) - 1] = 0;
@@ -2302,7 +2302,7 @@ get_default_proxiable_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_PROXIABLE,
                                    result);
@@ -2333,12 +2333,12 @@ Leash_set_default_proxiable(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_PROXIABLE, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_PROXIABLE, 0, REG_DWORD,
                        (LPBYTE) &minutes, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -2373,7 +2373,7 @@ Leash_get_default_proxiable(
             char *value=0;
             long retval;
             filenames[0] = confname;
-            filenames[1] = NULL;        
+            filenames[1] = NULL;
             if (!pprofile_init(filenames, &profile)) {
                 retval = pprofile_get_string(profile, "libdefaults","proxiable", 0, 0, &value);
                 if ( value ) {
@@ -2391,7 +2391,7 @@ Leash_get_default_proxiable(
     if (hmLeash)
     {
         char proxiable[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_PROXIABLE, 
+        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_PROXIABLE,
                        proxiable, sizeof(proxiable)))
         {
             proxiable[sizeof(proxiable) - 1] = 0;
@@ -2408,7 +2408,7 @@ get_default_publicip_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_PUBLICIP,
                                    result);
@@ -2439,12 +2439,12 @@ Leash_set_default_publicip(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_PUBLICIP, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_PUBLICIP, 0, REG_DWORD,
                        (LPBYTE) &minutes, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -2474,7 +2474,7 @@ Leash_get_default_publicip(
     if (hmLeash)
     {
         char publicip[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_PUBLICIP, 
+        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_PUBLICIP,
                        publicip, sizeof(publicip)))
         {
             publicip[sizeof(publicip) - 1] = 0;
@@ -2491,7 +2491,7 @@ get_default_use_krb4_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_USEKRB4,
                                    result);
@@ -2522,12 +2522,12 @@ Leash_set_default_use_krb4(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_USEKRB4, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_USEKRB4, 0, REG_DWORD,
                        (LPBYTE) &minutes, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -2557,7 +2557,7 @@ Leash_get_default_use_krb4(
     if (hmLeash)
     {
         char use_krb4[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_USEKRB4, 
+        if (LoadString(hmLeash, LSH_DEFAULT_TICKET_USEKRB4,
                        use_krb4, sizeof(use_krb4)))
         {
             use_krb4[sizeof(use_krb4) - 1] = 0;
@@ -2574,7 +2574,7 @@ get_hide_kinit_options_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_KINIT_OPT,
                                    result);
@@ -2605,12 +2605,12 @@ Leash_set_hide_kinit_options(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_KINIT_OPT, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_KINIT_OPT, 0, REG_DWORD,
                        (LPBYTE) &minutes, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -2634,7 +2634,7 @@ Leash_get_hide_kinit_options(
     if (hmLeash)
     {
         char use_krb4[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_DIALOG_KINIT_OPT, 
+        if (LoadString(hmLeash, LSH_DEFAULT_DIALOG_KINIT_OPT,
                        use_krb4, sizeof(use_krb4)))
         {
             use_krb4[sizeof(use_krb4) - 1] = 0;
@@ -2653,7 +2653,7 @@ get_default_life_min_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_LIFE_MIN,
                                    result);
@@ -2684,12 +2684,12 @@ Leash_set_default_life_min(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_LIFE_MIN, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_LIFE_MIN, 0, REG_DWORD,
                        (LPBYTE) &minutes, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -2713,7 +2713,7 @@ Leash_get_default_life_min(
     if (hmLeash)
     {
         char use_krb4[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_DIALOG_LIFE_MIN, 
+        if (LoadString(hmLeash, LSH_DEFAULT_DIALOG_LIFE_MIN,
                        use_krb4, sizeof(use_krb4)))
         {
             use_krb4[sizeof(use_krb4) - 1] = 0;
@@ -2730,7 +2730,7 @@ get_default_life_max_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_LIFE_MAX,
                                    result);
@@ -2761,12 +2761,12 @@ Leash_set_default_life_max(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_LIFE_MAX, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_LIFE_MAX, 0, REG_DWORD,
                        (LPBYTE) &minutes, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -2790,7 +2790,7 @@ Leash_get_default_life_max(
     if (hmLeash)
     {
         char use_krb4[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_DIALOG_LIFE_MAX, 
+        if (LoadString(hmLeash, LSH_DEFAULT_DIALOG_LIFE_MAX,
                        use_krb4, sizeof(use_krb4)))
         {
             use_krb4[sizeof(use_krb4) - 1] = 0;
@@ -2807,7 +2807,7 @@ get_default_renew_min_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_RENEW_MIN,
                                    result);
@@ -2838,12 +2838,12 @@ Leash_set_default_renew_min(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_RENEW_MIN, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_RENEW_MIN, 0, REG_DWORD,
                        (LPBYTE) &minutes, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -2867,7 +2867,7 @@ Leash_get_default_renew_min(
     if (hmLeash)
     {
         char use_krb4[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_DIALOG_RENEW_MIN, 
+        if (LoadString(hmLeash, LSH_DEFAULT_DIALOG_RENEW_MIN,
                        use_krb4, sizeof(use_krb4)))
         {
             use_krb4[sizeof(use_krb4) - 1] = 0;
@@ -2884,7 +2884,7 @@ get_default_renew_max_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_RENEW_MAX,
                                    result);
@@ -2915,12 +2915,12 @@ Leash_set_default_renew_max(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_RENEW_MAX, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_RENEW_MAX, 0, REG_DWORD,
                        (LPBYTE) &minutes, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -2944,7 +2944,7 @@ Leash_get_default_renew_max(
     if (hmLeash)
     {
         char use_krb4[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_DIALOG_RENEW_MAX, 
+        if (LoadString(hmLeash, LSH_DEFAULT_DIALOG_RENEW_MAX,
                        use_krb4, sizeof(use_krb4)))
         {
             use_krb4[sizeof(use_krb4) - 1] = 0;
@@ -2961,7 +2961,7 @@ get_lock_file_locations_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_LOCK_LOCATION,
                                    result);
@@ -2992,12 +2992,12 @@ Leash_set_lock_file_locations(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_LOCK_LOCATION, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_LOCK_LOCATION, 0, REG_DWORD,
                        (LPBYTE) &onoff, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -3021,7 +3021,7 @@ Leash_get_lock_file_locations(
     if (hmLeash)
     {
         char lock_file_locations[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_DIALOG_LOCK_LOCATION, 
+        if (LoadString(hmLeash, LSH_DEFAULT_DIALOG_LOCK_LOCATION,
                        lock_file_locations, sizeof(lock_file_locations)))
         {
             lock_file_locations[sizeof(lock_file_locations) - 1] = 0;
@@ -3038,7 +3038,7 @@ get_default_uppercaserealm_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_SETTINGS_REGISTRY_KEY_NAME,
                                    LEASH_SETTINGS_REGISTRY_VALUE_UPPERCASEREALM,
                                    result);
@@ -3069,12 +3069,12 @@ Leash_set_default_uppercaserealm(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_SETTINGS_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_SETTINGS_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_SETTINGS_REGISTRY_VALUE_UPPERCASEREALM, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_SETTINGS_REGISTRY_VALUE_UPPERCASEREALM, 0, REG_DWORD,
                        (LPBYTE) &onoff, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -3098,7 +3098,7 @@ Leash_get_default_uppercaserealm(
     if (hmLeash)
     {
         char uppercaserealm[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_UPPERCASEREALM, 
+        if (LoadString(hmLeash, LSH_DEFAULT_UPPERCASEREALM,
                        uppercaserealm, sizeof(uppercaserealm)))
         {
             uppercaserealm[sizeof(uppercaserealm) - 1] = 0;
@@ -3115,7 +3115,7 @@ get_default_mslsa_import_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_SETTINGS_REGISTRY_KEY_NAME,
                                    LEASH_SETTINGS_REGISTRY_VALUE_MSLSA_IMPORT,
                                    result);
@@ -3146,12 +3146,12 @@ Leash_set_default_mslsa_import(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_SETTINGS_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_SETTINGS_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_SETTINGS_REGISTRY_VALUE_MSLSA_IMPORT, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_SETTINGS_REGISTRY_VALUE_MSLSA_IMPORT, 0, REG_DWORD,
                        (LPBYTE) &onoffmatch, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -3175,7 +3175,7 @@ Leash_get_default_mslsa_import(
     if (hmLeash)
     {
         char mslsa_import[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_MSLSA_IMPORT, 
+        if (LoadString(hmLeash, LSH_DEFAULT_MSLSA_IMPORT,
                        mslsa_import, sizeof(mslsa_import)))
         {
             mslsa_import[sizeof(mslsa_import) - 1] = 0;
@@ -3193,7 +3193,7 @@ get_default_preserve_kinit_settings_from_registry(
     DWORD * result
     )
 {
-    return get_DWORD_from_registry(hBaseKey, 
+    return get_DWORD_from_registry(hBaseKey,
                                    LEASH_REGISTRY_KEY_NAME,
                                    LEASH_REGISTRY_VALUE_PRESERVE_KINIT,
                                    result);
@@ -3224,12 +3224,12 @@ Leash_set_default_preserve_kinit_settings(
     HKEY hKey;
     LONG rc;
 
-    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0, 
+    rc = RegCreateKeyEx(HKEY_CURRENT_USER, LEASH_REGISTRY_KEY_NAME, 0,
                         0, 0, KEY_WRITE, 0, &hKey, 0);
     if (rc)
         return rc;
 
-    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_PRESERVE_KINIT, 0, REG_DWORD, 
+    rc = RegSetValueEx(hKey, LEASH_REGISTRY_VALUE_PRESERVE_KINIT, 0, REG_DWORD,
                        (LPBYTE) &onoff, sizeof(DWORD));
     RegCloseKey(hKey);
 
@@ -3253,7 +3253,7 @@ Leash_get_default_preserve_kinit_settings(
     if (hmLeash)
     {
         char preserve_kinit_settings[80];
-        if (LoadString(hmLeash, LSH_DEFAULT_PRESERVE_KINIT, 
+        if (LoadString(hmLeash, LSH_DEFAULT_PRESERVE_KINIT,
                        preserve_kinit_settings, sizeof(preserve_kinit_settings)))
         {
             preserve_kinit_settings[sizeof(preserve_kinit_settings) - 1] = 0;
@@ -3284,7 +3284,7 @@ Leash_reset_defaults(void)
     Leash_reset_default_preserve_kinit_settings();
 }
 
-static BOOL CALLBACK 
+static BOOL CALLBACK
 EnumChildProc(HWND hwnd, LPARAM lParam)
 {
     HWND * h = (HWND *)lParam;
@@ -3302,7 +3302,7 @@ FindFirstChildWindow(HWND parent)
 }
 
 static int
-acquire_tkt_send_msg(krb5_context ctx, const char * title, 
+acquire_tkt_send_msg(krb5_context ctx, const char * title,
 		     const char * ccachename,
 		     krb5_principal desiredKrb5Principal,
 		     const char * out_ccname, int out_cclen)
@@ -3325,7 +3325,7 @@ acquire_tkt_send_msg(krb5_context ctx, const char * title,
 	    }
 	}
     }
-    
+
     hForeground = GetForegroundWindow();
     hNetIdMgr = FindWindow("IDMgrRequestDaemonCls", "IDMgrRequestDaemon");
     if (hNetIdMgr != NULL) {
@@ -3333,7 +3333,7 @@ acquire_tkt_send_msg(krb5_context ctx, const char * title,
 	DWORD  tid = GetCurrentThreadId();
 	char mapname[256];
 	NETID_DLGINFO *dlginfo;
-	
+
 	sprintf(mapname,"Local\\NetIDMgr_DlgInfo_%lu",tid);
 
 	hMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
@@ -3359,36 +3359,36 @@ acquire_tkt_send_msg(krb5_context ctx, const char * title,
 	dlginfo->in.use_defaults = 1;
 
 	if (title) {
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				title, -1,
 				dlginfo->in.title, NETID_TITLE_SZ);
 	} else if (desiredName && (strlen(desiredName) + strlen(desiredRealm) + 32 < NETID_TITLE_SZ)) {
 	    char mytitle[NETID_TITLE_SZ];
 	    sprintf(mytitle, "Obtain Kerberos TGT for %s@%s",desiredName,desiredRealm);
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				mytitle, -1,
 				dlginfo->in.title, NETID_TITLE_SZ);
 	} else {
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				"Obtain Kerberos TGT", -1,
 				dlginfo->in.title, NETID_TITLE_SZ);
 	}
 	if (desiredName)
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				desiredName, -1,
 				dlginfo->in.username, NETID_USERNAME_SZ);
 	if (desiredRealm)
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				desiredRealm, -1,
 				dlginfo->in.realm, NETID_REALM_SZ);
 	if (ccachename)
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				ccachename, -1,
 				dlginfo->in.ccache, NETID_CCACHE_NAME_SZ);
 	SendMessage(hNetIdMgr, 32810, 0, (LPARAM) tid);
 
 	if (out_ccname && out_cclen > 0) {
-	    WideCharToMultiByte(CP_ACP, WC_COMPOSITECHECK, dlginfo->out.ccache, -1, 
+	    WideCharToMultiByte(CP_ACP, WC_COMPOSITECHECK, dlginfo->out.ccache, -1,
 				out_ccname, out_cclen, NULL, NULL);
 	}
 
@@ -3451,7 +3451,7 @@ acquire_tkt_send_msg(krb5_context ctx, const char * title,
     return 0;
 }
 
-static void 
+static void
 acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
 {
     TicketList 		*list = NULL;
@@ -3479,11 +3479,11 @@ acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
     not_an_API_LeashKRB5GetTickets(&ticketinfo,&list,&ctx);
     not_an_API_LeashFreeTicketList(&list);
 
-    if ( ticketinfo.btickets != GOOD_TICKETS && 
+    if ( ticketinfo.btickets != GOOD_TICKETS &&
          dwMsLsaImport && Leash_importable() ) {
         // We have the option of importing tickets from the MSLSA
-        // but should we?  Do the tickets in the MSLSA cache belong 
-        // to the default realm used by Leash?  Does the default 
+        // but should we?  Do the tickets in the MSLSA cache belong
+        // to the default realm used by Leash?  Does the default
 	// ccache name specify a principal name?  Only import if we
 	// aren't going to break the default identity as specified
 	// by the user in Network Identity Manager.
@@ -3501,7 +3501,7 @@ acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
             krb5_error_code code;
             krb5_ccache mslsa_ccache=NULL;
             krb5_principal princ = NULL;
-	    char *mslsa_principal = NULL; 
+	    char *mslsa_principal = NULL;
             char ms_realm[128] = "", *def_realm = NULL, *r;
             int i;
 
@@ -3519,10 +3519,10 @@ acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
             if (code = pkrb5_get_default_realm(ctx, &def_realm))
                 goto cleanup;
 
-	    if (code = pkrb5_unparse_name(ctx, princ, &mslsa_principal)) 
+	    if (code = pkrb5_unparse_name(ctx, princ, &mslsa_principal))
 		goto cleanup;
 
-            import = (!isCCPrinc && !strcmp(def_realm, ms_realm)) || 
+            import = (!isCCPrinc && !strcmp(def_realm, ms_realm)) ||
 		(isCCPrinc && !strcmp(&ccachename[4], mslsa_principal));
 
           cleanup:
@@ -3563,8 +3563,8 @@ acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
 }
 
 
-static void 
-acquire_tkt_for_princ(krb5_context context, krb5_principal desiredPrincipal, 
+static void
+acquire_tkt_for_princ(krb5_context context, krb5_principal desiredPrincipal,
 		      char * ccname, int cclen)
 {
     TicketList 		*list = NULL;
@@ -3583,7 +3583,7 @@ acquire_tkt_for_princ(krb5_context context, krb5_principal desiredPrincipal,
     ctx = context;
 
     SetLastError(0);
-    GetEnvironmentVariable("KRB5CCNAME", ccachename, sizeof(ccachename));    
+    GetEnvironmentVariable("KRB5CCNAME", ccachename, sizeof(ccachename));
     gle = GetLastError();
     if ( (gle == ERROR_ENVVAR_NOT_FOUND) && context ) {
 	SetEnvironmentVariable("KRB5CCNAME", pkrb5_cc_default_name(ctx));
@@ -3594,8 +3594,8 @@ acquire_tkt_for_princ(krb5_context context, krb5_principal desiredPrincipal,
     not_an_API_LeashFreeTicketList(&list);
 
     pkrb5_unparse_name(ctx, desiredPrincipal, &name);
-	
-    if ( ticketinfo.btickets != GOOD_TICKETS && 
+
+    if ( ticketinfo.btickets != GOOD_TICKETS &&
          dwMsLsaImport && Leash_importable() ) {
         // We have the option of importing tickets from the MSLSA
         // but should we?  Does the MSLSA principal match the requested
@@ -3624,7 +3624,7 @@ acquire_tkt_for_princ(krb5_context context, krb5_principal desiredPrincipal,
         if ( import ) {
 	    /* Construct a new default ccache name into which the MSLSA:
 	     * credentials can be imported, set the default ccache to that
-	     * ccache, and then only import if that ccache does not already 
+	     * ccache, and then only import if that ccache does not already
 	     * contain valid tickets */
 	    sprintf(ccachename, "API:%s", name);
 
@@ -3650,7 +3650,7 @@ acquire_tkt_for_princ(krb5_context context, krb5_principal desiredPrincipal,
 	    ccname[cclen-1] = '\0';
 	}
     }
-    
+
     if ( ccname && strcmp(ccachename,ccname) ) {
 	SetEnvironmentVariable("KRB5CCNAME",ccname);
     }
@@ -3665,8 +3665,8 @@ acquire_tkt_for_princ(krb5_context context, krb5_principal desiredPrincipal,
 
 
 static int
-leash_int_get_princ_expiration_time(krb5_context ctx, krb5_ccache cc, 
-				    krb5_principal desiredPrincipal, 
+leash_int_get_princ_expiration_time(krb5_context ctx, krb5_ccache cc,
+				    krb5_principal desiredPrincipal,
 				    krb5_timestamp * pexpiration)
 {
     krb5_principal principal = 0;
@@ -3692,7 +3692,7 @@ leash_int_get_princ_expiration_time(krb5_context ctx, krb5_ccache cc,
     code2 = pkrb5_unparse_name(ctx, principal, &princ_name);
 
     /* compare principal to ident. */
-    if ( code || !princ_name ||	code2 || !desired_name || 
+    if ( code || !princ_name ||	code2 || !desired_name ||
 	 strcmp(princ_name, desired_name) ) {
         if (princ_name)
             pkrb5_free_unparsed_name(ctx, princ_name);
@@ -3718,19 +3718,19 @@ leash_int_get_princ_expiration_time(krb5_context ctx, krb5_ccache cc,
         krb5_data * c1  = krb5_princ_component(ctx, creds.server, 1);
         krb5_data * r = krb5_princ_realm(ctx, creds.server);
 
-        if ( c0 && c1 && r && c1->length == r->length && 
+        if ( c0 && c1 && r && c1->length == r->length &&
              !strncmp(c1->data,r->data,r->length) &&
              !strncmp("krbtgt",c0->data,c0->length) ) {
 
             /* we have a TGT, check for the expiration time.
-             * if it is valid and renewable, use the renew time 
+             * if it is valid and renewable, use the renew time
              */
 
             if (!(creds.ticket_flags & TKT_FLG_INVALID) &&
                 creds.times.starttime < now && creds.times.endtime > now) {
                 expiration = creds.times.endtime;
 
-                if ((creds.ticket_flags & TKT_FLG_RENEWABLE) && 
+                if ((creds.ticket_flags & TKT_FLG_RENEWABLE) &&
                     (creds.times.renew_till > creds.times.endtime)) {
                     expiration = creds.times.renew_till;
                 }
@@ -3770,7 +3770,7 @@ leash_int_find_ccache_for_princ(krb5_context ctx, krb5_principal princ,
         goto _exit;
 
     code = cc_get_NC_info(cc_ctx, &pNCi);
-    if (code) 
+    if (code)
         goto _exit;
 
     for(i=0; pNCi[i]; i++) {
@@ -3782,13 +3782,13 @@ leash_int_find_ccache_for_princ(krb5_context ctx, krb5_principal princ,
             continue;
 
         /* need a function to check the cache for the identity
-         * and determine if it has valid tickets.  If it has 
-         * the right identity and valid tickets, store the 
+         * and determine if it has valid tickets.  If it has
+         * the right identity and valid tickets, store the
          * expiration time and the cache name.  If it has the
          * right identity but no valid tickets, store the ccache
          * name and an expiration time of zero.  if it does not
          * have the right identity don't save the name.
-         * 
+         *
          * Keep searching to find the best cache available.
          */
 
@@ -3848,8 +3848,8 @@ leash_int_find_ccache_for_princ(krb5_context ctx, krb5_principal princ,
 }
 
 void FAR
-not_an_API_Leash_AcquireInitialTicketsIfNeeded(krb5_context context, 
-					       krb5_principal desiredKrb5Principal, 
+not_an_API_Leash_AcquireInitialTicketsIfNeeded(krb5_context context,
+					       krb5_principal desiredKrb5Principal,
 					       char * ccname, int cclen)
 {
     char		*desiredName = 0;

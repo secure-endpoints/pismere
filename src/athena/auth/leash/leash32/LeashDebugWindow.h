@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			LeashDebugWindow.h  
+//	File:			LeashDebugWindow.h
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	H file for LeashDebugWindow.cpp. Contains variables and functions 
+//	Description:	H file for LeashDebugWindow.cpp. Contains variables and functions
 //					for the Leash Debug Window
 //
 //	History:
@@ -19,7 +19,7 @@
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
-// LeashDebugWindow.h 
+// LeashDebugWindow.h
 //
 
 /////////////////////////////////////////////////////////////////////////////

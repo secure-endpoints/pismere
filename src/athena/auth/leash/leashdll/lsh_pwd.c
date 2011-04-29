@@ -91,7 +91,7 @@ NetId_dialog(LPLSH_DLGINFO lpdlginfo)
 
     hNetIdMgr = FindWindow("IDMgrRequestDaemonCls", "IDMgrRequestDaemon");
     if (hNetIdMgr != NULL) {
-	char desiredPrincipal[512]; 
+	char desiredPrincipal[512];
 	NETID_DLGINFO *dlginfo;
 	char		*desiredName = 0;
 	char            *desiredRealm = 0;
@@ -142,26 +142,26 @@ NetId_dialog(LPLSH_DLGINFO lpdlginfo)
 	dlginfo->in.use_defaults = 1;
 
 	if (lpdlginfo->title) {
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				lpdlginfo->title, -1,
 				dlginfo->in.title, NETID_TITLE_SZ);
 	} else if (desiredName && (strlen(desiredName) + strlen(desiredRealm) + 32 < NETID_TITLE_SZ)) {
 	    char mytitle[NETID_TITLE_SZ];
 	    sprintf(mytitle, "Obtain Kerberos TGT for %s@%s",desiredName,desiredRealm);
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				mytitle, -1,
 				dlginfo->in.title, NETID_TITLE_SZ);
 	} else {
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				"Obtain Kerberos TGT", -1,
 				dlginfo->in.title, NETID_TITLE_SZ);
 	}
 	if (desiredName)
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				desiredName, -1,
 				dlginfo->in.username, NETID_USERNAME_SZ);
 	if (desiredRealm)
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				desiredRealm, -1,
 				dlginfo->in.realm, NETID_REALM_SZ);
 	lrc = SendMessage(hNetIdMgr, 32810, 0, (LPARAM) tid);
@@ -214,7 +214,7 @@ NetId_dialog_ex(LPLSH_DLGINFO_EX lpdlginfo)
 	hForeground = GetForegroundWindow();
 
 	if (lpdlginfo->size == LSH_DLGINFO_EX_V1_SZ ||
-	    lpdlginfo->size == LSH_DLGINFO_EX_V2_SZ) 
+	    lpdlginfo->size == LSH_DLGINFO_EX_V2_SZ)
 	{
 	    title = lpdlginfo->title;
 	    desiredName = lpdlginfo->username;
@@ -244,48 +244,48 @@ NetId_dialog_ex(LPLSH_DLGINFO_EX lpdlginfo)
 	dlginfo->in.publicip     = lpdlginfo->publicip;
 
 	if (title) {
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				title, -1,
 				dlginfo->in.title, NETID_TITLE_SZ);
 	} else if (desiredName && (strlen(desiredName) + strlen(desiredRealm) + 32 < NETID_TITLE_SZ)) {
 	    char mytitle[NETID_TITLE_SZ];
 	    sprintf(mytitle, "Obtain Kerberos TGT for %s@%s",desiredName,desiredRealm);
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				mytitle, -1,
 				dlginfo->in.title, NETID_TITLE_SZ);
 	} else {
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				"Obtain Kerberos TGT", -1,
 				dlginfo->in.title, NETID_TITLE_SZ);
 	}
 	if (desiredName)
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				desiredName, -1,
 				dlginfo->in.username, NETID_USERNAME_SZ);
 	if (desiredRealm)
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				desiredRealm, -1,
 				dlginfo->in.realm, NETID_REALM_SZ);
 	if (ccache)
-	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS, 
+	    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED|MB_ERR_INVALID_CHARS,
 				ccache, -1,
 				dlginfo->in.ccache, NETID_CCACHE_NAME_SZ);
 	lrc = SendMessage(hNetIdMgr, 32810, 0, (LPARAM) tid);
 
 	if (lrc > 0) {
-	    if (lpdlginfo->size == LSH_DLGINFO_EX_V2_SZ) 
+	    if (lpdlginfo->size == LSH_DLGINFO_EX_V2_SZ)
 	    {
-		WideCharToMultiByte(CP_ACP, 0, dlginfo->out.username, -1, 
-				     lpdlginfo->out.username, LEASH_USERNAME_SZ, 
+		WideCharToMultiByte(CP_ACP, 0, dlginfo->out.username, -1,
+				     lpdlginfo->out.username, LEASH_USERNAME_SZ,
 				     NULL, NULL);
-		WideCharToMultiByte(CP_ACP, 0, dlginfo->out.realm, -1, 
-				     lpdlginfo->out.realm, LEASH_REALM_SZ, 
+		WideCharToMultiByte(CP_ACP, 0, dlginfo->out.realm, -1,
+				     lpdlginfo->out.realm, LEASH_REALM_SZ,
 				     NULL, NULL);
 	    }
-	    if (lpdlginfo->size == LSH_DLGINFO_EX_V3_SZ) 
+	    if (lpdlginfo->size == LSH_DLGINFO_EX_V3_SZ)
 	    {
-		WideCharToMultiByte(CP_ACP, 0, dlginfo->out.ccache, -1, 
-				     lpdlginfo->out.ccache, LEASH_CCACHE_NAME_SZ, 
+		WideCharToMultiByte(CP_ACP, 0, dlginfo->out.ccache, -1,
+				     lpdlginfo->out.ccache, LEASH_CCACHE_NAME_SZ,
 				     NULL, NULL);
 	    }
 	}
@@ -305,11 +305,11 @@ int Leash_kinit_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo)
 {
     int rc;
     HANDLE hMutex;
-    
+
     rc = NetId_dialog(lpdlginfo);
     if (rc > -1)
 	return rc;
-    
+
     hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
     if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
         if ( WaitForSingleObject( hMutex, INFINITE ) != WAIT_OBJECT_0 ) {
@@ -340,11 +340,11 @@ int Leash_kinit_dlg_ex(HWND hParent, LPLSH_DLGINFO_EX lpdlginfo)
 {
     int rc;
     HANDLE hMutex;
-    
+
     rc = NetId_dialog_ex(lpdlginfo);
     if (rc > -1)
 	return rc;
-    
+
     hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
     if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
         if ( WaitForSingleObject( hMutex, INFINITE ) != WAIT_OBJECT_0 ) {
@@ -374,11 +374,11 @@ int Leash_changepwd_dlg(HWND hParent, LPLSH_DLGINFO lpdlginfo)
 {
     int rc;
     HANDLE hMutex;
-    
+
     rc = NetId_dialog(lpdlginfo);
     if (rc > -1)
 	return rc;
-    
+
     hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
     if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
         if ( WaitForSingleObject( hMutex, INFINITE ) != WAIT_OBJECT_0 ) {
@@ -404,11 +404,11 @@ int Leash_changepwd_dlg_ex(HWND hParent, LPLSH_DLGINFO_EX lpdlginfo)
 {
     int rc;
     HANDLE hMutex;
-    
+
     rc = NetId_dialog_ex(lpdlginfo);
     if (rc > -1)
 	return rc;
-    
+
     hMutex = CreateMutex(NULL, TRUE, LEASH_DLG_MUTEX_NAME);
     if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
         if ( WaitForSingleObject( hMutex, INFINITE ) != WAIT_OBJECT_0 ) {
@@ -576,7 +576,7 @@ PasswordProc(
         if (Position.x > 0 && Position.y > 0 &&
             Position.x < GetSystemMetrics(SM_CXSCREEN) &&
             Position.y < GetSystemMetrics(SM_CYSCREEN))
-            SetWindowPos(hDialog, 0, Position.x, Position.y, 0, 0, 
+            SetWindowPos(hDialog, 0, Position.x, Position.y, 0, 0,
                          SWP_NOSIZE | SWP_NOZORDER);
 
         /* set window pos to last saved window pos */
@@ -744,7 +744,7 @@ PasswordProc(
             {
                 if (!principal[0])
                 {
-                    MessageBox(hDialog, 
+                    MessageBox(hDialog,
                                 "You are not allowed to enter a blank principal.",
                                "Invalid Principal",
                                MB_OK | MB_ICONSTOP);
@@ -782,7 +782,7 @@ PasswordProc(
                     lsh_errno = Leash_int_kinit_ex( 0,
                                                     hDialog,
                                                     principal,
-                                                    oldpassword, 
+                                                    oldpassword,
                                                     duration,
                                                     Leash_get_default_forwardable(),
                                                     Leash_get_default_proxiable(),
@@ -859,7 +859,7 @@ PasswordProc(
                 for( i = 0; i < 255; i++ ){
                     if( newpassword[i] == '\0' ){
                         if ( bit8 ) {
-                            MessageBox(hDialog, 
+                            MessageBox(hDialog,
                                         "Passwords should not contain non-ASCII characters.",
                                         "Internationalization Warning",
                                         MB_OK | MB_ICONINFORMATION);
@@ -869,7 +869,7 @@ PasswordProc(
                     } else if( !isprint(newpassword[i]) ){
                         memset(newpassword, '\0', 255);
                         /* I claim these passwords in the name of planet '\0'... */
-                        MessageBox(hDialog, 
+                        MessageBox(hDialog,
                                    "Passwords may not contain non-printable characters.",
                                     "Invalid Password",
                                     MB_OK | MB_ICONSTOP);
@@ -884,7 +884,7 @@ PasswordProc(
                 if (lstrcmp(newpassword, newpassword2))
                 {
                     NEXTSTATE(STATE_NEWPWD1);
-                    MessageBox(hDialog, 
+                    MessageBox(hDialog,
                                 "The new password was not entered the same way twice.",
                                 "Password validation error",
                                 MB_OK | MB_ICONSTOP);
@@ -966,15 +966,15 @@ PasswordProc(
 #define KRBREALM_FILE           "KRBREALM.CON"
 #define KRB5_FILE               "KRB5.INI"
 
-BOOL 
+BOOL
 GetProfileFile(
-    LPSTR confname, 
+    LPSTR confname,
     UINT szConfname
     )
 {
     char **configFile = NULL;
     if (hKrb5 &&
-         pkrb5_get_default_config_files(&configFile)) 
+         pkrb5_get_default_config_files(&configFile))
     {
         GetWindowsDirectory(confname,szConfname);
         confname[szConfname-1] = '\0';
@@ -984,15 +984,15 @@ GetProfileFile(
         confname[szConfname-1] = '\0';
         return FALSE;
     }
-    
+
     *confname = 0;
-    
+
     if (hKrb5 && configFile)
     {
         strncpy(confname, *configFile, szConfname);
-        pkrb5_free_config_files(configFile); 
+        pkrb5_free_config_files(configFile);
     }
-    
+
     if (!*confname)
     {
         GetWindowsDirectory(confname,szConfname);
@@ -1002,13 +1002,13 @@ GetProfileFile(
         strncat(confname, KRB5_FILE,sizeof(confname)-strlen(confname));
         confname[szConfname-1] = '\0';
     }
-    
+
     return FALSE;
 }
 
 BOOL
 GetKrb4ConFile(
-    LPSTR confname, 
+    LPSTR confname,
     UINT szConfname
     )
 {
@@ -1022,7 +1022,7 @@ GetKrb4ConFile(
         LPSTR pFind;
 
         //strcpy(krbConFile, CLeashApp::m_krbv5_profile->first_file->filename);
-        if (GetProfileFile(krbConFile, sizeof(krbConFile)))	
+        if (GetProfileFile(krbConFile, sizeof(krbConFile)))
         {
             GetWindowsDirectory(krbConFile,sizeof(krbConFile));
             krbConFile[MAX_PATH-1] = '\0';
@@ -1049,7 +1049,7 @@ GetKrb4ConFile(
     }
 #ifndef NO_KRB4
     else if (hKrb4)
-    { 
+    {
         unsigned int size = szConfname;
         memset(confname, '\0', szConfname);
         if (!pkrb_get_krbconf2(confname, &size))
@@ -1064,15 +1064,15 @@ GetKrb4ConFile(
     }
 #endif
     return FALSE;
-}       
+}
 
 BOOL
 GetKrb4RealmFile(
-    LPSTR confname, 
+    LPSTR confname,
     UINT szConfname
     )
 {
-    if (hKrb5 
+    if (hKrb5
 #ifndef NO_KRB4
          && !hKrb4
 #endif
@@ -1082,7 +1082,7 @@ GetKrb4RealmFile(
         LPSTR pFind;
 
         //strcpy(krbRealmConFile, CLeashApp::m_krbv5_profile->first_file->filename);
-        if (GetProfileFile(krbRealmConFile, sizeof(krbRealmConFile)))	
+        if (GetProfileFile(krbRealmConFile, sizeof(krbRealmConFile)))
         {
             GetWindowsDirectory(krbRealmConFile,sizeof(krbRealmConFile));
             krbRealmConFile[MAX_PATH-1] = '\0';
@@ -1109,11 +1109,11 @@ GetKrb4RealmFile(
     }
 #ifndef NO_KRB4
     else if (hKrb4)
-    { 
+    {
         unsigned int size = szConfname;
         memset(confname, '\0', szConfname);
         if (!pkrb_get_krbrealm2(confname, &size))
-        { 
+        {
             GetWindowsDirectory(confname,szConfname);
             confname[szConfname-1] = '\0';
             strncat(confname, "\\",szConfname-strlen(confname));
@@ -1122,7 +1122,7 @@ GetKrb4RealmFile(
             confname[szConfname-1] = '\0';
             return TRUE;
         }
-    }	
+    }
 #endif
     return FALSE;
 }
@@ -1163,7 +1163,7 @@ FindDLLName(CHAR * filename, UINT len)
                     }
                 }
             }
-        }   
+        }
 
         CloseHandle(hProcess);
     } else if (pCreateToolhelp32Snapshot && pModule32First && pModule32Next ) {
@@ -1193,7 +1193,7 @@ FindDLLName(CHAR * filename, UINT len)
     }
 
     return filename[0] ? 1 : 0;
-}   
+}
 
 static DWORD
 SetVersionInfo(
@@ -1284,7 +1284,7 @@ readstring(FILE * file, char * buf, int len)
 	int  c,i;
 	memset(buf, '\0', sizeof(buf));
 	for (i=0, c=fgetc(file); c != EOF ; c=fgetc(file), i++)
-	{	
+	{
 		if (i < sizeof(buf)) {
 			if (c == '\n') {
 				buf[i] = '\0';
@@ -1323,7 +1323,7 @@ static slider_info * sliders = NULL;
 
 static slider_info *
 FreeSlider(slider_info * s)
-{	
+{
 	slider_info * n = NULL;
 
 	if (s) {
@@ -1350,7 +1350,7 @@ NewSliderValue(HWND hDialog, int id)
 		if (s->slider_id == id) {
 			int pos = CSendDlgItemMessage( hDialog, id,
 										 TBM_GETPOS,
-										 (WPARAM) 0, (LPARAM) 0);  
+										 (WPARAM) 0, (LPARAM) 0);
 			value = s->min + (pos * s->increment);
 			break;
 		}
@@ -1390,8 +1390,8 @@ NewSliderString(int id, int pos)
 	return(buf);
 }
 
-static void 
-SetupSlider( HWND hDialog, 
+static void
+SetupSlider( HWND hDialog,
 			 int sliderID,
 			 int textFieldID,
 			 int minimum,
@@ -1444,17 +1444,17 @@ SetupSlider( HWND hDialog,
 		EnableWindow(GetDlgItem(hDialog,sliderID),TRUE);
     }
 
-	CSendDlgItemMessage( hDialog, sliderID, 
+	CSendDlgItemMessage( hDialog, sliderID,
 						 TBM_SETRANGEMIN,
-						 (WPARAM) FALSE, 
+						 (WPARAM) FALSE,
 						 (LPARAM) 0 );
-	CSendDlgItemMessage( hDialog, sliderID, 
+	CSendDlgItemMessage( hDialog, sliderID,
 						 TBM_SETRANGEMAX,
-						 (WPARAM) FALSE, 
+						 (WPARAM) FALSE,
 						 (LPARAM) (roundedMaximum - roundedMinimum) / increment );
-	CSendDlgItemMessage( hDialog, sliderID, 
+	CSendDlgItemMessage( hDialog, sliderID,
 						 TBM_SETPOS,
-						 (WPARAM) TRUE, 
+						 (WPARAM) TRUE,
 						 (LPARAM) (roundedValue - roundedMinimum) / increment);
 
 	new_info = (slider_info *) malloc(sizeof(slider_info));
@@ -1493,7 +1493,7 @@ AdjustOptions(HWND hDialog, int show, int hideDiff)
     ShowWindow(GetDlgItem(hDialog,IDC_STATIC_KRB5),show);
 
     GetWindowRect( hDialog, &dlgRect );
-    diff = dlgRect.top + GetSystemMetrics(SM_CYCAPTION) 
+    diff = dlgRect.top + GetSystemMetrics(SM_CYCAPTION)
          + GetSystemMetrics(SM_CYDLGFRAME) + (show ? -1 : 1) * hideDiff;
 
     hwnd = GetDlgItem(hDialog,IDOK);
@@ -1564,7 +1564,7 @@ AuthenticateProc(
 
         *( (LPLSH_DLGINFO_EX far *)(&lpdi) ) = (LPLSH_DLGINFO_EX)(LPSTR)lParam;
 
-	if ((lpdi->size != LSH_DLGINFO_EX_V1_SZ && 
+	if ((lpdi->size != LSH_DLGINFO_EX_V1_SZ &&
 	     lpdi->size != LSH_DLGINFO_EX_V2_SZ &&
 	      lpdi->size < LSH_DLGINFO_EX_V3_SZ) ||
 	     lpdi->dlgtype != DLGTYPE_PASSWD) {
@@ -1578,7 +1578,7 @@ AuthenticateProc(
         if ( lpdi->size >= LSH_DLGINFO_EX_V2_SZ ) {
             lpdi->out.username[0] = 0;
             lpdi->out.realm[0] = 0;
-        }	
+        }
         if ( lpdi->size >= LSH_DLGINFO_EX_V3_SZ ) {
             lpdi->out.ccache[0] = 0;
         }
@@ -1607,7 +1607,7 @@ AuthenticateProc(
                 renew_till = Leash_get_default_renew_till();
                 if (renew_till < 0)
                     renew_till = 10800; /* 7 days */
-            } else 		
+            } else
                 renew_till = 0;
 	    forwardable = Leash_get_default_forwardable();
 	    if (forwardable < 0)
@@ -1684,7 +1684,7 @@ AuthenticateProc(
 	    char krb_conf[MAX_PATH+1];
 	    char * p;
 
-	    if (!GetKrb4ConFile(krb_conf,sizeof(krb_conf)) && 
+	    if (!GetKrb4ConFile(krb_conf,sizeof(krb_conf)) &&
 		 (file = fopen(krb_conf, "rt")))
 	    {
 		char lineBuf[256];
@@ -1734,17 +1734,17 @@ AuthenticateProc(
 	}
 	CSetDlgItemText(hDialog, IDC_COMBO_REALM, realm);
 
-	/* Set Lifetime Slider 
+	/* Set Lifetime Slider
 	*   min value = 5
 	*   max value = 1440
-	*   current value 
+	*   current value
 	*/
 
-	SetupSlider( hDialog, 
+	SetupSlider( hDialog,
 		     IDC_SLIDER_LIFETIME,
 		     IDC_STATIC_LIFETIME_VALUE,
-		     Leash_get_default_life_min(), 
-		     Leash_get_default_life_max(), 
+		     Leash_get_default_life_min(),
+		     Leash_get_default_life_max(),
 		     lifetime );
 
 	/* Set Forwardable checkbox */
@@ -1756,15 +1756,15 @@ AuthenticateProc(
 	/* Set Renewable checkbox */
 	CheckDlgButton(hDialog, IDC_CHECK_RENEWABLE, renew_till);
 	/* if not renewable, disable Renew Till slider */
-	/* if renewable, set Renew Till slider 
+	/* if renewable, set Renew Till slider
 	*     min value
 	*     max value
 	*     current value
 	*/
-	SetupSlider( hDialog, 
-		     IDC_SLIDER_RENEWLIFE, 
+	SetupSlider( hDialog,
+		     IDC_SLIDER_RENEWLIFE,
 		     IDC_STATIC_RENEW_TILL_VALUE,
-		     Leash_get_default_renew_min(), 
+		     Leash_get_default_renew_min(),
 		     Leash_get_default_renew_max(),
 		     renew_till);
 	if (renew_till) {
@@ -1798,25 +1798,25 @@ AuthenticateProc(
             Position.y < GetSystemMetrics(SM_CYSCREEN))
             SetWindowPos(hDialog, HWND_TOP, Position.x, Position.y, 0, 0, SWP_NOSIZE);
         else /* Center the window on the desktop */
-            SetWindowPos(hDialog, HWND_TOP, 
-                         (GetSystemMetrics(SM_CXSCREEN) - dlgRect.right + dlgRect.left)/2, 
-                         (GetSystemMetrics(SM_CYSCREEN) - dlgRect.bottom + dlgRect.top)/2, 
+            SetWindowPos(hDialog, HWND_TOP,
+                         (GetSystemMetrics(SM_CXSCREEN) - dlgRect.right + dlgRect.left)/2,
+                         (GetSystemMetrics(SM_CYSCREEN) - dlgRect.bottom + dlgRect.top)/2,
                          0, 0,
                          SWP_NOSIZE);
 
         /* Take keyboard focus */
         SetActiveWindow(hDialog);
         SetForegroundWindow(hDialog);
-        if (GetDlgCtrlID((HWND) wParam) != IDC_EDIT_PRINCIPAL) 
-        { 
+        if (GetDlgCtrlID((HWND) wParam) != IDC_EDIT_PRINCIPAL)
+        {
             SetFocus(GetDlgItem(hDialog, IDC_EDIT_PRINCIPAL));
-        } 
+        }
         break;
 
 	case WM_HSCROLL:
 	switch (LOWORD(wParam)) {
 	case TB_THUMBTRACK:
-	case TB_THUMBPOSITION: 
+	case TB_THUMBPOSITION:
 	    {
 		long pos = HIWORD(wParam); // the position of the slider
 		int  ctrlID = GetDlgCtrlID((HWND)lParam);
@@ -1824,11 +1824,11 @@ AuthenticateProc(
 		if (ctrlID == IDC_SLIDER_RENEWLIFE) {
 		    SetWindowText(GetDlgItem(hDialog, IDC_STATIC_RENEW_TILL_VALUE),
 				   NewSliderString(IDC_SLIDER_RENEWLIFE,pos));
-		}	
+		}
 		if (ctrlID == IDC_SLIDER_LIFETIME) {
 		    SetWindowText(GetDlgItem(hDialog, IDC_STATIC_LIFETIME_VALUE),
 				   NewSliderString(IDC_SLIDER_LIFETIME,pos));
-		}	
+		}
 	    }
 	    break;
         case TB_BOTTOM:
@@ -1846,11 +1846,11 @@ AuthenticateProc(
 		if (ctrlID == IDC_SLIDER_RENEWLIFE) {
 		    SetWindowText(GetDlgItem(hDialog, IDC_STATIC_RENEW_TILL_VALUE),
 				   NewSliderString(IDC_SLIDER_RENEWLIFE,pos));
-		}	
+		}
 		if (ctrlID == IDC_SLIDER_LIFETIME) {
 		    SetWindowText(GetDlgItem(hDialog, IDC_STATIC_LIFETIME_VALUE),
 				   NewSliderString(IDC_SLIDER_LIFETIME,pos));
-		}	
+		}
 	    }
 	}
         break;
@@ -1880,10 +1880,10 @@ AuthenticateProc(
 	    }
 	    break;
         case ID_HELP:
-	    {	
+	    {
 		WinHelp(GetWindow(hDialog,GW_OWNER), KRB_HelpFile, HELP_CONTEXT,
 			 ID_INITTICKETS);
-	    }	
+	    }
 	    break;
         case ID_CLOSEME:
 	    {
@@ -1904,7 +1904,7 @@ AuthenticateProc(
 
 		if (!username[0])
 		{
-		    MessageBox(hDialog, 
+		    MessageBox(hDialog,
                                 "You are not allowed to enter a blank username.",
 				"Invalid Principal",
 				MB_OK | MB_ICONSTOP);
@@ -1912,7 +1912,7 @@ AuthenticateProc(
 		}
 		if (!realm[0])
 		{
-		    MessageBox(hDialog, 
+		    MessageBox(hDialog,
                                 "You are not allowed to enter a blank realm.",
 				"Invalid Principal",
 				MB_OK | MB_ICONSTOP);
@@ -1927,7 +1927,7 @@ AuthenticateProc(
 
 		if (!password[0])
 		{
-		    MessageBox(hDialog, 
+		    MessageBox(hDialog,
                                 "You are not allowed to enter a blank password.",
 				"Invalid Password",
 				MB_OK | MB_ICONSTOP);
@@ -1953,7 +1953,7 @@ AuthenticateProc(
 						renew_till,
 						noaddresses,
 						publicip,
-						1	
+						1
 						);
 		if (lsh_errno != 0)
 		{
@@ -2013,11 +2013,11 @@ AuthenticateProc(
 
 		    // XXX DoNiftyErrorReport(lsh_errno, ISCHPASSWD ? ""
 		    // XXX : "Ticket initialization failed.");
-#endif /* COMMENT */	
+#endif /* COMMENT */
 		    return TRUE;
 		}
 
-                if ( Leash_get_default_preserve_kinit_settings() ) 
+                if ( Leash_get_default_preserve_kinit_settings() )
                 {
                     Leash_set_default_lifetime(lifetime);
                     if ( renew_till > 0 ) {
@@ -2036,7 +2036,7 @@ AuthenticateProc(
                     strncpy(lpdi->out.realm, realm, LEASH_REALM_SZ);
                     lpdi->out.realm[LEASH_REALM_SZ-1] = 0;
                 }
-				
+
                 CloseMe(TRUE); /* success */
                 return FALSE;
 	    }
@@ -2091,7 +2091,7 @@ NewPasswordProc(
 
         *( (LPLSH_DLGINFO_EX far *)(&lpdi) ) = (LPLSH_DLGINFO_EX)(LPSTR)lParam;
 
-	if ((lpdi->size < LSH_DLGINFO_EX_V3_SZ && 
+	if ((lpdi->size < LSH_DLGINFO_EX_V3_SZ &&
 	      lpdi->size != LSH_DLGINFO_EX_V1_SZ &&
 	      lpdi->size != LSH_DLGINFO_EX_V2_SZ) ||
 	     lpdi->dlgtype != DLGTYPE_CHPASSWD) {
@@ -2136,7 +2136,7 @@ NewPasswordProc(
 	CSendDlgItemMessage(hDialog, IDC_EDIT_PASSWORD, EM_SETPASSWORDCHAR, 32, 0);
 	CSendDlgItemMessage(hDialog, IDC_EDIT_PASSWORD2, EM_SETPASSWORDCHAR, 32, 0);
 	CSendDlgItemMessage(hDialog, IDC_EDIT_PASSWORD3, EM_SETPASSWORDCHAR, 32, 0);
-#endif	
+#endif
 
 	/* Populate list of Realms */
 	CSendDlgItemMessage(hDialog, IDC_COMBO_REALM, CB_RESETCONTENT, 0, 0);
@@ -2177,7 +2177,7 @@ NewPasswordProc(
 	    char krb_conf[MAX_PATH+1];
 	    char * p;
 
-	    if (!GetKrb4ConFile(krb_conf,sizeof(krb_conf)) && 
+	    if (!GetKrb4ConFile(krb_conf,sizeof(krb_conf)) &&
 		 (file = fopen(krb_conf, "rt")))
 	    {
 		char lineBuf[256];
@@ -2232,14 +2232,14 @@ NewPasswordProc(
         if (Position.x > 0 && Position.y > 0 &&
             Position.x < GetSystemMetrics(SM_CXSCREEN) &&
             Position.y < GetSystemMetrics(SM_CYSCREEN))
-            SetWindowPos(hDialog, 0, Position.x, Position.y, 0, 0, 
+            SetWindowPos(hDialog, 0, Position.x, Position.y, 0, 0,
                          SWP_NOSIZE | SWP_NOZORDER);
         else { /* Center the window on the desktop */
             RECT dlgRect;
             GetWindowRect( hDialog, &dlgRect );
-            SetWindowPos(hDialog, 0, 
-                         (GetSystemMetrics(SM_CXSCREEN) - dlgRect.right + dlgRect.left)/2, 
-                         (GetSystemMetrics(SM_CYSCREEN) - dlgRect.bottom + dlgRect.top)/2, 
+            SetWindowPos(hDialog, 0,
+                         (GetSystemMetrics(SM_CXSCREEN) - dlgRect.right + dlgRect.left)/2,
+                         (GetSystemMetrics(SM_CYSCREEN) - dlgRect.bottom + dlgRect.top)/2,
                          0, 0,
                          SWP_NOSIZE | SWP_NOZORDER);
         }
@@ -2249,10 +2249,10 @@ NewPasswordProc(
     case WM_COMMAND:
         switch (wParam) {
         case ID_HELP:
-	    {	
+	    {
 		WinHelp(GetWindow(hDialog,GW_OWNER), KRB_HelpFile, HELP_CONTEXT,
 			 ID_INITTICKETS);
-	    }	
+	    }
 	    break;
         case ID_CLOSEME:
 	    {
@@ -2312,7 +2312,7 @@ NewPasswordProc(
 		for( i = 0; i < 255; i++ ){
                     if( password2[i] == '\0' ){
                         if ( bit8 ) {
-                            MessageBox(hDialog, 
+                            MessageBox(hDialog,
                                         "Passwords should not contain non-ASCII characters.",
                                         "Internationalization Warning",
                                         MB_OK | MB_ICONINFORMATION);
@@ -2323,7 +2323,7 @@ NewPasswordProc(
                         memset(password2, '\0', sizeof(password2));
                         memset(password3, '\0', sizeof(password3));
                         /* I claim these passwords in the name of planet '\0'... */
-                        MessageBox(hDialog, 
+                        MessageBox(hDialog,
                                    "Passwords may not contain non-printable characters.",
                                     "Invalid Password",
                                     MB_OK | MB_ICONSTOP);
@@ -2334,7 +2334,7 @@ NewPasswordProc(
 
 		if (lstrcmp(password2, password3))
 		{
-                    MessageBox(hDialog, 
+                    MessageBox(hDialog,
                                 "The new password was not entered the same way twice.",
                                 "Password validation error",
                                 MB_OK | MB_ICONSTOP);
@@ -2396,7 +2396,7 @@ NewPasswordProc(
 
 		    // XXX   DoNiftyErrorReport(lsh_errno, ISCHPASSWD ? ""
 		    // XXX   : "Ticket initialization failed.");
-#endif /* COMMENT */	              
+#endif /* COMMENT */
                     return TRUE;
 		}
 

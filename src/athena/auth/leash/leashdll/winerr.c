@@ -1,13 +1,13 @@
 /*  WINERR.C
-    
+
     Jason Hunter
     8/2/94
     DCNS/IS MIT
-    
-    
+
+
   Contains the error functions for leash and kerberos.  Prints out keen windows
   error messages in english.
-    
+
 */
 
 #include <stdio.h>
@@ -128,7 +128,7 @@ LPSTR err_describe(LPSTR buf, long code)
         case GT_PW_NULLTKT:  /* 55    Null tkt returned by KDC */
             /* no error msg yet */
             break;
-	  
+
             /* Values returned by send_to_kdc */
         case SKDC_RETRY   :  /* 56    Retry count exceeded */
         case SKDC_CANT    :  /* 57    Can't send request */
@@ -159,7 +159,7 @@ LPSTR err_describe(LPSTR buf, long code)
              * message box is too small for VGA screens.
              * It does work well if we only have to support 1024x768
              */
-	
+
             com_err_msg = "You have entered an insecure or weak password.";
         default:
             /* no extra error msg */
@@ -189,11 +189,11 @@ LPSTR err_describe(LPSTR buf, long code)
 #endif
              ")", etype, offset
              //")\nPress F1 for help on this error.", etype, offset
-#ifdef DEBUG_COM_ERR 
+#ifdef DEBUG_COM_ERR
              , code
 #endif
         );
-  
+
     return (LPSTR)buf;
 }
 
@@ -204,18 +204,18 @@ int _export lsh_com_err_proc (LPSTR whoami, long code,
     HWND hOldFocus;
     char buf[1024], *cp; /* changed to 512 by jms 8/23/93 */
     WORD mbformat = MB_OK | MB_ICONEXCLAMATION;
-  
+
     cp = buf;
     memset(buf, '\0', sizeof(buf));
     cp[0] = '\0';
-  
+
     if (code)
     {
         err_describe(buf, code);
         while (*cp)
             cp++;
     }
-  
+
     if (fmt)
     {
         if (fmt[0] == '%' && fmt[1] == 'b')
@@ -233,7 +233,7 @@ int _export lsh_com_err_proc (LPSTR whoami, long code,
         wvsprintf((LPSTR)cp, fmt, args);
     }
     hOldFocus = GetFocus();
-    retval = MessageBox(/*GetRootParent(hOldFocus)*/NULL, buf, whoami, 
+    retval = MessageBox(/*GetRootParent(hOldFocus)*/NULL, buf, whoami,
                         mbformat | MB_ICONHAND | MB_TASKMODAL);
     SetFocus(hOldFocus);
     return retval;

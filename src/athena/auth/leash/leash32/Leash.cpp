@@ -1,12 +1,12 @@
 //**************************************************************************
-// File:	Leash.cpp 
+// File:	Leash.cpp
 // By:		Arthur David Leather
 // Created:	12/02/98
-// Copyright:	1998 Massachusetts Institute of Technology - All rights 
+// Copyright:	1998 Massachusetts Institute of Technology - All rights
 //		reserved.
 //
-// Description:	CPP file for Leash.h. Contains variables and functions 
-//		for Leash 
+// Description:	CPP file for Leash.h. Contains variables and functions
+//		for Leash
 //
 // History:
 //
@@ -20,7 +20,7 @@
 #include "MainFrm.h"
 #include "LeashDoc.h"
 #include "LeashView.h"
-#include "LeashAboutBox.h" 
+#include "LeashAboutBox.h"
 
 #include "reminder.h"
 #include "mitwhich.h"
@@ -51,13 +51,13 @@ HANDLE m_tgsReqMutex = 0;
 #endif
 
 HWND CLeashApp::m_hProgram = 0;
-HINSTANCE CLeashApp::m_hLeashDLL = 0; 
-HINSTANCE CLeashApp::m_hKrb4DLL = 0; 
-HINSTANCE CLeashApp::m_hKrb5DLL = 0; 
+HINSTANCE CLeashApp::m_hLeashDLL = 0;
+HINSTANCE CLeashApp::m_hKrb4DLL = 0;
+HINSTANCE CLeashApp::m_hKrb5DLL = 0;
 HINSTANCE CLeashApp::m_hKrb5ProfileDLL= 0;
 HINSTANCE CLeashApp::m_hAfsDLL = 0;
-HINSTANCE CLeashApp::m_hPsapi = 0; 
-HINSTANCE CLeashApp::m_hToolHelp32 = 0; 
+HINSTANCE CLeashApp::m_hPsapi = 0;
+HINSTANCE CLeashApp::m_hToolHelp32 = 0;
 krb5_context CLeashApp::m_krbv5_context = 0;
 profile_t CLeashApp::m_krbv5_profile = 0;
 HINSTANCE CLeashApp::m_hKrbLSA = 0;
@@ -118,11 +118,11 @@ CLeashApp::~CLeashApp()
 #endif
 #endif
  	AfxFreeLibrary(m_hLeashDLL);
-	AfxFreeLibrary(m_hKrb4DLL); 
-	AfxFreeLibrary(m_hKrb5DLL);  
-	AfxFreeLibrary(m_hKrb5ProfileDLL);  
-	AfxFreeLibrary(m_hAfsDLL); 
-	AfxFreeLibrary(m_hPsapi);  	
+	AfxFreeLibrary(m_hKrb4DLL);
+	AfxFreeLibrary(m_hKrb5DLL);
+	AfxFreeLibrary(m_hKrb5ProfileDLL);
+	AfxFreeLibrary(m_hAfsDLL);
+	AfxFreeLibrary(m_hPsapi);
     AfxFreeLibrary(m_hToolHelp32);
     AfxFreeLibrary(m_hKrbLSA);
 }
@@ -166,14 +166,14 @@ BOOL CLeashApp::InitInstance()
     while (*pPath != '\\')
     {
         *pPath = 0;
-        pPath--;   
+        pPath--;
     }
     strcat(modulePath, LEASH_HELP_FILE);
     m_helpFile = modulePath;
 
-    ///strcat(dllFile, LEASH_DLL);  
+    ///strcat(dllFile, LEASH_DLL);
     ///m_leashDLL = dllFile;
-		
+
     BOOL autoInit = FALSE;
     HWND hMsg = GetForegroundWindow();
     if (!InitDLLs())
@@ -184,10 +184,10 @@ BOOL CLeashApp::InitInstance()
     LPCTSTR optionParam =  __targv[1];
 
     if (optionParam)
-    {	
+    {
         if (*optionParam  == '-' || *optionParam  == '/')
         {
-            if (0 == stricmp(optionParam+1, "kinit") || 
+            if (0 == stricmp(optionParam+1, "kinit") ||
                 0 == stricmp(optionParam+1, "i"))
             {
                 LSH_DLGINFO_EX ldi;
@@ -198,12 +198,12 @@ BOOL CLeashApp::InitInstance()
                 if (WaitForSingleObject( ticketinfo.lockObj, INFINITE ) != WAIT_OBJECT_0)
                     throw("Unable to lock ticketinfo");
 
-                pLeashKRB5GetTickets(&ticketinfo.Krb5, &ticketList, 
+                pLeashKRB5GetTickets(&ticketinfo.Krb5, &ticketList,
                                       &CLeashApp::m_krbv5_context);
                 pLeashFreeTicketList(&ticketList);
                 pLeashKRB4GetTickets(&ticketinfo.Krb4, &ticketList);
                 pLeashFreeTicketList(&ticketList);
-                
+
                 if ( ticketinfo.Krb5.btickets && ticketinfo.Krb5.principal[0] ) {
                     for (; ticketinfo.Krb5.principal[i] && ticketinfo.Krb5.principal[i] != '@'; i++)
                     {
@@ -243,18 +243,18 @@ BOOL CLeashApp::InitInstance()
 
                 if (!pLeash_kinit_dlg_ex(hMsg, &ldi))
                 {
-                    MessageBox(hMsg, "There was an error getting tickets!", 
+                    MessageBox(hMsg, "There was an error getting tickets!",
                                "Error", MB_OK);
                     return FALSE;
                 }
                 return TRUE;
             }
-            else if (0 == stricmp(optionParam+1, "ms2mit") || 
-                     0 == stricmp(optionParam+1, "import") || 
+            else if (0 == stricmp(optionParam+1, "ms2mit") ||
+                     0 == stricmp(optionParam+1, "import") ||
                      0 == stricmp(optionParam+1, "m"))
             {
                 if (!pLeash_importable()) {
-                    MessageBox(hMsg, 
+                    MessageBox(hMsg,
                                "The Microsoft Logon Session does not support importing Ticket Getting Tickets!",
                                "Error", MB_OK);
                     return FALSE;
@@ -262,45 +262,45 @@ BOOL CLeashApp::InitInstance()
 
                 if (!pLeash_import())
                 {
-                    MessageBox(hMsg, 
+                    MessageBox(hMsg,
                                "There was an error importing tickets from the Microsoft Logon Session!",
                                "Error", MB_OK);
                     return FALSE;
                 }
                 return TRUE;
             }
-            else if (0 == stricmp(optionParam+1, "destroy") || 
+            else if (0 == stricmp(optionParam+1, "destroy") ||
                      0 == stricmp(optionParam+1, "d"))
             {
                 if (pLeash_kdestroy())
                 {
-                    MessageBox(hMsg, 
+                    MessageBox(hMsg,
                                "There was an error destroying tickets!",
                                "Error", MB_OK);
                     return FALSE;
                 }
                 return TRUE;
             }
-            else if (0 == stricmp(optionParam+1, "renew") || 
+            else if (0 == stricmp(optionParam+1, "renew") ||
                      0 == stricmp(optionParam+1, "r"))
             {
                 if (!pLeash_renew())
                 {
-                    MessageBox(hMsg, 
+                    MessageBox(hMsg,
                                "There was an error renewing tickets!",
                                "Error", MB_OK);
                     return FALSE;
                 }
                 return TRUE;
             }
-            else if (0 == stricmp(optionParam+1, "autoinit") || 
+            else if (0 == stricmp(optionParam+1, "autoinit") ||
                      0 == stricmp(optionParam+1, "a"))
             {
                 autoInit = TRUE;
             }
             else
-            {	
-                MessageBox(hMsg, 
+            {
+                MessageBox(hMsg,
                            "'-kinit' or '-i' to perform ticket initialization (and exit)\n"
                             "'-renew' or '-r' to perform ticket renewal (and exit)\n"
                             "'-destroy' or '-d' to perform ticket destruction (and exit)\n"
@@ -310,9 +310,9 @@ BOOL CLeashApp::InitInstance()
                 return FALSE;
             }
         }
-        else 
-        {	
-            MessageBox(hMsg, 
+        else
+        {
+            MessageBox(hMsg,
                         "'-kinit' or '-i' to perform ticket initialization (and exit)\n"
                         "'-renew' or '-r' to perform ticket renewal (and exit)\n"
                         "'-destroy' or '-d' to perform ticket destruction (and exit)\n"
@@ -339,7 +339,7 @@ BOOL CLeashApp::InitInstance()
     wndcls.lpszMenuName = NULL;
     //now the wnd class name to find it
     wndcls.lpszClassName = _T("LEASH.0WNDCLASS");
-	
+
     //register the new class
     if(!AfxRegisterClass(&wndcls))
     {
@@ -365,7 +365,7 @@ BOOL CLeashApp::InitInstance()
     // Registry key under which our settings are stored.
     if (m_pszAppName)
         free((void*)m_pszAppName);
-    m_pszAppName = _tcsdup("Leash32");    
+    m_pszAppName = _tcsdup("Leash32");
     SetRegistryKey(_T("MIT"));
 
     LoadStdProfileSettings(); // Load standard INI file options (including MRU)
@@ -406,8 +406,8 @@ BOOL CLeashApp::InitInstance()
 
         if ( b_autoinit && dwMsLsaImport && pLeash_importable() ) {
             // We have the option of importing tickets from the MSLSA
-            // but should we?  Do the tickets in the MSLSA cache belong 
-            // to the default realm used by Leash?  If so, import.  
+            // but should we?  Do the tickets in the MSLSA cache belong
+            // to the default realm used by Leash?  If so, import.
             int import = 0;
 
             if ( dwMsLsaImport == 1 ) {             /* always import */
@@ -445,7 +445,7 @@ BOOL CLeashApp::InitInstance()
                 if (mslsa_ccache)
                     pkrb5_cc_close(CLeashApp::m_krbv5_context, mslsa_ccache);
             }
-             
+
             if (import && pLeash_import()) {
                 CLeashView::m_importedTickets = 1;
                 ::PostMessage(m_pMainWnd->m_hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
@@ -480,7 +480,7 @@ BOOL CLeashApp::InitInstance()
 
 // leash functions
 DECL_FUNC_PTR(not_an_API_LeashKRB4GetTickets);
-DECL_FUNC_PTR(not_an_API_LeashKRB5GetTickets); 
+DECL_FUNC_PTR(not_an_API_LeashKRB5GetTickets);
 DECL_FUNC_PTR(not_an_API_LeashAFSGetToken);
 DECL_FUNC_PTR(not_an_API_LeashFreeTicketList);
 DECL_FUNC_PTR(not_an_API_LeashGetTimeServerName);
@@ -529,7 +529,7 @@ DECL_FUNC_PTR(Leash_reset_defaults);
 
 FUNC_INFO leash_fi[] = {
     MAKE_FUNC_INFO(not_an_API_LeashKRB4GetTickets),
-    MAKE_FUNC_INFO(not_an_API_LeashKRB5GetTickets), 
+    MAKE_FUNC_INFO(not_an_API_LeashKRB5GetTickets),
     MAKE_FUNC_INFO(not_an_API_LeashAFSGetToken),
     MAKE_FUNC_INFO(not_an_API_LeashFreeTicketList),
     MAKE_FUNC_INFO(not_an_API_LeashGetTimeServerName),
@@ -581,10 +581,10 @@ FUNC_INFO leash_fi[] = {
 // krb4 functions
 DECL_FUNC_PTR(set_krb_debug);
 DECL_FUNC_PTR(set_krb_ap_req_debug);
-DECL_FUNC_PTR(krb_get_krbconf2); 
-DECL_FUNC_PTR(krb_get_krbrealm2); 
-DECL_FUNC_PTR(tkt_string); 
-DECL_FUNC_PTR(krb_set_tkt_string); 
+DECL_FUNC_PTR(krb_get_krbconf2);
+DECL_FUNC_PTR(krb_get_krbrealm2);
+DECL_FUNC_PTR(tkt_string);
+DECL_FUNC_PTR(krb_set_tkt_string);
 DECL_FUNC_PTR(krb_realmofhost);
 DECL_FUNC_PTR(krb_get_lrealm);
 DECL_FUNC_PTR(krb_get_krbhst);
@@ -595,10 +595,10 @@ DECL_FUNC_PTR(krb_get_tf_realm);
 FUNC_INFO krb4_fi[] = {
     MAKE_FUNC_INFO(set_krb_debug),
     MAKE_FUNC_INFO(set_krb_ap_req_debug),
-    MAKE_FUNC_INFO(krb_get_krbconf2), 
-    MAKE_FUNC_INFO(krb_get_krbrealm2), 
-    MAKE_FUNC_INFO(tkt_string), 
-    MAKE_FUNC_INFO(krb_set_tkt_string), 
+    MAKE_FUNC_INFO(krb_get_krbconf2),
+    MAKE_FUNC_INFO(krb_get_krbrealm2),
+    MAKE_FUNC_INFO(tkt_string),
+    MAKE_FUNC_INFO(krb_set_tkt_string),
     MAKE_FUNC_INFO(krb_realmofhost),
     MAKE_FUNC_INFO(krb_get_lrealm),
     MAKE_FUNC_INFO(krb_get_krbhst),
@@ -715,9 +715,9 @@ FUNC_INFO profile_fi[] = {
 // and return a TRUE.  If it doesn't work, we return a FALSE.
 BOOL CLeashApp::InitDLLs()
 {
-    m_hLeashDLL = AfxLoadLibrary(LEASHDLL); 
-    m_hKrb4DLL = AfxLoadLibrary(KERB4DLL); 
-    m_hKrb5DLL = AfxLoadLibrary(KERB5DLL); 
+    m_hLeashDLL = AfxLoadLibrary(LEASHDLL);
+    m_hKrb4DLL = AfxLoadLibrary(KERB4DLL);
+    m_hKrb5DLL = AfxLoadLibrary(KERB5DLL);
     m_hKrb5ProfileDLL = AfxLoadLibrary(KERB5_PPROFILE_DLL);
 
 #ifndef NO_AFS
@@ -732,19 +732,19 @@ BOOL CLeashApp::InitDLLs()
     m_hToolHelp32 = AfxLoadLibrary(TOOLHELPDLL);
 
     HWND hwnd = GetForegroundWindow();
-    if (!m_hLeashDLL) 
+    if (!m_hLeashDLL)
     {
         // We couldn't load the m_hLeashDLL.
         m_msgError = "Couldn't load the Leash DLL or one of its dependents.";
-        MessageBox(hwnd, m_msgError, "Error", MB_OK);	
+        MessageBox(hwnd, m_msgError, "Error", MB_OK);
         return FALSE;
     }
 
     if (!LoadFuncs(LEASHDLL, leash_fi, 0, 0, 1, 0, 0))
     {
-        MessageBox(hwnd, 
-                   "Functions within the Leash DLL didn't load properly!", 
-                   "Error", MB_OK);		
+        MessageBox(hwnd,
+                   "Functions within the Leash DLL didn't load properly!",
+                   "Error", MB_OK);
         return FALSE;
     }
 
@@ -770,7 +770,7 @@ BOOL CLeashApp::InitDLLs()
             AfxFreeLibrary(m_hKrb5DLL);
             m_hKrb5DLL = 0;
         }
-        else if (!m_hKrb5ProfileDLL || 
+        else if (!m_hKrb5ProfileDLL ||
                  !LoadFuncs(KERB5_PPROFILE_DLL, profile_fi, 0, 0, 1, 0, 0))
         {
             MessageBox(hwnd,
@@ -802,14 +802,14 @@ BOOL CLeashApp::InitDLLs()
         // Windows 9x
         AfxFreeLibrary(m_hPsapi);
         m_hPsapi = NULL;
-        if (!m_hToolHelp32 || 
+        if (!m_hToolHelp32 ||
             !LoadFuncs(TOOLHELPDLL, toolhelp_fi, 0, 0, 1, 0, 0))
         {
-            MessageBox(hwnd, "Could not load " TOOLHELPDLL "!", "Error", 
+            MessageBox(hwnd, "Could not load " TOOLHELPDLL "!", "Error",
                        MB_OK);
             return FALSE;
         }
-    }             
+    }
     else if(osvi.dwPlatformId == VER_PLATFORM_WIN32_NT)
     {
         // Windows NT
@@ -826,12 +826,12 @@ BOOL CLeashApp::InitDLLs()
     }
     else
     {
-        MessageBox(hwnd, 
-                   "Unrecognized Operating System!", 
+        MessageBox(hwnd,
+                   "Unrecognized Operating System!",
                    "Error", MB_OK);
         return FALSE;
     }
-           
+
     return TRUE;
 }
 
@@ -840,9 +840,9 @@ BOOL CLeashApp::FirstInstance()
 {
     CWnd* pWndprev;
     CWnd* pWndchild;
-	
+
     //find if it exists
-    pWndprev = CWnd::FindWindow(_T("LEASH.0WNDCLASS"), NULL);	
+    pWndprev = CWnd::FindWindow(_T("LEASH.0WNDCLASS"), NULL);
     if (pWndprev)
     {
         //if it has popups
@@ -850,10 +850,10 @@ BOOL CLeashApp::FirstInstance()
         //if iconic restore
         if (pWndprev->IsIconic())
             pWndprev->ShowWindow(SW_RESTORE);
-			
+
         //bring the wnd to foreground
         pWndchild->SetForegroundWindow();
-		
+
         return FALSE;
     }
     //we could not find prev instance
@@ -867,7 +867,7 @@ CLeashApp::ValidateConfigFiles()
     CStdioFile krbCon;
     char confname[257];
     char realm[256]="";
-    
+
     CWinApp * pApp = AfxGetApp();
     if (pApp)
         if (!pApp->GetProfileInt("Settings", "CreateMissingConfig", FALSE_FLAG))
@@ -882,7 +882,7 @@ CLeashApp::ValidateConfigFiles()
 		    filenames[0] = confname;
 		    filenames[1] = NULL;
 		    long retval = pprofile_init(filenames, &m_krbv5_profile);
-			if (!retval) 
+			if (!retval)
 				return;
 			else if (retval == ENOENT) {
 				FILE * f = fopen(confname,"w");
@@ -894,30 +894,30 @@ CLeashApp::ValidateConfigFiles()
 
 
             if ( !GetKrb4ConFile(confname,sizeof(confname)) ) {
-                if (!krbCon.Open(confname, CFile::modeNoTruncate | CFile::modeRead)) 
-                {	
-                    if (krbCon.Open(confname, CFile::modeCreate | CFile::modeWrite)) 
-                    {	
+                if (!krbCon.Open(confname, CFile::modeNoTruncate | CFile::modeRead))
+                {
+                    if (krbCon.Open(confname, CFile::modeCreate | CFile::modeWrite))
+                    {
                         krb_con_open = 1;
                     }
                 }
             }
 
-            const char*  lookupKdc[] = {"libdefaults", "dns_lookup_kdc", NULL}; 
-            const char*  lookupRealm[] = {"libdefaults", "dns_lookup_realm", NULL}; 
+            const char*  lookupKdc[] = {"libdefaults", "dns_lookup_kdc", NULL};
+            const char*  lookupRealm[] = {"libdefaults", "dns_lookup_realm", NULL};
             const char*  defRealm[] = {"libdefaults", "default_realm", NULL};
-            const char*  noAddresses[] = {"libdefaults", "noaddresses", NULL}; 
+            const char*  noAddresses[] = {"libdefaults", "noaddresses", NULL};
 
             // activate DNS KDC Lookups
-            const char** names = lookupKdc;	
-            retval = pprofile_add_relation(m_krbv5_profile, 
-                                           names, 
+            const char** names = lookupKdc;
+            retval = pprofile_add_relation(m_krbv5_profile,
+                                           names,
                                            "true");
 
             // activate No Addresses
-            names = noAddresses;	
-            retval = pprofile_add_relation(m_krbv5_profile, 
-                                           names, 
+            names = noAddresses;
+            retval = pprofile_add_relation(m_krbv5_profile,
+                                           names,
                                            "true");
 
             // Get Windows 2000/XP/2003 Kerberos config
@@ -929,8 +929,8 @@ CLeashApp::ValidateConfigFiles()
 
                 if ( !RegOpenKeyEx(HKEY_CURRENT_USER,
                                     "Volatile Environment", 0,
-                                    KEY_READ, &hk) ) 
-                { 
+                                    KEY_READ, &hk) )
+                {
                     dwSize = sizeof(domain);
                     RegQueryValueEx(hk, "USERDNSDOMAIN", 0, 0, (LPBYTE)domain, &dwSize);
                     RegCloseKey(hk);
@@ -939,12 +939,12 @@ CLeashApp::ValidateConfigFiles()
                              "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon",
                              0, KEY_READ, &hk))
                 {
-                    
+
                     dwSize = sizeof(domain);
                     RegQueryValueEx( hk, "DefaultDomainName",
                                      NULL, &dwType, (unsigned char *)&domain, &dwSize);
                     RegCloseKey(hk);
-                } 
+                }
 
                 char realmkey[256]="SYSTEM\\CurrentControlSet\\Control\\Lsa\\Kerberos\\Domains\\";
                 int  keylen = strlen(realmkey)-1;
@@ -963,7 +963,7 @@ CLeashApp::ValidateConfigFiles()
                 if ( domain[0] &&
                      !RegOpenKeyEx(HKEY_LOCAL_MACHINE,
                                    realmkey,
-                                   0, 
+                                   0,
                                    KEY_READ,
                                    &hk)
                      )
@@ -993,7 +993,7 @@ CLeashApp::ValidateConfigFiles()
 
                         if ( !RegOpenKeyEx(hk,
                                    (char *)subkey,
-                                   0, 
+                                   0,
                                    KEY_READ,
                                    &hksub) )
                         {
@@ -1012,8 +1012,8 @@ CLeashApp::ValidateConfigFiles()
                                 while ( *p ) {
                                     const char*  realmKdc[] = {"realms", (const char *)subkey, "kdc", NULL};
                                     names = realmKdc;
-                                    retval = pprofile_add_relation(m_krbv5_profile, 
-                                                                    names, 
+                                    retval = pprofile_add_relation(m_krbv5_profile,
+                                                                    names,
                                                                     (const char *)p);
 
                                     if ( krb_con_open ) {
@@ -1034,9 +1034,9 @@ CLeashApp::ValidateConfigFiles()
                 }
             } else {
                 // activate DNS Realm Lookups (temporarily)
-                names = lookupRealm;	
-                retval = pprofile_add_relation(m_krbv5_profile, 
-                                                names, 
+                names = lookupRealm;
+                retval = pprofile_add_relation(m_krbv5_profile,
+                                                names,
                                                 "true");
             }
 
@@ -1075,25 +1075,25 @@ CLeashApp::ValidateConfigFiles()
             }
 
             // disable DNS Realm Lookups
-            retval = pprofile_update_relation(m_krbv5_profile, 
+            retval = pprofile_update_relation(m_krbv5_profile,
                                              names,
                                              "true", "false");
 
             // save the default realm if it was discovered
             if ( realm[0] ) {
                 names = defRealm;
-                retval = pprofile_add_relation(m_krbv5_profile, 
-                                               names, 
+                retval = pprofile_add_relation(m_krbv5_profile,
+                                               names,
                                                realm);
 
                 // It would be nice to be able to generate a list of KDCs
-                // but to do so based upon the contents of DNS would be 
+                // but to do so based upon the contents of DNS would be
                 // wrong for several reasons:
                 // . it would make static the values inserted into DNS SRV
-                //   records 
+                //   records
                 // . DNS cannot necessarily be trusted
             }
-            
+
             // Save to Kerberos Five config. file "Krb5.ini"
             retval = pprofile_flush(m_krbv5_profile);
 
@@ -1108,16 +1108,16 @@ CLeashApp::ValidateConfigFiles()
 
             // Create the empty KRBREALM.CON file
             if ( !GetKrb4RealmFile(confname,sizeof(confname)) ) {
-                if (!krbCon.Open(confname, CFile::modeNoTruncate | CFile::modeRead)) 
-                {	
-                    if (krbCon.Open(confname, CFile::modeCreate | CFile::modeWrite)) 
-                    {	
+                if (!krbCon.Open(confname, CFile::modeNoTruncate | CFile::modeRead))
+                {
+                    if (krbCon.Open(confname, CFile::modeCreate | CFile::modeWrite))
+                    {
                         krbCon.Close();
                     }
                 } else
                     krbCon.Close();
             }
-        
+
         }
     } else if ( m_hKrb4DLL ) {
         if ( !realm[0] ) {
@@ -1139,10 +1139,10 @@ CLeashApp::ValidateConfigFiles()
         }
 
         if ( !GetKrb4ConFile(confname,sizeof(confname)) ) {
-            if (!krbCon.Open(confname, CFile::modeNoTruncate | CFile::modeRead)) 
-            {	
-                if (krbCon.Open(confname, CFile::modeCreate | CFile::modeWrite)) 
-                {	
+            if (!krbCon.Open(confname, CFile::modeNoTruncate | CFile::modeRead))
+            {
+                if (krbCon.Open(confname, CFile::modeCreate | CFile::modeWrite))
+                {
                     if ( realm[0] )
                         krbCon.WriteString(realm);
                     krbCon.WriteString("\n.KERBEROS.OPTION. dns\n");
@@ -1153,10 +1153,10 @@ CLeashApp::ValidateConfigFiles()
         }
 
         if ( !GetKrb4RealmFile(confname,sizeof(confname)) ) {
-            if (!krbCon.Open(confname, CFile::modeNoTruncate | CFile::modeRead)) 
-            {	
-                if (krbCon.Open(confname, CFile::modeCreate | CFile::modeWrite)) 
-                {	
+            if (!krbCon.Open(confname, CFile::modeNoTruncate | CFile::modeRead))
+            {
+                if (krbCon.Open(confname, CFile::modeCreate | CFile::modeWrite))
+                {
                     krbCon.Close();
                 }
             } else
@@ -1167,7 +1167,7 @@ CLeashApp::ValidateConfigFiles()
 
 BOOL
 CLeashApp::GetKrb4ConFile(
-    LPSTR confname, 
+    LPSTR confname,
     UINT szConfname
     )
 {
@@ -1175,7 +1175,7 @@ CLeashApp::GetKrb4ConFile(
 	{ // hold krb.con where krb5.ini is located
 		CHAR krbConFile[MAX_PATH]="";
 	    //strcpy(krbConFile, CLeashApp::m_krbv5_profile->first_file->filename);
-        if (GetProfileFile(krbConFile, sizeof(krbConFile)))	
+        if (GetProfileFile(krbConFile, sizeof(krbConFile)))
         {
 		    GetWindowsDirectory(krbConFile,sizeof(krbConFile));
             krbConFile[MAX_PATH-1] = '\0';
@@ -1194,12 +1194,12 @@ CLeashApp::GetKrb4ConFile(
 		}
 		else
 		  ASSERT(0);
-		
+
 		strncpy(confname, krbConFile, szConfname);
         confname[szConfname-1] = '\0';
 	}
 	else if (m_hKrb4DLL)
-	{ 
+	{
         unsigned int size = szConfname;
         memset(confname, '\0', szConfname);
  		if (!pkrb_get_krbconf2(confname, &size))
@@ -1217,7 +1217,7 @@ CLeashApp::GetKrb4ConFile(
 
 BOOL
 CLeashApp::GetKrb4RealmFile(
-    LPSTR confname, 
+    LPSTR confname,
     UINT szConfname
     )
 {
@@ -1225,7 +1225,7 @@ CLeashApp::GetKrb4RealmFile(
 	{ // hold krb.con where krb5.ini is located
 		CHAR krbRealmConFile[MAX_PATH];
 		//strcpy(krbRealmConFile, CLeashApp::m_krbv5_profile->first_file->filename);
-		if (GetProfileFile(krbRealmConFile, sizeof(krbRealmConFile)))	
+		if (GetProfileFile(krbRealmConFile, sizeof(krbRealmConFile)))
         {
 		    GetWindowsDirectory(krbRealmConFile,sizeof(krbRealmConFile));
             krbRealmConFile[MAX_PATH-1] = '\0';
@@ -1244,16 +1244,16 @@ CLeashApp::GetKrb4RealmFile(
 		}
 		else
 		  ASSERT(0);
-		
+
 		strncpy(confname, krbRealmConFile, szConfname);
         confname[szConfname-1] = '\0';
 	}
 	else if (m_hKrb4DLL)
-	{ 
+	{
         unsigned int size = szConfname;
         memset(confname, '\0', szConfname);
         if (!pkrb_get_krbrealm2(confname, &size))
-		{ 
+		{
 		    GetWindowsDirectory(confname,szConfname);
             confname[szConfname-1] = '\0';
 			strncat(confname, "\\",szConfname-strlen(confname));
@@ -1262,21 +1262,21 @@ CLeashApp::GetKrb4RealmFile(
             confname[szConfname-1] = '\0';
             return TRUE;
 		}
-	}	
+	}
     return FALSE;
 }
 
-BOOL 
+BOOL
 CLeashApp::GetProfileFile(
-    LPSTR confname, 
+    LPSTR confname,
     UINT szConfname
     )
 {
     char **configFile = NULL;
-    if (!m_hKrb5DLL) 
+    if (!m_hKrb5DLL)
         return NULL;
 
-    if (pkrb5_get_default_config_files(&configFile)) 
+    if (pkrb5_get_default_config_files(&configFile))
     {
         GetWindowsDirectory(confname,szConfname);
         confname[szConfname-1] = '\0';
@@ -1284,16 +1284,16 @@ CLeashApp::GetProfileFile(
         confname[szConfname-1] = '\0';
         return FALSE;
     }
-    
+
     *confname = 0;
-    
+
     if (configFile)
     {
         strncpy(confname, *configFile, szConfname);
         confname[szConfname-1] = '\0';
-        pkrb5_free_config_files(configFile); 
+        pkrb5_free_config_files(configFile);
     }
-    
+
     if (!*confname)
     {
         GetWindowsDirectory(confname,szConfname);
@@ -1301,14 +1301,14 @@ CLeashApp::GetProfileFile(
         strncat(confname,"\\KRB5.INI",szConfname-strlen(confname));
         confname[szConfname-1] = '\0';
     }
-    
+
     return FALSE;
 }
 
 #define PROBE_USERNAME               "KERBEROS-KDC-PROBE"
 #define PROBE_PASSWORD_LEN           16
 
-BOOL 
+BOOL
 CLeashApp::ProbeKDC(void)
 {
     krb5_context ctx=0;
@@ -1331,7 +1331,7 @@ CLeashApp::ProbeKDC(void)
         goto cleanup;
 
     code = pkrb5_cc_default(ctx, &cc);
-    if (code) 
+    if (code)
         goto cleanup;
 
     code = pkrb5_cc_get_principal(ctx, cc, &principal);
@@ -1340,11 +1340,11 @@ CLeashApp::ProbeKDC(void)
     if ( code )
         goto cleanup;
 
-    code = pkrb5_build_principal( ctx, &probeprinc, 
+    code = pkrb5_build_principal( ctx, &probeprinc,
                                   krb5_princ_realm(ctx,principal)->length,
-                                  krb5_princ_realm(ctx,principal)->data, 
+                                  krb5_princ_realm(ctx,principal)->data,
                                   PROBE_USERNAME, NULL, NULL);
-    if ( code ) 
+    if ( code )
         goto cleanup;
 
     pwdata.data = password;
@@ -1357,8 +1357,8 @@ CLeashApp::ProbeKDC(void)
     }
     password[PROBE_PASSWORD_LEN] = '\0';
 
-    code = pkrb5_get_init_creds_password(ctx, 
-                                         &creds, 
+    code = pkrb5_get_init_creds_password(ctx,
+                                         &creds,
                                          probeprinc,
                                          password, // password
                                          NULL, // prompter
@@ -1416,7 +1416,7 @@ CLeashApp::ObtainTicketsViaUserIfNeeded(HWND hWnd)
 #ifndef KRB5_TC_NOTICKET
             ReleaseMutex(m_tgsReqMutex);
 #endif
-        } 
+        }
         else if ( ProbeKDC() ) {
 #ifndef KRB5_TC_NOTICKET
             ReleaseMutex(m_tgsReqMutex);
@@ -1431,7 +1431,7 @@ CLeashApp::ObtainTicketsViaUserIfNeeded(HWND hWnd)
             ldi.use_defaults = 1;
 
             pLeash_kinit_dlg_ex(hWnd, &ldi);
-        } 
+        }
 #ifndef KRB5_TC_NOTICKET
         else {
             ReleaseMutex(m_tgsReqMutex);
@@ -1449,7 +1449,7 @@ CLeashApp::ObtainTicketsViaUserIfNeeded(HWND hWnd)
 #ifndef KRB5_TC_NOTICKET
             ReleaseMutex(m_tgsReqMutex);
 #endif
-        } 
+        }
         else if ( ProbeKDC() && !pLeash_renew() ) {
 #ifndef KRB5_TC_NOTICKET
             ReleaseMutex(m_tgsReqMutex);
@@ -1464,7 +1464,7 @@ CLeashApp::ObtainTicketsViaUserIfNeeded(HWND hWnd)
             ldi.use_defaults = 1;
 
             pLeash_kinit_dlg_ex(hWnd, &ldi);
-        } 
+        }
 #ifndef KRB5_TC_NOTICKET
         else {
             ReleaseMutex(m_tgsReqMutex);
@@ -1490,7 +1490,7 @@ CLeashApp::ObtainTicketsViaUserIfNeeded(HWND hWnd)
             ldi.use_defaults = 1;
 
             pLeash_kinit_dlg_ex(hWnd, &ldi);
-        } 
+        }
 #ifndef KRB5_TC_NOTICKET
         else {
             ReleaseMutex(m_tgsReqMutex);
@@ -1548,7 +1548,7 @@ CLeashApp::IpAddrChangeMonitor(void * hWnd)
             // We do not have permission to open the device
             return 0;
         }
-        
+
         NumOfAddrs = GetNumOfIpAddrs();
         if ( NumOfAddrs != prevNumOfAddrs ) {
             // wait for the network state to stablize
@@ -1563,7 +1563,7 @@ CLeashApp::IpAddrChangeMonitor(void * hWnd)
 }
 
 
-DWORD 
+DWORD
 CLeashApp::IpAddrChangeMonitorInit(HWND hWnd)
 {
     AfxBeginThread(IpAddrChangeMonitor, hWnd);
@@ -1591,7 +1591,7 @@ CLeashApp::InitWorker(void * hWnd)
 #endif
         pLeash_kinit_dlg_ex((HWND)hWnd, &ldi);
         ::SendMessage((HWND)hWnd, WM_COMMAND, ID_UPDATE_DISPLAY, 0);
-    } 
+    }
 #ifndef KRB5_TC_NOTICKET
     else
         ReleaseMutex(m_tgsReqMutex);
@@ -1601,17 +1601,17 @@ CLeashApp::InitWorker(void * hWnd)
 
 #ifdef USE_HTMLHELP
 #if _MSC_VER < 1300
-void 
+void
 CLeashApp::WinHelp(DWORD dwData, UINT nCmd)
 {
 	switch (nCmd)
 	{
-		case HELP_CONTEXT: 
+		case HELP_CONTEXT:
 			::HtmlHelp(GetDesktopWindow(), m_helpFile, HH_HELP_CONTEXT, dwData );
 			break;
-		case HELP_FINDER: 
+		case HELP_FINDER:
 			::HtmlHelp(GetDesktopWindow(), m_helpFile, HH_DISPLAY_TOPIC, 0);
-            break;	
+            break;
 	}
 }
 #endif

@@ -2,7 +2,7 @@
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	CPP file for KrbProperties.h. Contains variables and functions 
+//	Description:	CPP file for KrbProperties.h. Contains variables and functions
 //					for Kerberos Four Properties
 //
 //	History:
@@ -40,18 +40,18 @@ CKrbProperties::CKrbProperties(LPCTSTR pszCaption, CWnd* pParentWnd,
 :CPropertySheet(pszCaption, pParentWnd, iSelectPage)
 {
 	KrbPropertiesOn = FALSE;
-	
+
 #ifdef COMMENT
 	// If this will not be fatal, then it does not need to be performed here.
 	if (CLeashApp::m_hKrb5DLL)
 	{
-		char *realm = NULL; 
-		pkrb5_get_default_realm(CLeashApp::m_krbv5_context, &realm); 
-		
+		char *realm = NULL;
+		pkrb5_get_default_realm(CLeashApp::m_krbv5_context, &realm);
+
 		if (!realm)
 		{
 			MessageBox("CKrbProperties::Unable to determine default Kerberos REALM.\
-                        \n Consult your Administrator!", 
+                        \n Consult your Administrator!",
 					   "Error", MB_OK);
 			// I don't think this is necessarily fatal.  - jaltman
 			// return;
@@ -65,7 +65,7 @@ CKrbProperties::CKrbProperties(LPCTSTR pszCaption, CWnd* pParentWnd,
 
 	AddPage(&m_configOptions);
 	AddPage(&m_miscConfigOpt);
-	
+
 	if (CLeashApp::m_hKrb4DLL && !CLeashApp::m_hKrb5DLL)
 	{
 		AddPage(&m_krb4RealmHostMaintenance);
@@ -73,7 +73,7 @@ CKrbProperties::CKrbProperties(LPCTSTR pszCaption, CWnd* pParentWnd,
 	}
 	else if (CLeashApp::m_hKrb5DLL)
 	{
-		AddPage(&m_realmHostMaintenance); 
+		AddPage(&m_realmHostMaintenance);
 		AddPage(&m_domainRealmMaintenance);
 	}
 
@@ -87,7 +87,7 @@ CKrbProperties::~CKrbProperties()
 
 void CKrbProperties::OnHelp()
 {
-    AfxGetApp()->WinHelp(HID_KERBEROS_PROPERTIES_COMMAND); 	
+    AfxGetApp()->WinHelp(HID_KERBEROS_PROPERTIES_COMMAND);
 }
 
 

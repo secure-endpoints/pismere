@@ -1,8 +1,8 @@
-//	File:			Krb4AddToRealmHostList.cpp 
+//	File:			Krb4AddToRealmHostList.cpp
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	CPP file for Krb4AddToRealmHostList.h. Contains variables and functions 
+//	Description:	CPP file for Krb4AddToRealmHostList.h. Contains variables and functions
 //					for Kerberos Four Properties
 //
 //	History:
@@ -33,7 +33,7 @@ CKrb4AddToRealmHostList::CKrb4AddToRealmHostList(CWnd* pParent /*=NULL*/)
 	m_newHost = _T("");
 	m_newAdmin = TRUE;
 	m_startup = TRUE;
-	
+
 	//{{AFX_DATA_INIT(CKrb4AddToRealmHostList)
 		// NOTE: the ClassWizard will add member initialization here
 	//}}AFX_DATA_INIT
@@ -62,44 +62,44 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CKrb4AddToRealmHostList message handlers
 
-void CKrb4AddToRealmHostList::OnShowWindow(BOOL bShow, UINT nStatus) 
+void CKrb4AddToRealmHostList::OnShowWindow(BOOL bShow, UINT nStatus)
 {
 	CDialog::OnShowWindow(bShow, nStatus);
 	m_startup = FALSE;
 }
 
-void CKrb4AddToRealmHostList::OnChangeEditDefaultRealm() 
+void CKrb4AddToRealmHostList::OnChangeEditDefaultRealm()
 {
 	if (!m_startup)
 	  GetDlgItemText(IDC_EDIT_DEFAULT_REALM, m_newRealm);
 }
 
-void CKrb4AddToRealmHostList::OnChangeEditRealmHostname() 
+void CKrb4AddToRealmHostList::OnChangeEditRealmHostname()
 {
 	if (!m_startup)
 	  GetDlgItemText(IDC_EDIT_REALM_HOSTNAME, m_newHost);
 }
 
-void CKrb4AddToRealmHostList::OnRadioAdminServer() 
+void CKrb4AddToRealmHostList::OnRadioAdminServer()
 {
-	m_newAdmin = TRUE;	
+	m_newAdmin = TRUE;
 }
 
-void CKrb4AddToRealmHostList::OnRadioNoAdminServer() 
+void CKrb4AddToRealmHostList::OnRadioNoAdminServer()
 {
-	m_newAdmin = FALSE;	
+	m_newAdmin = FALSE;
 }
 
-void CKrb4AddToRealmHostList::OnOK() 
+void CKrb4AddToRealmHostList::OnOK()
 {
 	m_newRealm.TrimLeft();
 	m_newRealm.TrimRight();
 	m_newHost.TrimLeft();
 	m_newHost.TrimRight();
-	
+
 	if (m_newRealm.IsEmpty() || m_newHost.IsEmpty())
 	{ // stay
-		MessageBox("OnOK::Both Realm and Host fields must be filled in!", 
+		MessageBox("OnOK::Both Realm and Host fields must be filled in!",
                     "Leash", MB_OK);
 	}
 	else if (-1 != m_newRealm.Find(' ') || -1 != m_newHost.Find(' '))
@@ -107,15 +107,15 @@ void CKrb4AddToRealmHostList::OnOK()
 		MessageBox("OnOK::Illegal space found!", "Leash", MB_OK);
 	}
 
-	else	
+	else
 	  CDialog::OnOK(); // exit
 }
 
-BOOL CKrb4AddToRealmHostList::OnInitDialog() 
+BOOL CKrb4AddToRealmHostList::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-	
-	CheckRadioButton(IDC_RADIO_ADMIN_SERVER, IDC_RADIO_NO_ADMIN_SERVER, IDC_RADIO_ADMIN_SERVER);	
 
-	return TRUE;  
+	CheckRadioButton(IDC_RADIO_ADMIN_SERVER, IDC_RADIO_NO_ADMIN_SERVER, IDC_RADIO_ADMIN_SERVER);
+
+	return TRUE;
 }

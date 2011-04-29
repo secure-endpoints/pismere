@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			KrbConfigOptions.h 
+//	File:			KrbConfigOptions.h
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	H file for KrbProperties.cpp. Contains variables and functions 
+//	Description:	H file for KrbProperties.cpp. Contains variables and functions
 //					for Kerberos Four Properties
 //
 //	History:
@@ -36,7 +36,7 @@ private:
 	BOOL m_startupPage2;
 	BOOL m_noKrbFileError;
 	BOOL m_noKrbhostWarning;
-	static BOOL m_profileError; 
+	static BOOL m_profileError;
 	static BOOL m_dupEntriesError;
 	BOOL m_noRealm;
 	CString m_initDefaultRealm;
@@ -66,12 +66,12 @@ public:
 	//}}AFX_VIRTUAL
 
 	virtual BOOL OnApply();
-	
+
 // Implementation
 protected:
 	// Generated message map functions
 	//{{AFX_MSG(CKrbConfigOptions)
-	virtual BOOL OnInitDialog();	
+	virtual BOOL OnInitDialog();
 	afx_msg void OnShowWindow(BOOL bShow, UINT nStatus);
 	afx_msg void OnEditchangeEditDefaultRealm();
 	afx_msg void OnSelchangeEditDefaultRealm();

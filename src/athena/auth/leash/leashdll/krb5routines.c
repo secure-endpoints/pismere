@@ -5,13 +5,13 @@
 #include <security.h>
 
 /* _WIN32_WINNT must be 0x0501 or greater to pull in definition of
- * all required LSA data types when the Vista SDK NtSecAPI.h is used. 
+ * all required LSA data types when the Vista SDK NtSecAPI.h is used.
  */
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
 #else
 #if _WIN32_WINNT < 0x0501
-#undef _WIN32_WINNT 
+#undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
 #endif
 #endif
@@ -28,53 +28,53 @@
 
 #define KRB5_DEFAULT_LIFE            60*60*10 /* 10 hours */
 
-char *GetTicketFlag(krb5_creds *cred) 
+char *GetTicketFlag(krb5_creds *cred)
 {
    static char buf[32];
    int i = 0;
 
    buf[i++] = ' ';
    buf[i++] = '(';
-   
+
    if (cred->ticket_flags & TKT_FLG_FORWARDABLE)
      buf[i++] = 'F';
-   
+
    if (cred->ticket_flags & TKT_FLG_FORWARDED)
      buf[i++] = 'f';
-   
+
    if (cred->ticket_flags & TKT_FLG_PROXIABLE)
      buf[i++] = 'P';
-   
+
    if (cred->ticket_flags & TKT_FLG_PROXY)
      buf[i++] = 'p';
-   
+
    if (cred->ticket_flags & TKT_FLG_MAY_POSTDATE)
      buf[i++] = 'D';
-   
+
    if (cred->ticket_flags & TKT_FLG_POSTDATED)
      buf[i++] = 'd';
-   
+
    if (cred->ticket_flags & TKT_FLG_INVALID)
      buf[i++] = 'i';
-   
+
    if (cred->ticket_flags & TKT_FLG_RENEWABLE)
      buf[i++] = 'R';
-   
+
    if (cred->ticket_flags & TKT_FLG_INITIAL)
      buf[i++] = 'I';
-   
+
    if (cred->ticket_flags & TKT_FLG_HW_AUTH)
      buf[i++] = 'H';
-   
+
    if (cred->ticket_flags & TKT_FLG_PRE_AUTH)
      buf[i++] = 'A';
 
    buf[i++] = ')';
    buf[i] = '\0';
-   
+
    if (i <= 3)
      buf[0] = '\0';
-   
+
    return buf;
 }
 
@@ -201,7 +201,7 @@ Leash_convert524(
         pkrb5_free_context(ctx);
     }
     return !(code || icode);
-#endif /* NO_KRB5 */    
+#endif /* NO_KRB5 */
 }
 
 #ifndef ENCTYPE_LOCAL_RC4_MD4
@@ -256,7 +256,7 @@ etype_string(krb5_enctype enctype)
     }
 }
 
-char * 
+char *
 one_addr(krb5_address *a)
 {
     static char retstr[256];
@@ -313,9 +313,9 @@ one_addr(krb5_address *a)
     return(retstr);
 }
 
-long 
+long
 not_an_API_LeashKRB5GetTickets(
-    TICKETINFO * ticketinfo, 
+    TICKETINFO * ticketinfo,
     TicketList** ticketList,
     krb5_context *krbv5Context
     )
@@ -343,7 +343,7 @@ not_an_API_LeashKRB5GetTickets(
     char            RenewTimeString[256];
     char			fill;
     char			*ClientName;
-    char			*PrincipalName; 
+    char			*PrincipalName;
     char			*sServerName;
     char			Buffer[256];
     char			Months[12][4] = {"Jan\0", "Feb\0", "Mar\0", "Apr\0", "May\0", "Jun\0", "Jul\0", "Aug\0", "Sep\0", "Oct\0", "Nov\0", "Dec\0"};
@@ -352,31 +352,31 @@ not_an_API_LeashKRB5GetTickets(
     char            RenewTime[16];
     char			temp[128];
     char			*sPtr;
-    char            *ticketFlag; 
+    char            *ticketFlag;
     LPCSTR          functionName;
 
-    TicketList* list = NULL; 
-    
+    TicketList* list = NULL;
+
     ctx = NULL;
     cache = NULL;
     if ( ticketinfo ) {
-        ticketinfo->btickets = NO_TICKETS; 
+        ticketinfo->btickets = NO_TICKETS;
         ticketinfo->principal[0] = '\0';
     }
-    
+
     if ((code = Leash_krb5_initialize(&(*krbv5Context), &cache)))
         return(code);
-	
+
     ctx = (*krbv5Context);
-	
+
 #ifdef KRB5_TC_NOTICKET
     flags = KRB5_TC_NOTICKET;
 #endif
     if ((code = pkrb5_cc_set_flags(ctx, cache, flags)))
     {
         if (code != KRB5_FCC_NOFILE && code != KRB5_CC_NOTFOUND)
-            Leash_krb5_error(code, "krb5_cc_set_flags()", 0, &ctx, 
-                                  &cache);        
+            Leash_krb5_error(code, "krb5_cc_set_flags()", 0, &ctx,
+                                  &cache);
         else if ((code == KRB5_FCC_NOFILE || code == KRB5_CC_NOTFOUND) && ctx != NULL)
         {
             if (cache != NULL)
@@ -384,11 +384,11 @@ not_an_API_LeashKRB5GetTickets(
         }
         return code;
     }
-	
+
     if ((code = pkrb5_cc_get_principal(ctx, cache, &KRBv5Principal)))
     {
         if (code != KRB5_FCC_NOFILE && code != KRB5_CC_NOTFOUND)
-            Leash_krb5_error(code, "krb5_cc_get_principal()", 0, &ctx, &cache);        
+            Leash_krb5_error(code, "krb5_cc_get_principal()", 0, &ctx, &cache);
         else if ((code == KRB5_FCC_NOFILE || code == KRB5_CC_NOTFOUND) && ctx != NULL)
         {
             if (cache != NULL)
@@ -396,23 +396,23 @@ not_an_API_LeashKRB5GetTickets(
         }
         return code;
     }
-	
+
     PrincipalName = NULL;
     ClientName = NULL;
     sServerName = NULL;
-    if ((code = (*pkrb5_unparse_name)(ctx, KRBv5Principal, 
-                                      (char **)&PrincipalName))) 
+    if ((code = (*pkrb5_unparse_name)(ctx, KRBv5Principal,
+                                      (char **)&PrincipalName)))
     {
         if (PrincipalName != NULL)
             (*pkrb5_free_unparsed_name)(ctx, PrincipalName);
-		
+
         (*pkrb5_free_principal)(ctx, KRBv5Principal);
         if (ctx != NULL)
         {
             if (cache != NULL)
                 pkrb5_cc_close(ctx, cache);
         }
-	
+
         return(code);
     }
 
@@ -420,14 +420,14 @@ not_an_API_LeashKRB5GetTickets(
     {
         if (PrincipalName != NULL)
             (*pkrb5_free_unparsed_name)(ctx, PrincipalName);
-	
+
         (*pkrb5_free_principal)(ctx, KRBv5Principal);
         if (ctx != NULL)
         {
             if (cache != NULL)
                 pkrb5_cc_close(ctx, cache);
         }
-		
+
         return(code);
     }
 
@@ -435,23 +435,23 @@ not_an_API_LeashKRB5GetTickets(
         wsprintf(ticketinfo->principal, "%s", PrincipalName);
 
     (*pkrb5_free_principal)(ctx, KRBv5Principal);
-    if ((code = pkrb5_cc_start_seq_get(ctx, cache, &KRBv5Cursor))) 
+    if ((code = pkrb5_cc_start_seq_get(ctx, cache, &KRBv5Cursor)))
     {
         functionName = "krb5_cc_start_seq_get()";
         freeContextFlag = 1;
-        goto on_error; 
+        goto on_error;
     }
-	
+
     memset(&KRBv5Credentials, '\0', sizeof(KRBv5Credentials));
 
-    while (!(code = pkrb5_cc_next_cred(ctx, cache, &KRBv5Cursor, &KRBv5Credentials))) 
+    while (!(code = pkrb5_cc_next_cred(ctx, cache, &KRBv5Cursor, &KRBv5Credentials)))
     {
         if (!list)
         {
             list = (TicketList*) calloc(1, sizeof(TicketList));
-            (*ticketList) = list; 
-        }    
-        else 
+            (*ticketList) = list;
+        }
+        else
         {
             list->next = (struct TicketList*) calloc(1, sizeof(TicketList));
             list = (TicketList*) list->next;
@@ -461,10 +461,10 @@ not_an_API_LeashKRB5GetTickets(
         {
             (*pkrb5_free_cred_contents)(ctx, &KRBv5Credentials);
             Leash_krb5_error(code, "krb5_free_cred_contents()", 0, &ctx, &cache);
-			
+
             if (ClientName != NULL)
                 (*pkrb5_free_unparsed_name)(ctx, ClientName);
-			
+
             ClientName = NULL;
             sServerName = NULL;
             continue;
@@ -474,15 +474,15 @@ not_an_API_LeashKRB5GetTickets(
         {
             (*pkrb5_free_cred_contents)(ctx, &KRBv5Credentials);
             Leash_krb5_error(code, "krb5_free_cred_contents()", 0, &ctx, &cache);
-			
+
             if (ClientName != NULL)
                 (*pkrb5_free_unparsed_name)(ctx, ClientName);
-			
+
             ClientName = NULL;
             sServerName = NULL;
             continue;
         }
-		
+
         if (!KRBv5Credentials.times.starttime)
             KRBv5Credentials.times.starttime = KRBv5Credentials.times.authtime;
 
@@ -518,10 +518,10 @@ not_an_API_LeashKRB5GetTickets(
         {
             if ((sPtr = strrchr(StartTimeString, ' ')) == NULL)
                 break;
-			
+
             if (strlen(sPtr) != 1)
                 break;
-			
+
             (*sPtr) = 0;
         }
 
@@ -529,10 +529,10 @@ not_an_API_LeashKRB5GetTickets(
         {
             if ((sPtr = strrchr(EndTimeString, ' ')) == NULL)
                 break;
-			
+
             if (strlen(sPtr) != 1)
                 break;
-			
+
             (*sPtr) = 0;
         }
 
@@ -540,10 +540,10 @@ not_an_API_LeashKRB5GetTickets(
         {
             if ((sPtr = strrchr(RenewTimeString, ' ')) == NULL)
                 break;
-			
+
             if (strlen(sPtr) != 1)
                 break;
-			
+
             (*sPtr) = 0;
         }
 
@@ -556,14 +556,14 @@ not_an_API_LeashKRB5GetTickets(
 
         memset(temp, '\0', sizeof(temp));
         strcpy(temp, ClientName);
-		
-        if (!strcmp(ClientName, PrincipalName)) 
+
+        if (!strcmp(ClientName, PrincipalName))
             memset(temp, '\0', sizeof(temp));
 
         memset(Buffer, '\0', sizeof(Buffer));
 
-        ticketFlag = GetTicketFlag(&KRBv5Credentials);    
-        
+        ticketFlag = GetTicketFlag(&KRBv5Credentials);
+
         if (KRBv5Credentials.ticket_flags & TKT_FLG_RENEWABLE) {
             wsprintf(Buffer,"%s %02d %s     %s %02d %s     [%s %02d %s]     %s %s       %s",
                       Months[StartMonth - 1], StartDay, StartTime,
@@ -582,8 +582,8 @@ not_an_API_LeashKRB5GetTickets(
         if (!list->theTicket)
         {
             MessageBox(NULL, "Memory Error", "Error", MB_OK);
-            return ENOMEM;            
-        }       
+            return ENOMEM;
+        }
         strcpy(list->theTicket, Buffer);
         list->name = NULL;
         list->inst = NULL;
@@ -595,8 +595,8 @@ not_an_API_LeashKRB5GetTickets(
             if (!list->tktEncType)
             {
                 MessageBox(NULL, "Memory Error", "Error", MB_OK);
-                return ENOMEM;            
-            }       
+                return ENOMEM;
+            }
             strcpy(list->tktEncType, Buffer);
 
             pkrb5_free_ticket(ctx, tkt);
@@ -610,8 +610,8 @@ not_an_API_LeashKRB5GetTickets(
         if (!list->keyEncType)
         {
             MessageBox(NULL, "Memory Error", "Error", MB_OK);
-            return ENOMEM;            
-        }       
+            return ENOMEM;
+        }
         strcpy(list->keyEncType, Buffer);
 
         if ( KRBv5Credentials.addresses && KRBv5Credentials.addresses[0] ) {
@@ -621,7 +621,7 @@ not_an_API_LeashKRB5GetTickets(
             list->addrList = calloc(1, n * sizeof(char *));
             if (!list->addrList) {
                 MessageBox(NULL, "Memory Error", "Error", MB_OK);
-                return ENOMEM;            
+                return ENOMEM;
             }
             list->addrCount = n;
             for ( n=0; n<list->addrCount; n++ ) {
@@ -630,12 +630,12 @@ not_an_API_LeashKRB5GetTickets(
                 if (!list->addrList[n])
                 {
                     MessageBox(NULL, "Memory Error", "Error", MB_OK);
-                    return ENOMEM;            
-                }       
+                    return ENOMEM;
+                }
                 strcpy(list->addrList[n], Buffer);
-            }   
+            }
         }
-        	
+
         ticketinfo->issue_date = KRBv5Credentials.times.starttime;
         ticketinfo->lifetime = KRBv5Credentials.times.endtime - KRBv5Credentials.times.starttime;
         ticketinfo->renew_till = KRBv5Credentials.ticket_flags & TKT_FLG_RENEWABLE ?
@@ -648,10 +648,10 @@ not_an_API_LeashKRB5GetTickets(
 
     	if (ClientName != NULL)
             (*pkrb5_free_unparsed_name)(ctx, ClientName);
-		
+
         if (sServerName != NULL)
             (*pkrb5_free_unparsed_name)(ctx, sServerName);
-		
+
         ClientName = NULL;
         sServerName = NULL;
         (*pkrb5_free_cred_contents)(ctx, &KRBv5Credentials);
@@ -659,16 +659,16 @@ not_an_API_LeashKRB5GetTickets(
 
     if (PrincipalName != NULL)
         (*pkrb5_free_unparsed_name)(ctx, PrincipalName);
-	
+
     if (ClientName != NULL)
         (*pkrb5_free_unparsed_name)(ctx, ClientName);
-	
+
     if (sServerName != NULL)
         (*pkrb5_free_unparsed_name)(ctx, sServerName);
 
     if ((code == KRB5_CC_END) || (code == KRB5_CC_NOTFOUND))
     {
-        if ((code = pkrb5_cc_end_seq_get(ctx, cache, &KRBv5Cursor))) 
+        if ((code = pkrb5_cc_end_seq_get(ctx, cache, &KRBv5Cursor)))
         {
             functionName = "krb5_cc_end_seq_get()";
             freeContextFlag = 1;
@@ -679,14 +679,14 @@ not_an_API_LeashKRB5GetTickets(
 #ifdef KRB5_TC_NOTICKET
         flags |= KRB5_TC_NOTICKET;
 #endif
-        if ((code = pkrb5_cc_set_flags(ctx, cache, flags))) 
+        if ((code = pkrb5_cc_set_flags(ctx, cache, flags)))
         {
             functionName = "krb5_cc_set_flags()";
             freeContextFlag = 1;
             goto on_error;
         }
     }
-    else 
+    else
     {
         functionName = "krb5_cc_next_cred()";
         freeContextFlag = 1;
@@ -698,11 +698,11 @@ not_an_API_LeashKRB5GetTickets(
         if (cache != NULL)
             pkrb5_cc_close(ctx, cache);
     }
-	
+
     return(code);
 
  on_error:
-    
+
     Leash_krb5_error(code, functionName, freeContextFlag, &(*krbv5Context), &cache);
     return(code);
 #endif //!NO_KER5
@@ -921,14 +921,14 @@ DWORD                       publicIP
 
             netIPAddr = htonl(publicIP);
             memcpy(addrs[i]->contents,&netIPAddr,4);
-        
+
             pkrb5_get_init_creds_opt_set_address_list(&options,addrs);
 
         }
     }
 
-    code = pkrb5_get_init_creds_password(ctx, 
-                                       &my_creds, 
+    code = pkrb5_get_init_creds_password(ctx,
+                                       &my_creds,
                                        me,
                                        password, // password
                                        leash_krb5_prompter, // prompter
@@ -989,7 +989,7 @@ Leash_krb5_kdestroy(
     cache = NULL;
     if (rc = Leash_krb5_initialize(&ctx, &cache))
         return(rc);
-	
+
     rc = pkrb5_cc_destroy(ctx, cache);
 
     if (ctx != NULL)
@@ -1036,8 +1036,8 @@ int Leash_krb5_initialize(krb5_context *ctx, krb5_ccache *cache)
     if ((rc = pkrb5_cc_set_flags(*ctx, *cache, flags)))
     {
         if (rc != KRB5_FCC_NOFILE && rc != KRB5_CC_NOTFOUND)
-            Leash_krb5_error(rc, "krb5_cc_set_flags()", 0, ctx, 
-                                  cache);        
+            Leash_krb5_error(rc, "krb5_cc_set_flags()", 0, ctx,
+                                  cache);
         else if ((rc == KRB5_FCC_NOFILE || rc == KRB5_CC_NOTFOUND) && *ctx != NULL)
         {
             if (*cache != NULL)
@@ -1056,9 +1056,9 @@ int Leash_krb5_initialize(krb5_context *ctx, krb5_ccache *cache)
 /**************************************/
 /* Leash_krb5_error():           */
 /**************************************/
-int 
-Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName, 
-                 int FreeContextFlag, krb5_context * ctx, 
+int
+Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
+                 int FreeContextFlag, krb5_context * ctx,
                  krb5_ccache * cache)
 {
 #ifdef NO_KRB5
@@ -1066,8 +1066,8 @@ Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
 #else
     char message[256];
     const char *errText;
-    int krb5Error = ((int)(rc & 255));  
-    
+    int krb5Error = ((int)(rc & 255));
+
     /*
     switch (krb5Error)
     {
@@ -1077,16 +1077,16 @@ Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
             return;
     }
     */
-        
-    errText = perror_message(rc);   
-    _snprintf(message, sizeof(message), 
-              "%s\n(Kerberos error %ld)\n\n%s failed", 
-              errText, 
-              krb5Error, 
+
+    errText = perror_message(rc);
+    _snprintf(message, sizeof(message),
+              "%s\n(Kerberos error %ld)\n\n%s failed",
+              errText,
+              krb5Error,
               FailedFunctionName);
-		
-    MessageBox(NULL, message, "Kerberos Five", MB_OK | MB_ICONERROR | 
-               MB_TASKMODAL | 
+
+    MessageBox(NULL, message, "Kerberos Five", MB_OK | MB_ICONERROR |
+               MB_TASKMODAL |
                MB_SETFOREGROUND);
     if (FreeContextFlag == 1)
     {
@@ -1096,7 +1096,7 @@ Leash_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
                 pkrb5_cc_close(*ctx, *cache);
                 *cache = NULL;
             }
-	
+
             pkrb5_free_context(*ctx);
             *ctx = NULL;
         }
@@ -1113,7 +1113,7 @@ Leash_ms2mit(BOOL save_creds)
 {
 #ifdef NO_KRB5
     return(FALSE);
-#else /* NO_KRB5 */    
+#else /* NO_KRB5 */
     krb5_context kcontext = 0;
     krb5_error_code code;
     krb5_ccache ccache=0;
@@ -1149,10 +1149,10 @@ Leash_ms2mit(BOOL save_creds)
         rc = TRUE;
     } else {
         /* Enumerate tickets from cache looking for an initial ticket */
-        if ((code = pkrb5_cc_start_seq_get(kcontext, mslsa_ccache, &cursor))) 
+        if ((code = pkrb5_cc_start_seq_get(kcontext, mslsa_ccache, &cursor)))
             goto cleanup;
 
-        while (!(code = pkrb5_cc_next_cred(kcontext, mslsa_ccache, &cursor, &creds))) 
+        while (!(code = pkrb5_cc_next_cred(kcontext, mslsa_ccache, &cursor, &creds)))
         {
             if ( creds.ticket_flags & TKT_FLG_INITIAL ) {
                 rc = TRUE;
@@ -1195,7 +1195,7 @@ static struct textField * mid_tb = NULL;
 #define ID_TEXT       150
 #define ID_MID_TEXT 300
 
-static BOOL CALLBACK 
+static BOOL CALLBACK
 MultiInputDialogProc( HWND hDialog, UINT message, WPARAM wParam, LPARAM lParam)
 {
     int i;
@@ -1210,7 +1210,7 @@ MultiInputDialogProc( HWND hDialog, UINT message, WPARAM wParam, LPARAM lParam)
 		for ( i=0; i < mid_cnt ; i++ ) {
 			if (mid_tb[i].echo == 0)
 				SendDlgItemMessage(hDialog, ID_MID_TEXT+i, EM_SETPASSWORDCHAR, 32, 0);
-		    else if (mid_tb[i].echo == 2) 
+		    else if (mid_tb[i].echo == 2)
 				SendDlgItemMessage(hDialog, ID_MID_TEXT+i, EM_SETPASSWORDCHAR, '*', 0);
 		}
         return TRUE;
@@ -1231,7 +1231,7 @@ MultiInputDialogProc( HWND hDialog, UINT message, WPARAM wParam, LPARAM lParam)
     return FALSE;
 }
 
-static LPWORD 
+static LPWORD
 lpwAlign( LPWORD lpIn )
 {
     ULONG ul;
@@ -1249,8 +1249,8 @@ lpwAlign( LPWORD lpIn )
  */
 
 static LRESULT
-MultiInputDialog( HINSTANCE hinst, HWND hwndOwner, 
-                  char * ptext[], int numlines, int width, 
+MultiInputDialog( HINSTANCE hinst, HWND hwndOwner,
+                  char * ptext[], int numlines, int width,
                   int tb_cnt, struct textField * tb)
 {
     HGLOBAL hgbl;
@@ -1264,22 +1264,22 @@ MultiInputDialog( HINSTANCE hinst, HWND hwndOwner,
     hgbl = GlobalAlloc(GMEM_ZEROINIT, 4096);
     if (!hgbl)
         return -1;
- 
+
     mid_cnt = tb_cnt;
     mid_tb = tb;
 
     lpdt = (LPDLGTEMPLATE)GlobalLock(hgbl);
- 
+
     // Define a dialog box.
- 
+
     lpdt->style = WS_POPUP | WS_BORDER | WS_SYSMENU
-                   | DS_MODALFRAME | WS_CAPTION | DS_CENTER 
+                   | DS_MODALFRAME | WS_CAPTION | DS_CENTER
                    | DS_SETFOREGROUND | DS_3DLOOK
                    | DS_SHELLFONT | DS_NOFAILCREATE;
     lpdt->cdit = numlines + (2 * tb_cnt) + 2;  // number of controls
-    lpdt->x  = 10;  
+    lpdt->x  = 10;
     lpdt->y  = 10;
-    lpdt->cx = 20 + width * 4; 
+    lpdt->cx = 20 + width * 4;
     lpdt->cy = 20 + (numlines + tb_cnt + 4) * 14;
 
     lpw = (LPWORD) (lpdt + 1);
@@ -1291,7 +1291,7 @@ MultiInputDialog( HINSTANCE hinst, HWND hwndOwner,
     lpw   += nchar;
     *lpw++ = 8;                        // font size (points)
     lpwsz = (LPWSTR) lpw;
-    nchar = MultiByteToWideChar (CP_ACP, 0, "MS Shell Dlg", 
+    nchar = MultiByteToWideChar (CP_ACP, 0, "MS Shell Dlg",
                                     -1, lpwsz, 128);
     lpw   += nchar;
 
@@ -1302,9 +1302,9 @@ MultiInputDialog( HINSTANCE hinst, HWND hwndOwner,
     lpdit = (LPDLGITEMTEMPLATE) lpw;
     lpdit->style = WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON | WS_TABSTOP | WS_BORDER;
     lpdit->dwExtendedStyle = 0;
-    lpdit->x  = (lpdt->cx - 14)/4 - 20; 
+    lpdit->x  = (lpdt->cx - 14)/4 - 20;
     lpdit->y  = 10 + (numlines + tb_cnt + 2) * 14;
-    lpdit->cx = 40; 
+    lpdit->cx = 40;
     lpdit->cy = 14;
     lpdit->id = IDOK;  // OK button identifier
 
@@ -1324,9 +1324,9 @@ MultiInputDialog( HINSTANCE hinst, HWND hwndOwner,
     lpdit = (LPDLGITEMTEMPLATE) lpw;
     lpdit->style = WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP | WS_BORDER;
     lpdit->dwExtendedStyle = 0;
-    lpdit->x  = (lpdt->cx - 14)*3/4 - 20; 
+    lpdit->x  = (lpdt->cx - 14)*3/4 - 20;
     lpdit->y  = 10 + (numlines + tb_cnt + 2) * 14;
-    lpdit->cx = 40; 
+    lpdit->cx = 40;
     lpdit->cy = 14;
     lpdit->id = IDCANCEL;  // CANCEL button identifier
 
@@ -1348,9 +1348,9 @@ MultiInputDialog( HINSTANCE hinst, HWND hwndOwner,
         lpdit = (LPDLGITEMTEMPLATE) lpw;
         lpdit->style = WS_CHILD | WS_VISIBLE | SS_LEFT;
         lpdit->dwExtendedStyle = 0;
-        lpdit->x  = 10; 
+        lpdit->x  = 10;
         lpdit->y  = 10 + i * 14;
-        lpdit->cx = strlen(ptext[i]) * 4 + 10; 
+        lpdit->cx = strlen(ptext[i]) * 4 + 10;
         lpdit->cy = 14;
         lpdit->id = ID_TEXT + i;  // text identifier
 
@@ -1359,12 +1359,12 @@ MultiInputDialog( HINSTANCE hinst, HWND hwndOwner,
         *lpw++ = 0x0082;                         // static class
 
         lpwsz = (LPWSTR) lpw;
-        nchar = MultiByteToWideChar (CP_ACP, 0, ptext[i], 
+        nchar = MultiByteToWideChar (CP_ACP, 0, ptext[i],
                                          -1, lpwsz, 2*width);
         lpw   += nchar;
         *lpw++ = 0;           // no creation data
     }
-    
+
     for ( i=0, pwid = 0; i<tb_cnt; i++) {
         if ( pwid < strlen(tb[i].label) )
             pwid = strlen(tb[i].label);
@@ -1379,9 +1379,9 @@ MultiInputDialog( HINSTANCE hinst, HWND hwndOwner,
         lpdit = (LPDLGITEMTEMPLATE) lpw;
         lpdit->style = WS_CHILD | WS_VISIBLE | SS_LEFT;
         lpdit->dwExtendedStyle = 0;
-        lpdit->x  = 10; 
+        lpdit->x  = 10;
         lpdit->y  = 10 + (numlines + i + 1) * 14;
-        lpdit->cx = pwid * 4; 
+        lpdit->cx = pwid * 4;
         lpdit->cy = 14;
         lpdit->id = ID_TEXT + numlines + i;  // text identifier
 
@@ -1390,7 +1390,7 @@ MultiInputDialog( HINSTANCE hinst, HWND hwndOwner,
         *lpw++ = 0x0082;                         // static class
 
         lpwsz = (LPWSTR) lpw;
-        nchar = MultiByteToWideChar (CP_ACP, 0, tb[i].label ? tb[i].label : "", 
+        nchar = MultiByteToWideChar (CP_ACP, 0, tb[i].label ? tb[i].label : "",
                                      -1, lpwsz, 128);
         lpw   += nchar;
         *lpw++ = 0;           // no creation data
@@ -1402,9 +1402,9 @@ MultiInputDialog( HINSTANCE hinst, HWND hwndOwner,
         lpdit = (LPDLGITEMTEMPLATE) lpw;
         lpdit->style = WS_CHILD | WS_VISIBLE | ES_LEFT | WS_TABSTOP | WS_BORDER | (tb[i].echo == 1 ? 0L : ES_PASSWORD);
         lpdit->dwExtendedStyle = 0;
-        lpdit->x  = 10 + (pwid + 1) * 4; 
+        lpdit->x  = 10 + (pwid + 1) * 4;
         lpdit->y  = 10 + (numlines + i + 1) * 14;
-        lpdit->cx = (width - (pwid + 1)) * 4; 
+        lpdit->cx = (width - (pwid + 1)) * 4;
         lpdit->cy = 14;
         lpdit->id = ID_MID_TEXT + i;             // identifier
 
@@ -1413,16 +1413,16 @@ MultiInputDialog( HINSTANCE hinst, HWND hwndOwner,
         *lpw++ = 0x0081;                         // edit class
 
         lpwsz = (LPWSTR) lpw;
-        nchar = MultiByteToWideChar (CP_ACP, 0, tb[i].def ? tb[i].def : "", 
+        nchar = MultiByteToWideChar (CP_ACP, 0, tb[i].def ? tb[i].def : "",
                                      -1, lpwsz, 128);
         lpw   += nchar;
         *lpw++ = 0;           // no creation data
     }
 
-    GlobalUnlock(hgbl); 
-    ret = DialogBoxIndirect(hinst, (LPDLGTEMPLATE) hgbl, 
-							hwndOwner, (DLGPROC) MultiInputDialogProc); 
-    GlobalFree(hgbl); 
+    GlobalUnlock(hgbl);
+    ret = DialogBoxIndirect(hinst, (LPDLGTEMPLATE) hgbl,
+							hwndOwner, (DLGPROC) MultiInputDialogProc);
+    GlobalFree(hgbl);
 
     switch ( ret ) {
     case 0:     /* Timeout */
@@ -1453,7 +1453,7 @@ multi_field_dialog(HWND hParent, char * preface, int n, struct textField tb[])
     char * plines[16], *p = preface ? preface : "";
     int i;
 
-    for ( i=0; i<16; i++ ) 
+    for ( i=0; i<16; i++ )
         plines[i] = NULL;
 
     while (*p && numlines < 16) {
@@ -1464,7 +1464,7 @@ multi_field_dialog(HWND hParent, char * preface, int n, struct textField tb[])
             p++;
         } else if ( *p == '\n' ) {
             *p++ = '\0';
-        } 
+        }
         if ( strlen(plines[numlines-1]) > maxwidth )
             maxwidth = strlen(plines[numlines-1]);
     }
@@ -1508,7 +1508,7 @@ leash_krb5_prompter( krb5_context context,
             tb[i].label = prompts[i].prompt;
             tb[i].def = NULL;
             tb[i].echo = (prompts[i].hidden ? 2 : 1);
-        }   
+        }
 
         ok = multi_field_dialog(hParent,(char *)banner,num_prompts,tb);
         if ( ok ) {

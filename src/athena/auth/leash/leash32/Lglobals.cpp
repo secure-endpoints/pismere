@@ -2,9 +2,9 @@
 // File:	lgobals.cpp
 // By:		Arthur David Leather
 // Created:	12/02/98
-// Copyright:	@1998 Massachusetts Institute of Technology - All rights 
+// Copyright:	@1998 Massachusetts Institute of Technology - All rights
 //              reserved.
-// Description:	CPP file for lgobals.cpp. Contains global variables and helper 
+// Description:	CPP file for lgobals.cpp. Contains global variables and helper
 //		functions
 //
 // History:
@@ -49,7 +49,7 @@ config_boolean_to_int(const char *s)
 
 
 // Global Function for deleting or putting a value in the Registry
-BOOL SetRegistryVariable(const CString& regVariable, 
+BOOL SetRegistryVariable(const CString& regVariable,
                          const CString& regValue,
                          const char* regSubKey)
 {
@@ -58,8 +58,8 @@ BOOL SetRegistryVariable(const CString& regVariable,
     LONG err = 0L;
 
 
-    if (ERROR_SUCCESS != (err = RegOpenKeyEx(HKEY_CURRENT_USER, 
-                                             regSubKey, 
+    if (ERROR_SUCCESS != (err = RegOpenKeyEx(HKEY_CURRENT_USER,
+                                             regSubKey,
                                              0, KEY_ALL_ACCESS, &hKey)))
     {
         if ((err = RegCreateKeyEx(HKEY_CURRENT_USER, regSubKey, 0, 0, 0,
@@ -70,14 +70,14 @@ BOOL SetRegistryVariable(const CString& regVariable,
         }
     }
 
-    if (ERROR_SUCCESS == err && hKey) 
+    if (ERROR_SUCCESS == err && hKey)
     {
         if (regValue.IsEmpty())
         {
             // Delete
             RegDeleteValue(hKey, regVariable);
         }
-        else 
+        else
         {
             // Insure that Name (Variable) is in the Registry and set
             // it's new value
@@ -85,9 +85,9 @@ BOOL SetRegistryVariable(const CString& regVariable,
             char* pVARIABLE = nVariable;
             strncpy(pVARIABLE, regValue, MAX_PATH);
 
-            if (ERROR_SUCCESS != 
-                RegSetValueEx(hKey, regVariable, 0, 
-                              REG_SZ, (const unsigned char*)pVARIABLE, 
+            if (ERROR_SUCCESS !=
+                RegSetValueEx(hKey, regVariable, 0,
+                              REG_SZ, (const unsigned char*)pVARIABLE,
                               lstrlen(regValue)))
             {
                 // Error
@@ -95,9 +95,9 @@ BOOL SetRegistryVariable(const CString& regVariable,
             }
         }
 
-        RegCloseKey(hKey); 
+        RegCloseKey(hKey);
 
-        // Send this message to all top-level windows in the system 
+        // Send this message to all top-level windows in the system
         ::PostMessage(HWND_BROADCAST, WM_WININICHANGE, 0L, (LPARAM) regSubKey);
         return FALSE;
     }

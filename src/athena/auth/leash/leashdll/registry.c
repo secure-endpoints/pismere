@@ -14,7 +14,7 @@ write_registry_setting_ex(
     HKEY hKey = 0;
     LONG rc = 0;
 
-    if (rc = RegCreateKeyEx(hRoot, LEASH_SETTINGS_REGISTRY_KEY_NAME, 0, 0, 0, 
+    if (rc = RegCreateKeyEx(hRoot, LEASH_SETTINGS_REGISTRY_KEY_NAME, 0, 0, 0,
                             KEY_ALL_ACCESS, 0, &hKey, 0))
         goto cleanup;
 
@@ -33,9 +33,9 @@ write_registry_setting(
     size_t size
     )
 {
-    return write_registry_setting_ex(HKEY_CURRENT_USER, 
+    return write_registry_setting_ex(HKEY_CURRENT_USER,
                                      setting,
-                                     type, 
+                                     type,
                                      buffer,
                                      size);
 }
@@ -51,10 +51,10 @@ read_registry_setting_ex(
 {
     HKEY hKey = 0;
     LONG rc = 0;
-    DWORD dwType; 
+    DWORD dwType;
     DWORD dwCount;
 
-    if (rc = RegOpenKeyEx(hRoot, 
+    if (rc = RegOpenKeyEx(hRoot,
                           LEASH_SETTINGS_REGISTRY_KEY_NAME,
                           0, KEY_QUERY_VALUE, &hKey))
         goto cleanup;

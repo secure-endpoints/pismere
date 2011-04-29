@@ -2,9 +2,9 @@
 // File:	lgobals.h
 // By:		Arthur David Leather
 // Created:	12/02/98
-// Copyright:	@1998 Massachusetts Institute of Technology - All rights 
+// Copyright:	@1998 Massachusetts Institute of Technology - All rights
 //              reserved.
-// Description:	H file for lgobals.cpp. Contains global variables and helper 
+// Description:	H file for lgobals.cpp. Contains global variables and helper
 //		functions
 //
 // History:
@@ -104,7 +104,7 @@ TYPEDEF_FUNC(
     );
 
 extern DECL_FUNC_PTR(not_an_API_LeashKRB4GetTickets);
-extern DECL_FUNC_PTR(not_an_API_LeashKRB5GetTickets); 
+extern DECL_FUNC_PTR(not_an_API_LeashKRB5GetTickets);
 extern DECL_FUNC_PTR(not_an_API_LeashAFSGetToken);
 extern DECL_FUNC_PTR(not_an_API_LeashFreeTicketList);
 extern DECL_FUNC_PTR(not_an_API_LeashGetTimeServerName);
@@ -160,10 +160,10 @@ extern DECL_FUNC_PTR(Leash_reset_defaults);
 // krb4 functions
 extern DECL_FUNC_PTR(set_krb_debug);
 extern DECL_FUNC_PTR(set_krb_ap_req_debug);
-extern DECL_FUNC_PTR(krb_get_krbconf2); 
-extern DECL_FUNC_PTR(krb_get_krbrealm2); 
-extern DECL_FUNC_PTR(tkt_string); 
-extern DECL_FUNC_PTR(krb_set_tkt_string); 
+extern DECL_FUNC_PTR(krb_get_krbconf2);
+extern DECL_FUNC_PTR(krb_get_krbrealm2);
+extern DECL_FUNC_PTR(tkt_string);
+extern DECL_FUNC_PTR(krb_set_tkt_string);
 extern DECL_FUNC_PTR(krb_realmofhost);
 extern DECL_FUNC_PTR(krb_get_lrealm);
 extern DECL_FUNC_PTR(krb_get_krbhst);
@@ -213,18 +213,18 @@ extern DECL_FUNC_PTR(profile_abandon);
 extern DECL_FUNC_PTR(profile_get_string);
 extern DECL_FUNC_PTR(profile_release_string);
 
-#define SKIP_MINSIZE  0 
+#define SKIP_MINSIZE  0
 #define LEFT_SIDE     1
 #define RIGHT_SIDE    2
 #define TOP_SIDE      3
-#define RESET_MINSIZE 4 
+#define RESET_MINSIZE 4
 #define BOTTOM_SIDE   6
 
 #define ADMIN_SERVER "admin_server"
 
 #define ON  1
 #define OFF 0
-#define TRUE_FLAG		1 
+#define TRUE_FLAG		1
 #define FALSE_FLAG		0
 #define LEASHDLL "leashw32.dll"
 #define KERB4DLL "krbv4w32.dll"
@@ -240,10 +240,10 @@ extern DECL_FUNC_PTR(profile_release_string);
 #define LEASH_HELP_FILE "leash32.chm"
 
 extern int  config_boolean_to_int(const char *);
-extern BOOL SetRegistryVariable(const CString& regVariable, 
+extern BOOL SetRegistryVariable(const CString& regVariable,
                                 const CString& regValue,
                                 const char* regSubKey = "Software\\MIT\\Leash32\\Settings");
-extern VOID LeashErrorBox(LPCSTR errorMsg, LPCSTR insertedString, 
+extern VOID LeashErrorBox(LPCSTR errorMsg, LPCSTR insertedString,
                           LPCSTR errorFlag = "Error");
 
 
@@ -269,4 +269,4 @@ class TicketInfoWrapper {
 };
 extern TicketInfoWrapper ticketinfo;
 
-#endif 
+#endif

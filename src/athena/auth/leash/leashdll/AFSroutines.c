@@ -77,7 +77,7 @@ Leash_afs_unlog(
 
 int
 not_an_API_LeashAFSGetToken(
-    TICKETINFO * ticketinfo, 
+    TICKETINFO * ticketinfo,
     TicketList** ticketList,
     char * kerberosPrincipal
     )
@@ -107,9 +107,9 @@ not_an_API_LeashAFSGetToken(
     char                    HostName[64];
 
 
-    TicketList* list = NULL; 
+    TicketList* list = NULL;
     if ( ticketinfo ) {
-        ticketinfo->btickets = NO_TICKETS; 
+        ticketinfo->btickets = NO_TICKETS;
         ticketinfo->principal[0] = '\0';
     }
     if ( !kerberosPrincipal )
@@ -128,7 +128,7 @@ not_an_API_LeashAFSGetToken(
 
     BreakAtEnd = 0;
     cellNum = 0;
-    while (1) 
+    while (1)
     {
         if (rc = ktc_ListTokens(cellNum, &cellNum, &aserver))
         {
@@ -151,14 +151,14 @@ not_an_API_LeashAFSGetToken(
         if (!list)
         {
             list = (TicketList*) calloc(1, sizeof(TicketList));
-            (*ticketList) = list; 
-        }    
-        else 
+            (*ticketList) = list;
+        }
+        else
         {
             list->next = (struct TicketList*) calloc(1, sizeof(TicketList));
             list = (TicketList*) list->next;
         }
-        
+
         CurrentTime = time(NULL);
 
         newtime = localtime(&atoken.endTime);
@@ -168,13 +168,13 @@ not_an_API_LeashAFSGetToken(
 
         memset(CellName, '\0', sizeof(CellName));
         strcpy(CellName, aclient.cell);
-	
+
         memset(InstanceName, '\0', sizeof(InstanceName));
         strcpy(InstanceName, aclient.instance);
-	
+
         memset(ServiceName, '\0', sizeof(ServiceName));
         strcpy(ServiceName, aserver.name);
-	
+
         memset(TokenStatus, '\0', sizeof(TokenStatus));
 
         EndDay = newtime->tm_mday;
@@ -183,21 +183,21 @@ not_an_API_LeashAFSGetToken(
 
         sprintf(EndTime, "%02d:%02d:%02d", newtime->tm_hour, newtime->tm_min, newtime->tm_sec);
 
-        sprintf(Buffer,"                          %s %02d %s      %s%s%s@%s  %s",		 
+        sprintf(Buffer,"                          %s %02d %s      %s%s%s@%s  %s",
                 Months[EndMonth - 1], EndDay, EndTime,
                 UserName,
                 InstanceName[0] ? "." : "",
                 InstanceName,
                 CellName,
                 TokenStatus);
-	
+
         list->theTicket = (char*) calloc(1, sizeof(Buffer));
         if (!list->theTicket)
         {
             MessageBox(NULL, "Memory Error", "Error", MB_OK);
-            return ENOMEM;            
-        }       
-        
+            return ENOMEM;
+        }
+
         strcpy(list->theTicket, Buffer);
         list->name = strdup(aclient.name);
         list->inst = aclient.instance[0] ? strdup(aclient.instance) : NULL;
@@ -341,7 +341,7 @@ Leash_afs_klog(
 
         (*pkrb5_cc_get_principal)(context, _krb425_ccache, &client_principal);
         i = krb5_princ_realm(context, client_principal)->length;
-        if (i > REALM_SZ-1) 
+        if (i > REALM_SZ-1)
             i = REALM_SZ-1;
         strncpy(realm_of_user,krb5_princ_realm(context, client_principal)->data,i);
         realm_of_user[i] = 0;
@@ -381,7 +381,7 @@ Leash_afs_klog(
                                       RealmName,
                                       ServiceName,
                                       CellName,
-                                      0)) 
+                                      0))
         {
             try_krb5 = 0;
             goto use_krb4;
@@ -427,7 +427,7 @@ Leash_afs_klog(
         }
 
         /* This code inserts the entire K5 ticket into the token
-         * No need to perform a krb524 translation which is 
+         * No need to perform a krb524 translation which is
          * commented out in the code below
          */
         if ( use_krb524() || k5creds->ticket.length > MAXKTCTICKETLEN )
@@ -459,7 +459,7 @@ Leash_afs_klog(
         if (atoken.kvno == btoken.kvno &&
              atoken.ticketLen == btoken.ticketLen &&
              !memcmp(&atoken.sessionKey, &btoken.sessionKey, sizeof(atoken.sessionKey)) &&
-             !memcmp(atoken.ticket, btoken.ticket, atoken.ticketLen)) 
+             !memcmp(atoken.ticket, btoken.ticket, atoken.ticketLen))
         {
             /* Success */
             pkrb5_free_creds(context, k5creds);
@@ -515,7 +515,7 @@ Leash_afs_klog(
             goto use_krb4;
         }
         rc = KSUCCESS;
-    } else 
+    } else
 #endif /* NO_KRB5 */
     {
       use_krb4:
@@ -566,7 +566,7 @@ Leash_afs_klog(
         atoken.kvno == btoken.kvno &&
         atoken.ticketLen == btoken.ticketLen &&
         !memcmp(&atoken.sessionKey, &btoken.sessionKey, sizeof(atoken.sessionKey)) &&
-        !memcmp(atoken.ticket, btoken.ticket, atoken.ticketLen)) 
+        !memcmp(atoken.ticket, btoken.ticket, atoken.ticketLen))
     {
         return(0);
     }
@@ -586,7 +586,7 @@ Leash_afs_klog(
     }
     strcpy(aclient.instance, "");
 
-    if ( strcmp(realm_of_cell, creds.realm) ) 
+    if ( strcmp(realm_of_cell, creds.realm) )
     {
         strncat(aclient.name, "@", MAXKTCNAMELEN - 1 - strlen(aclient.name));
         aclient.name[MAXKTCNAMELEN - 1] = '\0';
@@ -633,7 +633,7 @@ static char *afs_realm_of_cell(afsconf_cell *cellconfig)
 
 #ifndef NO_KRB5
     if ( pkrb5_init_context ) {
-        r = pkrb5_init_context(&ctx); 
+        r = pkrb5_init_context(&ctx);
         if ( !r )
             r = pkrb5_get_host_realm(ctx, cellconfig->hostName[0], &realmlist);
         if ( !r && realmlist && realmlist[0] ) {
@@ -725,11 +725,11 @@ Leash_afs_error(LONG rc, LPCSTR FailedFunctionName)
     return;
 #else
     char message[256];
-    const char *errText; 
+    const char *errText;
 
-    // Using AFS defines as error messages for now, until Transarc 
-    // gets back to me with "string" translations of each of these 
-    // const. defines. 
+    // Using AFS defines as error messages for now, until Transarc
+    // gets back to me with "string" translations of each of these
+    // const. defines.
     if (rc == KTC_ERROR)
       errText = "KTC_ERROR";
     else if (rc == KTC_TOOBIG)
@@ -753,23 +753,23 @@ Leash_afs_error(LONG rc, LPCSTR FailedFunctionName)
     MessageBox(NULL, message, "AFS", MB_OK | MB_ICONERROR | MB_TASKMODAL | MB_SETFOREGROUND);
     return;
 
-#endif 
+#endif
 }
 
-DWORD GetServiceStatus( 
-    LPSTR lpszMachineName, 
+DWORD GetServiceStatus(
+    LPSTR lpszMachineName,
     LPSTR lpszServiceName,
-    DWORD *lpdwCurrentState) 
-{ 
+    DWORD *lpdwCurrentState)
+{
 #ifdef NO_AFS
     return(NOERROR);
 #else
-    DWORD           hr               = NOERROR; 
-    SC_HANDLE       schSCManager     = NULL; 
-    SC_HANDLE       schService       = NULL; 
-    DWORD           fdwDesiredAccess = 0; 
-    SERVICE_STATUS  ssServiceStatus  = {0}; 
-    BOOL            fRet             = FALSE; 
+    DWORD           hr               = NOERROR;
+    SC_HANDLE       schSCManager     = NULL;
+    SC_HANDLE       schService       = NULL;
+    DWORD           fdwDesiredAccess = 0;
+    SERVICE_STATUS  ssServiceStatus  = {0};
+    BOOL            fRet             = FALSE;
 
     if ((pOpenSCManagerA == NULL) ||
         (pOpenServiceA == NULL) ||
@@ -780,49 +780,49 @@ DWORD GetServiceStatus(
         return(NOERROR);
         }
 
-    *lpdwCurrentState = 0; 
- 
-    fdwDesiredAccess = GENERIC_READ; 
- 
-    schSCManager = (*pOpenSCManagerA)(lpszMachineName,  
+    *lpdwCurrentState = 0;
+
+    fdwDesiredAccess = GENERIC_READ;
+
+    schSCManager = (*pOpenSCManagerA)(lpszMachineName,
                                  NULL,
-                                 fdwDesiredAccess); 
- 
-    if(schSCManager == NULL) 
-    { 
+                                 fdwDesiredAccess);
+
+    if(schSCManager == NULL)
+    {
         hr = GetLastError();
-        goto cleanup; 
-    } 
- 
+        goto cleanup;
+    }
+
     schService = (*pOpenServiceA)(schSCManager,
                              lpszServiceName,
-                             fdwDesiredAccess); 
- 
-    if(schService == NULL) 
-    { 
+                             fdwDesiredAccess);
+
+    if(schService == NULL)
+    {
         hr = GetLastError();
-        goto cleanup; 
-    } 
- 
+        goto cleanup;
+    }
+
     fRet = (*pQueryServiceStatus)(schService,
-                              &ssServiceStatus); 
- 
-    if(fRet == FALSE) 
-    { 
-        hr = GetLastError(); 
-        goto cleanup; 
-    } 
- 
-    *lpdwCurrentState = ssServiceStatus.dwCurrentState; 
- 
-cleanup: 
- 
-    (*pCloseServiceHandle)(schService); 
-    (*pCloseServiceHandle)(schSCManager); 
- 
-    return(hr); 
-#endif 
-} 
+                              &ssServiceStatus);
+
+    if(fRet == FALSE)
+    {
+        hr = GetLastError();
+        goto cleanup;
+    }
+
+    *lpdwCurrentState = ssServiceStatus.dwCurrentState;
+
+cleanup:
+
+    (*pCloseServiceHandle)(schService);
+    (*pCloseServiceHandle)(schSCManager);
+
+    return(hr);
+#endif
+}
 
 BOOL
 SetAfsStatus(
@@ -832,8 +832,8 @@ SetAfsStatus(
 #ifdef NO_AFS
     return(TRUE);
 #else
-    return write_registry_setting(LEASH_SETTINGS_REGISTRY_VALUE_AFS_STATUS, 
-                                  REG_DWORD, &AfsStatus, 
+    return write_registry_setting(LEASH_SETTINGS_REGISTRY_VALUE_AFS_STATUS,
+                                  REG_DWORD, &AfsStatus,
                                   sizeof(AfsStatus)) ? FALSE : TRUE;
 #endif
 }
@@ -846,7 +846,7 @@ GetAfsStatus(
 #ifdef NO_AFS
     return(TRUE);
 #else
-    return read_registry_setting(LEASH_SETTINGS_REGISTRY_VALUE_AFS_STATUS, 
+    return read_registry_setting(LEASH_SETTINGS_REGISTRY_VALUE_AFS_STATUS,
                                  AfsStatus, sizeof(DWORD)) ? FALSE : TRUE;
-#endif 
+#endif
 }

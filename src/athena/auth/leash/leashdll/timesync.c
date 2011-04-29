@@ -33,7 +33,7 @@ struct timezone {
 /************************************/
 int
 settimeofday(
-    struct timeval *tv, 
+    struct timeval *tv,
     struct timezone *tz
     )
 {
@@ -49,14 +49,14 @@ settimeofday(
     systime.wSecond = newtime->tm_sec;
     systime.wMilliseconds = 0;
     return SetSystemTime(&systime);
-}  
+}
 
 /************************************/
 /* gettimeofday():                  */
 /************************************/
-int 
+int
 gettimeofday(
-    struct timeval *tv, 
+    struct timeval *tv,
     struct timezone *tz
     )
 {
@@ -72,30 +72,30 @@ gettimeofday(
 	tz->tz_dsttime = tb.dstflag;
     }
     return 0;
-}       
+}
 
 
-LONG 
+LONG
 not_an_API_LeashGetTimeServerName(
-    char *timeServerName, 
+    char *timeServerName,
     const char *valueName
     )
 {
     HMODULE     hmLeash;
     char        hostname[128];
     char        value[80];
-    DWORD       dwType; 
+    DWORD       dwType;
     DWORD       dwCount;
     int         check = 0;
     HKEY    	hKey;
-    HKEY        rKey1;             
-    HKEY        rKey2;             
-    LONG        lResult; 
+    HKEY        rKey1;
+    HKEY        rKey2;
+    LONG        lResult;
     BOOL 	bEnv;
 
     memset(value, '\0', sizeof(value));
     memset(hostname, '\0', sizeof(hostname));
-    
+
     GetEnvironmentVariable("TIMEHOST", hostname, sizeof(hostname));
     bEnv = (GetLastError() == ERROR_ENVVAR_NOT_FOUND);
 
@@ -104,42 +104,42 @@ not_an_API_LeashGetTimeServerName(
         // Check registry for TIMEHOST
         rKey1 = HKEY_CURRENT_USER;
         rKey2 = HKEY_LOCAL_MACHINE;
-        
+
         for (check = 0; check < 2; check++)
-        { 
-            if (ERROR_SUCCESS == RegOpenKeyEx(check == 0 ? rKey1 : rKey2, 
-                                              "Software\\MIT\\Leash32\\Settings", 
+        {
+            if (ERROR_SUCCESS == RegOpenKeyEx(check == 0 ? rKey1 : rKey2,
+                                              "Software\\MIT\\Leash32\\Settings",
                                               0, KEY_QUERY_VALUE, &hKey))
             {
                 memset(value, '\0', sizeof(value));
-                lResult = RegQueryValueEx(hKey, (LPTSTR)valueName, NULL, 
+                lResult = RegQueryValueEx(hKey, (LPTSTR)valueName, NULL,
                                           &dwType, NULL, &dwCount);
                 if (lResult == ERROR_SUCCESS)
                 {
-                    lResult = RegQueryValueEx(hKey, (LPTSTR)valueName, 
+                    lResult = RegQueryValueEx(hKey, (LPTSTR)valueName,
                                               NULL, &dwType,
                                               (LPTSTR)value, &dwCount);
                     if (lResult == ERROR_SUCCESS && *value)
                     {
                         // found
                         strcpy(hostname, value);
-                        break;				        
+                        break;
                     }
                 }
             }
         }
-        
-        if (!*hostname) 
+
+        if (!*hostname)
         {
             // Check resource string for TIMEHOST
             if ((hmLeash = GetModuleHandle(LEASH_DLL)) != NULL)
             {
-                if (!LoadString(hmLeash, LSH_TIME_HOST, hostname, 
+                if (!LoadString(hmLeash, LSH_TIME_HOST, hostname,
                                 sizeof(hostname)))
                     memset(hostname, '\0', sizeof(hostname));
             }
         }
-        if (!*hostname) 
+        if (!*hostname)
         {
             // OK, _Default_ it will be! :)
             strcpy(hostname, "time");
@@ -165,7 +165,7 @@ LONG Leash_timesync(int MessageP)
     char                name[80];
 
     if ((pkrb5_init_context == NULL)
-#ifndef NO_KRB4 
+#ifndef NO_KRB4
         && (ptkt_string == NULL)
 #endif
          )
@@ -192,7 +192,7 @@ LONG Leash_timesync(int MessageP)
     not_an_API_LeashGetTimeServerName(hostname, TIMEHOST);
 
     rc = ProcessTimeSync(hostname, Port, tmpstr);
-    
+
     if(MessageP != 0)
     {
         if (rc && !*tmpstr)
@@ -206,7 +206,7 @@ LONG Leash_timesync(int MessageP)
             }
         }
 
-    	MessageBox(NULL, tmpstr, "Time Server", 
+    	MessageBox(NULL, tmpstr, "Time Server",
                    MB_ICONERROR | MB_OK);
     }
     WSACleanup();
@@ -260,7 +260,7 @@ int ProcessTimeSync(char *hostname, int Port, char *tmpstr)
         closesocket(s);
         return(LSH_GETTIMEOFDAY);
     }
-  
+
     for (i = 0; i < 4; i++)
     {
         if ((cc = recv(s, buffer, 512, 0)) > 0)

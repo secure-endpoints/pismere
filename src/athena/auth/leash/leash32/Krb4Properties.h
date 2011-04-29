@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			Krb4Properties.h 
+//	File:			Krb4Properties.h
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	H file for KrbProperties.cpp. Contains variables and functions 
+//	Description:	H file for KrbProperties.cpp. Contains variables and functions
 //					for Kerberos Four Properties
 //
 //	History:
@@ -35,12 +35,12 @@ class CKrb4ConfigFileLocation : public CPropertyPage
 private:
 	DECLARE_DYNCREATE(CKrb4ConfigFileLocation)
 	CString m_ticketFile;
-	CString m_newTicketFile;  
-	static CString m_newKrbFile;  
-    static CString m_newKrbrealmFile; // static for the CKrb4EditDomainRealmList class 	
-    CString m_initKrbFile;  
-    CString m_initKrbrealmFile; 	
-    CString m_initTicketFile; 
+	CString m_newTicketFile;
+	static CString m_newKrbFile;
+    static CString m_newKrbrealmFile; // static for the CKrb4EditDomainRealmList class
+    CString m_initKrbFile;
+    CString m_initKrbrealmFile;
+    CString m_initTicketFile;
 
    	BOOL m_noKrbFileStartupWarning;
     BOOL m_noKrbrealmFileStartupWarning;
@@ -74,7 +74,7 @@ public:
 protected:
 	// Generated message map functions
 	//{{AFX_MSG(CKrb4ConfigFileLocation)
-	virtual BOOL OnInitDialog();	
+	virtual BOOL OnInitDialog();
 	afx_msg VOID OnButtonKrbBrowse();
 	afx_msg VOID OnButtonKrbrealmBrowse();
 	afx_msg void OnShowWindow(BOOL bShow, UINT nStatus);
@@ -87,7 +87,7 @@ protected:
 
 };
 
-  
+
 //////////////////////////////////////////////////////////////////////
 // CKrb4Properties
 

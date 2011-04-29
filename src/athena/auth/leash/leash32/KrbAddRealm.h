@@ -1,9 +1,9 @@
 //	**************************************************************************************
-//	File:			KrbAddRealm.h 
+//	File:			KrbAddRealm.h
 //	By:				Arthur David Leather
 //	Created:		12/02/98
 //	Copyright		@1998 Massachusetts Institute of Technology - All rights reserved.
-//	Description:	H file for KrbAddRealm.cpp Contains variables and functions 
+//	Description:	H file for KrbAddRealm.cpp Contains variables and functions
 //					for Kerberos Four and Five Properties
 //
 //	History:
