@@ -42,8 +42,8 @@ public:
 class CcAutoLock {
     CcOsLock& m_lock;
 public:
-    static Start(CcAutoLock*& a, CcOsLock& lock) { a = new CcAutoLock(lock); };
-    static Stop(CcAutoLock*& a) { delete a; a = 0; };
+    static void Start(CcAutoLock*& a, CcOsLock& lock) { a = new CcAutoLock(lock); };
+    static void Stop(CcAutoLock*& a) { delete a; a = 0; };
     CcAutoLock(CcOsLock& lock):m_lock(lock) { m_lock.lock(); }
     ~CcAutoLock() { m_lock.unlock(); }
 };

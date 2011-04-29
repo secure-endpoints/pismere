@@ -73,7 +73,7 @@ Marshall_DEFINE_convert(
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
-Marshall::Exception::CcError(
+int Marshall::Exception::CcError(
     )
 {
     switch(type) {
