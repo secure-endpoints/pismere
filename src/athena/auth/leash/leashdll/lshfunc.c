@@ -3656,7 +3656,7 @@ acquire_tkt_for_princ(krb5_context context, krb5_principal desiredPrincipal,
 	}
     }
 
-    if ( ccname && ccanme[0] && strcmp(ccachename,ccname) ) {
+    if ( ccname && ccname[0] && strcmp(ccachename,ccname) ) {
 	SetEnvironmentVariable("KRB5CCNAME",ccname);
     }
 
