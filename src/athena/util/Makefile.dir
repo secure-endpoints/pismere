@@ -1,0 +1,97 @@
+DIRS=\
+	lib	\
+	locker	\
+	poputils	\
+	eduSchemaExtension	\
+	logonbefore \
+	athdir	\
+	athinfo	\
+	beep	\
+	cview	\
+	wincview \
+	dos2unix	\
+	expn	\
+	from	\
+	imtest  \
+	hes	\
+	hesinfo	\
+	instloop \
+	lastlog	\
+	machtype	\
+	motd	\
+	plop	\
+	pop	\
+	rexplore \
+	unix2dos	\
+	screensaver	\
+	whois	\
+	snetcfgex \
+	tzcpl	\
+	kmp	\
+ 	spacl	\
+	sendbug \
+	AfsStressTest
+WIN64DIRS=\
+	lib	\
+	locker	\
+	poputils	\
+	eduSchemaExtension	\
+	logonbefore \
+	athdir	\
+	athinfo	\
+	cview	\
+	wincview \
+	dos2unix	\
+	expn	\
+	imtest  \
+	hes	\
+	hesinfo	\
+	instloop \
+	lastlog	\
+	machtype	\
+	motd	\
+	plop	\
+	rexplore \
+	unix2dos	\
+	screensaver	\
+	whois	\
+	snetcfgex \
+	tzcpl	\
+ 	spacl	\
+	sendbug 
+
+OPTDIRS=\
+	lib	\
+	locker	\
+	poputils	\
+	eduSchemaExtension	\
+	logonbefore \
+	athdir	\
+	athinfo	\
+	beep	\
+	cview	\
+	wincview \
+	dos2unix	\
+	expn	\
+	from	\
+	imtest  \
+	hes	\
+	hesinfo	\
+	instloop \
+	lastlog	\
+	machtype	\
+	motd	\
+	plop	\
+	pop	\
+	rexplore \
+	unix2dos	\
+	screensaver	\
+	whois	\
+	snetcfgex \
+	tzcpl	\
+	guiwrap \
+	kmp	\
+ 	spacl	\
+	sendbug \
+	AfsStressTest
+
