@@ -127,12 +127,25 @@ WIN64_PLACE_OPTIONAL=\
 	src\windows\kfwlogon\$(O)\kfwlogon.dll \
 	src\windows\kfwlogon\$(O)\kfwcpcc.exe
 
+!ifndef SED
+SED=sed
+!endif
+!ifndef AWK
+AWK=awk
+!endif
+!ifndef CAT
+CAT=cat
+!endif
+!ifndef RM
+RM=rm
+!endif
+
 src/Makefile: src/config/win-pre.in src/Makefile.in src/config/win-post.in
-	@echo Checking for existence of sed, awk, cat and rm...
-	@$(WHICH_CMD) sed
-	@$(WHICH_CMD) awk
-	@$(WHICH_CMD) cat
-	@$(WHICH_CMD) rm
+	@echo Checking for existence of $(SED), $(AWK), $(CAT) and $(RM)...
+	@$(WHICH_CMD) $(SED)
+	@$(WHICH_CMD) $(AWK)
+	@$(WHICH_CMD) $(CAT)
+	@$(WHICH_CMD) $(RM)
 	@echo We found them!
 	cd src
 	$(MAKE) -$(MAKEFLAGS) /nologo -f Makefile.in prep-windows $(KRB5_OPTIONS)
