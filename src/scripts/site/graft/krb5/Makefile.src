@@ -70,6 +70,7 @@ all-src:
 clean-src:
 	cd src
 	$(MAKE) -$(MAKEFLAGS) /nologo clean $(KRB5_OPTIONS)
+	$(MAKE) -$(MAKEFLAGS) /nologo -f Makefile.in distclean-windows
 	cd ..
 
 all-krb524:
