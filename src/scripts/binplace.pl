@@ -79,7 +79,7 @@ sub set_map
       {
        exe => ['pdb', 'bsc'],
        scr => ['pdb', 'bsc'],
-       dll => ['pdb', 'bsc', 'lib'],
+       dll => ['pdb', 'bsc', 'lib', 'a'],
        cpl => ['pdb', 'bsc', 'lib'],
        lib => ['pdb', 'bsc'],
        sys => ['pdb', 'bsc'],
