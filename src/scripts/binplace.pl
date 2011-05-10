@@ -64,6 +64,7 @@ sub set_map
        hlp => $DIR->{BIN},
        cnt => $DIR->{BIN},
        lib => $DIR->{LIB},
+       a   => $DIR->{LIB},
        h   => $DIR->{INC},
        sys => $DIR->{BIN},
        inf => $DIR->{BIN},
