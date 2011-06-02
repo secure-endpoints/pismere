@@ -3464,9 +3464,9 @@ acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
     krb5_context        ctx;
     DWORD 		dwMsLsaImport = Leash_get_default_mslsa_import();
     DWORD		gle;
-    char ccachename[272]="";
-    char loginenv[16];
-    BOOL prompt;
+    char                ccachename[272]="";
+    char                loginenv[16]="";
+    BOOL                prompt;
 
     GetEnvironmentVariable("KERBEROSLOGIN_NEVER_PROMPT", loginenv, sizeof(loginenv));
     prompt = (GetLastError() == ERROR_ENVVAR_NOT_FOUND);
@@ -3476,8 +3476,9 @@ acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
     SetLastError(0);
     GetEnvironmentVariable("KRB5CCNAME", ccachename, sizeof(ccachename));
     gle = GetLastError();
-    if ( (gle == ERROR_ENVVAR_NOT_FOUND) && context ) {
-	SetEnvironmentVariable("KRB5CCNAME", pkrb5_cc_default_name(ctx));
+    if ( ((gle == ERROR_ENVVAR_NOT_FOUND) || !ccachename[0]) && context ) {
+        char * ccdef = pkrb5_cc_default_name(ctx);
+	SetEnvironmentVariable("KRB5CCNAME", ccdef ? ccdef : NULL);
 	GetEnvironmentVariable("KRB5CCNAME", ccachename, sizeof(ccachename));
     }
 
@@ -3554,13 +3555,17 @@ acquire_tkt_no_princ(krb5_context context, char * ccname, int cclen)
 
     if ( prompt && ticketinfo.btickets != GOOD_TICKETS ) {
 	acquire_tkt_send_msg(ctx, NULL, ccachename, NULL, ccname, cclen);
+        /*
+         * If the ticket manager returned an alternative credential cache
+         * remember it as the default for this process.
+         */
+        if ( ccname && ccname[0] && strcmp(ccachename,ccname) ) {
+            SetEnvironmentVariable("KRB5CCNAME",ccname);
+        }
+
     } else if (ccachename[0] && ccname) {
 	strncpy(ccname, ccachename, cclen);
 	ccname[cclen-1] = '\0';
-    }
-
-    if ( ccname && ccname[0] && strcmp(ccachename,ccname) ) {
-	SetEnvironmentVariable("KRB5CCNAME",ccname);
     }
 
     if ( !context )
@@ -3590,8 +3595,9 @@ acquire_tkt_for_princ(krb5_context context, krb5_principal desiredPrincipal,
     SetLastError(0);
     GetEnvironmentVariable("KRB5CCNAME", ccachename, sizeof(ccachename));
     gle = GetLastError();
-    if ( (gle == ERROR_ENVVAR_NOT_FOUND) && context ) {
-	SetEnvironmentVariable("KRB5CCNAME", pkrb5_cc_default_name(ctx));
+    if ( ((gle == ERROR_ENVVAR_NOT_FOUND) || !ccachename[0]) && context ) {
+        char * ccdef = pkrb5_cc_default_name(ctx);
+	SetEnvironmentVariable("KRB5CCNAME", ccdef ? ccdef : NULL);
 	GetEnvironmentVariable("KRB5CCNAME", ccachename, sizeof(ccachename));
     }
 
@@ -3650,16 +3656,18 @@ acquire_tkt_for_princ(krb5_context context, krb5_principal desiredPrincipal,
     if (prompt) {
 	if (ticketinfo.btickets != GOOD_TICKETS || strcmp(name,ticketinfo.principal)) {
 	    acquire_tkt_send_msg(ctx, NULL, ccachename, desiredPrincipal, ccname, cclen);
+            /*
+             * If the ticket manager returned an alternative credential cache
+             * remember it as the default for this process.
+             */
+            if ( ccname && ccname[0] && strcmp(ccachename,ccname) ) {
+                SetEnvironmentVariable("KRB5CCNAME",ccname);
+            }
 	} else if (ccachename[0] && ccname) {
 	    strncpy(ccname, ccachename, cclen);
 	    ccname[cclen-1] = '\0';
 	}
     }
-
-    if ( ccname && ccname[0] && strcmp(ccachename,ccname) ) {
-	SetEnvironmentVariable("KRB5CCNAME",ccname);
-    }
-
 
     if (name)
 	pkrb5_free_unparsed_name(ctx, name);
