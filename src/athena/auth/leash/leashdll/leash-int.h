@@ -300,7 +300,12 @@ cc_free_NC_info,
                             //    cc_get_cache_names().  set to NULL on return
     )
 );
+
+#ifdef _WIN64
+#define CCAPI_DLL   "krbcc64.dll"
+#else
 #define CCAPI_DLL   "krbcc32.dll"
+#endif
 
 /* The following definitions are summarized from KRB4, KRB5, Leash32, and
  * Leashw32 modules.  They are current as of KfW 2.6.2.  There is no
