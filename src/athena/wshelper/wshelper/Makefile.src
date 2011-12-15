@@ -32,4 +32,4 @@ INCLUDES=..\include
 WIN64LIBS=wsock32.lib dnsapi.lib bufferoverflowu.lib $(STD_LIBS)
 LIBS=wsock32.lib dnsapi.lib  $(STD_LIBS)
 
-C_DEFINE=-DWINDOWS -D_WINDOWS
+C_DEFINE=-DWINDOWS -D_WINDOWS -D_CRT_SECURE_NO_WARNINGS=1
