@@ -5,7 +5,8 @@ if "%2" == "debug" goto perform_install
 if NOT "%2" == "" goto usage
 
 :perform_install
-if exist %1 rd /s /q %1
+if exist %1\bin\amd64 rd /s /q %1\bin\amd64
+if exist %1\lib\amd64 rd /s /q %1\lib\amd64
 mkdir  %1
 mkdir  %1\doc
 copy ..\doc\kerberos\relnotes.html      %1\doc\relnotes.html
