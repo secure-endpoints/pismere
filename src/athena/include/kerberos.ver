@@ -1,11 +1,11 @@
 #define VER_PROD_MAJOR 3
 #define VER_PROD_MINOR 2
-#define VER_PROD_REV   4
+#define VER_PROD_REV   5
 
 #define VER_PROD_MAJOR_STR  "3"
 #define VER_PROD_MINOR_STR  "2"
-#define VER_PROD_REV_STR    "4"
+#define VER_PROD_REV_STR    "5"
 
-#define VER_PRODUCTNAME_STR "Secure Endpoints Kerberos for Windows"
+#define VER_PRODUCTNAME_STR "Secure Endpoints' Kerberos for Windows"
 
 #include <export.ver>

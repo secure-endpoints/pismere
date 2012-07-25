@@ -1,6 +1,6 @@
 <html>
-<head>
-        <title>Release Notes for Kerberos for Windows 3.2.2</title>
+    <head>
+        <title>Release Notes for Kerberos for Windows 3.2.5</title>
         <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
         <meta name="ProgId" content="Word.Document">
         <meta name="Generator" content="Microsoft Word 11">
@@ -224,9 +224,6 @@
 div.MsoNormal2 {mso-style-parent:""; margin-bottom:.0001pt; font-size:12.0pt; font-family:"Times New Roman"; margin-left:0pt; margin-right:0pt; margin-top:0pt}
 li.MsoNormal2 {mso-style-parent:""; margin-bottom:.0001pt; font-size:12.0pt; font-family:"Times New Roman"; margin-left:0pt; margin-right:0pt; margin-top:0pt}
 p.MsoNormal2 {mso-style-parent:""; margin-bottom:.0001pt; font-size:12.0pt; font-family:"Times New Roman"; margin-left:0pt; margin-right:0pt; margin-top:0pt}
-div.MsoNormal3 {mso-style-parent:""; margin-bottom:.0001pt; font-size:12.0pt; font-family:"Times New Roman"; margin-left:0pt; margin-right:0pt; margin-top:0pt}
-li.MsoNormal3 {mso-style-parent:""; margin-bottom:.0001pt; font-size:12.0pt; font-family:"Times New Roman"; margin-left:0pt; margin-right:0pt; margin-top:0pt}
-p.MsoNormal3 {mso-style-parent:""; margin-bottom:.0001pt; font-size:12.0pt; font-family:"Times New Roman"; margin-left:0pt; margin-right:0pt; margin-top:0pt}
 	-->
             </style>
             <!--[if gte mso 10]>
@@ -240,295 +237,542 @@ p.MsoNormal3 {mso-style-parent:""; margin-bottom:.0001pt; font-size:12.0pt; font
             <meta content="Jeffrey Altman <jaltman@mit.edu>" name="author">
     </head>
     <body lang="EN-US" link="blue" vlink="blue">
-    <div class="Section1">
-      <div>
-        <h2><a name="devnotes_registry"></a>Registry and Environment Settings</h2>
-              <p class="MsoNormal"><b>Network Identity Manager Settings</b></p>
-                    <p>Configuration options for Network Identity Manager (<span class="SpellE">NetIDMgr</span>) 
-                        are stored in the Windows registry.&nbsp; Each option can exist in the user 
-                        registry hive or the machine registry hive or both.&nbsp; The value defined in 
-                        the user hive always overrides the value defined in the machine registry 
-                        hive.&nbsp; All registry keys used by
-                        <span class="SpellE">
-NetIDMgr</span>
-                        exist under the key <b>Software\MIT\<span class="SpellE">NetIDMgr</span></b> under 
-                        the user and machine hive.&nbsp;
+        <div class="Section1">
+            <div>
+                <div>
+                    <h1 align="center" style="TEXT-ALIGN:center">
+                        Secure Endpoints' Kerberos for Windows 3.2.5
+                    </h1>
+                    <h2 align="center" style="TEXT-ALIGN:center">Release Notes</h2>
+                    <h3 align="center" style="TEXT-ALIGN:center">25 July 2012</h3>
+                    <h3>Table of Contents</h3>
+                    <ul style="MARGIN-TOP:0pt" type="disc">
+                        <li class="MsoNormal">
+                            <a href="#intro">Overview</a>
+                        <li class="MsoNormal">
+                            <a href="#_What's_New_in">What's New in
+                                <span class="SpellE">KfW</span>
+                                3.2.5 </a>
+                        <li class="MsoNormal">
+                            <a href="#requirements">System Requirements</a>
+                        <li class="MsoNormal">
+                            <a href="#config">Installation and Configuration</a></li>
+                    </ul>
+                    <ul style="MARGIN-TOP:0pt" type="disc">
+                        <ul style="MARGIN-TOP:0pt" type="disc">
+                            <li class="MsoNormal">
+                                <a href="#config_bin">Binaries</a>
+                            <li class="MsoNormal">
+                                <a href="#config_locate">Locating Kerberos Configuration Files</a></li>
+                        </ul>
+                    </ul>
+                    <ul style="MARGIN-TOP:0pt" type="disc">
+                        <ul style="MARGIN-TOP:0pt" type="disc">
+                            <ul style="MARGIN-TOP:0pt" type="disc">
+                                <li class="MsoNormal">
+                                    <a href="#config_locate_krb5">Kerberos 5</a>
+                                <li class="MsoNormal">
+                                    <a href="#config_locate_krb4">Kerberos 4</a></li>
+                            </ul>
+                        </ul>
+                    </ul>
+                    <ul style="MARGIN-TOP:0pt" type="disc">
+                        <ul style="MARGIN-TOP:0pt" type="disc">
+                            <li class="MsoNormal">
+                                <a href="#config_modify">Modifying Kerberos Configuration Files</a></li>
+                        </ul>
+                    </ul>
+                    <ul style="MARGIN-TOP:0pt" type="disc">
+                        <ul style="MARGIN-TOP:0pt" type="disc">
+                            <ul style="MARGIN-TOP:0pt" type="disc">
+                                <li class="MsoNormal">
+                                    <a href="#config_modify_krb5">Kerberos 5</a>
+                                <li class="MsoNormal">
+                                    <a href="#config_modify_krb4">Kerberos 4</a></li>
+                            </ul>
+                        </ul>
+                    </ul>
+                    <ul style="MARGIN-TOP:0pt" type="disc">
+                        <ul style="MARGIN-TOP:0pt" type="disc">
+                            <li class="MsoNormal">
+                                <a href="#config_dns">Using DNS Lookups for Kerberos Configuration</a>
+                            <li class="MsoNormal">
+                                <a href="#config_services">Services File</a>
+                            <li class="MsoNormal">
+                                <a href="#config_cache">Ticket Cache</a>
+                            <li class="MsoNormal">
+                                <a href="#config_time">Date and Time Issues</a></li>
+                        </ul>
+                    </ul>
+                    <ul style="MARGIN-TOP:0pt" type="disc">
+                        <li class="MsoNormal">
+                            <a href="#command_line">Command Line Options</a></li>
+                    </ul>
+                    <ul style="MARGIN-TOP:0pt" type="disc">
+                        <ul style="MARGIN-TOP:0pt" type="disc">
+                            <li class="MsoNormal">
+                                <a href="#leash32">netidmgr.exe</a>
+                            <li class="MsoNormal">
+                                <a href="#kinit">kinit.exe</a>
+                            <li class="MsoNormal">
+                                <a href="#klist">klist.exe</a>
+                            <li class="MsoNormal">
+                                <a href="#kdestroy">kdestroy.exe</a></li>
+                        </ul>
+                    </ul>
+                    <ul style="MARGIN-TOP:0pt" type="disc">
+                        <li class="MsoNormal">
+                            <a href="#build">Building from Sources</a>
+                        <li class="MsoNormal">
+                            <a href="#installer_notes">Notes on the NSIS Installer Scripts</a>
+                        <li class="MsoNormal">
+                            <a href="#leashw32_api">Leashw32 API</a>
+                        <li class="MsoNormal">
+                            <a href="#devnotes_registry">Registry and Environment Settings</a>
+                        <li class="MsoNormal">
+                            <a href="#mslsa">Integration with Microsoft Kerberos LSA</a>
+                        <li class="MsoNormal">
+                            <a href="#gss-client">GSS Sample Client</a>
+                        <li class="MsoNormal">
+                            <a href="#issues">Known Issues</a>
+                        <li class="MsoNormal">
+                            <a href="#history">Release History</a>
+                        <li class="MsoNormal">
+                            <a href="#todo">To Do</a>
+                        <li class="MsoNormal">
+                            <a href="#devnotes">Developer Notes</a></li>
+                    </ul>
+                    <ul style="MARGIN-TOP:0pt" type="disc">
+                        <ul style="MARGIN-TOP:0pt" type="disc">
+                            <li class="MsoNormal">
+                                <a href="#devnotes_old">Some older notes from prior releases...</a></li>
+                        </ul>
+                    </ul>
+                    <div class="MsoNormal" align="center" style="TEXT-ALIGN:center">
+                        <hr size="2" width="100%" align="center">
+                    </div>
+                    <h2><a name="intro"></a>Overview</h2>
+                    <p>Secure Endpoints' Kerberos for Windows (<span class="SpellE"><em>KfW</em></span>) is an 
+                        integrated <a href="http://web.mit.edu/kerberos/">Kerberos</a> release for 
+                        Microsoft Windows operating systems. It includes the Kerberos v5 library version 1.6.4 plus security fixes, Kerberos v5 GSS API library, kinit/klist/kdestroy/krb524init/ms2mit/mit2ms command-line credentials 
+                        managers, and an in-memory credentials cache.
+                     32-bit Windows installers also include Kerberos v4 libraries and components for backwards compatibility.</p>
+                    <h3>Terminology</h3>
+                    <p>Kerberos v5 (also 
+                        Kerberos 5 or Kerberos version 5) and Kerberos v4 (also Kerberos 4 or Kerberos version 4) refer to versions 5 and 4 of the Kerberos 
+                        protocol. A protocol is a specification for how data is transmitted on a 
+                    network. </p>
+                    <p>Kerberos <em>credentials</em> and Kerberos <em>tickets</em> are the same thing. 
+                        <!-- http://www.geek.com/glossary/glossary_search.cgi?protocol -->
+                        <!-- http://www.m-w.com/cgi-bin/dictionary?protocol -->
+                        <!-- http://www.whatis.com/WhatIs_Definition_Page/0,4152,212839,00.html -->
+                        <!-- ---------------------------------------------------------------------- -->
                     </p>
-                    <p><i><u>Common settings for
-                                <span class="SpellE">NetIDMgr</span></u></i></p>
-                    <p>The following sections describe a partial list of options that can be specified 
-                        for
-                        <span class="SpellE">NetIDMgr</span>.&nbsp; Each set of options is described as 
-                        a set of registry values.&nbsp; Each section is preceded by the registry key 
-                        under which the values of that section must be specified.</p>
-                    <p><i><u>General settings</u></i></p>
-                    <pre>&nbsp;&nbsp;  Registry key: 'Software\MIT\<span class="SpellE">NetIDMgr\CredWindow</span>'</pre>
-                    <pre>&nbsp;&nbsp;  --------------</pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">AutoInit</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD<span class="GramE">  (</span>0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 0</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If this value is '1', shows the new credentials dialog if</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">there</span> are no credentials when <span class="SpellE">NetIDMgr</span> starts.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">AutoImport</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD<span class="GramE">  (</span>0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 1</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If '1', imports credentials from the Windows LSA cache when</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="SpellE">NetIDMgr</span> starts.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">AutoDetectNet</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD<span class="GramE">  (</span>0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 1</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If '1', automatically detects network connectivity changes.</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Network connectivity change notifications are then sent out to</pre>
-                    <pre>&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp; <span class="GramE">individual</span> plug-ins which can perform actions such as renewing</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">credentials</span> or obtaining new credentials.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">DestroyCredsOnExit</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD<span class="GramE">  (</span>0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 0</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If '1', all credentials will be destroyed when <span class="SpellE">NetIDMgr</span> exits.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">HideWatermark</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD<span class="GramE">  (</span>0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 0</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If '1', the Network Identity Manager <span class="GramE">watermark</span> logo will not &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="GramE">be</span> displayed in the application window.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">KeepRunning</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD<span class="GramE">  (</span>0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 1</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If '1', when <span class="SpellE">NetIDMgr</span> application is closed, it will continue</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">to</span> run in the Windows System Notification Area (System Tray).</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  The application can be exited by choosing the 'Exit' menu</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">option</span>.  If '0', closing the application will cause it to</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">exit</span> completely.</pre>
-                    <pre> </pre>
-                    <p class="MsoNormal"><i><u>Common Plug-in settings</u></i></p>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Registry key: 'Software\MIT\<span class="SpellE">NetIDMgr\PluginManager\Plugins</span>\&lt;plug-in name&gt;'</pre>
-                    <pre>&nbsp;&nbsp;  --------------</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  The '&lt;plug-in name&gt;' is one of the following for the standard plug-<span class="GramE">ins :</span></pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Krb5Cred :</span> Kerberos 5 credentials provider</pre>
-                    <pre>&nbsp;&nbsp;  Krb5Ident: Kerberos 5 Identity provider</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Krb4Cred :</span> Kerberos 4 credentials provider</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Consult the vendors for the plug-in names of other third party</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">plug-ins</span>.  Additionally, the plug-ins configuration panel in the</pre>
-                    <pre>&nbsp;&nbsp;  <span class="SpellE">NetIDMgr</span> application provides a list of currently registered</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">plug-ins</span>.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : Disabled</pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD (0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 0</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If '1', the plug-in will not be loaded.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">NoUnload</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD (0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 0</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If '1', the plug-in will not be unloaded from memory when the</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="SpellE">NetIDMgr</span> application exits or if the plug-in is stopped.  The</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">plug-in</span> binary will remain loaded until <span class="SpellE">NetIDMgr</span> terminates.</pre>
-                    <pre> </pre>
-                    <p class="MsoNormal"><i><u>Settings for the Kerberos 5 credentials provider plug-in</u></i></p>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Registry key: 'Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred\Parameters'</pre>
-                    <pre>&nbsp;&nbsp;  --------------</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">CreateMissingConfig</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD (0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 0</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If '1', creates any missing configuration files.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : DefaultToFileCache</pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD (0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 0</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If '1' and no DefaultCCName is specified for an identity, use a generated </pre>
-                    <pre>        FILE: cache instead of an API: cache.</pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">MsLsaImport</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD (0, 1 or 2)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 1</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Controls how credentials are imported from the MSLSA cache.</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  This setting can be one of the following.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">0 :</span> Never</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">1 :</span> Always</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">2 :</span> Only if the principal matches</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Note that this setting only controls how the Kerberos 5</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">plug-in</span> handles importing of credentials from the MSLSA cache.</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Whether or not credentials are imported at start-up is</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">controlled</span> via general <span class="SpellE">NetIDMgr</span> settings as described in</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">section</span> 3.1.1.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">MsLsaList</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD (0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 1</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If '1', includes credentials from the MSLSA cache in the</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">credentials</span> listing.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">AutoRenewTickets</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD (0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 1</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If '1', automatically renews expiring tickets.  The thresholds</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">at</span> which renewals happen are controlled in general <span class="SpellE">NetIDMgr</span></pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">settings</span>.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">UseFullRealmList</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD (0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 0</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If '1', uses the full realms list as determined by parsing the</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">krb5.ini</span> configuration file in the new credentials dialog box.</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If this is '0', only the last recently used list of realms</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">will</span> be used.</pre>
-                    <pre> </pre>
-                    <p class="MsoNormal"><i><u>Per-identity settings</u></i></p>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Registry key 1: 'Software\MIT\<span class="SpellE">NetIDMgr</span>\KCDB\Identity\&lt;principal name&gt;\Krb5Cred'</pre>
-                    <pre>&nbsp;&nbsp;  Registry key 2: 'Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred\Parameters\Realms\&lt;realm&gt;'</pre>
-                    <pre>&nbsp;&nbsp;  Registry key 3: 'Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred\Parameters'</pre>
-                    <pre>&nbsp;&nbsp;  --------------</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  These settings are generally maintained per-identity.  However, if</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">a</span> particular setting is not specified for an identity or if the</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">identity</span> is new, then the values will be looked up in the</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">per-realm</span> configuration key and in the global parameters key in</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">turn</span>.  Global defaults should be set in the global parameters key</pre>
-                    <pre>&nbsp;&nbsp;  (<span class="GramE">key</span> 3).</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">DefaultLifetime</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 36000</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Default ticket lifetime, in seconds.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">MaxLifetime</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 86400</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">Maximum lifetime, in seconds.</span>  This value is used to set the</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">range</span> of the user interface controls that allow setting the</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">lifetime</span> of a ticket.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">MinLifetime</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 60</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">Minimum lifetime, in seconds.</span>  This value is used to set the</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">range</span> of the user interface controls that allow setting the</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">lifetime</span> of a ticket.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">Forwardable</span></pre>
-                    <pre>&nbsp;&nbsp;  Type  &nbsp; : DWORD (0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 1</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Obtain <span class="SpellE">forwardable</span> tickets.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">Proxiable</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD (0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 0</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Obtain <span class="SpellE">proxiable</span> tickets.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">Addressless</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD (0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 1</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;  &nbsp; Obtain <span class="SpellE">addressless</span> tickets.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : Renewable</pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD (0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 1</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Obtain renewable tickets.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">DefaultRenewLifetime</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 604800</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Default renewable lifetime, in seconds.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">MaxRenewLifetime</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 2592000</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">Maximum renewable lifetime, in seconds.</span>  The value is used to</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">set</span> the range of the user interface controls that allow</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">setting</span> the renewable lifetime of a ticket.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">MinRenewLifetime</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 60</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">Minimum renewable lifetime, in seconds.</span>  This value is used to</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">set</span> the range of the user interface controls that allow</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;   <span class="GramE">setting</span> the renewable lifetime of a ticket.</pre>
-                    <pre> </pre>
-                    <p class="MsoNormal"><i><u>Settings for the Kerberos 4 Credentials Provider Plug-in</u></i></p>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Registry key 1: 'Software\MIT\<span class="SpellE">NetIDMgr</span>\KCDB\Identity\&lt;principal name&gt;\Krb4Cred'</pre>
-                    <pre>&nbsp;&nbsp;  Registry key 2: 'Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred\Parameters'</pre>
-                    <pre>&nbsp;&nbsp;  ---------------</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Theses settings are also maintained per identity.  However, if the</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">setting</span> is not specified for some identity or if the identity is</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">new</span>, then the global default will be used (registry key 2).</pre>
-                    <pre>&nbsp;&nbsp;  Global defaults should be set in the second registry key.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : Krb4NewCreds</pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD (0 or 1)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 1</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  If '1', obtains Kerberos 4 credentials.  Note that currently,</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">only</span> one identity can have Kerberos 4 credentials at one time.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : Krb4Method</pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD (0, 1 or 2)</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 0</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">Method for obtaining Kerberos 4 credentials.</span>  The values are</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">as</span> follows:</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">0 :</span> Automatically determine method</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">1 :</span> Use password</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;  &nbsp; <span class="GramE">2 :</span> Use Kerberos 5 to 4 translation</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">DefaultLifetime</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 36000</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">The default ticket lifetime, in seconds.</span></pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">MaxLifetime</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 86400</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">Maximum lifetime, in seconds.</span>  This value is used to set the</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">range</span> of the user interface controls that allow setting the</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">lifetime</span>.</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;  Value&nbsp;  : <span class="SpellE">MinLifetime</span></pre>
-                    <pre>&nbsp;&nbsp;  Type&nbsp;&nbsp;  : DWORD</pre>
-                    <pre>&nbsp;&nbsp;  <span class="GramE">Default :</span> 60</pre>
-                    <pre> </pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">Minimum lifetime, in seconds.</span>  This value is used to set the</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">range</span> of the user interface controls that allow setting the</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">lifetime</span>.</pre>
+                    <div class="MsoNormal" align="center" style="TEXT-ALIGN:center">
+                        <hr size="2" width="100%" align="center">
+                    </div>
+                    <h2><a name="whatsnew"></a><a name="_What's_New_in"></a>What's New in Secure Endpoints' Kerberos for 
+                        Windows 3.2.5</h2>
+                    <ul style="MARGIN-TOP:0pt" type="disc">
+                        <li class="MsoNormal"></li>
+                    </ul>
+                    <ul style="MARGIN-TOP:0pt" type="disc">
+                    </ul>
+                    <div class="MsoNormal" align="center" style="TEXT-ALIGN:center">
+                        <hr size="2" width="100%" align="center">
+                    </div>
+                    <h2><a name="requirements"></a>System Requirements</h2>
+                    <h3>Operating System</h3>
+                  <p>Secure Endpoints' Kerberos for Windows 3.2 is designed for 32-bit versions of Windows 2000, XP, 
+                        2003, 2003 R2, Vista, Win7, Server 2008, Server 2008 R2 and WOW64 environments.</p>
+                    <p>It is recommended that all binaries be installed into a single directory in the 
+                        user's PATH. Make sure that you do not have other Kerberos binaries in your 
+                    PATH.&nbsp; The default location is "%<span class="SpellE">ProgramFiles</span>%\MIT\Kerberos\bin" for backward compatibility with the MIT release.</p>
+                    <h3>
+                        <!-- ---------------------------------------------------------------------- -->
+                        <a name="config_locate"></a>Locating Kerberos Configuration Files</h3>
+                    <p>Historically, the Kerberos configuration files (rb5.ini, krb.cnf, and krbrealm.cnf) were stored in the \Windows directory. This practice is incompatible with current Windows best practices.</p>
+                  <h4>
+                        <!-- ---------------------------------------------------------------------- -->
+                        <a name="config_locate_krb5"></a>Kerberos 5</h4>
+                    <p>Kerberos 5 needs a single configuration file: <code>
+                        <span style="FONT-SIZE:
+10pt">krb5.conf (previously named krb5.ini).</span></code>. The search order is specified by:</p>
+                    <ol>
+                      <li>KRB5CONFIG environment variable</li>
+                      <li>HKCU\SOFTWARE\MIT\Kerberos5 REG_SZ &quot;config&quot; registry value</li>
+                      <li>HKLM\SOFTWARE\MIT\Kerberos5 REG_SZ &quot;config&quot; registry value</li>
+                      <li>%ALLUSERSPROFILE%\Kerberos\MIT\                   (aka the MIT ProgramData directory)</li>
+                      <li>%ALLUSERSPROFILE%\Kerberos\ (aka the Kerberos ProgramData directory)</li>
+                      <li>Directory containing krb5_32.dll or krb5_64.dll</li>
+                      <li>The Windows directory                    </li>
+                    </ol>
+                    <h4>
+                        <!-- ---------------------------------------------------------------------- -->
+                        <a name="config_locate_krb4"></a>Kerberos 4</h4>
+                    <p>Kerberos 4 needs two configuration files, typically called
+                        <span class="SpellE">
+                            <code>
+                                <span style="FONT-SIZE:10pt">krb.con</span></code></span>
+                        and
+                        <span class="SpellE">
+                            <code>
+                                <span style="FONT-SIZE:10pt">krbrealm.con</span></code></span>. You can 
+                        put these files in the same directory as the DLL and everything should work. 
+                        You can also set KRB4_KRB.REALMS or KRB4_KRB.CONF to override each file. Or you 
+                        can set KRB4_CONFIG to force Kerberos 4 to look for both files in a particular 
+                        directory. If you do none of these, this is where Kerberos 4 will search:
+                    </p>
+                    <ol style="MARGIN-TOP:0pt" start="1" type="1">
+                        <li class="MsoNormal">
+                            %NDIR%\<span class="SpellE">kerb</span>\
+                        <li class="MsoNormal">
+                        The current directory
+                        <li class="MsoNormal">
+                        The Windows directory
+                        <li class="MsoNormal">
+                        The Windows system directory
+                        <li class="MsoNormal">
+                        The directory containing the executable file for the current task
+                        <li class="MsoNormal">
+                            The directories in the path (<a href="#c1"><b>*</b></a>)
+                        <li class="MsoNormal">
+                        The list of directories mapped in a network
+                        <li class="MsoNormal">
+                        %NDIR%\
+                        <li class="MsoNormal">
+                            %ETC%\
+                        </li>
+                    </ol>
+                    <p>(<a name="c1"><b>*</b></a>) Note: If you put the files in the DLL's directory, 
+                        this part of the search is what will take you there. If you have another
+                        <span class="SpellE">config</span>
+                        file earlier in the search, that will take precedence, so be careful.</p>
+                  <h3>
+                        <!-- ---------------------------------------------------------------------- -->
+                        <a name="config_modify"></a>Modifying Kerberos Configuration Files</h3>
+                    <p>It is anticipated that most sites using Kerberos on Windows also will 
+                        have an existing UNIX Kerberos infrastructure. For that reason, the format of 
+                        the <span class="SpellE"> <code> <span style="FONT-SIZE:10pt">configuration files are</span></code></span> identical to the UNIX files. For many 
+                        users, the easiest way to configure these files for use at their local sites 
+                        will be to ftp the corresponding files from a local UNIX machine that is 
+                        already properly configured.                    </p>
+                    <p><b>IMPORTANT</b>: The Kerberos Configuration files should be edited with a text editor such as 
+                      Notepad and not a word processor. In order to edit configuration files stored in the Windows directory, the ProgramData directories, or the Program Files directores requires use of an account that is a member of the &quot;Administrator&quot; group.</p>
+                    <h4>
+                        <!-- ---------------------------------------------------------------------- -->
+                        <a name="config_modify_krb5"></a>Kerberos 5</h4>
+                    <p>See the <a href="http://web.mit.edu/kerberos/www/krb5-1.6/krb5-1.6.4/doc/krb5-admin.html#krb5.conf">
+                            krb5.conf</a> section in the <a href="http://web.mit.edu/kerberos/www/krb5-1.6/krb5-1.6.4/doc/krb5-admin.html">Kerberos v5 System Administrator's Guide</a></p>
+                  <h4><a name="config_modify_krb4"></a>Kerberos 4</h4>
+                    <p>The
+                        <span class="SpellE">
+                            <code>
+                                <span style="FONT-SIZE:10pt">krb.con</span></code></span>
+                        file (krb.conf on UNIX) contains configuration information describing the Kerberos realm and the 
+                        Kerberos key distribution center (KDC) servers for known realms.
+                    </p>
+                    <p><span class="SpellE"><span class="GramE"><code>
+                                    <span style="FONT-SIZE:10pt">krb.con</span></code></span>
+                        </span>
+                        contains the name of the local realm in the first line, followed by lines 
+                        indicating realm/host entries. The first token is a realm name, and the second 
+                        is a hostname of a host running a KDC for that realm. The words "admin server" 
+                        following the hostname
+                        <span class="GramE">indicate</span>
+                        that the host also provides an administrative database server which is 
+                        contacted when changing a user's password. For example:
+                    </p>
+                    <pre>ATHENA.MIT.EDU</pre>
+                    <pre>ATHENA.MIT.EDU kerberos.mit.edu admin server</pre>
+                    <pre>ATHENA.MIT.EDU kerberos-1.mit.edu</pre>
+                    <pre>ATHENA.MIT.EDU kerberos-2.mit.edu</pre>
+                    <pre>LCS.MIT.EDU kerberos.lcs.mit.edu admin server</pre>
+                    <p>If this were your
+                        <span class="SpellE">
+                            <code>
+                                <span style="FONT-SIZE:10pt">krb.con</span></code></span>
+                        file and you wanted to change the default local realm to <code>
+                            <span style="FONT-SIZE:10pt">CIT.CORNELL.EDU</span></code> you would edit 
+                        it to look like:
+                    </p>
+                    <pre>CIT.CORNELL.EDU</pre>
+                    <pre>CIT.CORNELL.EDU kerberos.cit.cornell.edu admin server</pre>
+                    <pre>ATHENA.MIT.EDU kerberos.mit.edu admin server</pre>
+                    <pre>ATHENA.MIT.EDU kerberos-1.mit.edu</pre>
+                    <pre>ATHENA.MIT.EDU kerberos-2.mit.edu</pre>
+                    <pre>LCS.MIT.EDU kerberos.lcs.mit.edu admin server</pre>
+                    <p>The
+                        <span class="SpellE">
+                            <code>
+                                <span style="FONT-SIZE:10pt">krbrealm.con</span></code></span>
+                        file (krbrealm.conf on UNIX) is the host-to-Kerberos realm translation file. This provides a 
+                        translation from a local hostname to the Kerberos realm name for the services 
+                        provided by that host.
+                    </p>
+                    <p>Each line of the translation file is in one the following forms (<span class="SpellE">domain_name</span>
+                        should be of the form <code>
+                            <span style="FONT-SIZE:10pt">.XXX.YYY</span></code>, e.g., <code>
+                            <span style="FONT-SIZE:10pt">.LCS.MIT.EDU</span></code>):
+                    </p>
+                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="SpellE">host_name</span> <span class="SpellE">kerberos_realm</span></pre>
+                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="SpellE">domain_name</span> <span class="SpellE">kerberos_realm</span></pre>
+                    <p>If a hostname exactly matches the
+                        <span class="SpellE">host_name</span>
+                        field in a line of the first form, the corresponding realm is the realm of the 
+                        host. If a hostname does not match any
+                        <span class="SpellE">host_name</span>
+                        in the file, but its domain exactly matches the
+                        <span class="SpellE">
+domain_name</span>
+                        field in a line of the second form, the corresponding realm is the realm of the 
+                        host.
+                    </p>
+                    <p style="MARGIN-BOTTOM:12pt">If no translation entry applies, the host's realm is 
+                        considered to be the hostname's domain portion converted to uppercase. 
+                        <!-- ---------------------------------------------------------------------- -->
+                        <a name="config_dns"></a>
+                    </p>
+                    <h3>Using DNS Lookups for Kerberos Configuration</h3>
+                    <h4>What is it?</h4>
+                    <p>DNS lookups provide Kerberos the ability to determine the Kerberos Realm that a 
+                        host belongs to and to find the servers associated with a given Realm by using 
+                        the Domain Name Service instead of or in addition to local configuration files.
+                    </p>
+                    <h4>When are DNS Lookups used?</h4>
+                    <p>DNS lookups are used in either of these two circumstances:
+                    </p>
+                    <ul style="MARGIN-TOP:0pt" type="disc">
+                        <li class="MsoNormal">
+                            No
+                            <span class="SpellE">
+                                <code>
+                                    <span style="FONT-SIZE:10pt">krb.con</span></code></span>
+                            file is found for Kerberos 4 or no <code>
+                                <span style="FONT-SIZE:10pt">krb5.ini</span></code>
+                        file is found for Kerberos 5.
+                        <li class="MsoNormal">
+                            The
+                            <span class="SpellE">
+                                <code>
+                                    <span style="FONT-SIZE:10pt">krb.con</span></code></span>
+                            file or <code>
+                                <span style="FONT-SIZE:10pt">krb5.ini</span></code> file contains a command 
+                            to activate DNS Lookups and the lookup cannot be answered by data found in the 
+                            appropriate configuration file.
+                        </li>
+                    </ul>
+                    <p>To activate DNS lookups for Kerberos 4 when the
+                        <span class="SpellE">
+                            <code>
+                                <span style="FONT-SIZE:10pt">krb.con</span></code></span>
+                        file is present, add the following line to the file as a realm-to-host entry 
+                        (usually to the end):
+                    </p>
+                    <blockquote style="MARGIN-TOP:5pt;MARGIN-BOTTOM:5pt">
+                        <pre><span class="GramE">.KERBEROS.OPTION.</span> <span class="SpellE"><span class="GramE">dns</span></span></pre>
+                    </blockquote>
+                    <p>When DNS lookups are used, the first line in the
+                        <span class="SpellE">
+                            <code>
+                                <span style="FONT-SIZE:10pt">krb.con</span></code></span>
+                        file (which would contain the default realm) may be left blank to indicate that 
+                        the default realm should be determined by a DNS lookup.
+                    </p>
+                    <p>To activate DNS lookups for Kerberos 5 when the <code>
+                            <span style="FONT-SIZE:10pt">krb5.ini</span></code> file is present, place:
+                    </p>
+                    <blockquote style="MARGIN-TOP:5pt;MARGIN-BOTTOM:5pt">
+                        <pre><span class="SpellE">dns_lookup_kdc</span> = true</pre>
+                        <pre><span class="SpellE">dns_lookup_realm</span> = true</pre>
+                    </blockquote>
+                    <p><span class="GramE">into</span>
+                        the <code>
+                            <span style="FONT-SIZE:10pt">[<span class="SpellE">libdefaults</span>]</span></code>
+                        section. If a "<span class="SpellE">default_realm</span>" entry is not 
+                        provided, a DNS lookup will be performed to determine the default realm.
+                    </p>
+                    <h4>What entries go into the DNS?</h4>
+                    <p>Host to realm lookups are performed using DNS TXT records. Example records are:
+                    </p>
+                    <blockquote style="MARGIN-TOP:5pt;MARGIN-BOTTOM:5pt">
+                        <pre><span class="GramE">_kerberos.yclept.kermit.columbia.edu.</span>  IN TXT "KRB5.COLUMBIA.EDU"</pre>
+                        <pre><span class="GramE">_kerberos.columbia.edu.</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  IN TXT "CC.COLUMBIA.EDU"</pre>
+                    </blockquote>
+                    <p><span class="GramE">Realm to server lookups are</span>
+                        performed using DNS SRV records. Example records are:
+                    </p>
+                    <blockquote style="MARGIN-TOP:5pt;MARGIN-BOTTOM:5pt">
+                        <pre style="MARGIN-BOTTOM:
+12pt"><span class="GramE">_kerberos._udp.KRB5.COLUMBIA.EDU.</span>&nbsp;&nbsp;  IN SRV 0 <span class="SpellE">0</span> 88&nbsp;&nbsp;&nbsp;&nbsp;  yclept.kermit.columbia.edu</pre>
+                        <pre style="MARGIN-BOTTOM:12pt"><span class="GramE">_kerberos._tcp.KRB5.COLUMBIA.EDU.</span>&nbsp;&nbsp;  <span class="GramE">IN SRV 0 <span class="SpellE">0</span> <span class="SpellE">0</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  .</span></pre>
+                        <pre style="MARGIN-BOTTOM:12pt"><span class="GramE">_krb524._udp.KRB5.COLUMBIA.EDU.</span>&nbsp;&nbsp;&nbsp;&nbsp;  IN SRV 0 <span class="SpellE">0</span> 4444&nbsp;  yclept.kermit.columbia.edu</pre>
+                        <pre style="MARGIN-BOTTOM:12pt"><span class="GramE">_kerberos-iv._udp.KRB5.COLUMBIA.EDU.</span> IN SRV 0 <span class="SpellE">0</span> 750&nbsp;&nbsp;&nbsp;  yclept.kermit.columbia.edu</pre>
+                        <pre style="MARGIN-BOTTOM:12pt">_kerberos-adm._tcp.KRB5.COLUMBIA.EDU IN SRV 0 <span class="SpellE">0</span> 749&nbsp;&nbsp;&nbsp;  yclept.kermit.columbia.edu</pre>
+                        <pre style="MARGIN-BOTTOM:12pt">_kpasswd._udp.KRB5.COLUMBIA.EDU&nbsp;&nbsp;&nbsp;&nbsp;  IN SRV 0 <span class="SpellE">0</span> 464&nbsp;&nbsp;&nbsp;  yclept.kermit.columbia.edu</pre>
+                    </blockquote>
+                    <p>A DNS SRV record which specifies a port of "0" and a hostname of "." indicates 
+                        that the requested service is not available in the requested realm.
+                    </p>
+                    <h3>
+                        <!-- ---------------------------------------------------------------------- -->
+                        <a name="config_services"></a>Services File</h3>
+                    <p>The Kerberos DLLs need to know what port to use to talk to the Kerberos server. 
+                        Kerberos 4 now defaults to ports 750 (<span class="SpellE">kerberos</span>
+                        750/udp
+                        <span class="SpellE">kdc</span>) and 751 (<span class="SpellE">kerberos</span>-master 
+                        751/tcp) if there are no
+                        <span class="SpellE">kerberos</span>
+                        or
+                        <span class="SpellE">kerberos</span>-master entries in the services file. 
+                        Kerberos 5 also has proper defaults (port 88 with a fallback to 750) in case 
+                        the services file is missing the entries for
+                        <span class="SpellE">kerberos</span>
+                        and
+                        <span class="SpellE">kerberos</span>-sec.
+                    </p>
+                    <p>If your site uses non-standard ports, you will still need
+                        <span class="GramE">a services</span>
+                        file appropriate for your site.</p>
+                    <h3>
+                        <!-- ---------------------------------------------------------------------- -->
+                        <a name="config_cache"></a>Ticket Cache</h3>
+                    <p>The default for both Kerberos v5 and v4 is to store credentials in a per logon session service cache (API: cache).</p>
+                  <p>You can specify the name of the ticket file and the directory in which it is 
+                        stored via the environment variables <code>
+                            <span style="FONT-SIZE:10pt">KRBTKFILE</span></code> (krb4) and <code>
+                            <span style="FONT-SIZE:10pt">KRB5CCNAME</span></code> (krb5). The krb4 
+                        credentials are always stored in memory. In memory credential caches have a 
+                        prefix of "API:" in front of the name.
+                  </p>
+                    <p>The default credential cache can be set with registry values.</p>
+                    <ol>
+                      <li>HKCU\Software\MIT\Kerberos5 REG_SZ &quot;ccname&quot;</li>
+                      <li>HKLM\Software\MIT\Kerberos5 REG_SZ &quot;ccname&quot;</li>
+                    </ol>
+                    <ol>
+                      <li>HKCU\Software\MIT\Kerberos4 REG_SZ &quot;ccname&quot;</li>
+                      <li>HKLM\Software\MIT\Kerberos4 REG_SZ &quot;ccname&quot;                    </li>
+                    </ol>
+                    <p>Kerberos 5 does support using file-based tickets, but their use is not
+                        <span class="GramE">recommend</span>, as they are potentially less secure.</p>
+                    <h3>Date and Time Issues</h3>
+                    <p>Kerberos authentication uses time stamps as part of its protocol. When the 
+                        clocks of the Kerberos server and your computer are too far out of 
+                        synchronization, you cannot authenticate properly. Both the Kerberos server and 
+                        the Kerberos client depend on having clocks that are synchronized within a 
+                        certain margin. This margin is normally 5 minutes.
+                    </p>
+                    <p>The date and time on the machine running Kerberos must be "accurately" set. If 
+                        the date or time is off "too far", Kerberos authentication will not work.
+                    </p>
+                    <p>You can synchronize your clock using Leash32. It allows you to set the name of 
+                        the host to which you will synchronize. It saves this information in the 
+                        registry (under HKCU\Software\MIT\Leash32 -- you can set machine-wide defaults 
+                        in HKLM).
+                    </p>
+                    <p>By default, the server that the libraries contact when synchronizing the time is <code>
+                            <span style="FONT-SIZE:10pt">time</span></code>. The domain name has been 
+                        left off on purpose. If local system administrators create a machine with a 
+                        CNAME of time within the local domain the clients will contact this machine by 
+                        default.
+                    </p>
+                    <p>If local system administrators are opposed to doing this for some reason, you 
+                        can edit the resource <code>
+                            <span style="FONT-SIZE:10pt">LSH_TIME_HOST</span></code> in the <code>
+                            <span style="FONT-SIZE:10pt">leashw32.dll</span></code> to the name 
+                        appropriate for your local site. You can also edit the header files from the 
+                        source distribution and recompile for your local site. However, this is not 
+                        recommended. You can also tweak the registry setting Leash32 uses.
+                    </p>
+                    <p>You can also avoid this problem by running a local, properly configured, NTP 
+                        program on your machine. 
+                        <!-- ---------------------------------------------------------------------- -->
+                    </p>
+                    <div class="MsoNormal" align="center" style="TEXT-ALIGN:center">
+                        <hr size="2" width="100%" align="center">
+                    </div>
+                  <h2><a name="command_line"></a>Command Line Options</h2>
+                    <h3><a name="kinit"></a><span class="SpellE"><span class="GramE">kinit</span>
+                        </span></h3>
+                    <pre style="MARGIN-LEFT:30pt">Usage: <span class="SpellE">kinit</span> [-5] [-4] [-V] [-l lifetime] [-s <span class="SpellE">start_time</span>]</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  [-r <span class="SpellE">renewable_life</span>] [-f | -F | --<span class="SpellE">forwardable</span> | --<span class="SpellE">noforwardable</span>]</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  [-p | -P | --<span class="SpellE">proxiable</span> | --<span class="SpellE">noproxiable</span>]</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  [-A | --addresses | --<span class="SpellE">noaddresses</span>]</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  [-v] [-R] [-k [-t <span class="SpellE">keytab_file</span>]]</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  [-c <span class="SpellE">cachename</span>] [-S <span class="SpellE">service_name</span>] [<span class="GramE">principal</span>]</pre>
+                    <pre style="MARGIN-LEFT:30pt"> </pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;  <span class="GramE">options</span>:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; valid with Kerberos:</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -5 Kerberos 5 (available)</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -4 Kerberos 4 (available)</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  &nbsp;  (Default behavior is to try Kerberos 5)</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -V verbose&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Either 4 or 5</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -l lifetime&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  &nbsp; <span class="GramE">Either</span> 4 or 5</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -s start time&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  5</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -r renewable lifetime&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  5</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -f <span class="SpellE">forwardable</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  5</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -F not <span class="SpellE">forwardable</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  5</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -p <span class="SpellE">proxiable</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 5</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -P not <span class="SpellE">proxiable</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  5</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -A do not include addresses&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  5</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -<span class="GramE">v validate</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  5</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -R renew&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  5, or both 5 and 4</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -k use <span class="SpellE">keytab</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  5, or both 5 and 4</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -t filename of <span class="SpellE">keytab</span> to use&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  5, or both 5 and 4</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -c Kerberos 5 cache name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  5</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -S service&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  5, or both 5 and 4</pre>
+                    <h3><a name="klist"></a><span class="SpellE"><span class="GramE">klist</span>
+                        </span></h3>
+                    <pre style="MARGIN-LEFT:30pt">Usage: klist.exe [-5] [-4] [-e] [[-c] [-C] [-f] [-s] [-a [-n]]] [-k [-t] [-K]] [name]</pre>
+                    <pre style="MARGIN-LEFT:30pt"> </pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -5 Kerberos 5 (available)</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -4 Kerberos 4 (available)</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  (Default is Kerberos 5)</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -c specifies credentials cache</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;  -C enumerates all credentials caches</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -k specifies <span class="SpellE">keytab</span></pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  (Default is credentials cache)</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -e shows the encryption type</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">options</span> for credential caches:</pre>
+                    <pre style="MARGIN-LEFT:
+30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -f shows credentials flags</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -s sets exit status based on valid <span class="SpellE">tgt</span> existence</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -a displays the address list</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -n do not reverse-resolve</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  <span class="GramE">options</span> for <span class="SpellE">keytabs</span>:</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -t shows <span class="SpellE">keytab</span> entry timestamps</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -K shows <span class="SpellE">keytab</span> entry DES keys</pre>
+                    <h3><a name="kdestroy"></a><span class="SpellE"><span class="GramE">
+kdestroy</span>
+                        </span></h3>
+                    <pre style="MARGIN-LEFT:30pt">Usage: kdestroy.exe [-5] [-4] [-q] [-c <span class="SpellE">cache_name</span>]</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -5 Kerberos 5 (available)</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -4 Kerberos 4 (available)</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  (Default is Kerberos 5 and Kerberos 4)</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -q quiet mode</pre>
+                    <pre style="MARGIN-LEFT:30pt">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  -c specify name of credentials cache</pre>
+                    <p class="MsoNormal">&nbsp;</p>
+                  
+                    <h2><a name="issues"></a>Known Issues</h2>
+                  <ul style="MARGIN-TOP:0pt" type="disc">
+                        <li class="MsoNormal">
+                        The Kerberos Credentials Cache implementation does not support locking across 
+                        calls. Each call is atomic, however.
+                        <li class="MsoNormal">
+                        If the krbcc32s LRPC server process is ever terminated while another process is 
+                        supposed to have a valid handle to it, the other process will need to grab new 
+                        handles. The moral of the story is: do not kill krbcc32s if you have any such 
+                        processes around (e.g., if Leash is running). In fact, you generally should 
+                        never have to kill krbcc32s.
+                        <li class="MsoNormal">
+                            If writing a server that uses Kerberos and might use the Kerberos Credentials 
+                            Cache as opposed to the Kerberos v5 file credentials cache (<span class="GramE"><code><span style="FONT-SIZE:10pt">FILE:</span></code></span>), 
+                            please read the <a href="../../athena/auth/krbcc/doc/architecture.txt">krbcc32 
+                                Architecture</a> documentation. (<span class="GramE">krbcc32</span>
+                            Architecture link works only if this is the source package.)</li>
+                  </ul>
+                  <h2><a name="devnotes_registry"></a>Registry and Environment Settings</h2>
+                  
                     <h3>Leash32 DLL
                     </h3>
                     <h4><span class="GramE">default</span>
@@ -745,28 +989,28 @@ NetIDMgr</span>
                     <pre>&nbsp;  2. (HKLM\Software\MIT\Kerberos5<span class="GramE">,PreserveInitialTicketIdentity</span>) if defined</pre>
                     <pre>&nbsp;  3. Default is 1.</pre>
                     <p class="MsoNormal">&nbsp;</p>
-                    <div class="MsoNormal" align="center" style="TEXT-ALIGN:center">
-                        <hr size="2" width="100%" align="center">
-                    </div>
+                    
                     <pre><a name="mslsa"></a> </pre>
                     <h2>Integration with Microsoft Kerberos LSA</h2>
-        <p>As of the Kerberos v5 1.3.2 release, a new cache type, MSLSA<span class="GramE">:,</span>
+                    <p>As of the Kerberos v5 1.3.2 release, a new cache type, MSLSA<span class="GramE">:,</span>
                         has been added for use in accessing the Microsoft Kerberos Logon Session 
                         credentials cache.&nbsp; The MSLSA: cache is available when the user logon is 
                         performed using Kerberos either to an Active Directory Domain or a 
                         non-Microsoft KDC.
                     </p>
-                    <p>Windows Vista places 
+                    <p><b><span style="COLOR:red">Windows Vista, Server 2008, Windows 7 and Server 2008 R2:</span></b> As of the Kerberos v5 1.6.0 
+                        release, the MSLSA: support contains functionality that permits the credentials 
+                        cache to be read-write on Windows Vista.&nbsp; Windows Vista places 
                         restrictions on the use of Kerberos tickets when the User Account Control (UAC) 
                         when the active account is a member of the local machine Administrators 
-                        group or the Domain Administrators group.&nbsp; In that situation, MSLSA: support is disabled.&nbsp;&nbsp; Users 
+                        group.&nbsp; In that situation, MSLSA: support is disabled.&nbsp;&nbsp; Users 
                         are strongly encouraged to not login to Windows Vista using accounts that are 
-                        members of one of these groups.                    </p>
+                        members of the local machine Administrators group.</p>
                     <p>A user is able to logon to Windows using the Kerberos LSA if the machine is part 
-                        of an Active Directory domain or if the machine has 
-                        been configured to authenticate to a non-Microsoft KDC such as MIT or Heimdal.&nbsp; The 
+                        of a Windows 2000 or Windows 2003 Active Directory domain or if the machine has 
+                        been configured to authenticate to a non-Microsoft KDC such as MIT.&nbsp; The 
                         instructions for configuring a Windows 2000 XP workstation to authenticate to a 
-                        non-Microsoft KDC are documented in TechNet under <a href="http://www.microsoft.com/kerberos/">http://www.microsoft.com/kerberos/</a>. In brief:
+                        non-Microsoft KDC are documented in TechNet somewhere.&nbsp; In brief:
                     </p>
                     <ol style="MARGIN-TOP:0pt" start="1" type="1">
                         <li class="MsoNormal">
@@ -853,7 +1097,7 @@ NetIDMgr</span>
                     <pre>&nbsp;  <span class="GramE">Mapping jaltman@ATHENA.MIT.EDU to <span class="SpellE">jaltman</span>.</span></pre>
                     <pre>&nbsp;  Mapping all users (*) to a local account by the same name (*)</pre>
                     <p>The MSLSA: credential cache relies on the ability to extract the entire Kerberos 
-                        ticket including the session key from the Windows LSA.&nbsp; In an attempt to 
+                        ticket including the session key from the Kerberos LSA.&nbsp; In an attempt to 
                         increase security Microsoft has begun to implement a feature by which they no 
                         longer export the session keys for Ticket Getting Tickets. This has the side 
                         effect of making them useless to the MIT krb5 library when attempting to 
@@ -925,19 +1169,20 @@ DomainName</span>
                     </p>
                     <pre>&nbsp;  HKLM\Software\MIT\Kerberos5\</pre>
                     <pre>&nbsp;&nbsp;&nbsp;&nbsp;  <span class="SpellE">PreserveInitialTicketIdentity</span> = 0x0 (DWORD)</pre>
-        <pre>&nbsp;  HKCU\Software\MIT\Kerberos5\</pre>
-                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;  <span class="SpellE">PreserveInitialTicketIdentity</span> = 0x0 (DWORD)
-                    </pre>
+                    <pre>&nbsp;  HKCU\Software\MIT\Kerberos5\</pre>
+                    <pre>&nbsp;&nbsp;&nbsp;&nbsp;  <span class="SpellE">PreserveInitialTicketIdentity</span> = 0x0 (DWORD)</pre>
+                    <p>As of KFW 2.6.4 it may be possible sometime in the future for the correct client 
+                        realm to be obtained from the LSA credential cache contents.&nbsp; However, it 
+                        will require a fix from Microsoft which at the present time is not available.
+                    </p>
                     <p><b>Microsoft Windows XP64 and 2003 64-bit edition do not properly implement the LSA 
                             Kerberos functionality within the WOW64 32-bit compatibility environment.&nbsp; 
                             As a result, calling the LSA functions within WOW64 causes the Kerberos 5 
                             library to crash.&nbsp; Therefore, the MSLSA
                             <span class="SpellE">ccache</span>
                             support is disabled in these environments.&nbsp; Microsoft has fixed this 
-                            problem as of Windows Vista Beta 2 and a hot fix was released in XP64 SP2 and 2003 SP2</b></p>
-                    <div class="MsoNormal" align="center" style="TEXT-ALIGN:center">
-                        <hr size="2" width="100%" align="center">
-                    </div>
+                            problem as of Windows Vista Beta 2.</b></p>
+                    
                     <h2><a name="gss-client"></a>
                         <span lang="FR">GSSAPI
 <span class="SpellE">Sample</span> Client (gss.exe):</span></h2>
@@ -1070,13 +1315,10 @@ Do</span>
                         <span class="SpellE">KfW</span>
                         by looking at its release history.
                     </p>
-                    <h3>3.2.3</h3>
-                  <p>MIT released 3.2.3 alpha which added the 64-bit Windows builds that were previously released by Secure Endpoints for 3.2.2. No final 3.2.3 release was ever produced.</p>
-                    
-                    <h3>3.2.2                    </h3>
+                    <h3>3.2.2</h3>
                     <ul style="MARGIN-TOP:0pt" type="disc">
-                      <li class="MsoNormal2"> Network Identity Manager Application</li>
-                  </ul>
+                      <li class="MsoNormal2">Network Identity Manager Application</li>
+                    </ul>
                     <ul style="MARGIN-TOP:0pt" type="disc">
                       <ul style="MARGIN-TOP:0pt" type="circle">
                         <li class="MsoNormal2"> Always raise NetIdMgr window to foreground if displayed when prompting for new 
@@ -1140,14 +1382,14 @@ Do</span>
                     </ul>
                   <ul style="MARGIN-TOP:0pt" type="disc">
                       <li class="MsoNormal2"> Build system changes</li>
-        </ul>
+                  </ul>
                     <ul style="MARGIN-TOP:0pt" type="disc">
                       <ul style="MARGIN-TOP:0pt" type="circle">
                         <li class="MsoNormal2"> NIM Schema files can now support external file inclusion.
                         <li class="MsoNormal2"> Add static ordinals to DLL exports.
                         <li class="MsoNormal2"> <span class="SpellE"> <span class="GramE">krbcc</span> </span> credential cache <span class="SpellE">api</span> implementation can now be compiled with Microsoft Visual Studio 2005.
                         <li class="MsoNormal2"> Enable builds on 64 bit Windows.
-                        <li class="MsoNormal2"> NIM API version is now 10.                   </li>
+                        <li class="MsoNormal2"> NIM API version is now 10.                    </li>
                       </ul>
                     </ul>
                     <h3>3.2.1</h3>
@@ -1924,18 +2166,12 @@ addressless</span>
                         memory footprint, a single per-machine shared cache (even on NT).
                     </p>
                     <h4>A Long, Long Time Ago...</h4>
-                    <p class="MsoNormal">Once upon a time, 16-bit Windows was supported. There was even 
+                  <p class="MsoNormal">Once upon a time, 16-bit Windows was supported. There was even 
                         DOS support at one point. As far as MIT Kerberos is concerned, those days are 
                         best forgotten.
                     </p>
                     <!-- ---------------------------------------------------------------------- -->
-        <div class="MsoNormal" align="center" style="TEXT-ALIGN:center">
-                        <hr size="2" width="100%" align="center">
-                    </div>
-                    <h2><a name="todo"></a>The Future of Secure Endpoints' Kerberos for Windows</h2>
-                    <p>This is the last release of Kerberos for Windows that will be released by Secure Endpoints based upon the MIT sources. Future releases will be based upon <a href="https://www.secure-endpoints.com/heimdal/">Heimdal Kerberos</a>.</p>
-                    <div class="MsoNormal" align="center" style="TEXT-ALIGN:center"><hr size="2" width="100%" align="center">
-        </div>
+                    
                     <h2><a name="_Toc121520475"></a><a name="devnotes"></a> <a name="kerberos_4_bad"></a>
                         Important notice regarding Kerberos 4 support</h2>
                     <p class="MsoNormal">In the past few years, several developments have shown the 
@@ -1999,7 +2235,7 @@ addressless</span>
                         Standard (FIPS) 43-3, Data Encryption Standard (DES); FIPS 74<span class="GramE">,Guidelines</span>
                         for Implementing and Using the NBS Data Encryption Standard; and FIPS 81, DES 
                         Modes of Operation.&nbsp; Federal Register 05-9945, 70 FR 28907-28908, 19 May 
-                        2005.&nbsp; DOCID:fr19my05-45</p>
+                        2005.&nbsp; DOCID<span class="GramE">:fr19my05</span>-45</p>
                     <p class="MsoNormal">&nbsp;</p>
                     <p class="MsoNormal"><span class="GramE">[2] Tom Yu, Sam Hartman, and 
 Ken Raeburn.</span>
@@ -2012,7 +2248,6 @@ the Network and Distributed Systems Security Symposium.</span>
                         http://web.mit.edu/tlyu/papers/krb4peril-ndss04.pdf</p>
                     <h2 align="center" style="TEXT-ALIGN:center"></h2>
                     <hr size="2" width="100%" align="center">
-      </div>
-    </div>
+                    
     </body>
 </html>
